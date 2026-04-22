@@ -1,0 +1,39 @@
+# Core RAG Orchestration
+langchain
+langchain-community
+langchain-openai
+langchain-ollama
+langchain-chroma
+langchain-huggingface
+langchain-experimental
+langchain-classic
+langchain-core
+
+
+
+# Vector Store
+chromadb
+
+# Embeddings & Transformers
+sentence-transformers
+tiktoken
+
+# Reranking & Hybrid Search
+flashrank
+rank_bm25
+
+# Document Loaders & Processing
+pypdfium2
+unstructured[all-docs]
+pandas
+openpyxl
+python-docx
+beautifulsoup4
+
+# Evaluation
+ragas
+datasets
+
+# Web Interface & Environment
+streamlit
+python-dotenv

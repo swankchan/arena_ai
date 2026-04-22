@@ -1,0 +1,42 @@
+# Environment variables
+.env
+
+# Claude Code settings
+.claude/
+memory/
+
+# Database files
+*.db
+*.sqlite3
+
+# ChromaDB persistence
+chroma_db/
+
+# Temporary files
+temp_uploads/
+*.tmp
+*.temp
+
+# Python cache
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+
+# Virtual environments
+venv/
+env/
+.venv/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
