@@ -9,6 +9,9 @@ memory/
 *.db
 *.sqlite3
 
+# Data
+documents/
+
 # ChromaDB persistence
 chroma_db/
 
@@ -40,3 +43,4 @@ Thumbs.db
 
 # Logs
 *.log
+nohup.out

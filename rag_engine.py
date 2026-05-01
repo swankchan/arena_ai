@@ -5,11 +5,11 @@ from typing import Any, Dict, List, Optional
 from dotenv import load_dotenv
 
 from langchain_community.document_loaders import (
-    PyPDFium2Loader, 
-    TextLoader, 
-    UnstructuredHTMLLoader, 
-    CSVLoader, 
-    UnstructuredExcelLoader, 
+    PyPDFium2Loader,
+    TextLoader,
+    UnstructuredHTMLLoader,
+    CSVLoader,
+    UnstructuredExcelLoader,
     UnstructuredWordDocumentLoader
 )
 from langchain_text_splitters import RecursiveCharacterTextSplitter
@@ -17,6 +17,7 @@ from langchain_huggingface import HuggingFaceEmbeddings
 from langchain_chroma import Chroma
 from langchain_ollama import ChatOllama
 from langchain_openai import ChatOpenAI
+from elastic_store import ElasticStore
 
 try:
     from langchain.retrievers import EnsembleRetriever
@@ -46,24 +47,25 @@ class RAGEngine:
         self.hybrid_search = os.getenv("HYBRID_SEARCH", "false").lower() == "true"
         self.vector_weight = float(os.getenv("VECTOR_WEIGHT", 0.5))
         self.bm25_weight = float(os.getenv("BM25_WEIGHT", 0.5))
-        
+
         # Initialize embeddings
         if embeddings:
             self.embeddings = embeddings
         else:
             self.embeddings = HuggingFaceEmbeddings(model_name=self.embedding_model_name)
-        
+
         # Initialize LLM
         if llm:
             self.llm = llm
         else:
             self.llm = self._setup_llm()
-        
-        # Initialize Vector Store
-        self.vectorstore = Chroma(
-            collection_name=self.collection_name,
-            embedding_function=self.embeddings,
-            persist_directory=self.persist_directory
+
+        # Initialize Vector Store (use Elasticsearch)
+        # Add rag_ prefix for Elasticsearch index name
+        index_name = f"rag_{self.collection_name}"
+        self.vectorstore = ElasticStore(
+            index_name=index_name,
+            embeddings=self.embeddings
         )
 
     def _setup_llm(self):
@@ -84,7 +86,7 @@ class RAGEngine:
     def add_documents(self, file_path: str, progress_callback=None):
         """Loads, splits, and adds documents to the current collection with progress reporting."""
         ext = file_path.lower().split('.')[-1]
-        
+
         if ext == "pdf":
             loader = PyPDFium2Loader(file_path)
         elif ext == "csv":
@@ -97,9 +99,9 @@ class RAGEngine:
             loader = UnstructuredHTMLLoader(file_path)
         else:
             loader = TextLoader(file_path)
-            
+
         documents = loader.load()
-        
+
         if self.chunking_strategy == "semantic":
             text_splitter = SemanticChunker(self.embeddings)
         else:
@@ -107,10 +109,10 @@ class RAGEngine:
                 chunk_size=self.chunk_size,
                 chunk_overlap=self.chunk_overlap
             )
-            
+
         chunks = text_splitter.split_documents(documents)
         total_chunks = len(chunks)
-        
+
         # Adding in batches to report progress
         batch_size = 50
         for i in range(0, total_chunks, batch_size):
@@ -118,56 +120,29 @@ class RAGEngine:
             self.vectorstore.add_documents(batch)
             if progress_callback:
                 progress_callback((i + len(batch)) / total_chunks)
-                
+
         return total_chunks
 
     def get_retriever(self):
         """Returns a retriever with optional hybrid search and reranking."""
         top_k = int(os.getenv("TOP_K", 4))
-        base_retriever = self.vectorstore.as_retriever(search_kwargs={"k": top_k * 2 if os.getenv("RERANKING", "false").lower() == "true" else top_k})
-        
-        # Hybrid Search
-        if self.hybrid_search:
-            # For BM25, we need all documents in the collection
-            # Using paging to avoid "too many SQL variables" error
-            all_texts = []
-            all_metadatas = []
-            limit = 1000
-            offset = 0
-            while True:
-                batch = self.vectorstore.get(include=['documents', 'metadatas'], limit=limit, offset=offset)
-                if not batch['documents']:
-                    break
-                all_texts.extend(batch['documents'])
-                all_metadatas.extend(batch['metadatas'])
-                if len(batch['documents']) < limit:
-                    break
-                offset += limit
-            
-            if all_texts:
-                from langchain_core.documents import Document
-                docs = [Document(page_content=t, metadata=m) for t, m in zip(all_texts, all_metadatas)]
-                bm25_retriever = BM25Retriever.from_documents(docs)
-                bm25_retriever.k = top_k
-                ensemble_retriever = EnsembleRetriever(
-                    retrievers=[base_retriever, bm25_retriever],
-                    weights=[self.vector_weight, self.bm25_weight]
-                )
-                retriever = ensemble_retriever
-            else:
-                retriever = base_retriever
-        else:
-            retriever = base_retriever
-            
+
+        # ElasticStore already returns a LangChain-compatible retriever
+        base_retriever = self.vectorstore.get_retriever(top_k=top_k)
+
+        # Note: Hybrid search with BM25 is not currently supported with Elasticsearch
+        # because BM25Retriever requires all documents in memory
+        # For now, use vector search as the primary method
+
         # Reranking
         if os.getenv("RERANKING", "false").lower() == "true":
             compressor = FlashrankRerank(model=os.getenv("RERANK_MODEL", "ms-marco-MiniLM-L-12-v2"))
             compression_retriever = ContextualCompressionRetriever(
-                base_compressor=compressor, base_retriever=retriever
+                base_compressor=compressor, base_retriever=base_retriever
             )
             return compression_retriever
-            
-        return retriever
+
+        return base_retriever
 
     def _count_tokens(self, text: str):
         """Estimate token count using tiktoken (OpenAI) or a heuristic."""
@@ -177,7 +152,7 @@ class RAGEngine:
         except:
             # Fallback to simple word-based estimate if tiktoken fails
             return len(text.split()) * 1.3 # common heuristic: 1.3 tokens per word
-            
+
     def evaluate_response(self, question: str, answer: str, contexts: List[str]):
         """Evaluates the RAG response using RAGAS metrics."""
         try:
@@ -188,21 +163,21 @@ class RAGEngine:
                 "contexts": [contexts],
             }
             dataset = Dataset.from_dict(data)
-            
+
             # Wrap LLM and Embeddings for RAGAS
             from ragas.llms import LangchainLLMWrapper
             from ragas.embeddings import LangchainEmbeddingsWrapper
-            
+
             ragas_llm = LangchainLLMWrapper(self.llm)
             ragas_embeddings = LangchainEmbeddingsWrapper(self.embeddings)
-            
+
             # Initialize metrics with the LLM and Embeddings
             from ragas.metrics.collections import Faithfulness, AnswerRelevancy, ContextPrecision
-            
+
             faithfulness = Faithfulness(llm=ragas_llm)
             answer_relevance = AnswerRelevancy(llm=ragas_llm, embeddings=ragas_embeddings)
             context_precision = ContextPrecision(llm=ragas_llm)
-            
+
             # Run evaluation
             try:
                 result = evaluate(
@@ -296,7 +271,7 @@ class RAGEngine:
         """Transforms and expands the user query for better retrieval."""
         optimized_queries = [question]
         transformation_log = ""
-        
+
         # 1. Query Transformation (De-jargon/Clarify)
         if os.getenv("QUERY_TRANSFORMATION", "false").lower() == "true":
             try:
@@ -322,7 +297,7 @@ Question: {base_query}"""
                 transformation_log += "**Expanded Queries:**\n" + "\n".join([f"- {v}" for v in variations[:3]])
             except Exception as e:
                 print(f"Query Expansion Error: {e}")
-                
+
         return list(set(optimized_queries)), transformation_log
 
     def _build_memory_prefix(
@@ -366,12 +341,12 @@ Question: {base_query}"""
     ):
         """Queries the RAG system and measures performance metrics with optional reasoning."""
         start_time = time.time()
-        
+
         # Query Optimization
         queries, optimization_log = self._optimize_query(question)
-        
+
         retriever = self.get_retriever()
-        
+
         # If multi-query, we need to combine results from all queries
         all_source_docs = []
         if len(queries) > 1:
@@ -390,11 +365,11 @@ Question: {base_query}"""
             source_documents = unique_docs[:top_k * 2] # Allow a bit more context for multi-query
         else:
             source_documents = retriever.invoke(question)
-        
+
         # Define a prompt template that encourages reasoning.
         # In LangChain 1.x, prompts live in `langchain_core.prompts`.
         from langchain_core.prompts import PromptTemplate
-        
+
         template = """You are a helpful AI assistant. The context below may include:
 (1) recent conversation with the user,
 (2) similar past Q&A from stored history,
@@ -432,9 +407,9 @@ ANSWER: [Your final answer]
         prompt_text = PROMPT.format(context=context_text, question=question)
         llm_resp = self.llm.invoke(prompt_text)
         full_text = getattr(llm_resp, "content", None) or str(llm_resp)
-            
+
         duration = time.time() - start_time
-        
+
         # Split reasoning and answer
         reasoning = ""
         answer = full_text
@@ -445,11 +420,9 @@ ANSWER: [Your final answer]
                 reasoning = parts[0].replace("REASONING:", "").strip()
             except:
                 pass
-        
-        # `result` 介面在 multi-query 分支下可能不會包含 `source_documents`，
-        # 這裡直接使用我們上面已經計算好的 `source_documents`。
+
         contexts = [doc.page_content for doc in source_documents]
-        
+
         # RAGAS Evaluation (Optional, can be slow)
         ragas_eval = None
         if enable_ragas:
@@ -457,7 +430,7 @@ ANSWER: [Your final answer]
 
         token_count = self._count_tokens(full_text)
         tps = token_count / duration if duration > 0 else 0
-        
+
         return {
             "answer": answer,
             "reasoning": reasoning,
@@ -564,10 +537,7 @@ ANSWER: [Your final answer]
 
                     # Extract just the new answer content
                     ans_content = answer_part.replace("ANSWER:", "", 1).strip()
-                    if content in ans_content or ans_content in content:
-                        yield ("answer", content)
-                    else:
-                        yield ("answer", content)
+                    yield ("answer", content)
                 else:
                     yield ("reasoning", content)
             elif in_answer:
@@ -615,145 +585,134 @@ ANSWER: [Your final answer]
         yield ("final", final_result)
 
     def list_documents(self):
-        """Lists all documents in the current collection using paging to avoid memory/SQL errors."""
-        all_sources = set()
-        limit = 1000
-        offset = 0
-        
-        while True:
-            batch = self.vectorstore.get(include=['metadatas'], limit=limit, offset=offset)
-            if not batch or not batch.get('metadatas'):
-                break
-                
-            for meta in batch['metadatas']:
-                if meta and 'source' in meta:
-                    all_sources.add(os.path.basename(meta['source']))
-            
-            if len(batch['metadatas']) < limit:
-                break
-            offset += limit
-            
-        return sorted(list(all_sources))
+        """Lists all documents in the current collection."""
+        return self.vectorstore.list_documents()
 
     def delete_document(self, source_basename: str):
         """Deletes all chunks associated with a specific document source."""
-        # We need to find the full internal path first to use 'where' filter
-        full_path = None
-        limit = 1000
-        offset = 0
-        
-        # Scan metadatas in pages to find the full path mapping to this basename
-        while True:
-            batch = self.vectorstore.get(include=['metadatas'], limit=limit, offset=offset)
-            if not batch or not batch.get('metadatas'):
-                break
-                
-            for meta in batch['metadatas']:
-                if meta and os.path.basename(meta.get('source', '')) == source_basename:
-                    full_path = meta['source']
-                    break
-            
-            if full_path or len(batch['metadatas']) < limit:
-                break
-            offset += limit
-            
+        # For Elasticsearch, we need the full source path
+        # First, find the source path from metadata
+        query = {
+            "query": {
+                "term": {"source": source_basename}
+            }
+        }
+        result = self.vectorstore.client.search(index=self.vectorstore.index_name, body=query)
+        hits = result.get("hits", {}).get("hits", [])
+
+        if not hits:
+            return False
+
+        # Get the full source path from the first hit
+        full_path = hits[0]["_source"].get("source")
         if full_path:
-            # Use the optimized 'where' filter for deletion
-            self.vectorstore.delete(where={"source": full_path})
-            return True
+            deleted_count = self.vectorstore.delete_documents_by_source(full_path)
+            return deleted_count > 0
         return False
 
     @staticmethod
     def delete_collection(collection_name: str):
-        """Permanently deletes a collection and its contents."""
-        import shutil
+        """Permanently deletes a collection and its contents in Elasticsearch."""
+        from elastic_store import ElasticStore
+        import os
 
         collection_name = collection_name.lower()
-        persist_directory = os.getenv("PERSIST_DIRECTORY", "./chroma_db")
-        import chromadb
-        client = chromadb.PersistentClient(path=persist_directory)
+        index_name = f"rag_{collection_name}"
 
         try:
-            # Get collection info before deletion to find its UUID
-            collection = client.get_collection(name=collection_name)
-            collection_uuid = collection.id
-
-            # Delete from ChromaDB (removes from SQLite)
-            client.delete_collection(name=collection_name)
-
-            # Also delete the physical directory for this collection
-            collection_dir = os.path.join(persist_directory, str(collection_uuid))
-            if os.path.exists(collection_dir):
-                shutil.rmtree(collection_dir)
-
-            return True
+            # Delete from Elasticsearch
+            success = ElasticStore.delete_index_by_name(index_name)
+            return success
         except Exception as e:
             print(f"Error deleting collection {collection_name}: {e}")
             return False
 
     @staticmethod
-    def rename_collection(old_name: str, new_name: str):
-        """Renames a collection."""
+    def rename_collection(old_name: str, new_name: str) -> tuple:
+        """Renames a collection in Elasticsearch. Returns (success, message)."""
+        from elastic_store import ElasticStore
+        import os
+
         old_name = old_name.lower()
         new_name = new_name.lower()
-        persist_directory = os.getenv("PERSIST_DIRECTORY", "./chroma_db")
-        import chromadb
-        client = chromadb.PersistentClient(path=persist_directory)
+        old_index = f"rag_{old_name}"
+        new_index = f"rag_{new_name}"
+
         try:
-            # ChromaDB's rename_collection is simple:
-            collection = client.get_collection(name=old_name)
-            collection.modify(name=new_name)
-            return True
+            # Rename the Elasticsearch index
+            success, msg = ElasticStore.rename_index(old_index, new_index)
+            return success, msg
         except Exception as e:
-            print(f"Error renaming collection from {old_name} to {new_name}: {e}")
-            return False
+            return False, f"Error renaming collection: {e}"
 
     @staticmethod
     def list_collections():
-        """Lists all available collections in ChromaDB, excluding internal ones."""
-        persist_directory = os.getenv("PERSIST_DIRECTORY", "./chroma_db")
-        # Initialize a temporary client to list collections
-        import chromadb
-        client = chromadb.PersistentClient(path=persist_directory)
-        
+        """Lists all available collections in Elasticsearch, excluding internal ones."""
+        from elastic_store import ElasticStore
+
+        # Get all indices (with or without rag_ prefix)
+        indices = ElasticStore.get_all_indices(prefix="*")
+
+        # Convert index names to collection names (remove rag_ prefix if present)
         collections = []
-        for c in client.list_collections():
-            # Filter out test collections and the default 'langchain' if it's empty
-            if c.name.startswith("test_collection_"):
-                continue
-            if c.name == "langchain" and c.count() == 0:
-                continue
-            collections.append(c.name)
-        return sorted(collections)
+        for index in indices:
+            coll_name = index
+            # Remove 'rag_' prefix if present
+            if coll_name.startswith("rag_"):
+                coll_name = coll_name[4:]
+            # Filter out internal indices
+            if coll_name and not coll_name.startswith(".") and not coll_name.startswith("_"):
+                collections.append(coll_name)
+
+        # Filter out test collections
+        collections = [c for c in collections if not c.startswith("test_collection_")]
+        return sorted(set(collections))  # Remove duplicates if any
 
     @staticmethod
     def validate_collection_name(name: str):
-        """Validates if a collection name follows ChromaDB rules."""
+        """Validates if a collection name follows Elasticsearch index rules."""
         import re
-        name = name.lower() # Auto-lowercase for validation
+        name = name.lower()  # Auto-lowercase for validation
+
         if not (3 <= len(name) <= 63):
             return False, "Name must be between 3 and 63 characters."
-        if not re.match(r"^[a-z0-9][a-z0-9._-]*[a-z0-9]$", name):
-            return False, "Name must contain only lowercase letters, digits, dots, underscores, or hyphens."
+
+        # Elasticsearch index names must be lowercase
+        if name != name.lower():
+            return False, "Name must be lowercase."
+
+        # Elasticsearch index cannot contain certain characters
+        invalid_chars = ['\\', '/', '*', '?', '"', '<', '>', '|', ' ', ',', '#', ':']
+        for char in invalid_chars:
+            if char in name:
+                return False, f"Name cannot contain character: {char}"
+
         if ".." in name:
             return False, "Name cannot contain consecutive dots."
+
+        # Elasticsearch index names cannot start or end with hyphen/underscore
+        if name.startswith('-') or name.startswith('_') or name.endswith('-') or name.endswith('_'):
+            return False, "Name cannot start or end with hyphen or underscore."
+
         return True, ""
 
     @staticmethod
     def create_collection(collection_name: str):
-        """Explicitly creates a collection in ChromaDB."""
-        collection_name = collection_name.lower() # Ensure lowercase
+        """Explicitly creates a collection in Elasticsearch."""
+        from elastic_store import ElasticStore
+
+        collection_name = collection_name.lower()  # Ensure lowercase
         valid, msg = RAGEngine.validate_collection_name(collection_name)
         if not valid:
             return False, msg
-            
-        persist_directory = os.getenv("PERSIST_DIRECTORY", "./chroma_db")
-        import chromadb
-        client = chromadb.PersistentClient(path=persist_directory)
+
+        # Add rag_ prefix for Elasticsearch index name
+        index_name = f"rag_{collection_name}"
+
         try:
-            client.create_collection(name=collection_name)
-            return True, "Collection created successfully."
+            success, msg = ElasticStore.create_index(index_name)
+            return success, msg
         except Exception as e:
-            if "already exists" in str(e).lower():
+            if "resource_already_exists_exception" in str(e):
                 return True, f"Collection '{collection_name}' already exists."
             return False, f"Error creating collection: {e}"

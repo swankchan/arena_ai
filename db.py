@@ -64,7 +64,7 @@ def init_db(conn: Optional[sqlite3.Connection] = None) -> None:
                 content TEXT NOT NULL,
                 qa_run_id INTEGER,
                 created_at REAL NOT NULL,
-                FOREIGN KEY (qa_run_id) REFERENCES qa_runs(id) ON DELETE SET NULL
+                FOREIGN KEY (qa_run_id) REFERENCES qa_runs(id) ON DELETE CASCADE
             );
 
             CREATE TABLE IF NOT EXISTS ratings (
@@ -283,7 +283,7 @@ def list_recent_qa_runs(
                    created_at
             FROM qa_runs
             WHERE collection_name = ?
-            ORDER BY created_at DESC
+            ORDER BY created_at ASC
             LIMIT ?
             """,
             (collection_name, limit),

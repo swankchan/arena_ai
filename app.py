@@ -11,12 +11,11 @@ from rag_engine import RAGEngine
 from langchain_huggingface import HuggingFaceEmbeddings
 from langchain_ollama import ChatOllama
 from langchain_openai import ChatOpenAI
-from langchain_chroma import Chroma
 
 db.init_db()
 
 # Streamlit App Configuration
-st.set_page_config(page_title="RAG with Ollama", layout="wide")
+st.set_page_config(page_title="RAG KB ", layout="wide")
 
 # Cached Resource Initialization
 @st.cache_resource
@@ -44,21 +43,21 @@ if "last_qa_run_id" not in st.session_state:
 # Sidebar: Collection Selection and Creation
 with st.sidebar:
     st.title("Settings")
-    
+
     # List Collections
     try:
         collections = RAGEngine.list_collections()
     except:
         collections = []
-    
+
     selected_collection = None
     if collections:
         if st.session_state.collection not in collections:
             st.session_state.collection = collections[0]
-            
+
         selected_collection = st.selectbox(
-            "Select Collection", 
-            options=collections, 
+            "Select Collection",
+            options=collections,
             index=collections.index(st.session_state.collection)
         )
         st.session_state.collection = selected_collection
@@ -69,7 +68,7 @@ with st.sidebar:
     if selected_collection:
         st.divider()
         st.subheader("Manage Active Collection")
-        
+
         with st.expander("Rename Collection"):
             new_name_input = st.text_input("New Name", key="rename_input", help="Name will be converted to lowercase automatically.")
             if st.button("Rename"):
@@ -77,12 +76,13 @@ with st.sidebar:
                     new_name_clean = new_name_input.lower().strip()
                     valid, msg = RAGEngine.validate_collection_name(new_name_clean)
                     if valid:
-                        if RAGEngine.rename_collection(selected_collection, new_name_clean):
+                        success, rename_msg = RAGEngine.rename_collection(selected_collection, new_name_clean)
+                        if success:
                             st.session_state.collection = new_name_clean
                             st.success(f"Renamed to {new_name_clean}")
                             st.rerun()
                         else:
-                            st.error("Rename failed.")
+                            st.error(f"Rename failed: {rename_msg}")
                     else:
                         st.error(msg)
 
@@ -93,7 +93,7 @@ with st.sidebar:
                 st.rerun()
             else:
                 st.error("Delete failed.")
-    
+
     # Create New Collection
     st.divider()
     st.subheader("New Collection")
@@ -111,11 +111,11 @@ with st.sidebar:
                 st.error(message)
         else:
             st.warning("Please enter a name.")
-            
+
     # LLM Settings (Read Only from .env)
     st.divider()
     st.write(f"**LLM Provider:** {os.getenv('LLM_PROVIDER', 'ollama')}")
-    st.write(f"**Model:** {os.getenv('OLLAMA_MODEL', 'qwen3.5:9b')}")
+    st.write(f"**Model:** {os.getenv('OLLAMA_MODEL', 'qwen35b-64k:latest')}")
     # Force read from environment to ensure latest values are shown
     chunk_strat = os.getenv('CHUNKING_STRATEGY', 'recursive')
     st.write(f"**Chunking Strategy:** {chunk_strat}")
@@ -135,7 +135,7 @@ with st.sidebar:
         os.environ["VECTOR_WEIGHT"] = str(vector_weight)
         os.environ["BM25_WEIGHT"] = str(bm25_weight)
     st.write(f"**Reranking:** {os.getenv('RERANKING', 'false')}")
-    
+
     # Query Optimization Settings
     st.divider()
     st.subheader("Query Optimization")
@@ -144,7 +144,7 @@ with st.sidebar:
     # Temporarily update environment for the current run
     os.environ["QUERY_TRANSFORMATION"] = str(q_trans).lower()
     os.environ["QUERY_EXPANSION"] = str(q_exp).lower()
-    
+
     # RAGAS Toggle
     st.divider()
     enable_ragas = st.checkbox("Enable RAGAS Evaluation", value=False, help="Evaluation can take significant time for each question.")
@@ -178,7 +178,8 @@ with st.sidebar:
         except Exception:
             recent = []
         if recent:
-            labels = [f"#{r['id']} — {r['question'][:60]}{'…' if len(r['question']) > 60 else ''}" for r in recent]
+            # Show sequential numbers starting from 1 (oldest/first question is #1)
+            labels = [f"#{i+1} — {r['question'][:60]}{'…' if len(r['question']) > 60 else ''}" for i, r in enumerate(recent)]
             pick = st.selectbox("Browse past answers", options=range(len(recent)), format_func=lambda i: labels[i], key="history_pick")
             row = recent[pick]
             full = db.get_qa_run(row["id"])
@@ -225,20 +226,24 @@ with st.sidebar:
         require_rating = True
 
     coll_export = None
+    should_export = True
     if exp_scope == "Current collection":
-        coll_export = selected_collection
-        if not coll_export:
+        if selected_collection:
+            coll_export = selected_collection
+        else:
             st.warning("Select a collection first, or choose All collections.")
-    else:
-        coll_export = None
+            should_export = False
 
     try:
-        export_bytes = db.export_training_jsonl_bytes(
-            collection_name=coll_export,
-            rating_filter=rating_filter,
-            require_rating=require_rating,
-            format_name=exp_fmt,
-        )
+        if should_export:
+            export_bytes = db.export_training_jsonl_bytes(
+                collection_name=coll_export,
+                rating_filter=rating_filter,
+                require_rating=require_rating,
+                format_name=exp_fmt,
+            )
+        else:
+            export_bytes = b""
     except Exception as e:
         export_bytes = b""
         st.error(str(e))
@@ -256,8 +261,8 @@ with st.sidebar:
 # Initialize Components
 emb = get_embeddings(os.getenv("EMBEDDING_MODEL", "all-MiniLM-L6-v2"))
 llm = get_llm(
-    os.getenv("LLM_PROVIDER", "ollama"), 
-    os.getenv("OLLAMA_MODEL", "qwen3.5:9b"), 
+    os.getenv("LLM_PROVIDER", "ollama"),
+    os.getenv("OLLAMA_MODEL", "qwen35b-64k:latest"),
     os.getenv("OLLAMA_BASE_URL", "http://localhost:11434")
 )
 
@@ -265,7 +270,7 @@ llm = get_llm(
 rag_engine = None
 if selected_collection:
     llm_provider = os.getenv("LLM_PROVIDER", "ollama").lower()
-    llm_model = os.getenv("OLLAMA_MODEL", "qwen3.5:9b") if llm_provider == "ollama" else "gpt-3.5-turbo"
+    llm_model = os.getenv("OLLAMA_MODEL", "qwen35b-64k:latest") if llm_provider == "ollama" else "gpt-3.5-turbo"
     llm_base_url = os.getenv("OLLAMA_BASE_URL", "http://localhost:11434") if llm_provider == "ollama" else ""
     persist_directory = os.getenv("PERSIST_DIRECTORY", "./chroma_db")
 
@@ -295,13 +300,197 @@ if selected_collection:
     rag_engine = st.session_state.get("rag_engine")
     st.session_state["engine_key_string"] = engine_key
 
-# Main Interface
-st.title("RAG Knowledge Base")
+# Main Interface with Tabs
+st.title("RAG KB with ElasticSearch")
 if selected_collection:
     st.write(f"Currently using collection: **{selected_collection}**")
 
-    # Manage Documents in Current Collection
-    with st.expander("Manage Documents in this Collection"):
+    # Tabs: Ask | Manage
+    tab_ask, tab_manage = st.tabs(["Ask a Question", "Manage Documents"])
+
+    # ============== ASK TAB ==============
+    with tab_ask:
+        # Chat History
+        if "messages" not in st.session_state:
+            st.session_state.messages = []
+
+        # Display Chat History
+        for message in st.session_state.messages:
+            with st.chat_message(message["role"]):
+                st.markdown(message["content"])
+
+        # User Input
+        if prompt := st.chat_input("Enter your question here..."):
+            # Add user message to history
+            st.session_state.messages.append({"role": "user", "content": prompt})
+            chat_history = [
+                {"role": m["role"], "content": m["content"]}
+                for m in st.session_state.messages[:-1]
+            ]
+            if st.session_state.conversation_id is None:
+                st.session_state.conversation_id = db.create_conversation(selected_collection)
+                st.session_state.conversation_collection = selected_collection
+
+            try:
+                db.insert_message(st.session_state.conversation_id, "user", prompt)
+            except Exception:
+                pass
+
+            with st.chat_message("user"):
+                st.markdown(prompt)
+
+            # Generate Response with Streaming
+            with st.chat_message("assistant"):
+                try:
+                    q_emb = None
+                    try:
+                        q_emb = emb.embed_query(prompt)
+                    except Exception:
+                        q_emb = None
+
+                    long_term_mem = ""
+                    try:
+                        top_k_lt = int(os.getenv("LONG_TERM_MEMORY_TOP_K", "3"))
+                        if q_emb is not None:
+                            similar = db.search_similar_qa(
+                                selected_collection,
+                                q_emb,
+                                top_k=top_k_lt,
+                            )
+                            if similar:
+                                parts = []
+                                for s in similar:
+                                    ans = s.get("answer", "") or ""
+                                    if len(ans) > 800:
+                                        ans = ans[:800] + "…"
+                                    parts.append(
+                                        f"(similarity {s.get('similarity', 0):.3f})\nQ: {s.get('question', '')}\nA: {ans}"
+                                    )
+                                long_term_mem = "\n\n".join(parts)
+                    except Exception:
+                        long_term_mem = ""
+
+                    # Stream with real-time reasoning display
+                    full_text = ""
+                    response = None
+                    reasoning_placeholder = st.empty()
+
+                    # Stream everything (collect while showing reasoning progress)
+                    for phase, content in rag_engine.query_stream(
+                        prompt,
+                        enable_ragas=enable_ragas,
+                        chat_history=chat_history or None,
+                        long_term_memory=long_term_mem or None,
+                    ):
+                        if phase == "final":
+                            response = content
+                            break
+
+                        full_text += content
+
+                        # Show reasoning progress in real-time with code format to preserve line breaks
+                        reasoning_text = full_text.replace("REASONING:", "").replace("ANSWER:", "").strip()
+                        reasoning_placeholder.markdown(f"```\n🤔 Thinking...\n{reasoning_text}\n```")
+
+                    # After streaming completes, parse final values
+                    if response:
+                        answer = response["answer"]
+                        opt_log = response.get("optimization_log", "")
+                    else:
+                        answer = full_text.split("ANSWER:", 1)[-1].strip() if "ANSWER:" in full_text else full_text
+                        opt_log = ""
+
+                    # Don't clear the placeholder - the last "Thinking: ..." message stays visible
+                    # It will be overwritten by the next user interaction anyway
+
+                    # Process sources
+                    raw_sources = response.get("sources", []) if response else []
+                    processed_sources = []
+                    for s in raw_sources:
+                        if s and s != "Unknown":
+                            basename = os.path.basename(s)
+                            if basename not in processed_sources:
+                                processed_sources.append(basename)
+
+                    metrics = response.get("metrics", {}) if response else {}
+
+                    # Final Answer
+                    st.markdown(f"**Answer:**\n\n{answer}")
+
+                    # Display metrics and sources
+                    metrics_text = f"\n\n---\n📊 **Metrics:** {metrics.get('total_tokens', 0)} tokens | {metrics.get('tokens_per_second', 0)} tps | {metrics.get('duration', 0)}s"
+
+                    ragas = metrics.get("ragas")
+                    if ragas:
+                        metrics_text += f"\n\n**RAGAS Evaluation:**"
+                        if ragas.get("error"):
+                            metrics_text += f"\n- RAGAS Error: {ragas.get('error')}"
+                        else:
+                            metrics_text += f"\n- Faithfulness: {ragas.get('faithfulness', 0):.2f}"
+                            metrics_text += f"\n- Answer Relevance: {ragas.get('answer_relevancy', ragas.get('answer_relevance', 0)):.2f}"
+                            metrics_text += f"\n- Context Precision: {ragas.get('context_precision', 0):.2f}"
+
+                    sources_text = f"\n\n**Sources:** {', '.join(processed_sources)}" if processed_sources else ""
+
+                    st.markdown(f"{sources_text}{metrics_text}")
+
+                    # Add assistant message to history
+                    st.session_state.messages.append({
+                        "role": "assistant",
+                        "content": answer
+                    })
+
+                    # Persist to database
+                    try:
+                        ragas_m = metrics.get("ragas")
+                        if isinstance(ragas_m, dict) and "raw" in ragas_m:
+                            ragas_m = {k: v for k, v in ragas_m.items() if k != "raw"}
+                        metrics_for_db = {k: v for k, v in metrics.items() if k != "ragas"}
+                        qa_run_id = db.insert_qa_run(
+                            st.session_state.conversation_id,
+                            selected_collection,
+                            prompt,
+                            answer,
+                            processed_sources,
+                            metrics_for_db,
+                            ragas_m,
+                            opt_log,
+                            st.session_state.get("engine_key_string", ""),
+                            list(q_emb) if q_emb is not None else None,
+                        )
+                        db.insert_message(
+                            st.session_state.conversation_id,
+                            "assistant",
+                            full_text,
+                            qa_run_id=qa_run_id,
+                        )
+                        st.session_state.last_qa_run_id = qa_run_id
+                    except Exception as persist_err:
+                        st.caption(f"Could not save to database: {persist_err}")
+                except Exception as e:
+                    st.error(f"Error: {e}")
+
+        # Feedback for last answer
+        if st.session_state.get("last_qa_run_id"):
+            st.divider()
+            fb1, fb2, _ = st.columns([1, 1, 6])
+            with fb1:
+                if st.button("👍 Like", key=f"like_{st.session_state.last_qa_run_id}"):
+                    db.upsert_rating(st.session_state.last_qa_run_id, "like")
+                    st.session_state.last_qa_run_id = None  # Clear to hide buttons after rating
+                    st.success("Thanks!")
+                    st.rerun()
+            with fb2:
+                if st.button("👎 Dislike", key=f"dislike_{st.session_state.last_qa_run_id}"):
+                    db.upsert_rating(st.session_state.last_qa_run_id, "dislike")
+                    st.session_state.last_qa_run_id = None  # Clear to hide buttons after rating
+                    st.success("Thanks!")
+                    st.rerun()
+
+    # ============== MANAGE TAB ==============
+    with tab_manage:
+        # Manage Documents in Current Collection
+        st.subheader("Uploaded Documents")
         docs_in_coll = rag_engine.list_documents() if rag_engine else []
         if docs_in_coll:
             for doc_name in docs_in_coll:
@@ -316,237 +505,36 @@ if selected_collection:
         else:
             st.info("No documents in this collection yet.")
 
-    # Document Upload Section
-    st.subheader("Upload Documents")
-    uploaded_files = st.file_uploader("Upload HTML, PDF, CSV, TXT, XLSX, or DOCX files", type=["html", "htm", "pdf", "csv", "txt", "xlsx", "xls", "docx", "doc"], accept_multiple_files=True)
-
-    if uploaded_files:
-        if st.button("Process Documents"):
-            temp_dir = "./temp_uploads"
-            os.makedirs(temp_dir, exist_ok=True)
-            
-            total_chunks = 0
-            progress_bar = st.progress(0, text="Processing documents...")
-            
-            for idx, uploaded_file in enumerate(uploaded_files):
-                file_path = os.path.join(temp_dir, uploaded_file.name)
-                with open(file_path, "wb") as f:
-                    f.write(uploaded_file.getbuffer())
-                
-                # Internal progress update function (idx bound via default arg to avoid closure trap)
-                def update_progress(p, _idx=idx, _total=len(uploaded_files), _name=uploaded_file.name):
-                    # Progress is (current_file_index + current_file_progress) / total_files
-                    overall_p = (_idx + p) / _total
-                    progress_bar.progress(overall_p, text=f"Processing {_name} ({int(p*100)}%)...")
-
-                try:
-                    chunks_added = rag_engine.add_documents(file_path, progress_callback=update_progress)
-                    total_chunks += chunks_added
-                finally:
-                    os.remove(file_path)  # Ensure cleanup even on error
-                
-            progress_bar.empty()
-            st.success(f"Added {len(uploaded_files)} documents and created {total_chunks} chunks.")
-
-    # Query Section
-    st.divider()
-    st.subheader("Ask a Question")
-
-    # Chat History
-    if "messages" not in st.session_state:
-        st.session_state.messages = []
-
-    # Display Chat History
-    for message in st.session_state.messages:
-        with st.chat_message(message["role"]):
-            st.markdown(message["content"])
-            if message.get("reasoning"):
-                with st.expander("Show Reasoning"):
-                    st.info(message["reasoning"])
-
-    # User Input
-    if prompt := st.chat_input("Enter your question here..."):
-        # Add user message to history
-        st.session_state.messages.append({"role": "user", "content": prompt})
-        chat_history = [
-            {"role": m["role"], "content": m["content"]}
-            for m in st.session_state.messages[:-1]
-        ]
-        if st.session_state.conversation_id is None:
-            st.session_state.conversation_id = db.create_conversation(selected_collection)
-            st.session_state.conversation_collection = selected_collection
-
-        try:
-            db.insert_message(st.session_state.conversation_id, "user", prompt)
-        except Exception:
-            pass
-
-        with st.chat_message("user"):
-            st.markdown(prompt)
-            
-        # Generate Response with Streaming
-        with st.chat_message("assistant"):
-            try:
-                q_emb = None
-                try:
-                    q_emb = emb.embed_query(prompt)
-                except Exception:
-                    q_emb = None
-
-                long_term_mem = ""
-                try:
-                    top_k_lt = int(os.getenv("LONG_TERM_MEMORY_TOP_K", "3"))
-                    if q_emb is not None:
-                        similar = db.search_similar_qa(
-                            selected_collection,
-                            q_emb,
-                            top_k=top_k_lt,
-                        )
-                        if similar:
-                            parts = []
-                            for s in similar:
-                                ans = s.get("answer", "") or ""
-                                if len(ans) > 800:
-                                    ans = ans[:800] + "…"
-                                parts.append(
-                                    f"(similarity {s.get('similarity', 0):.3f})\nQ: {s.get('question', '')}\nA: {ans}"
-                                )
-                            long_term_mem = "\n\n".join(parts)
-                except Exception:
-                    long_term_mem = ""
-
-                # Stream with real-time reasoning display
-                full_text = ""
-                response = None
-                reasoning_placeholder = st.empty()
-                thinking_done = False
-
-                # Stream everything (collect while showing "Thinking...")
-                for phase, content in rag_engine.query_stream(
-                    prompt,
-                    enable_ragas=enable_ragas,
-                    chat_history=chat_history or None,
-                    long_term_memory=long_term_mem or None,
-                ):
-                    if phase == "final":
-                        response = content
-                        break
-
-                    full_text += content
-
-                    # Show reasoning progress in real-time
-                    if "REASONING:" in full_text and "ANSWER:" not in full_text:
-                        current_reasoning = full_text.replace("REASONING:", "").strip()
-                        if current_reasoning:
-                            reasoning_placeholder.markdown(f"*🤔 Thinking: {current_reasoning}...*")
-                    elif "ANSWER:" in full_text and not thinking_done:
-                        thinking_done = True
-                        reasoning_placeholder.empty()  # Clear the thinking line
-
-                # Parse final values
-                if response:
-                    answer = response["answer"]
-                    reasoning = response.get("reasoning", "")
-                    opt_log = response.get("optimization_log", "")
-                else:
-                    answer = full_text.split("ANSWER:", 1)[-1].strip() if "ANSWER:" in full_text else full_text
-                    reasoning = full_text.split("ANSWER:", 1)[0].replace("REASONING:", "").strip() if "REASONING:" in full_text else ""
-                    opt_log = ""
-
-                # Process sources
-                raw_sources = response.get("sources", []) if response else []
-                processed_sources = []
-                for s in raw_sources:
-                    if s and s != "Unknown":
-                        basename = os.path.basename(s)
-                        if basename not in processed_sources:
-                            processed_sources.append(basename)
-
-                metrics = response.get("metrics", {}) if response else {}
-
-                # Display in requested order:
-                # 1. Query Optimization Details (if any)
-                if opt_log:
-                    with st.expander("Query Optimization Details", expanded=True):
-                        st.markdown(opt_log)
-
-                # 2. Reasoning
-                if reasoning:
-                    with st.expander("Reasoning Process", expanded=True):
-                        st.info(reasoning)
-
-                # 3. Final Answer (last)
-                st.markdown(f"**Answer:**\n\n{answer}")
-
-                # Display metrics and sources
-                metrics_text = f"\n\n---\n📊 **Metrics:** {metrics.get('total_tokens', 0)} tokens | {metrics.get('tokens_per_second', 0)} tps | {metrics.get('duration', 0)}s"
-
-                ragas = metrics.get("ragas")
-                if ragas:
-                    metrics_text += f"\n\n**RAGAS Evaluation:**"
-                    if ragas.get("error"):
-                        metrics_text += f"\n- RAGAS Error: {ragas.get('error')}"
-                    else:
-                        metrics_text += f"\n- Faithfulness: {ragas.get('faithfulness', 0):.2f}"
-                        metrics_text += f"\n- Answer Relevance: {ragas.get('answer_relevancy', ragas.get('answer_relevance', 0)):.2f}"
-                        metrics_text += f"\n- Context Precision: {ragas.get('context_precision', 0):.2f}"
-
-                sources_text = f"\n\n**Sources:** {', '.join(processed_sources)}" if processed_sources else ""
-
-                st.markdown(f"{sources_text}{metrics_text}")
-
-                # Add assistant message to history
-                st.session_state.messages.append({
-                    "role": "assistant",
-                    "content": answer,
-                    "reasoning": reasoning
-                })
-
-                # Persist to database
-                try:
-                    ragas_m = metrics.get("ragas")
-                    if isinstance(ragas_m, dict) and "raw" in ragas_m:
-                        ragas_m = {k: v for k, v in ragas_m.items() if k != "raw"}
-                    metrics_for_db = {k: v for k, v in metrics.items() if k != "ragas"}
-                    qa_run_id = db.insert_qa_run(
-                        st.session_state.conversation_id,
-                        selected_collection,
-                        prompt,
-                        answer,
-                        processed_sources,
-                        metrics_for_db,
-                        ragas_m,
-                        opt_log,
-                        st.session_state.get("engine_key_string", ""),
-                        list(q_emb) if q_emb is not None else None,
-                    )
-                    db.insert_message(
-                        st.session_state.conversation_id,
-                        "assistant",
-                        full_text,
-                        qa_run_id=qa_run_id,
-                    )
-                    st.session_state.last_qa_run_id = qa_run_id
-                except Exception as persist_err:
-                    st.caption(f"Could not save to database: {persist_err}")
-            except Exception as e:
-                st.error(f"Error: {e}")
-
-    # Feedback for last answer
-    if st.session_state.get("last_qa_run_id"):
+        # Document Upload Section
         st.divider()
-        fb1, fb2, _ = st.columns([1, 1, 6])
-        with fb1:
-            if st.button("👍 Like", key=f"like_{st.session_state.last_qa_run_id}"):
-                db.upsert_rating(st.session_state.last_qa_run_id, "like")
-                st.session_state.last_qa_run_id = None  # Clear to hide buttons after rating
-                st.success("Thanks!")
-                st.rerun()
-        with fb2:
-            if st.button("👎 Dislike", key=f"dislike_{st.session_state.last_qa_run_id}"):
-                db.upsert_rating(st.session_state.last_qa_run_id, "dislike")
-                st.session_state.last_qa_run_id = None  # Clear to hide buttons after rating
-                st.success("Thanks!")
-                st.rerun()
+        st.subheader("Upload Documents")
+        uploaded_files = st.file_uploader("Upload HTML, PDF, CSV, TXT, XLSX, or DOCX files", type=["html", "htm", "pdf", "csv", "txt", "xlsx", "xls", "docx", "doc"], accept_multiple_files=True, key="upload_docs")
+
+        if uploaded_files:
+            if st.button("Process Documents", key="process_docs"):
+                docs_dir = os.path.join("./documents", selected_collection)
+                os.makedirs(docs_dir, exist_ok=True)
+
+                total_chunks = 0
+                progress_bar = st.progress(0, text="Processing documents...")
+
+                for idx, uploaded_file in enumerate(uploaded_files):
+                    file_path = os.path.join(docs_dir, uploaded_file.name)
+                    with open(file_path, "wb") as f:
+                        f.write(uploaded_file.getbuffer())
+
+                    # Internal progress update function (idx bound via default arg to avoid closure trap)
+                    def update_progress(p, _idx=idx, _total=len(uploaded_files), _name=uploaded_file.name):
+                        overall_p = (_idx + p) / _total
+                        progress_bar.progress(overall_p, text=f"Processing {_name} ({int(p*100)}%)...")
+
+                    try:
+                        chunks_added = rag_engine.add_documents(file_path, progress_callback=update_progress)
+                        total_chunks += chunks_added
+                    except Exception as e:
+                        st.error(f"Error processing {uploaded_file.name}: {e}")
+
+                progress_bar.empty()
+                st.success(f"Added {len(uploaded_files)} documents and created {total_chunks} chunks.")
 else:
     st.warning("Please create a collection in the sidebar to get started.")

@@ -13,6 +13,8 @@ langchain-core
 
 # Vector Store
 chromadb
+langchain-elasticsearch
+elasticsearch>=8.0.0
 
 # Embeddings & Transformers
 sentence-transformers
