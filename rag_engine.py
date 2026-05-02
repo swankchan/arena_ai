@@ -1065,6 +1065,9 @@ ANSWER: [Your final answer]
             # Delete tabular data from database
             db.delete_tabular_files_by_collection(collection_name)
 
+            # Delete conversations, messages, qa_runs, ratings from database
+            db.delete_collection_data(collection_name)
+
             # Delete documents directory
             docs_dir = os.path.join("./documents", collection_name)
             if os.path.exists(docs_dir):

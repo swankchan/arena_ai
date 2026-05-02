@@ -568,3 +568,33 @@ def delete_tabular_files_by_collection(collection_name: str, conn: Optional[sqli
             conn.close()
 
 
+def delete_collection_data(collection_name: str, conn: Optional[sqlite3.Connection] = None) -> dict:
+    """Delete all collection-related data from database.
+
+    Returns a dict with counts of deleted records for each table.
+    """
+    own = conn is None
+    if own:
+        conn = get_connection()
+    try:
+        deleted = {}
+
+        # Delete ratings (depends on qa_runs)
+        deleted['ratings'] = conn.execute("DELETE FROM ratings WHERE qa_run_id IN (SELECT id FROM qa_runs WHERE collection_name = ?)", (collection_name,)).rowcount
+
+        # Delete qa_runs
+        deleted['qa_runs'] = conn.execute("DELETE FROM qa_runs WHERE collection_name = ?", (collection_name,)).rowcount
+
+        # Delete messages (depends on conversations, cascades from qa_runs)
+        deleted['messages'] = conn.execute("DELETE FROM messages WHERE conversation_id IN (SELECT id FROM conversations WHERE collection_name = ?)", (collection_name,)).rowcount
+
+        # Delete conversations
+        deleted['conversations'] = conn.execute("DELETE FROM conversations WHERE collection_name = ?", (collection_name,)).rowcount
+
+        conn.commit()
+        return deleted
+    finally:
+        if own:
+            conn.close()
+
+
