@@ -13,12 +13,6 @@ limitations under the License.
 """
 
 """
-Contact: Swank Canton
-Email: chanwan@gmail.com
-Website: https://www.github.com/swankchan
-"""
-
-"""
 Elasticsearch storage backend for RAG system.
 Replaces ChromaDB with Elasticsearch for vector storage and retrieval.
 """

@@ -13,13 +13,6 @@ limitations under the License.
 """
 
 """
-Contact: Swank Canton
-Email: chanwan@gmail.com
-Website: https://www.github.com/swankchan
-Instagram: @clooudycw
-"""
-
-"""
 Migration script to copy data from ChromaDB to Elasticsearch.
 This script:
 1. Connects to both ChromaDB and Elasticsearch
