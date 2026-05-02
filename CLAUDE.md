@@ -4,7 +4,16 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-This is a **Retrieval-Augmented Generation (RAG)** system with a Streamlit web interface, supporting local LLMs via Ollama. It implements vector search with Elasticsearch, reranking, conversation memory, and SQLite persistence.
+This is a **Retrieval-Augmented Generation (RAG)** system with a Streamlit web interface, supporting local LLMs via Ollama.
+
+It implements vector search with Elasticsearch, reranking, conversation memory, and SQLite persistence.
+
+**Data Flow:**
+1. **Chunking**: Documents split using `RecursiveCharacterTextSplitter` or `SemanticChunker`
+2. **Embedding**: `ElasticStore` converts chunks to vectors using the embedding model
+3. **Searching**: Vector search against Elasticsearch via `vectorstore.get_retriever()`
+4. **Reranking**: Optional, using FlashRank when `RERANKING=true`
+5. **LLMing**: Query optimization (transformation + expansion) → Retrieval → Context assembly → Final answer generation
 
 ## Running the Application
 
@@ -17,6 +26,7 @@ ollama pull qwen3.5:9b
 ```
 
 ## Start Elasticsearch
+
 ```bash
 docker compose -f docker-compose.elasticsearch.yml up -d
 ```
@@ -38,17 +48,10 @@ curl http://localhost:9200
 | File | Purpose |
 |------|---------|
 | `app.py` | Streamlit web UI, session management, chat interface, collection/QA management, system prompt management |
-| `rag_engine.py` | Core RAG logic: document processing, retrieval, query optimization |
+| `rag_engine.py` | Core RAG logic: document processing, retrieval, query optimization, tabular SQL generation |
 | `db.py` | SQLite persistence for conversations, Q&A runs, messages, ratings, system prompts |
-
-### Data Flow
-
-1. **Document Ingestion**: Files (PDF, HTML, CSV, TXT, XLSX, DOCX) are loaded, chunked (recursive or semantic), and stored in Elasticsearch with embeddings.
-2. **Retrieval**: Vector search using dense vectors stored in Elasticsearch. Optional FlashRank reranking.
-3. **Query Optimization**: LLM transforms vague queries and expands into multiple query variations when enabled.
-4. **Memory Injection**: Short-term (recent chat) and long-term (similar past Q&A from SQLite) context is prepended to retrieved documents.
-5. **Generation**: LLM produces step-by-step reasoning followed by final answer, using a structured prompt template.
-6. **Persistence**: Q&A runs, metrics, user ratings (like/dislike), and chat messages are stored in `rag_app.db`.
+| `tabular_engine.py` | Tabular data handler with Text-to-SQL and Pandas analysis |
+| `elastic_store.py` | Elasticsearch vector store integration |
 
 ### Model Architecture
 
@@ -65,9 +68,9 @@ curl http://localhost:9200
 - **Vector Storage**: Elasticsearch stores dense vectors (1024-dim for `bge-large-en-v1.5`) with cosine similarity search.
 - **Memory Limits**: Short-term memory capped by `CHAT_HISTORY_MAX_MESSAGES` (default 12); long-term via `LONG_TERM_MEMORY_TOP_K` (default 3 past Q&A).
 - **Collection Management**: Collections are Elasticsearch indices with `rag_` prefix; names are auto-lowercased and validated.
+- **Tabular Data**: CSV/XLSX/XLS files are loaded into pandas DataFrames and SQLite for SQL queries. Natural language to SQL conversion is supported via LLM.
 - **RAGAS Evaluation**: Removed. Response evaluation no longer includes RAGAS metrics.
 - **QA Management**: Users can browse and delete past Q&A runs from the database via the UI.
-- **System Prompt Management**: `collection_guard` is always active and protected. User-defined prompts can be enabled/disabled individually via the System Prompt tab; all enabled prompts are appended to `collection_guard`.
 
 ## Configuration
 
@@ -107,12 +110,13 @@ APP_DB_PATH=./rag_app.db
 ## Development Notes
 
 - **Environment**: Uses `conda` environment named `rag` (Python 3.11+).
-- **Dependencies**: Standard ML/NLP stack including LangChain, ChromaDB, sentence-transformers, FlashRank.
+- **Dependencies**: Standard ML/NLP stack including LangChain, ChromaDB, sentence-transformers, FlashRank, pandas, openpyxl.
 - **No test suite**: There are no automated tests in this codebase.
 - **No linting/formatting config**: No pre-configured ruff, black, or mypy settings.
 - **SQLite threading**: Database connections use `check_same_thread=False` for Streamlit compatibility.
 - **Document deletion**: Uses `source` metadata field to identify and delete all chunks for a given document.
 - **Conversation persistence**: Chat messages are stored in SQLite and loaded when switching between collections.
+- **Tabular SQL Generation**: `_query_tabular_sql()` in `rag_engine.py` handles natural language to SQL conversion using pattern matching and LLM fallback.
 
 ## Common Commands
 
@@ -164,7 +168,13 @@ streamlit run app.py
 - View full stored answer in expander
 - Delete individual Q&A runs (cascades to delete associated messages)
 
+### Tabular Analysis Tab
+- Upload CSV/XLSX/XLS files in the "Manage Documents" tab
+- **Natural Language Query**: Ask questions in plain English (e.g., "What is the total sales?", "Show me the top 10 records")
+- **SQL Query**: Write and execute SQL queries directly on uploaded data
+- Results display with dataframe and CSV download
+
 ### System Prompt Manager (System Prompt Tab)
-- **collection_guard**: Always active (lock + checkmark badges), cannot be deleted or disabled
+- **collection_guard**: Always active, cannot be deleted or disabled
 - **User prompts**: Each has an "Enabled" checkbox to toggle; all enabled prompts are appended to `collection_guard`
 - **Delete**: Available for user prompts (not `collection_guard`)

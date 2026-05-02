@@ -27,6 +27,12 @@ def get_connection() -> sqlite3.Connection:
     return conn
 
 
+def _qa_runs_has_column(conn: sqlite3.Connection, column: str) -> bool:
+    """Check if qa_runs table has a specific column."""
+    columns = [col[1] for col in conn.execute("PRAGMA table_info(qa_runs)").fetchall()]
+    return column in columns
+
+
 def init_db(conn: Optional[sqlite3.Connection] = None) -> None:
     own = conn is None
     if own:
@@ -80,6 +86,26 @@ def init_db(conn: Optional[sqlite3.Connection] = None) -> None:
                 name TEXT NOT NULL UNIQUE,
                 content TEXT NOT NULL,
                 is_default INTEGER DEFAULT 0,
+                created_at REAL NOT NULL
+            );
+
+            CREATE TABLE IF NOT EXISTS tabular_files (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                collection_name TEXT NOT NULL,
+                filename TEXT NOT NULL,
+                table_name TEXT NOT NULL,
+                row_count INTEGER DEFAULT 0,
+                columns_json TEXT,
+                metadata_json TEXT,
+                created_at REAL NOT NULL
+            );
+
+            CREATE TABLE IF NOT EXISTS tabular_analysis (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                tabular_file_id INTEGER NOT NULL REFERENCES tabular_files(id) ON DELETE CASCADE,
+                analysis_type TEXT NOT NULL,
+                parameters_json TEXT,
+                results_json TEXT,
                 created_at REAL NOT NULL
             );
 
@@ -163,7 +189,7 @@ def insert_qa_run(
                 conversation_id, collection_name, question, answer,
                 sources_json, metrics_json, optimization_log, engine_key,
                 created_at, question_embedding
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             """,
             (
                 conversation_id,
@@ -520,6 +546,23 @@ def delete_system_prompt(prompt_id: int, conn: Optional[sqlite3.Connection] = No
         conn.execute("DELETE FROM system_prompts WHERE id = ?", (prompt_id,))
         conn.commit()
         return True
+    finally:
+        if own:
+            conn.close()
+
+
+def delete_tabular_files_by_collection(collection_name: str, conn: Optional[sqlite3.Connection] = None) -> int:
+    """Delete all tabular files associated with a collection."""
+    own = conn is None
+    if own:
+        conn = get_connection()
+    try:
+        # Delete analysis records first (cascade)
+        conn.execute("DELETE FROM tabular_analysis WHERE tabular_file_id IN (SELECT id FROM tabular_files WHERE collection_name = ?)", (collection_name,))
+        # Delete tabular files
+        result = conn.execute("DELETE FROM tabular_files WHERE collection_name = ?", (collection_name,))
+        conn.commit()
+        return result.rowcount
     finally:
         if own:
             conn.close()

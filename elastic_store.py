@@ -34,6 +34,9 @@ class ElasticStore:
             from langchain_huggingface import HuggingFaceEmbeddings
             self.embeddings = HuggingFaceEmbeddings(model_name=self.embedding_model_name)
 
+        # Get embedding dimensions - must be done after embeddings are initialized
+        self.embedding_dims = self._get_embedding_dims()
+
         # Elasticsearch connection
         self.es_url = os.getenv("ES_URL", "http://localhost:9200")
         self.es_user = os.getenv("ES_USER", "elastic")
@@ -44,6 +47,14 @@ class ElasticStore:
 
         # Create index if not exists
         self._create_index()
+
+    def _get_embedding_dims(self) -> int:
+        """Get the embedding dimensions from the embedding model."""
+        if self.embeddings:
+            # Get embedding for a test text
+            test_embedding = self.embeddings.embed_query("test")
+            return len(test_embedding)
+        return 1024  # Default for BAAI/bge-large-en-v1.5
 
     def _create_client(self):
         """Create Elasticsearch client."""
@@ -58,6 +69,26 @@ class ElasticStore:
     def _create_index(self):
         """Create Elasticsearch index with proper mapping for vector search."""
         if self.client.indices.exists(index=self.index_name):
+            # Check if embedding dimensions match
+            try:
+                index_mapping = self.client.indices.get_mapping(index=self.index_name)
+                # Handle different response formats from Elasticsearch
+                if 'mappings' in index_mapping:
+                    existing_dims = index_mapping['mappings'].get('properties', {}).get('embedding', {}).get('dims', None)
+                else:
+                    # Check nested structure
+                    for key in index_mapping.keys():
+                        if 'mappings' in index_mapping[key]:
+                            existing_dims = index_mapping[key]['mappings'].get('properties', {}).get('embedding', {}).get('dims', None)
+                            break
+                    else:
+                        existing_dims = None
+
+                if existing_dims and existing_dims != self.embedding_dims:
+                    print(f"Warning: Index '{self.index_name}' has {existing_dims}-dim embeddings, but model produces {self.embedding_dims}-dim embeddings.")
+                    print(f"This may cause document indexing errors. Please delete and recreate the collection.")
+            except Exception as e:
+                print(f"Could not check existing index dimensions: {e}")
             return
 
         mapping = {
@@ -67,7 +98,7 @@ class ElasticStore:
                     "source": {"type": "keyword"},
                     "embedding": {
                         "type": "dense_vector",
-                        "dims": 1024,
+                        "dims": self.embedding_dims,
                         "index": True,
                         "similarity": "cosine"
                     },
@@ -89,7 +120,7 @@ class ElasticStore:
             return 0
 
         total_chunks = len(chunks)
-        batch_size = 50
+        batch_size = 10000
 
         texts = [chunk.page_content for chunk in chunks]
         embeddings = self.embeddings.embed_documents(texts)
@@ -100,13 +131,20 @@ class ElasticStore:
 
             actions = []
             for chunk, embedding in zip(batch_chunks, batch_embeddings):
+                # Clean metadata to remove empty date values that Elasticsearch cannot parse
+                clean_metadata = {}
+                for key, value in chunk.metadata.items():
+                    if isinstance(value, str) and value.strip() == "":
+                        continue  # Skip empty strings
+                    clean_metadata[key] = value
+
                 action = {
                     "_index": self.index_name,
                     "_source": {
                         "text": chunk.page_content,
                         "source": chunk.metadata.get("source", ""),
                         "embedding": embedding,
-                        "metadata": chunk.metadata,
+                        "metadata": clean_metadata,
                         "created_at": None
                     }
                 }
@@ -252,13 +290,23 @@ class ElasticStore:
         return True, ""
 
     @staticmethod
-    def create_index(index_name: str) -> tuple:
-        """Create an Elasticsearch index."""
+    def create_index(index_name: str, embedding_dims: int = None) -> tuple:
+        """Create an Elasticsearch index.
+
+        Args:
+            index_name: Name of the index to create
+            embedding_dims: Number of dimensions for the embedding vector.
+                           If None, reads from EMBEDDING_DIMS env var or defaults to 1024.
+        """
         from elasticsearch import Elasticsearch
 
         es_url = os.getenv("ES_URL", "http://localhost:9200")
         es_user = os.getenv("ES_USER", "elastic")
         es_pass = os.getenv("ES_PASS", "openrag")
+
+        # Get embedding dimensions
+        if embedding_dims is None:
+            embedding_dims = int(os.getenv("EMBEDDING_DIMS", 1024))
 
         client = Elasticsearch(
             hosts=[es_url],
@@ -273,7 +321,7 @@ class ElasticStore:
                     "source": {"type": "keyword"},
                     "embedding": {
                         "type": "dense_vector",
-                        "dims": 1024,
+                        "dims": embedding_dims,
                         "index": True,
                         "similarity": "cosine"
                     },

@@ -1,5 +1,7 @@
 import os
 import time
+import json
+import pandas as pd
 import tiktoken
 from typing import Any, Dict, List, Optional
 from dotenv import load_dotenv
@@ -33,6 +35,9 @@ load_dotenv(override=True)
 # Import db for system prompt retrieval
 import db as rag_db
 
+# Import tabular handler
+from tabular_engine import TabularDataHandler
+
 class RAGEngine:
     def __init__(self, collection_name: str, embeddings=None, llm=None):
         self.collection_name = collection_name
@@ -60,6 +65,9 @@ class RAGEngine:
             index_name=index_name,
             embeddings=self.embeddings
         )
+
+        # Initialize tabular data handler for this collection
+        self.tabular_handler = TabularDataHandler(collection_name)
 
 
     def _setup_llm(self):
@@ -118,6 +126,11 @@ IMPORTANT GUIDELINES:
         """Loads, splits, and adds documents to the current collection with progress reporting."""
         ext = file_path.lower().split('.')[-1]
 
+        # Handle tabular data specially
+        if ext in ["csv", "xlsx", "xls"]:
+            return self._add_tabular_document(file_path, progress_callback)
+
+        # Non-tabular documents
         if ext == "pdf":
             loader = PyPDFium2Loader(file_path)
         elif ext == "csv":
@@ -145,7 +158,7 @@ IMPORTANT GUIDELINES:
         total_chunks = len(chunks)
 
         # Adding in batches to report progress
-        batch_size = 50
+        batch_size = 10000
         for i in range(0, total_chunks, batch_size):
             batch = chunks[i:i+batch_size]
             self.vectorstore.add_documents(batch)
@@ -153,6 +166,121 @@ IMPORTANT GUIDELINES:
                 progress_callback((i + len(batch)) / total_chunks)
 
         return total_chunks
+
+    def _add_tabular_document(self, file_path: str, progress_callback=None) -> int:
+        """
+        Handle tabular data files (CSV, XLSX, XLS) specially.
+
+        This method:
+        1. Loads the file into a pandas DataFrame
+        2. Creates a SQLite database for SQL queries
+        3. Generates analysis metadata
+        4. Stores the data for Text-to-SQL queries
+        5. Still creates text chunks for semantic search
+
+        Returns the number of chunks created.
+        """
+        import pandas as pd
+
+        # Load the file
+        df, metadata = self.tabular_handler.load_file(file_path)
+
+        # Create SQLite database for SQL queries
+        sql_conn = self.tabular_handler.create_sqlite_db(df, self.tabular_handler.table_name)
+
+        # Store metadata in database
+        filename = os.path.basename(file_path)
+        self.tabular_handler.store_metadata(filename, metadata)
+
+        # Create text chunks from the DataFrame for semantic search
+        # Convert DataFrame to markdown-style text for better retrieval
+        chunks = self._df_to_chunks(df, filename)
+
+        total_chunks = len(chunks)
+
+        # Add chunks to Elasticsearch
+        batch_size = 10000
+        for i in range(0, total_chunks, batch_size):
+            batch = chunks[i:i+batch_size]
+            self.vectorstore.add_documents(batch)
+            if progress_callback:
+                progress_callback((i + len(batch)) / total_chunks)
+
+        return total_chunks
+
+    def _df_to_chunks(self, df: pd.DataFrame, source_name: str) -> List[Any]:
+        """
+        Convert a DataFrame to text chunks for vector search.
+
+        Creates chunks with:
+        1. A schema chunk describing column types
+        2. Sample data chunks showing actual values
+        3. Combined text for each row with column names
+
+        Args:
+            df: DataFrame to convert
+            source_name: Name of the source file
+
+        Returns:
+            List of Document objects
+        """
+        from langchain_core.documents import Document
+
+        chunks = []
+
+        # Get column information
+        columns_info = ", ".join([f"{col} ({df[col].dtype})" for col in df.columns])
+
+        # Schema chunk
+        schema_text = f"""Table: {source_name}
+Columns: {columns_info}
+Row count: {len(df)}
+
+This table contains structured data from {source_name}. Use SQL queries to analyze numeric columns and filter by categorical columns."""
+        chunks.append(Document(
+            page_content=schema_text,
+            metadata={"source": source_name, "chunk_type": "schema"}
+        ))
+
+        # Sample data chunk (first 10000 rows as formatted table)
+        if len(df) > 0:
+            sample_rows = df.head(10000)
+            try:
+                sample_text = "Sample data (first 10000 rows):\n\n" + sample_rows.to_markdown(index=False)
+            except ImportError:
+                # Fallback if tabulate is not installed
+                sample_text = "Sample data (first 10000 rows):\n\n" + sample_rows.to_string(index=False)
+            chunks.append(Document(
+                page_content=sample_text,
+                metadata={"source": source_name, "chunk_type": "sample"}
+            ))
+
+        # Full data chunk (10000 or all rows, but truncated if too large)
+        if len(df) <= 10000:
+            # Small dataset: include all rows
+            try:
+                full_text = "All data:\n\n" + df.to_markdown(index=False)
+            except ImportError:
+                full_text = "All data:\n\n" + df.to_string(index=False)
+        else:
+            # Large dataset: include summary stats
+            try:
+                numeric_summary = df.describe().to_markdown()
+            except ImportError:
+                numeric_summary = df.describe().to_string()
+            full_text = f"""Data summary (first 10000 rows shown):
+
+{df.head(10000).to_markdown(index=False)}
+
+Numeric column statistics:
+{numeric_summary}
+"""
+        chunks.append(Document(
+            page_content=full_text,
+            metadata={"source": source_name, "chunk_type": "data"}
+        ))
+
+        return chunks
 
     def get_retriever(self):
         """Returns a retriever with reranking."""
@@ -245,6 +373,379 @@ Question: {base_query}"""
 
         return "\n\n".join(parts) if parts else ""
 
+    def _has_tabular_data(self) -> bool:
+        """Check if this collection has any tabular data loaded."""
+        files = self.tabular_handler.get_stored_files()
+        return len(files) > 0
+
+    def _is_tabular_question(self, question: str) -> bool:
+        """Determine if a question is about tabular data based on keywords."""
+        tabular_keywords = [
+            'sum', 'total', 'average', 'mean', 'count', 'maximum', 'minimum',
+            'highest', 'lowest', 'largest', 'smallest', 'max', 'min',
+            'trend', 'trends', 'growth', 'change', 'percentage', 'rate',
+            'compare', 'correlation', 'relationship',
+            'first', 'last', 'top', 'bottom', 'rank',
+            'how many', 'total of', 'sum of',
+            'column', 'row', 'table', 'data', 'excel', 'spreadsheet',
+            'file', 'csv', 'xlsx'
+        ]
+        question_lower = question.lower()
+        # Use word boundary matching for more precise matching
+        import re
+        # Count keyword matches
+        matches = sum(1 for keyword in tabular_keywords if re.search(r'\b' + re.escape(keyword) + r'\b', question_lower))
+        # Consider it a tabular question if we have at least 1 match and question seems to be asking about data
+        return matches >= 1 and ('what' in question_lower or 'how' in question_lower or 'tell' in question_lower)
+
+    def _query_tabular_sql(self, question: str) -> Dict[str, Any]:
+        """
+        Convert a natural language question to SQL and execute it.
+
+        Args:
+            question: Natural language question about the tabular data
+
+        Returns:
+            Dictionary with results, sql_query, and metadata
+        """
+        # Get stored tabular files
+        files = self.tabular_handler.get_stored_files()
+        if not files:
+            return {'error': 'No tabular data found', 'sql_used': False}
+
+        # Get the most recent file
+        file_info = files[0]
+        filename = file_info['filename']
+        table_name = file_info['table_name']
+
+        # Get column info from metadata
+        columns_info = json.loads(file_info.get('columns_json', '{}'))
+        column_names = list(columns_info.keys())
+        column_details = json.dumps(columns_info, indent=2)
+
+        # Build SQL query - try simple rule-based first, then LLM
+        sql_query = None
+        error_msg = None
+        sql_generation_log = ""
+
+        # Try simple rule-based SQL generation first
+        if not sql_query:
+            sql_query = self._generate_simple_sql(question, table_name, column_names)
+            if sql_query:
+                sql_generation_log = f"Generated SQL using pattern matching: `{sql_query}`\n"
+
+        # If simple generation failed, try LLM
+        if not sql_query:
+            if not self.llm:
+                return {'error': 'LLM not available for SQL generation', 'sql_used': False}
+            try:
+                sql_prompt = f"""You are a SQL query generator. Convert the following question to a valid SQLite SQL query.
+
+Table name: {table_name}
+Column names and types:
+{column_details}
+
+Question: {question}
+
+Return ONLY the SQL query, nothing else. Use standard SQL syntax compatible with SQLite.
+"""
+                sql_query = self.llm.invoke(sql_prompt).content.strip()
+
+                # Clean up the SQL query - remove markdown code blocks and other wrappers
+                if sql_query.startswith("```"):
+                    # Try to extract from markdown code block
+                    lines = sql_query.split("```")
+                    for line in lines:
+                        if "SELECT" in line.upper() or "select" in line:
+                            sql_query = line.strip()
+                            break
+
+                sql_query = sql_query.strip('`').strip()
+                sql_query = sql_query.replace("SQL:", "").replace("sql:", "").strip()
+
+                # Ensure it starts with SELECT
+                if sql_query.upper().startswith("SELECT") == False:
+                    # Try to find SELECT in the query
+                    select_idx = sql_query.upper().find("SELECT")
+                    if select_idx >= 0:
+                        sql_query = sql_query[select_idx:]
+                    else:
+                        sql_query = None
+                        error_msg = "LLM did not return a valid SQL query"
+                elif sql_query.upper().startswith("SELECT"):
+                    sql_generation_log = f"Generated SQL using LLM: `{sql_query}`\n"
+            except Exception as e:
+                error_msg = f"LLM SQL generation failed: {e}"
+
+        # If we still don't have a query, return error
+        if not sql_query:
+            return {'error': error_msg or 'Could not generate SQL query', 'sql_used': False}
+
+        # Execute the query
+        handler = TabularDataHandler(self.collection_name)
+
+        # Load the original DataFrame and create a fresh connection
+        import pandas as pd
+        import os
+        docs_dir = os.path.join("./documents", self.collection_name)
+        tabular_files = [f for f in os.listdir(docs_dir) if f.endswith(('.csv', '.xlsx', '.xls'))]
+
+        if not tabular_files:
+            return {'error': 'No tabular files found', 'sql_used': False}
+
+        # Find the matching file based on filename
+        df = None
+        for fname in tabular_files:
+            if fname == filename:
+                fpath = os.path.join(docs_dir, fname)
+                df, _ = handler.load_file(fpath)
+                break
+
+        if df is None:
+            return {'error': 'Could not find tabular data', 'sql_used': False}
+
+        # Create in-memory SQLite DB
+        sql_conn = handler.create_sqlite_db(df, table_name)
+
+        # Execute the query
+        results = handler.query_sql(sql_conn, sql_query)
+
+        # Format results for display
+        results_text = ""
+        if results and isinstance(results, list) and len(results) > 0:
+            try:
+                results_df = pd.DataFrame(results)
+                # Show all results (up to 200 rows for readability)
+                max_rows = 200
+                if len(results) <= max_rows:
+                    results_text = results_df.to_markdown(index=False)
+                else:
+                    results_text = results_df.head(max_rows).to_markdown(index=False)
+                    results_text += f"\n\n... and {len(results) - max_rows} more rows"
+            except Exception:
+                results_text = str(results)[:1000]
+
+        return {
+            'sql_used': True,
+            'sql_query': sql_query,
+            'sql_generation_log': sql_generation_log,
+            'results': results,
+            'results_text': results_text,
+            'results_count': len(results) if isinstance(results, list) else 0
+        }
+
+    def _analyze_tabular_data(self, question: str) -> Dict[str, Any]:
+        """
+        Perform pandas-based analysis on tabular data.
+
+        Args:
+            question: The question being asked
+
+        Returns:
+            Dictionary with analysis results
+        """
+        if not self._has_tabular_data():
+            return {'error': 'No tabular data found', 'analysis_used': False}
+
+        # Load the tabular data
+        docs_dir = os.path.join("./documents", self.collection_name)
+        tabular_files = [f for f in os.listdir(docs_dir) if f.endswith(('.csv', '.xlsx', '.xls'))]
+
+        if not tabular_files:
+            return {'error': 'No tabular files found', 'analysis_used': False}
+
+        # Load the most recent file
+        handler = TabularDataHandler(self.collection_name)
+        fpath = os.path.join(docs_dir, tabular_files[0])
+
+        try:
+            df, metadata = handler.load_file(fpath)
+        except Exception as e:
+            return {'error': f'Failed to load data: {e}', 'analysis_used': False}
+
+        # Determine analysis type based on question
+        analysis_type = self._determine_analysis_type(question)
+
+        try:
+            results = handler.analyze_with_pandas(df, analysis_type)
+            results['analysis_used'] = True
+            results['analysis_type'] = analysis_type
+            # Add the question that prompted this analysis
+            results['analysis_question'] = question
+        except Exception as e:
+            results = {'error': str(e), 'analysis_used': False, 'analysis_type': analysis_type, 'analysis_question': question}
+
+        return results
+
+    def _generate_simple_sql(self, question: str, table_name: str, column_names: List[str]) -> Optional[str]:
+        """
+        Generate a simple SQL query based on common patterns in the question.
+        Returns None if no pattern matches.
+
+        Args:
+            question: Natural language question
+            table_name: Name of the table
+            column_names: List of column names
+
+        Returns:
+            SQL query string or None
+        """
+        import re
+        question_lower = question.lower()
+        column_names_lower = {c.lower(): c for c in column_names}
+
+        # Pattern: "What is the total [column]?"
+        total_match = re.search(r'total\s+([a-zA-Z_][a-zA-Z0-9_]*)', question_lower)
+        if total_match:
+            col = total_match.group(1)
+            col_normalized = col.lower()
+            if col_normalized in column_names_lower:
+                return f"SELECT SUM({column_names_lower[col_normalized]}) as total FROM {table_name}"
+
+        # Pattern: "What is the average [column]?"
+        avg_match = re.search(r'average\s+([a-zA-Z_][a-zA-Z0-9_]*)', question_lower)
+        if avg_match:
+            col = avg_match.group(1)
+            col_normalized = col.lower()
+            if col_normalized in column_names_lower:
+                return f"SELECT AVG({column_names_lower[col_normalized]}) as average FROM {table_name}"
+
+        # Pattern: "What is the sum of [column]?"
+        sum_match = re.search(r'sum\s+of\s+([a-zA-Z_][a-zA-Z0-9_]*)', question_lower)
+        if sum_match:
+            col = sum_match.group(1)
+            col_normalized = col.lower()
+            if col_normalized in column_names_lower:
+                return f"SELECT SUM({column_names_lower[col_normalized]}) as total FROM {table_name}"
+
+        # Pattern: "What is the maximum [column]?"
+        max_match = re.search(r'maximum|highest|largest\s+([a-zA-Z_][a-zA-Z0-9_]*)', question_lower)
+        if max_match:
+            col = max_match.group(1)
+            col_normalized = col.lower()
+            if col_normalized in column_names_lower:
+                return f"SELECT MAX({column_names_lower[col_normalized]}) as max_value FROM {table_name}"
+
+        # Pattern: "What is the minimum [column]?"
+        min_match = re.search(r'minimum|lowest|smallest\s+([a-zA-Z_][a-zA-Z0-9_]*)', question_lower)
+        if min_match:
+            col = min_match.group(1)
+            col_normalized = col.lower()
+            if col_normalized in column_names_lower:
+                return f"SELECT MIN({column_names_lower[col_normalized]}) as min_value FROM {table_name}"
+
+        # Pattern: "Count the number of [rows/records]"
+        count_match = re.search(r'count\s+(?:the\s+)?(number\s+of\s+)?(rows?|records?)', question_lower)
+        if count_match:
+            return f"SELECT COUNT(*) as count FROM {table_name}"
+
+        # Pattern: "Show me [columns] from [table]"
+        select_match = re.search(r'show\s+me\s+([a-zA-Z_,\s]+)\s+from\s+', question_lower)
+        if select_match:
+            cols = select_match.group(1).strip()
+            # Validate columns exist
+            valid_cols = [column_names_lower.get(c.strip().lower(), c.strip()) for c in cols.split(',') if c.strip().lower() in column_names_lower]
+            if valid_cols:
+                return f"SELECT {', '.join(valid_cols)} FROM {table_name}"
+
+        # Pattern: "Give me all data"
+        if 'all' in question_lower and ('data' in question_lower or 'rows' in question_lower or 'records' in question_lower):
+            return f"SELECT * FROM {table_name}"
+
+        # Pattern: "What is the first [column]?" or "Show first rows"
+        first_match = re.search(r'first\s+(\d+)?\s*(rows?|records?)?', question_lower)
+        if first_match:
+            limit = first_match.group(1)
+            if limit:
+                return f"SELECT * FROM {table_name} LIMIT {limit}"
+            else:
+                return f"SELECT * FROM {table_name} LIMIT 10"
+
+        # Pattern: "What is the last [column]?" or "Show last rows"
+        last_match = re.search(r'last\s+(\d+)?\s*(rows?|records?)?', question_lower)
+        if last_match:
+            limit = last_match.group(1)
+            if limit:
+                return f"SELECT * FROM {table_name} ORDER BY (SELECT 1) LIMIT {limit}"
+            else:
+                return f"SELECT * FROM {table_name} ORDER BY (SELECT 1) LIMIT 10"
+
+        return None
+
+    def _determine_analysis_type(self, question: str) -> str:
+        """Determine the appropriate pandas analysis type based on the question."""
+        question_lower = question.lower()
+
+        if 'trend' in question_lower or 'growth' in question_lower or 'change' in question_lower:
+            return 'trend'
+        elif 'correlation' in question_lower or 'relationship' in question_lower:
+            return 'correlation'
+        elif 'summary' in question_lower or 'overview' in question_lower:
+            return 'summary'
+        elif 'group' in question_lower or 'by' in question_lower:
+            return 'groupby'
+        else:
+            # Default to stats for general questions
+            return 'stats'
+
+    def _build_tabular_context(self, sql_results: Dict, pandas_results: Dict,
+                               retrieved_docs: List[Any]) -> str:
+        """
+        Build context string combining SQL results, pandas analysis, and retrieved docs.
+
+        Args:
+            sql_results: Results from _query_tabular_sql
+            pandas_results: Results from _analyze_tabular_data
+            retrieved_docs: Documents from Elasticsearch retrieval
+
+        Returns:
+            Combined context string
+        """
+        parts = []
+
+        # Add SQL results if available
+        if sql_results.get('sql_used') and sql_results.get('results'):
+            if sql_results.get('sql_generation_log'):
+                parts.append(f"SQL Generation Log:\n{sql_results['sql_generation_log']}")
+            parts.append("SQL Query Results:")
+            results_text = sql_results.get('results_text', '')
+            if results_text:
+                parts.append(results_text)
+            else:
+                results = sql_results.get('results', [])
+                if results:
+                    try:
+                        import pandas as pd
+                        df = pd.DataFrame(results)
+                        parts.append(df.to_markdown(index=False))
+                    except:
+                        # Show up to 200 rows in context
+                        try:
+                            results_df = pd.DataFrame(results)
+                            if len(results) <= 200:
+                                parts.append(results_df.to_markdown(index=False))
+                            else:
+                                parts.append(results_df.head(200).to_markdown(index=False))
+                                parts.append(f"\n... and {len(results) - 200} more rows")
+                        except Exception:
+                            parts.append(str(results)[:2000])
+            parts.append("")
+
+        # Add pandas analysis if available
+        if pandas_results.get('analysis_used') and not pandas_results.get('error'):
+            analysis_type = pandas_results.get('analysis_type', 'unknown')
+            parts.append(f"Pandas {analysis_type.upper()} Analysis:")
+            parts.append(str(pandas_results)[:1000])
+            parts.append("")
+
+        # Add retrieved documents
+        if retrieved_docs:
+            parts.append("Retrieved Documents:")
+            for doc in retrieved_docs:
+                parts.append(f"---\n{doc.page_content}")
+
+        return "\n\n".join(parts)
+
     def query(
         self,
         question: str,
@@ -313,13 +814,27 @@ ANSWER: [Your final answer]
             template=template, input_variables=["context", "question"]
         )
 
+        # Check if we have tabular data and the question is about tabular data
+        sql_results = {}
+        pandas_results = {}
+        if self._has_tabular_data() and self._is_tabular_question(question):
+            sql_results = self._query_tabular_sql(question)
+            pandas_results = self._analyze_tabular_data(question)
+
         # Always build generation context manually so short-term / long-term memory can be injected.
         retrieved_text = "\n\n".join([doc.page_content for doc in source_documents])
         memory_prefix = self._build_memory_prefix(chat_history, long_term_memory)
-        if memory_prefix:
-            context_text = memory_prefix + "\n\n---\n\nRetrieved documents:\n" + retrieved_text
+
+        # Check if tabular results should be included
+        if self._has_tabular_data() and self._is_tabular_question(question):
+            # Use tabular context with SQL and pandas results
+            context_text = self._build_tabular_context(sql_results, pandas_results, source_documents)
         else:
-            context_text = retrieved_text
+            # Use standard context with memory prefix
+            if memory_prefix:
+                context_text = memory_prefix + "\n\n---\n\nRetrieved documents:\n" + retrieved_text
+            else:
+                context_text = retrieved_text
 
         # Inject system_prompt into the prompt text
         prompt_text = PROMPT.format(system_prompt=system_prompt, context=context_text, question=question)
@@ -422,12 +937,24 @@ ANSWER: [Your final answer]
 """
         PROMPT = PromptTemplate(template=template, input_variables=["context", "question"])
 
+        # Check if we have tabular data and the question is about tabular data
+        sql_results = {}
+        pandas_results = {}
+        if self._has_tabular_data() and self._is_tabular_question(question):
+            sql_results = self._query_tabular_sql(question)
+            pandas_results = self._analyze_tabular_data(question)
+
         retrieved_text = "\n\n".join([doc.page_content for doc in source_documents])
         memory_prefix = self._build_memory_prefix(chat_history, long_term_memory)
-        if memory_prefix:
-            context_text = memory_prefix + "\n\n---\n\nRetrieved documents:\n" + retrieved_text
+
+        # Check if tabular results should be included
+        if self._has_tabular_data() and self._is_tabular_question(question):
+            context_text = self._build_tabular_context(sql_results, pandas_results, source_documents)
         else:
-            context_text = retrieved_text
+            if memory_prefix:
+                context_text = memory_prefix + "\n\n---\n\nRetrieved documents:\n" + retrieved_text
+            else:
+                context_text = retrieved_text
 
         prompt_text = PROMPT.format(system_prompt=system_prompt, context=context_text, question=question)
 
@@ -522,9 +1049,11 @@ ANSWER: [Your final answer]
 
     @staticmethod
     def delete_collection(collection_name: str):
-        """Permanently deletes a collection and its contents in Elasticsearch."""
+        """Permanently deletes a collection and its contents (Elasticsearch index, documents, tabular data, database records)."""
         from elastic_store import ElasticStore
         import os
+        import shutil
+        import db
 
         collection_name = collection_name.lower()
         index_name = f"rag_{collection_name}"
@@ -532,6 +1061,15 @@ ANSWER: [Your final answer]
         try:
             # Delete from Elasticsearch
             success = ElasticStore.delete_index_by_name(index_name)
+
+            # Delete tabular data from database
+            db.delete_tabular_files_by_collection(collection_name)
+
+            # Delete documents directory
+            docs_dir = os.path.join("./documents", collection_name)
+            if os.path.exists(docs_dir):
+                shutil.rmtree(docs_dir)
+
             return success
         except Exception as e:
             print(f"Error deleting collection {collection_name}: {e}")
@@ -607,8 +1145,14 @@ ANSWER: [Your final answer]
         return True, ""
 
     @staticmethod
-    def create_collection(collection_name: str):
-        """Explicitly creates a collection in Elasticsearch."""
+    def create_collection(collection_name: str, embedding_dims: int = None):
+        """Explicitly creates a collection in Elasticsearch.
+
+        Args:
+            collection_name: Name of the collection
+            embedding_dims: Number of dimensions for the embedding vector.
+                           If None, reads from EMBEDDING_DIMS env var or defaults to 1024.
+        """
         from elastic_store import ElasticStore
 
         collection_name = collection_name.lower()  # Ensure lowercase
@@ -620,7 +1164,7 @@ ANSWER: [Your final answer]
         index_name = f"rag_{collection_name}"
 
         try:
-            success, msg = ElasticStore.create_index(index_name)
+            success, msg = ElasticStore.create_index(index_name, embedding_dims)
             return success, msg
         except Exception as e:
             if "resource_already_exists_exception" in str(e):

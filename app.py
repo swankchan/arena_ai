@@ -3,11 +3,14 @@ from dotenv import load_dotenv
 load_dotenv(override=True)
 
 import os
+import json
+import pandas as pd
 from datetime import datetime, timezone
 
 import streamlit as st
 import db
 from rag_engine import RAGEngine
+from tabular_engine import TabularDataHandler
 from langchain_huggingface import HuggingFaceEmbeddings
 from langchain_ollama import ChatOllama
 from langchain_openai import ChatOpenAI
@@ -16,6 +19,14 @@ db.init_db()
 
 # Streamlit App Configuration
 st.set_page_config(page_title="RAG KB ", layout="wide")
+
+# Custom CSS for chat message avatar colors (high contrast)
+st.markdown("""
+<style>
+[data-testid="stChatAvatarIcon-user"] { color: #FFD700 !important; }
+[data-testid="stChatAvatarIcon-assistant"] { color: #00FF00 !important; }
+</style>
+""", unsafe_allow_html=True)
 
 # Cached Resource Initialization
 @st.cache_resource
@@ -121,7 +132,15 @@ with st.sidebar:
                      disabled=create_disabled):
             if new_name:
                 new_name_clean = new_name.lower().strip()
-                success, message = RAGEngine.create_collection(new_name_clean)
+                # Get embedding dimensions for the index mapping
+                embedding_dims = None
+                try:
+                    emb = get_embeddings(os.getenv("EMBEDDING_MODEL", "all-MiniLM-L6-v2"))
+                    embedding_dims = len(emb.embed_query("test"))
+                except Exception:
+                    # Fallback to default
+                    embedding_dims = int(os.getenv("EMBEDDING_DIMS", 1024))
+                success, message = RAGEngine.create_collection(new_name_clean, embedding_dims)
                 if success:
                     st.session_state.collection = new_name_clean
                     st.session_state.conversation_collection = new_name_clean
@@ -133,15 +152,50 @@ with st.sidebar:
 
     # Delete button - full width below the Rename/Create buttons
     if selected_collection:
-        if st.button("Delete", type="primary", key="delete_btn", use_container_width=True):
-            if RAGEngine.delete_collection(selected_collection):
-                st.session_state.collection = ""
-                st.session_state.conversation_collection = None
-                st.session_state.conversation_id = None
-                st.success(f"Deleted {selected_collection}")
+        # Confirmation modal for delete
+        if "delete_confirm_stage" not in st.session_state:
+            st.session_state.delete_confirm_stage = 0  # 0: no action, 1: confirm shown
+
+        # Stage 1: Show delete button
+        if st.session_state.delete_confirm_stage == 0:
+            if st.button("Delete", type="primary", key="delete_btn", use_container_width=True):
+                st.session_state.delete_confirm_stage = 1
                 st.rerun()
-            else:
-                st.error("Delete failed.")
+
+        # Stage 2: Show confirmation dialog
+        elif st.session_state.delete_confirm_stage == 1:
+            # Warning box
+            st.warning(f"Delete collection '{selected_collection}'?", icon="⚠️")
+            st.caption("Type the collection name to confirm:")
+
+            # Input for confirmation
+            confirm_name = st.text_input(
+                "Confirm collection name",
+                key="confirm_delete_input",
+                label_visibility="collapsed",
+                placeholder="Type collection name..."
+            )
+
+            col1, col2 = st.columns(2)
+            with col1:
+                if st.button("Confirm", type="primary", key="confirm_delete_btn", use_container_width=True):
+                    if confirm_name.strip() == selected_collection:
+                        if RAGEngine.delete_collection(selected_collection):
+                            st.session_state.collection = ""
+                            st.session_state.conversation_collection = None
+                            st.session_state.conversation_id = None
+                            st.session_state.delete_confirm_stage = 0
+                            st.toast(f"✅ Deleted collection: {selected_collection}", icon="🎉")
+                            st.rerun()
+                        else:
+                            st.error("Delete failed.")
+                            st.session_state.delete_confirm_stage = 0
+                    else:
+                        st.error("Collection name does not match.")
+            with col2:
+                if st.button("Cancel", key="cancel_delete_btn", use_container_width=True):
+                    st.session_state.delete_confirm_stage = 0
+                    st.rerun()
 
     # Query Optimization Settings
     st.divider()
@@ -158,6 +212,7 @@ with st.sidebar:
     chunk_strat = os.getenv('CHUNKING_STRATEGY', 'semantic')
     st.write(f"**Chunking:** {chunk_strat}")
     st.write(f"**Embedding:** {os.getenv('EMBEDDING_MODEL', 'all-MiniLM-L6-v2')}")
+    st.write(f"**Searching: Elasticsearch**")  # Hardcoded for now since we're using Elasticsearch for search
     st.write(f"**Rerank:** {os.getenv('RERANK_MODEL', 'ms-marco-MiniLM-L-6-v2')}")
     st.write(f"**LLM:** {os.getenv('OLLAMA_MODEL', 'gemma4:26b')}")
     
@@ -206,8 +261,164 @@ st.title("Retrieval-Augmented Generation Knowledge Base")
 if selected_collection:
     st.write(f"Currently using collection: **{selected_collection}**")
 
-    # Tabs: Ask | Q&A History | Manage | System Prompt
-    tab_ask, tab_history, tab_manage, tab_system = st.tabs(["Ask a Question", "Q&A History", "Manage Documents", "System Prompt"])
+    # Tabs: Ask | Q&A History | Manage | Tabular Analysis | System Prompt
+    tab_ask, tab_history, tab_manage, tab_tabular, tab_system = st.tabs(["Ask a Question", "Q&A History", "Manage Documents", "Tabular Analysis", "System Prompt"])
+
+    # ============== TABULAR DATA ANALYSIS TAB ==============
+    with tab_tabular:
+        st.subheader("Tabular Data Analysis")
+        st.caption("Upload and analyze Excel/CSV files with SQL and Pandas.")
+
+        # Re-initialize tabular handler to get latest files
+        try:
+            if rag_engine:
+                rag_engine.tabular_handler = TabularDataHandler(selected_collection)
+        except:
+            pass
+
+        # Show stored tabular files
+        try:
+            tabular_files = []
+            if rag_engine and hasattr(rag_engine, 'tabular_handler'):
+                tabular_files = rag_engine.tabular_handler.get_stored_files()
+
+            if tabular_files:
+                # Display uploaded files
+                st.write("### Uploaded Tabular Files")
+                for tf in tabular_files:
+                    st.write(f"#### {tf['filename']}")
+                    st.caption(f"Row count: {tf['row_count']} | Table name: `{tf['table_name']}`")
+                    st.caption(f"Uploaded: {datetime.fromtimestamp(tf['created_at']).strftime('%Y-%m-%d %H:%M:%S')}")
+                    st.divider()
+
+                # Natural Language to SQL Interface
+                st.write("### Natural Language Query")
+                st.caption("Ask questions about your data in plain English. The AI will generate and execute SQL for you.")
+
+                if tabular_files:
+                    tf = tabular_files[0]
+                    columns_data = json.loads(tf.get('columns_json', '{}'))
+                    column_names = list(columns_data.keys())
+                    table_name = tf['table_name']
+
+                    st.code(f"Table: {table_name}\nColumns: {', '.join(column_names)}", language="text")
+
+                    # Natural Language Input
+                    nl_query = st.text_area(
+                        "Ask a question about your data",
+                        placeholder="e.g., What is the total sales? Show me the top 10 records. What is the average value?",
+                        height=80,
+                        key="nl_query_input"
+                    )
+
+                    if st.button("Generate & Run SQL", key="generate_sql_btn"):
+                        if nl_query:
+                            try:
+                                # Use the RAGEngine to generate and execute SQL
+                                if rag_engine:
+                                    rag_engine.tabular_handler = TabularDataHandler(selected_collection)
+                                    result = rag_engine._query_tabular_sql(nl_query)
+
+                                    if result.get('sql_used'):
+                                        st.success(f"SQL Query generated: `{result.get('sql_query', '')}`")
+                                        if result.get('sql_generation_log'):
+                                            st.caption(result.get('sql_generation_log'))
+
+                                        results = result.get('results', [])
+                                        if results and isinstance(results, list) and len(results) > 0:
+                                            st.success(f"Query returned {len(results)} rows")
+                                            results_df = pd.DataFrame(results)
+                                            max_display_rows = 1000
+                                            if len(results) > max_display_rows:
+                                                st.info(f"Showing {max_display_rows} of {len(results)} rows.")
+                                                results_df = results_df.head(max_display_rows)
+                                            st.dataframe(results_df, use_container_width=True, height=600)
+
+                                            csv = results_df.to_csv(index=False)
+                                            st.download_button(
+                                                label="Download Results (CSV)",
+                                                data=csv,
+                                                file_name="nl_query_results.csv",
+                                                mime="text/csv"
+                                            )
+                                        else:
+                                            st.info("Query executed successfully (no rows returned)")
+                                    else:
+                                        st.error(f"Could not generate SQL: {result.get('error', 'Unknown error')}")
+                                else:
+                                    st.error("RAG Engine not available. Please ensure the system is initialized.")
+                            except Exception as e:
+                                st.error(f"Error: {e}")
+                        else:
+                            st.warning("Please enter a question in natural language.")
+
+                    st.divider()
+
+                # SQL Query Interface
+                st.write("### Query Data with SQL")
+                st.caption("Write and execute SQL queries directly on your uploaded data.")
+
+                # Get columns for reference
+                if tabular_files:
+                    tf = tabular_files[0]
+                    columns_data = json.loads(tf.get('columns_json', '{}'))
+                    column_names = list(columns_data.keys())
+                    table_name = tf['table_name']
+
+                    st.code(f"Table: {table_name}\nColumns: {', '.join(column_names)}", language="text")
+
+                    # SQL Query Input
+                    # Use a larger default to show more data (max 1000 for display)
+                    default_query = f"SELECT * FROM {table_name} LIMIT 1000"
+                    sql_query = st.text_area("SQL Query", value=default_query, height=100, key="sql_query_input")
+
+                    col1, col2 = st.columns(2)
+                    with col1:
+                        if st.button("Run Query", key="run_sql_btn"):
+                            try:
+                                # Execute the query
+                                handler = TabularDataHandler(selected_collection)
+                                docs_dir = os.path.join("./documents", selected_collection)
+                                tabular_files_local = [f for f in os.listdir(docs_dir) if f.endswith(('.csv', '.xlsx', '.xls'))]
+
+                                if tabular_files_local:
+                                    fname = tabular_files_local[0]
+                                    fpath = os.path.join(docs_dir, fname)
+                                    df, _ = handler.load_file(fpath)
+                                    sql_conn = handler.create_sqlite_db(df, table_name)
+                                    results = handler.query_sql(sql_conn, sql_query)
+
+                                    if results and isinstance(results, list) and len(results) > 0:
+                                        # Display results
+                                        st.success(f"Query returned {len(results)} rows")
+                                        results_df = pd.DataFrame(results)
+                                        # Show up to 1000 rows (Streamlit default is ~200)
+                                        max_display_rows = 1000
+                                        if len(results) > max_display_rows:
+                                            st.info(f"Showing {max_display_rows} of {len(results)} rows. Use download button for full data.")
+                                            results_df = results_df.head(max_display_rows)
+                                        st.dataframe(results_df, use_container_width=True, height=600)
+
+                                        # Download button
+                                        csv = results_df.to_csv(index=False)
+                                        st.download_button(
+                                            label="Download Results (CSV)",
+                                            data=csv,
+                                            file_name="query_results.csv",
+                                            mime="text/csv"
+                                        )
+                                    else:
+                                        st.info("Query executed successfully (no rows returned)")
+                            except Exception as e:
+                                st.error(f"Error executing query: {e}")
+
+                    with col2:
+                        pass
+
+            else:
+                st.info("No tabular data uploaded yet. Upload a CSV, XLSX, or XLS file in the 'Manage Documents' tab.")
+        except Exception as e:
+            st.error(f"Error loading tabular data: {e}")
 
     # ============== SYSTEM PROMPT TAB ==============
     with tab_system:
@@ -508,7 +719,13 @@ if selected_collection:
                         chunks_added = rag_engine.add_documents(file_path, progress_callback=update_progress)
                         total_chunks += chunks_added
                     except Exception as e:
-                        st.error(f"Error processing {uploaded_file.name}: {e}")
+                        import traceback
+                        err_type = type(e).__name__
+                        err_msg = str(e)
+                        err_trace = traceback.format_exc()
+                        st.error(f"Error processing {uploaded_file.name}: {err_type}: {err_msg}")
+                        with st.expander("View full traceback"):
+                            st.code(err_trace)
 
                 progress_bar.empty()
                 st.success(f"Added {len(uploaded_files)} documents and created {total_chunks} chunks.")
