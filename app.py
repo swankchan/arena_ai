@@ -59,7 +59,7 @@ with st.sidebar:
             st.session_state.collection = collections[0]
 
         selected_collection = st.selectbox(
-            "Open",
+            "",
             options=collections,
             index=collections.index(st.session_state.collection),
             key="collection_select"
@@ -75,8 +75,8 @@ with st.sidebar:
 
     # Manage current collection section
     # Show caption only when a collection is selected
-    if selected_collection:
-        st.caption(f"Active: {selected_collection}")
+    # if selected_collection:
+    #     st.caption(f"Active: {selected_collection}")
 
     # Shared input for both Rename and Create
     # When selected_collection exists: input is for rename
@@ -86,7 +86,7 @@ with st.sidebar:
         st.session_state.name_entered = True
 
     new_name = st.text_input("New name...", key="collection_action_input", label_visibility="collapsed",
-                             placeholder="New name..." if selected_collection else "Collection name...",
+                             placeholder="Rename / New" if selected_collection else "Collection name...",
                              on_change=on_name_change)
 
     # Determine if name was entered (user interaction)
@@ -154,13 +154,13 @@ with st.sidebar:
 
     # LLM Settings (Read Only from .env)
     st.divider()
-    st.subheader("LLM Settings")
-    st.write(f"**Provider:** {os.getenv('LLM_PROVIDER', 'ollama')}")
-    st.write(f"**Model:** {os.getenv('OLLAMA_MODEL', 'qwen35b-64k:latest')}")
-    chunk_strat = os.getenv('CHUNKING_STRATEGY', 'recursive')
-    st.write(f"**Chunking Strategy:** {chunk_strat}")
-    st.write(f"**Reranking:** {os.getenv('RERANKING', 'false')}")
-
+    st.subheader("Technical Details")
+    chunk_strat = os.getenv('CHUNKING_STRATEGY', 'semantic')
+    st.write(f"**Chunking:** {chunk_strat}")
+    st.write(f"**Embedding:** {os.getenv('EMBEDDING_MODEL', 'all-MiniLM-L6-v2')}")
+    st.write(f"**Rerank:** {os.getenv('RERANK_MODEL', 'ms-marco-MiniLM-L-6-v2')}")
+    st.write(f"**LLM:** {os.getenv('OLLAMA_MODEL', 'gemma4:26b')}")
+    
 # Initialize Components
 emb = get_embeddings(os.getenv("EMBEDDING_MODEL", "all-MiniLM-L6-v2"))
 llm = get_llm(
