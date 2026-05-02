@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-This is a **Retrieval-Augmented Generation (RAG)** system with a Streamlit web interface, supporting local LLMs via Ollama. It implements hybrid search (vector + BM25), reranking, conversation memory, and SQLite persistence for training data export.
+This is a **Retrieval-Augmented Generation (RAG)** system with a Streamlit web interface, supporting local LLMs via Ollama. It implements vector search with Elasticsearch, reranking, conversation memory, and SQLite persistence for training data export.
 
 ## Running the Application
 
@@ -15,6 +15,7 @@ streamlit run app.py
 # Requires Ollama running locally with the configured model
 ollama pull qwen3.5:9b
 ```
+
 ## Start Elasticsearch
 ```bash
 docker compose -f docker-compose.elasticsearch.yml up -d
@@ -36,9 +37,9 @@ curl http://localhost:9200
 
 | File | Purpose |
 |------|---------|
-| `app.py` | Streamlit web UI, session management, chat interface |
+| `app.py` | Streamlit web UI, session management, chat interface, collection/QA management, system prompt management |
 | `rag_engine.py` | Core RAG logic: document processing, retrieval, query optimization, RAGAS evaluation |
-| `db.py` | SQLite persistence for conversations, Q&A runs, ratings, and training export |
+| `db.py` | SQLite persistence for conversations, Q&A runs, messages, ratings, system prompts, and training export |
 | `export_training_jsonl.py` | CLI tool to export Q&A data for fine-tuning |
 
 ### Data Flow
@@ -48,7 +49,7 @@ curl http://localhost:9200
 3. **Query Optimization**: LLM transforms vague queries and expands into multiple query variations when enabled.
 4. **Memory Injection**: Short-term (recent chat) and long-term (similar past Q&A from SQLite) context is prepended to retrieved documents.
 5. **Generation**: LLM produces step-by-step reasoning followed by final answer, using a structured prompt template.
-6. **Persistence**: Q&A runs, metrics, and user ratings (like/dislike) are stored in `rag_app.db`.
+6. **Persistence**: Q&A runs, metrics, user ratings (like/dislike), and chat messages are stored in `rag_app.db`.
 
 ### Model Architecture
 
@@ -60,11 +61,14 @@ curl http://localhost:9200
 
 ### Key Technical Details
 
+- **System Prompts**: Two-tier system: `collection_guard` (always active, cannot be deleted) and user-defined prompts (enabled/disabled via UI, appended to guard). Stored in SQLite `system_prompts` table.
 - **Chunking Strategy**: Configurable via `CHUNKING_STRATEGY` env var: `recursive` (default) or `semantic`.
 - **Vector Storage**: Elasticsearch stores dense vectors (1024-dim for `bge-large-en-v1.5`) with cosine similarity search.
 - **Memory Limits**: Short-term memory capped by `CHAT_HISTORY_MAX_MESSAGES` (default 12); long-term via `LONG_TERM_MEMORY_TOP_K` (default 3 past Q&A).
 - **Collection Management**: Collections are Elasticsearch indices with `rag_` prefix; names are auto-lowercased and validated.
 - **RAGAS Evaluation**: Optional evaluation using faithfulness, answer relevancy, and context precision metrics. Falls back to Ollama's OpenAI-compatible endpoint if LangChain wrapper fails.
+- **QA Management**: Users can browse and delete past Q&A runs from the database via the UI.
+- **System Prompt Management**: `collection_guard` is always active and protected. User-defined prompts can be enabled/disabled individually via the System Prompt tab; all enabled prompts are appended to `collection_guard`.
 
 ## Configuration
 
@@ -127,6 +131,7 @@ Formats:
 - **No linting/formatting config**: No pre-configured ruff, black, or mypy settings.
 - **SQLite threading**: Database connections use `check_same_thread=False` for Streamlit compatibility.
 - **Document deletion**: Uses `source` metadata field to identify and delete all chunks for a given document.
+- **Conversation persistence**: Chat messages are stored in SQLite and loaded when switching between collections.
 
 ## Common Commands
 
@@ -170,3 +175,31 @@ python export_training_jsonl.py -o alpaca.jsonl --format sft_alpaca --collection
 | `ES_URL` | Elasticsearch URL | `http://localhost:9200` |
 | `ES_USER` | Elasticsearch username | `elastic` |
 | `ES_PASS` | Elasticsearch password | `openrag` |
+
+## UI Features
+
+### Collection Management (Sidebar)
+- **Create New**: Expandable section to create new collections
+- **Open**: Select from existing collections
+- **Rename**: Inline rename with validation
+- **Delete**: Primary button to delete a collection (removes Elasticsearch index)
+
+### Conversation Management
+- New conversation thread automatically created when switching collections
+- Chat messages persisted to SQLite and restored on collection change
+
+### Q&A History (Sidebar)
+- Browse past 25 Q&A runs per collection
+- View full stored answer in expander
+- Delete individual Q&A runs (cascades to delete associated messages)
+
+### System Prompt Manager (System Prompt Tab)
+- **collection_guard**: Always active (lock + checkmark badges), cannot be deleted or disabled
+- **User prompts**: Each has an "Enabled" checkbox to toggle; all enabled prompts are appended to `collection_guard`
+- **Delete**: Available for user prompts (not `collection_guard`)
+
+### Export for Training
+- Filter by scope: Current collection or All collections
+- Filter by rating: All, Likes only, Dislikes only, Rated only
+- Output formats: record, sft_messages, sft_alpaca
+- Download as JSONL for SFT/DPO pipelines

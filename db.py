@@ -76,15 +76,27 @@ def init_db(conn: Optional[sqlite3.Connection] = None) -> None:
                 UNIQUE (qa_run_id)
             );
 
+            CREATE TABLE IF NOT EXISTS system_prompts (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                name TEXT NOT NULL UNIQUE,
+                content TEXT NOT NULL,
+                is_default INTEGER DEFAULT 0,
+                created_at REAL NOT NULL
+            );
+
             CREATE INDEX IF NOT EXISTS idx_qa_runs_collection ON qa_runs(collection_name);
             CREATE INDEX IF NOT EXISTS idx_qa_runs_created ON qa_runs(created_at DESC);
             CREATE INDEX IF NOT EXISTS idx_messages_conv ON messages(conversation_id);
+            CREATE INDEX IF NOT EXISTS idx_system_prompts_default ON system_prompts(is_default);
             """
         )
         conn.commit()
     finally:
         if own:
             conn.close()
+
+    # Initialize default system prompts if none exist
+    init_system_prompts()
 
 
 def create_conversation(collection_name: str, conn: Optional[sqlite3.Connection] = None) -> str:
@@ -304,6 +316,214 @@ def get_qa_run(qa_run_id: int, conn: Optional[sqlite3.Connection] = None) -> Opt
             (qa_run_id,),
         ).fetchone()
         return dict(row) if row else None
+    finally:
+        if own:
+            conn.close()
+
+
+def delete_qa_run(qa_run_id: int, conn: Optional[sqlite3.Connection] = None) -> None:
+    """Delete a specific QA run and its associated messages."""
+    own = conn is None
+    if own:
+        conn = get_connection()
+    try:
+        conn.execute("DELETE FROM qa_runs WHERE id = ?", (qa_run_id,))
+        conn.commit()
+    finally:
+        if own:
+            conn.close()
+
+
+def get_conversation_messages(conversation_id: str, conn: Optional[sqlite3.Connection] = None) -> List[Dict[str, str]]:
+    """Get all messages for a conversation, ordered by creation time."""
+    own = conn is None
+    if own:
+        conn = get_connection()
+    try:
+        rows = conn.execute(
+            "SELECT role, content FROM messages WHERE conversation_id = ? ORDER BY created_at ASC",
+            (conversation_id,),
+        ).fetchall()
+        return [{"role": row["role"], "content": row["content"]} for row in rows]
+    finally:
+        if own:
+            conn.close()
+
+
+def init_system_prompts(conn: Optional[sqlite3.Connection] = None) -> None:
+    """Initialize system prompts with default values if none exist."""
+    own = conn is None
+    if own:
+        conn = get_connection()
+    try:
+        # Check if any prompts exist
+        count = conn.execute("SELECT COUNT(*) FROM system_prompts").fetchone()[0]
+        if count == 0:
+            # Default prompts for AI safety
+            default_prompts = [
+                (
+                    "collection_guard",
+                    """You are a helpful AI assistant specialized in answering questions based on the provided knowledge base.
+
+IMPORTANT GUIDELINES:
+- ONLY answer questions about the content in the provided context
+- If the question is about a topic outside the context, respond: "I cannot find information about this in the provided knowledge base."
+- Do not use your general knowledge - stick strictly to the context
+- If the context does not contain enough information to answer fully, say what you can based on the context""",
+                    1
+                ),
+                (
+                    "general_assistant",
+                    """You are a helpful AI assistant. The context below may include:
+(1) recent conversation with the user,
+(2) similar past Q&A from stored history,
+(3) retrieved document excerpts from the knowledge base.
+
+Use all relevant parts to answer. If the answer is not supported by the context, say that you don't know.
+For follow-up questions, use the recent conversation when the user refers to "it", "that", etc.
+
+IMPORTANT: Respond in the SAME LANGUAGE as the user's question. If the question is in Chinese, answer in Chinese. If in English, answer in English.
+
+First, provide your step-by-step reasoning based ONLY on the provided context (including memory blocks).
+Then, provide the final concise answer.""",
+                    0
+                ),
+                (
+                    "strict_retrieval",
+                    """You are a strict retrieval assistant. Your task is to extract and summarize information from the provided context ONLY.
+
+RULES:
+- NEVER infer or assume information not explicitly stated in the context
+- If the context does not contain the answer, say "The context does not contain information about this."
+- Do not add personal opinions or explanations
+- Use bullet points for clarity when summarizing multiple facts""",
+                    0
+                ),
+            ]
+            for name, content, is_default in default_prompts:
+                conn.execute(
+                    "INSERT INTO system_prompts (name, content, is_default, created_at) VALUES (?, ?, ?, ?)",
+                    (name, content, is_default, time.time()),
+                )
+            conn.commit()
+    finally:
+        if own:
+            conn.close()
+
+
+def list_system_prompts(conn: Optional[sqlite3.Connection] = None) -> List[Dict[str, Any]]:
+    """List all available system prompts."""
+    own = conn is None
+    if own:
+        conn = get_connection()
+    try:
+        rows = conn.execute(
+            "SELECT id, name, content, is_default, created_at FROM system_prompts ORDER BY name",
+        ).fetchall()
+        return [dict(r) for r in rows]
+    finally:
+        if own:
+            conn.close()
+
+
+def get_default_system_prompt(conn: Optional[sqlite3.Connection] = None) -> Optional[Dict[str, Any]]:
+    """Get the default system prompt."""
+    own = conn is None
+    if own:
+        conn = get_connection()
+    try:
+        row = conn.execute(
+            "SELECT * FROM system_prompts WHERE is_default = 1 LIMIT 1",
+        ).fetchone()
+        return dict(row) if row else None
+    finally:
+        if own:
+            conn.close()
+
+
+def get_system_prompt_by_name(name: str, conn: Optional[sqlite3.Connection] = None) -> Optional[Dict[str, Any]]:
+    """Get a system prompt by its name."""
+    own = conn is None
+    if own:
+        conn = get_connection()
+    try:
+        row = conn.execute(
+            "SELECT * FROM system_prompts WHERE name = ? LIMIT 1",
+            (name,),
+        ).fetchone()
+        return dict(row) if row else None
+    finally:
+        if own:
+            conn.close()
+
+
+def insert_system_prompt(name: str, content: str, is_default: bool = False, conn: Optional[sqlite3.Connection] = None) -> int:
+    """Insert a new system prompt. Returns the ID."""
+    own = conn is None
+    if own:
+        conn = get_connection()
+    try:
+        # If setting as default, unset others
+        if is_default:
+            conn.execute("UPDATE system_prompts SET is_default = 0 WHERE is_default = 1")
+        cur = conn.execute(
+            "INSERT INTO system_prompts (name, content, is_default, created_at) VALUES (?, ?, ?, ?)",
+            (name, content, 1 if is_default else 0, time.time()),
+        )
+        conn.commit()
+        return int(cur.lastrowid)
+    finally:
+        if own:
+            conn.close()
+
+
+def update_system_prompt(prompt_id: int, name: Optional[str] = None, content: Optional[str] = None,
+                         is_default: Optional[bool] = None, conn: Optional[sqlite3.Connection] = None) -> bool:
+    """Update an existing system prompt. Returns True if successful."""
+    own = conn is None
+    if own:
+        conn = get_connection()
+    try:
+        updates = []
+        params = []
+        if name is not None:
+            updates.append("name = ?")
+            params.append(name)
+        if content is not None:
+            updates.append("content = ?")
+            params.append(content)
+        if is_default is not None:
+            # If setting as default, unset others
+            if is_default:
+                conn.execute("UPDATE system_prompts SET is_default = 0 WHERE is_default = 1")
+            updates.append("is_default = ?")
+            params.append(1 if is_default else 0)
+
+        if not updates:
+            return False
+
+        params.append(prompt_id)
+        conn.execute(f"UPDATE system_prompts SET {', '.join(updates)} WHERE id = ?", params)
+        conn.commit()
+        return True
+    finally:
+        if own:
+            conn.close()
+
+
+def delete_system_prompt(prompt_id: int, conn: Optional[sqlite3.Connection] = None) -> bool:
+    """Delete a system prompt. Cannot delete the last remaining prompt."""
+    own = conn is None
+    if own:
+        conn = get_connection()
+    try:
+        count = conn.execute("SELECT COUNT(*) FROM system_prompts").fetchone()[0]
+        if count <= 1:
+            return False  # Cannot delete the last prompt
+
+        conn.execute("DELETE FROM system_prompts WHERE id = ?", (prompt_id,))
+        conn.commit()
+        return True
     finally:
         if own:
             conn.close()

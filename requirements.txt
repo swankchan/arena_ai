@@ -6,10 +6,7 @@ langchain-ollama
 langchain-chroma
 langchain-huggingface
 langchain-experimental
-langchain-classic
 langchain-core
-
-
 
 # Vector Store
 chromadb

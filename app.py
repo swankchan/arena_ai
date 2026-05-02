@@ -50,30 +50,56 @@ with st.sidebar:
     except:
         collections = []
 
+    # Create new collection (compact)
+    with st.expander("Create New", expanded=False):
+        new_collection_input = st.text_input("Name", key="new_collection_input", label_visibility="collapsed", help="Lowercase automatically")
+        if st.button("Create", key="create_collection_btn", use_container_width=True):
+            if new_collection_input:
+                new_name_clean = new_collection_input.lower().strip()
+                success, message = RAGEngine.create_collection(new_name_clean)
+                if success:
+                    st.session_state.collection = new_name_clean
+                    st.session_state.conversation_collection = new_name_clean
+                    st.session_state.conversation_id = db.create_conversation(new_name_clean)
+                    st.success(message)
+                    # Re-list collections to include the new one
+                    try:
+                        collections = RAGEngine.list_collections()
+                    except:
+                        collections = []
+                    # Re-set the selectbox index to the new collection
+                    if new_name_clean in collections:
+                        st.session_state.collection = new_name_clean
+                    st.rerun()
+                else:
+                    st.error(message)
+            else:
+                st.warning("Please enter a name.")
+
+    # Select existing collection
     selected_collection = None
     if collections:
         if st.session_state.collection not in collections:
             st.session_state.collection = collections[0]
 
         selected_collection = st.selectbox(
-            "Select Collection",
+            "Open",
             options=collections,
-            index=collections.index(st.session_state.collection)
+            index=collections.index(st.session_state.collection),
+            key="collection_select"
         )
         st.session_state.collection = selected_collection
-    else:
-        st.info("No collections found. Create one below.")
 
-    # Rename / Delete Current Collection
+    # Manage current collection (inline, no divider)
     if selected_collection:
-        st.divider()
-        st.subheader("Manage Active Collection")
+        st.caption(f"Active: {selected_collection}")
 
-        with st.expander("Rename Collection"):
-            new_name_input = st.text_input("New Name", key="rename_input", help="Name will be converted to lowercase automatically.")
-            if st.button("Rename"):
-                if new_name_input and new_name_input.lower().strip() != selected_collection:
-                    new_name_clean = new_name_input.lower().strip()
+        col1, col2 = st.columns(2)
+        with col1:
+            new_name = st.text_input("Rename", key="rename_input", label_visibility="collapsed", placeholder="New name...")
+            if st.button("Save", key="rename_btn", use_container_width=True):
+                if new_name and new_name.lower().strip() != selected_collection:
+                    new_name_clean = new_name.lower().strip()
                     valid, msg = RAGEngine.validate_collection_name(new_name_clean)
                     if valid:
                         success, rename_msg = RAGEngine.rename_collection(selected_collection, new_name_clean)
@@ -85,32 +111,16 @@ with st.sidebar:
                             st.error(f"Rename failed: {rename_msg}")
                     else:
                         st.error(msg)
-
-        if st.button("Delete Collection", type="primary"):
-            if RAGEngine.delete_collection(selected_collection):
-                st.session_state.collection = "" # Reset
-                st.success(f"Deleted {selected_collection}")
-                st.rerun()
-            else:
-                st.error("Delete failed.")
-
-    # Create New Collection
-    st.divider()
-    st.subheader("New Collection")
-    new_collection_input = st.text_input("New Collection Name", help="Name will be converted to lowercase automatically.")
-    if st.button("Create Collection"):
-        if new_collection_input:
-            # Force lowercase here too for immediate UI consistency
-            new_name_clean = new_collection_input.lower().strip()
-            success, message = RAGEngine.create_collection(new_name_clean)
-            if success:
-                st.session_state.collection = new_name_clean
-                st.success(message)
-                st.rerun()
-            else:
-                st.error(message)
-        else:
-            st.warning("Please enter a name.")
+        with col2:
+            if st.button("Delete", type="primary", key="delete_btn", use_container_width=True):
+                if RAGEngine.delete_collection(selected_collection):
+                    st.session_state.collection = ""
+                    st.session_state.conversation_collection = None
+                    st.session_state.conversation_id = None
+                    st.success(f"Deleted {selected_collection}")
+                    st.rerun()
+                else:
+                    st.error("Delete failed.")
 
     # LLM Settings (Read Only from .env)
     st.divider()
@@ -119,21 +129,6 @@ with st.sidebar:
     # Force read from environment to ensure latest values are shown
     chunk_strat = os.getenv('CHUNKING_STRATEGY', 'recursive')
     st.write(f"**Chunking Strategy:** {chunk_strat}")
-    st.write(f"**Hybrid Search:** {os.getenv('HYBRID_SEARCH', 'false')}")
-    if os.getenv('HYBRID_SEARCH', 'false').lower() == 'true':
-        st.caption("Adjust the balance between vector similarity and keyword matching:")
-        vector_weight = st.slider(
-            "Vector Weight (BM25 weight = 1 - Vector weight)",
-            min_value=0.0,
-            max_value=1.0,
-            value=float(os.getenv('VECTOR_WEIGHT', '0.5')),
-            step=0.05,
-            key="vector_weight_slider"
-        )
-        bm25_weight = 1.0 - vector_weight
-        # Update environment variables for current session
-        os.environ["VECTOR_WEIGHT"] = str(vector_weight)
-        os.environ["BM25_WEIGHT"] = str(bm25_weight)
     st.write(f"**Reranking:** {os.getenv('RERANKING', 'false')}")
 
     # Query Optimization Settings
@@ -150,24 +145,15 @@ with st.sidebar:
     enable_ragas = st.checkbox("Enable RAGAS Evaluation", value=False, help="Evaluation can take significant time for each question.")
 
     # Conversation memory: new thread when collection changes
-    st.divider()
-    st.subheader("Conversation")
-    if selected_collection and st.session_state.conversation_collection != selected_collection:
-        st.session_state.conversation_collection = selected_collection
-        st.session_state.conversation_id = db.create_conversation(selected_collection)
-        st.session_state.messages = []
-        st.session_state.last_qa_run_id = None
-    elif not selected_collection:
-        st.session_state.conversation_collection = None
-        st.session_state.conversation_id = None
-
-    if selected_collection and st.session_state.conversation_id:
-        st.caption(f"Thread: `{st.session_state.conversation_id[:8]}…`")
-        if st.button("New conversation thread", key="new_thread"):
+    if selected_collection:
+        st.divider()
+        st.subheader("Conversation")
+        if st.session_state.conversation_collection != selected_collection:
+            st.session_state.conversation_collection = selected_collection
             st.session_state.conversation_id = db.create_conversation(selected_collection)
-            st.session_state.messages = []
+            # Load previous messages from database for this conversation
+            st.session_state.messages = db.get_conversation_messages(st.session_state.conversation_id)
             st.session_state.last_qa_run_id = None
-            st.rerun()
 
     # Recent Q&A history (same collection)
     if selected_collection:
@@ -187,6 +173,11 @@ with st.sidebar:
                 with st.expander("View stored answer"):
                     st.markdown(f"**Q:** {full['question']}")
                     st.markdown(f"**A:** {full['answer']}")
+                    # Delete button for this QA run
+                    if st.button("🗑️ Delete", key=f"delete_qa_{row['id']}"):
+                        db.delete_qa_run(row["id"])
+                        st.success("Deleted")
+                        st.rerun()
         else:
             st.caption("No saved Q&A yet for this collection.")
 
@@ -283,8 +274,6 @@ if selected_collection:
         f"|chunk_size={os.getenv('CHUNK_SIZE', '800')}"
         f"|chunk_overlap={os.getenv('CHUNK_OVERLAP', '100')}"
         f"|chunking={os.getenv('CHUNKING_STRATEGY', 'recursive').lower()}"
-        f"|hybrid={os.getenv('HYBRID_SEARCH', 'false').lower()}"
-        f"|weights={os.getenv('VECTOR_WEIGHT', '0.5')}:{os.getenv('BM25_WEIGHT', '0.5')}"
         f"|reranking={os.getenv('RERANKING', 'false').lower()}"
         f"|rerank_model={os.getenv('RERANK_MODEL', 'ms-marco-MiniLM-L-6-v2')}"
     )
@@ -301,12 +290,76 @@ if selected_collection:
     st.session_state["engine_key_string"] = engine_key
 
 # Main Interface with Tabs
-st.title("RAG KB with ElasticSearch")
+st.title("Retrieval-Augmented Generation Knowledge Base")
 if selected_collection:
     st.write(f"Currently using collection: **{selected_collection}**")
 
-    # Tabs: Ask | Manage
-    tab_ask, tab_manage = st.tabs(["Ask a Question", "Manage Documents"])
+    # Tabs: Ask | Manage | System Prompt
+    tab_ask, tab_manage, tab_system = st.tabs(["Ask a Question", "Manage Documents", "System Prompt"])
+
+    # ============== SYSTEM PROMPT TAB ==============
+    with tab_system:
+        st.subheader("System Prompt Manager")
+        st.caption("Create and manage system prompts for AI safety and behavior control.")
+
+        # List existing prompts
+        try:
+            prompts = db.list_system_prompts()
+            if prompts:
+                st.write("### Existing Prompts")
+                for p in prompts:
+                    if p['name'] == 'collection_guard':
+                        # collection_guard is always active and protected
+                        st.write(f"**{p['name']}** :lock: :white_check_mark:")
+                        with st.expander("View content", expanded=False):
+                            st.text(p.get("content", ""))
+                        st.caption("_Always active - cannot be deleted or disabled_")
+                    else:
+                        # User prompts with enable/disable
+                        st.write(f"**{p['name']}**")
+                        with st.expander("View content", expanded=False):
+                            st.text(p.get("content", ""))
+                        # Enable/Disable toggle
+                        is_enabled = not p.get("is_default", True)  # Non-default prompts are enabled
+                        enabled = st.checkbox("Enabled", value=is_enabled, key=f"enable_prompt_{p['id']}")
+                        if enabled != is_enabled:
+                            db.update_system_prompt(p['id'], is_default=not enabled)
+                            st.rerun()
+                        col1, col2 = st.columns([1, 3])
+                        with col1:
+                            if st.button("Delete", key=f"del_prompt_{p['id']}"):
+                                if db.delete_system_prompt(p['id']):
+                                    st.success(f"Deleted prompt '{p['name']}'")
+                                    st.rerun()
+                                else:
+                                    st.error("Failed to delete prompt")
+                    st.divider()
+            else:
+                st.caption("No system prompts defined yet.")
+        except Exception as e:
+            st.error(f"Error loading prompts: {e}")
+
+        st.divider()
+        st.subheader("Add New Prompt")
+
+        # Add new prompt form
+        new_name = st.text_input("Prompt Name", key="new_prompt_name", placeholder="e.g., strict_retrieval")
+        new_content = st.text_area("Prompt Content", key="new_prompt_content", height=200,
+                                   placeholder="Enter the system prompt template...")
+
+        if st.button("Create Prompt", key="create_prompt_btn"):
+            if new_name and new_content:
+                try:
+                    db.insert_system_prompt(new_name.strip(), new_content, is_default=False)
+                    st.success(f"Created prompt '{new_name.strip()}'")
+                    st.rerun()
+                except Exception as e:
+                    if "UNIQUE constraint" in str(e):
+                        st.error("A prompt with this name already exists.")
+                    else:
+                        st.error(f"Error creating prompt: {e}")
+            else:
+                st.warning("Please provide both a name and content for the prompt.")
 
     # ============== ASK TAB ==============
     with tab_ask:

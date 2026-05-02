@@ -20,20 +20,20 @@ from langchain_openai import ChatOpenAI
 from elastic_store import ElasticStore
 
 try:
-    from langchain.retrievers import EnsembleRetriever
     from langchain.retrievers.contextual_compression import ContextualCompressionRetriever
 except ImportError:
-    from langchain_classic.retrievers import EnsembleRetriever
-    from langchain_classic.retrievers.contextual_compression import ContextualCompressionRetriever
-
-from langchain_community.retrievers import BM25Retriever
+    from langchain_classic.retrievers import ContextualCompressionRetriever
 from langchain_community.document_compressors.flashrank_rerank import FlashrankRerank
 from langchain_experimental.text_splitter import SemanticChunker
 from datasets import Dataset
 from ragas import evaluate
+from langchain_core.prompts import PromptTemplate
 
 # Load environment variables with override
 load_dotenv(override=True)
+
+# Import db for system prompt retrieval
+import db as rag_db
 
 class RAGEngine:
     def __init__(self, collection_name: str, embeddings=None, llm=None):
@@ -43,11 +43,6 @@ class RAGEngine:
         self.chunking_strategy = os.getenv("CHUNKING_STRATEGY", "recursive").lower()
         self.persist_directory = os.getenv("PERSIST_DIRECTORY", "./chroma_db")
         self.embedding_model_name = os.getenv("EMBEDDING_MODEL", "all-MiniLM-L6-v2")
-        # Search Settings
-        self.hybrid_search = os.getenv("HYBRID_SEARCH", "false").lower() == "true"
-        self.vector_weight = float(os.getenv("VECTOR_WEIGHT", 0.5))
-        self.bm25_weight = float(os.getenv("BM25_WEIGHT", 0.5))
-
         # Initialize embeddings
         if embeddings:
             self.embeddings = embeddings
@@ -68,6 +63,7 @@ class RAGEngine:
             embeddings=self.embeddings
         )
 
+
     def _setup_llm(self):
         provider = os.getenv("LLM_PROVIDER", "ollama").lower()
         if provider == "ollama":
@@ -82,6 +78,43 @@ class RAGEngine:
             )
         else:
             raise ValueError(f"Unsupported LLM provider: {provider}")
+
+    def _get_system_prompt(self) -> str:
+        """Get the current system prompt from the database.
+        Returns collection_guard (always active) combined with all enabled user prompts.
+        """
+        try:
+            # Always include collection_guard as the base
+            guard_prompt = rag_db.get_system_prompt_by_name("collection_guard")
+            if not guard_prompt:
+                # Fallback if collection_guard doesn't exist in DB
+                return """You are a helpful AI assistant specialized in answering questions based on the provided knowledge base.
+
+IMPORTANT GUIDELINES:
+- ONLY answer questions about the content in the provided context
+- If the question is about a topic outside the context, respond: "I cannot find information about this in the provided knowledge base."
+- Do not use your general knowledge - stick strictly to the context
+- If the context does not contain enough information to answer fully, say what you can based on the context"""
+
+            system_prompt = guard_prompt.get("content", "")
+
+            # Append all enabled user prompts (is_default=0 means enabled)
+            user_prompts = rag_db.list_system_prompts()
+            for p in user_prompts:
+                if p['name'] != 'collection_guard' and not p.get('is_default', True):
+                    system_prompt += "\n\n" + p.get("content", "")
+
+            return system_prompt
+        except Exception:
+            pass
+        # Fallback default
+        return """You are a helpful AI assistant specialized in answering questions based on the provided knowledge base.
+
+IMPORTANT GUIDELINES:
+- ONLY answer questions about the content in the provided context
+- If the question is about a topic outside the context, respond: "I cannot find information about this in the provided knowledge base."
+- Do not use your general knowledge - stick strictly to the context
+- If the context does not contain enough information to answer fully, say what you can based on the context"""
 
     def add_documents(self, file_path: str, progress_callback=None):
         """Loads, splits, and adds documents to the current collection with progress reporting."""
@@ -124,15 +157,11 @@ class RAGEngine:
         return total_chunks
 
     def get_retriever(self):
-        """Returns a retriever with optional hybrid search and reranking."""
+        """Returns a retriever with reranking."""
         top_k = int(os.getenv("TOP_K", 4))
 
-        # ElasticStore already returns a LangChain-compatible retriever
+        # ElasticStore returns a LangChain-compatible vector retriever
         base_retriever = self.vectorstore.get_retriever(top_k=top_k)
-
-        # Note: Hybrid search with BM25 is not currently supported with Elasticsearch
-        # because BM25Retriever requires all documents in memory
-        # For now, use vector search as the primary method
 
         # Reranking
         if os.getenv("RERANKING", "false").lower() == "true":
@@ -156,86 +185,52 @@ class RAGEngine:
     def evaluate_response(self, question: str, answer: str, contexts: List[str]):
         """Evaluates the RAG response using RAGAS metrics."""
         try:
-            # Prepare data for RAGAS
+            # For RAGAS 0.4.x, we need to use the legacy metrics from ragas.metrics
+            # The collections metrics require InstructorLLM and are incompatible
+            from ragas.metrics import _Faithfulness, _AnswerRelevancy, _ContextPrecision
+            from ragas.llms import llm_factory
+            from ragas.embeddings import HuggingFaceEmbeddings
+            from openai import OpenAI
+
+            # Prepare data for RAGAS with the correct column names for legacy metrics
             data = {
-                "question": [question],
-                "answer": [answer],
-                "contexts": [contexts],
+                "user_input": [question],
+                "response": [answer],
+                "retrieved_contexts": [contexts],
+                "reference": [""]  # Reference is optional but needs to be present
             }
             dataset = Dataset.from_dict(data)
 
-            # Wrap LLM and Embeddings for RAGAS
-            from ragas.llms import LangchainLLMWrapper
-            from ragas.embeddings import LangchainEmbeddingsWrapper
+            # Get the Ollama/OpenAI client for RAGAS
+            api_key = os.getenv("OPENAI_API_KEY")
+            base_url = None
 
-            ragas_llm = LangchainLLMWrapper(self.llm)
-            ragas_embeddings = LangchainEmbeddingsWrapper(self.embeddings)
+            if api_key:
+                # Real OpenAI usage
+                openai_client = OpenAI(api_key=api_key)
+                ragas_model = os.getenv("RAGAS_LLM_MODEL", "gpt-4o-mini")
+            else:
+                # Local Ollama via OpenAI-compatible API
+                ollama_base = os.getenv("OLLAMA_BASE_URL", "http://localhost:11434").rstrip("/")
+                base_url = os.getenv("OPENAI_BASE_URL", "").strip() or f"{ollama_base}/v1"
+                if not base_url.endswith("/v1"):
+                    base_url = base_url.rstrip("/") + "/v1"
+                openai_client = OpenAI(api_key="ollama", base_url=base_url)
+                ragas_model = os.getenv("RAGAS_LLM_MODEL", os.getenv("OLLAMA_MODEL", "qwen3.5:9b"))
+
+            ragas_llm = llm_factory(ragas_model, client=openai_client)
+            ragas_embeddings = HuggingFaceEmbeddings(model=self.embeddings.model_name)
 
             # Initialize metrics with the LLM and Embeddings
-            from ragas.metrics.collections import Faithfulness, AnswerRelevancy, ContextPrecision
-
-            faithfulness = Faithfulness(llm=ragas_llm)
-            answer_relevance = AnswerRelevancy(llm=ragas_llm, embeddings=ragas_embeddings)
-            context_precision = ContextPrecision(llm=ragas_llm)
+            faithfulness = _Faithfulness(llm=ragas_llm)
+            answer_relevance = _AnswerRelevancy(llm=ragas_llm, embeddings=ragas_embeddings)
+            context_precision = _ContextPrecision(llm=ragas_llm)
 
             # Run evaluation
-            try:
-                result = evaluate(
-                    dataset=dataset,
-                    metrics=[faithfulness, answer_relevance, context_precision],
-                    llm=ragas_llm,
-                    embeddings=ragas_embeddings
-                )
-            except Exception as e:
-                # Newer RAGAS "collections" metrics require modern InstructorLLM,
-                # and will reject LangChain wrappers (e.g. Ollama via LangChain).
-                msg = str(e)
-                needs_instructor = (
-                    "only support modern InstructorLLM" in msg
-                    or "Found: LangchainLLMWrapper" in msg
-                    or "InstructorLLM" in msg
-                )
-                if not needs_instructor:
-                    raise
-
-                # Fallback: evaluate with ragas' llm_factory (InstructorLLM requirement).
-                # This can work with:
-                # - OpenAI (needs OPENAI_API_KEY)
-                # - Ollama's OpenAI-compatible endpoint (no real key required)
-                from openai import OpenAI
-                from ragas.llms import llm_factory
-
-                api_key = os.getenv("OPENAI_API_KEY")
-                base_url = None
-
-                if api_key:
-                    # Real OpenAI usage
-                    openai_client = OpenAI(api_key=api_key)
-                    ragas_model = os.getenv("RAGAS_LLM_MODEL", "gpt-4o-mini")
-                else:
-                    # Local Ollama via OpenAI-compatible API
-                    ollama_base = os.getenv("OLLAMA_BASE_URL", "http://localhost:11434").rstrip("/")
-                    base_url = os.getenv("OPENAI_BASE_URL", "").strip() or f"{ollama_base}/v1"
-                    if not base_url.endswith("/v1"):
-                        base_url = base_url.rstrip("/") + "/v1"
-
-                    # Ollama ignores the key but OpenAI client requires one.
-                    openai_client = OpenAI(api_key="ollama", base_url=base_url)
-                    ragas_model = os.getenv("RAGAS_LLM_MODEL", os.getenv("OLLAMA_MODEL", "qwen3.5:9b"))
-
-                ragas_llm2 = llm_factory(ragas_model, client=openai_client)
-
-                # Rebuild metrics with the new llm
-                faithfulness2 = Faithfulness(llm=ragas_llm2)
-                answer_relevance2 = AnswerRelevancy(llm=ragas_llm2, embeddings=ragas_embeddings)
-                context_precision2 = ContextPrecision(llm=ragas_llm2)
-
-                result = evaluate(
-                    dataset=dataset,
-                    metrics=[faithfulness2, answer_relevance2, context_precision2],
-                    llm=ragas_llm2,
-                    embeddings=ragas_embeddings
-                )
+            result = evaluate(
+                dataset=dataset,
+                metrics=[faithfulness, answer_relevance, context_precision]
+            )
 
             # Normalize output keys so the Streamlit UI can reliably render them.
             rec = result.to_pandas().to_dict(orient="records")[0]
@@ -366,11 +361,16 @@ Question: {base_query}"""
         else:
             source_documents = retriever.invoke(question)
 
+        # Get system prompt from database
+        system_prompt = self._get_system_prompt()
+
         # Define a prompt template that encourages reasoning.
         # In LangChain 1.x, prompts live in `langchain_core.prompts`.
         from langchain_core.prompts import PromptTemplate
 
-        template = """You are a helpful AI assistant. The context below may include:
+        template = f"""{{system_prompt}}
+
+The context below may include:
 (1) recent conversation with the user,
 (2) similar past Q&A from stored history,
 (3) retrieved document excerpts from the knowledge base.
@@ -384,9 +384,9 @@ First, provide your step-by-step reasoning based ONLY on the provided context (i
 Then, provide the final concise answer.
 
 Context:
-{context}
+{{context}}
 
-Question: {question}
+Question: {{question}}
 
 Format your response as:
 REASONING: [Your step-by-step reasoning]
@@ -404,7 +404,8 @@ ANSWER: [Your final answer]
         else:
             context_text = retrieved_text
 
-        prompt_text = PROMPT.format(context=context_text, question=question)
+        # Inject system_prompt into the prompt text
+        prompt_text = PROMPT.format(system_prompt=system_prompt, context=context_text, question=question)
         llm_resp = self.llm.invoke(prompt_text)
         full_text = getattr(llm_resp, "content", None) or str(llm_resp)
 
@@ -480,9 +481,14 @@ ANSWER: [Your final answer]
         else:
             source_documents = retriever.invoke(question)
 
+        # Get system prompt from database
+        system_prompt = self._get_system_prompt()
+
         from langchain_core.prompts import PromptTemplate
 
-        template = """You are a helpful AI assistant. The context below may include:
+        template = f"""{{system_prompt}}
+
+The context below may include:
 (1) recent conversation with the user,
 (2) similar past Q&A from stored history,
 (3) retrieved document excerpts from the knowledge base.
@@ -496,9 +502,9 @@ First, provide your step-by-step reasoning based ONLY on the provided context (i
 Then, provide the final concise answer.
 
 Context:
-{context}
+{{context}}
 
-Question: {question}
+Question: {{question}}
 
 Format your response as:
 REASONING: [Your step-by-step reasoning]
@@ -513,7 +519,7 @@ ANSWER: [Your final answer]
         else:
             context_text = retrieved_text
 
-        prompt_text = PROMPT.format(context=context_text, question=question)
+        prompt_text = PROMPT.format(system_prompt=system_prompt, context=context_text, question=question)
 
         # Stream the response
         full_text = ""
