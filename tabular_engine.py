@@ -13,6 +13,13 @@ limitations under the License.
 """
 
 """
+Contact: Swank Canton
+Email: chanwan@gmail.com
+Website: https://www.github.com/swankchan
+Instagram: @clooudycw
+"""
+
+"""
 Tabular Data Handler for XLSX, XLS, and CSV files.
 Implements Text-to-SQL and Pandas-based analysis for structured data.
 """

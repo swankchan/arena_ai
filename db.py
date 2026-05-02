@@ -13,6 +13,12 @@ limitations under the License.
 """
 
 """
+Contact: Swank Canton
+Email: chanwan@gmail.com
+Website: https://www.github.com/swankchan
+"""
+
+"""
 SQLite persistence for conversations, Q&A runs, messages, and user ratings.
 """
 from __future__ import annotations

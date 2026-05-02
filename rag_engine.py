@@ -12,6 +12,12 @@ See the License for the specific language governing permissions and
 limitations under the License.
 """
 
+"""
+Contact: Swank Canton
+Email: chanwan@gmail.com
+Website: https://www.github.com/swankchan
+"""
+
 import os
 import time
 import json
