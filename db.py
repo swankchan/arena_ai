@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 """
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -21,7 +23,6 @@ Website: https://www.github.com/swankchan
 """
 SQLite persistence for conversations, Q&A runs, messages, and user ratings.
 """
-from __future__ import annotations
 
 import json
 import math
