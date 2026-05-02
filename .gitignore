@@ -11,6 +11,7 @@ memory/
 
 # Data
 documents/
+images/screenshots/
 
 # ChromaDB persistence
 chroma_db/
@@ -44,3 +45,6 @@ Thumbs.db
 # Logs
 *.log
 nohup.out
+
+# additional files to ignore
+node_modules/ 

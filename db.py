@@ -50,7 +50,6 @@ def init_db(conn: Optional[sqlite3.Connection] = None) -> None:
                 answer TEXT NOT NULL,
                 sources_json TEXT,
                 metrics_json TEXT,
-                ragas_json TEXT,
                 optimization_log TEXT,
                 engine_key TEXT,
                 created_at REAL NOT NULL,
@@ -148,7 +147,6 @@ def insert_qa_run(
     answer: str,
     sources: Any,
     metrics: Any,
-    ragas: Any,
     optimization_log: str,
     engine_key: str,
     question_embedding: Optional[Sequence[float]],
@@ -159,12 +157,11 @@ def insert_qa_run(
         conn = get_connection()
     try:
         emb_json = json.dumps(list(question_embedding)) if question_embedding is not None else None
-        ragas_json = json.dumps(ragas, default=str) if ragas is not None else None
         cur = conn.execute(
             """
             INSERT INTO qa_runs (
                 conversation_id, collection_name, question, answer,
-                sources_json, metrics_json, ragas_json, optimization_log, engine_key,
+                sources_json, metrics_json, optimization_log, engine_key,
                 created_at, question_embedding
             ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             """,
@@ -175,7 +172,6 @@ def insert_qa_run(
                 answer,
                 json.dumps(sources, default=str) if sources is not None else None,
                 json.dumps(metrics, default=str) if metrics is not None else None,
-                ragas_json,
                 optimization_log or "",
                 engine_key or "",
                 time.time(),
@@ -529,135 +525,3 @@ def delete_system_prompt(prompt_id: int, conn: Optional[sqlite3.Connection] = No
             conn.close()
 
 
-def iter_qa_runs_with_ratings(
-    collection_name: Optional[str] = None,
-    rating_filter: Optional[str] = None,
-    require_rating: bool = False,
-    conn: Optional[sqlite3.Connection] = None,
-):
-    """
-    Yield qa_runs joined with ratings for training export.
-
-    rating_filter: None (all), 'like', 'dislike'
-    require_rating: if True, only rows that have a rating
-    """
-    own = conn is None
-    if own:
-        conn = get_connection()
-    try:
-        sql = """
-            SELECT
-                q.id AS qa_run_id,
-                q.conversation_id,
-                q.collection_name,
-                q.question,
-                q.answer,
-                q.sources_json,
-                q.metrics_json,
-                q.ragas_json,
-                q.optimization_log,
-                q.engine_key,
-                q.created_at,
-                r.rating AS user_rating,
-                r.comment AS rating_comment
-            FROM qa_runs q
-            LEFT JOIN ratings r ON r.qa_run_id = q.id
-            WHERE 1=1
-        """
-        params: List[Any] = []
-        if collection_name:
-            sql += " AND q.collection_name = ?"
-            params.append(collection_name)
-        if require_rating:
-            sql += " AND r.rating IS NOT NULL"
-        if rating_filter in ("like", "dislike"):
-            sql += " AND r.rating = ?"
-            params.append(rating_filter)
-        sql += " ORDER BY q.created_at ASC"
-        rows = conn.execute(sql, params).fetchall()
-        for row in rows:
-            d = dict(row)
-            for key in ("sources_json", "metrics_json", "ragas_json"):
-                raw = d.get(key)
-                if raw:
-                    try:
-                        d[key.replace("_json", "")] = json.loads(raw)
-                    except (TypeError, json.JSONDecodeError):
-                        d[key.replace("_json", "")] = raw
-                else:
-                    d[key.replace("_json", "")] = None
-            yield d
-    finally:
-        if own:
-            conn.close()
-
-
-def build_training_jsonl_line(
-    row: Dict[str, Any],
-    format_name: str = "record",
-) -> Dict[str, Any]:
-    """
-    format_name:
-      - record: rich flat record (default)
-      - sft_messages: OpenAI-style chat for supervised fine-tuning
-      - sft_alpaca: instruction/input/output style
-    """
-    q = row.get("question") or ""
-    a = row.get("answer") or ""
-    if format_name == "sft_messages":
-        return {
-            "messages": [
-                {"role": "user", "content": q},
-                {"role": "assistant", "content": a},
-            ],
-            "metadata": {
-                "qa_run_id": row.get("qa_run_id"),
-                "collection_name": row.get("collection_name"),
-                "user_rating": row.get("user_rating"),
-                "rating_comment": row.get("rating_comment"),
-            },
-        }
-    if format_name == "sft_alpaca":
-        return {
-            "instruction": "Answer the user question using your knowledge and any prior context.",
-            "input": q,
-            "output": a,
-            "metadata": {
-                "qa_run_id": row.get("qa_run_id"),
-                "collection_name": row.get("collection_name"),
-                "user_rating": row.get("user_rating"),
-            },
-        }
-    # record
-    return {
-        "qa_run_id": row.get("qa_run_id"),
-        "conversation_id": row.get("conversation_id"),
-        "collection_name": row.get("collection_name"),
-        "question": q,
-        "answer": a,
-        "sources": row.get("sources"),
-        "metrics": row.get("metrics"),
-        "ragas": row.get("ragas"),
-        "user_rating": row.get("user_rating"),
-        "rating_comment": row.get("rating_comment"),
-        "created_at": row.get("created_at"),
-        "engine_key": row.get("engine_key"),
-    }
-
-
-def export_training_jsonl_bytes(
-    collection_name: Optional[str] = None,
-    rating_filter: Optional[str] = None,
-    require_rating: bool = False,
-    format_name: str = "record",
-) -> bytes:
-    """Return UTF-8 JSONL bytes for download or file write."""
-    lines: List[str] = []
-    for row in iter_qa_runs_with_ratings(
-        collection_name=collection_name,
-        rating_filter=rating_filter,
-        require_rating=require_rating,
-    ):
-        obj = build_training_jsonl_line(row, format_name=format_name)
-        lines.append(json.dumps(obj, ensure_ascii=False, default=str))
-    return ("\n".join(lines) + ("\n" if lines else "")).encode("utf-8")

@@ -39,6 +39,8 @@ if "conversation_id" not in st.session_state:
     st.session_state.conversation_id = None
 if "last_qa_run_id" not in st.session_state:
     st.session_state.last_qa_run_id = None
+if "name_entered" not in st.session_state:
+    st.session_state.name_entered = False
 
 # Sidebar: Collection Selection and Creation
 with st.sidebar:
@@ -49,32 +51,6 @@ with st.sidebar:
         collections = RAGEngine.list_collections()
     except:
         collections = []
-
-    # Create new collection (compact)
-    with st.expander("Create New", expanded=False):
-        new_collection_input = st.text_input("Name", key="new_collection_input", label_visibility="collapsed", help="Lowercase automatically")
-        if st.button("Create", key="create_collection_btn", use_container_width=True):
-            if new_collection_input:
-                new_name_clean = new_collection_input.lower().strip()
-                success, message = RAGEngine.create_collection(new_name_clean)
-                if success:
-                    st.session_state.collection = new_name_clean
-                    st.session_state.conversation_collection = new_name_clean
-                    st.session_state.conversation_id = db.create_conversation(new_name_clean)
-                    st.success(message)
-                    # Re-list collections to include the new one
-                    try:
-                        collections = RAGEngine.list_collections()
-                    except:
-                        collections = []
-                    # Re-set the selectbox index to the new collection
-                    if new_name_clean in collections:
-                        st.session_state.collection = new_name_clean
-                    st.rerun()
-                else:
-                    st.error(message)
-            else:
-                st.warning("Please enter a name.")
 
     # Select existing collection
     selected_collection = None
@@ -90,15 +66,41 @@ with st.sidebar:
         )
         st.session_state.collection = selected_collection
 
-    # Manage current collection (inline, no divider)
+        # Load previous messages from database for this conversation when switching collections
+        if st.session_state.conversation_collection != selected_collection:
+            st.session_state.conversation_collection = selected_collection
+            st.session_state.conversation_id = db.create_conversation(selected_collection)
+            st.session_state.messages = db.get_conversation_messages(st.session_state.conversation_id)
+            st.session_state.last_qa_run_id = None
+
+    # Manage current collection section
+    # Show caption only when a collection is selected
     if selected_collection:
         st.caption(f"Active: {selected_collection}")
 
-        col1, col2 = st.columns(2)
-        with col1:
-            new_name = st.text_input("Rename", key="rename_input", label_visibility="collapsed", placeholder="New name...")
-            if st.button("Save", key="rename_btn", use_container_width=True):
-                if new_name and new_name.lower().strip() != selected_collection:
+    # Shared input for both Rename and Create
+    # When selected_collection exists: input is for rename
+    # When no collection: input is for create
+    # Use on_change callback to track when user enters text
+    def on_name_change():
+        st.session_state.name_entered = True
+
+    new_name = st.text_input("New name...", key="collection_action_input", label_visibility="collapsed",
+                             placeholder="New name..." if selected_collection else "Collection name...",
+                             on_change=on_name_change)
+
+    # Determine if name was entered (user interaction)
+    name_entered = st.session_state.get("name_entered", False) and bool(new_name)
+
+    # Rename and Create buttons side by side
+    col1, col2 = st.columns(2)
+
+    with col1:
+        # Save button - dimmed when no collection selected OR no name entered
+        save_disabled = not bool(selected_collection) or not name_entered
+        if st.button("Save", key="rename_btn", use_container_width=True, disabled=save_disabled):
+            if selected_collection and new_name:
+                if new_name.lower().strip() != selected_collection:
                     new_name_clean = new_name.lower().strip()
                     valid, msg = RAGEngine.validate_collection_name(new_name_clean)
                     if valid:
@@ -111,25 +113,35 @@ with st.sidebar:
                             st.error(f"Rename failed: {rename_msg}")
                     else:
                         st.error(msg)
-        with col2:
-            if st.button("Delete", type="primary", key="delete_btn", use_container_width=True):
-                if RAGEngine.delete_collection(selected_collection):
-                    st.session_state.collection = ""
-                    st.session_state.conversation_collection = None
-                    st.session_state.conversation_id = None
-                    st.success(f"Deleted {selected_collection}")
+
+    with col2:
+        # Create button - dimmed when no name entered
+        create_disabled = not name_entered
+        if st.button("Create", key="create_collection_btn", use_container_width=True,
+                     disabled=create_disabled):
+            if new_name:
+                new_name_clean = new_name.lower().strip()
+                success, message = RAGEngine.create_collection(new_name_clean)
+                if success:
+                    st.session_state.collection = new_name_clean
+                    st.session_state.conversation_collection = new_name_clean
+                    st.session_state.conversation_id = db.create_conversation(new_name_clean)
+                    st.success(message)
                     st.rerun()
                 else:
-                    st.error("Delete failed.")
+                    st.error(message)
 
-    # LLM Settings (Read Only from .env)
-    st.divider()
-    st.write(f"**LLM Provider:** {os.getenv('LLM_PROVIDER', 'ollama')}")
-    st.write(f"**Model:** {os.getenv('OLLAMA_MODEL', 'qwen35b-64k:latest')}")
-    # Force read from environment to ensure latest values are shown
-    chunk_strat = os.getenv('CHUNKING_STRATEGY', 'recursive')
-    st.write(f"**Chunking Strategy:** {chunk_strat}")
-    st.write(f"**Reranking:** {os.getenv('RERANKING', 'false')}")
+    # Delete button - full width below the Rename/Create buttons
+    if selected_collection:
+        if st.button("Delete", type="primary", key="delete_btn", use_container_width=True):
+            if RAGEngine.delete_collection(selected_collection):
+                st.session_state.collection = ""
+                st.session_state.conversation_collection = None
+                st.session_state.conversation_id = None
+                st.success(f"Deleted {selected_collection}")
+                st.rerun()
+            else:
+                st.error("Delete failed.")
 
     # Query Optimization Settings
     st.divider()
@@ -140,114 +152,14 @@ with st.sidebar:
     os.environ["QUERY_TRANSFORMATION"] = str(q_trans).lower()
     os.environ["QUERY_EXPANSION"] = str(q_exp).lower()
 
-    # RAGAS Toggle
+    # LLM Settings (Read Only from .env)
     st.divider()
-    enable_ragas = st.checkbox("Enable RAGAS Evaluation", value=False, help="Evaluation can take significant time for each question.")
-
-    # Conversation memory: new thread when collection changes
-    if selected_collection:
-        st.divider()
-        st.subheader("Conversation")
-        if st.session_state.conversation_collection != selected_collection:
-            st.session_state.conversation_collection = selected_collection
-            st.session_state.conversation_id = db.create_conversation(selected_collection)
-            # Load previous messages from database for this conversation
-            st.session_state.messages = db.get_conversation_messages(st.session_state.conversation_id)
-            st.session_state.last_qa_run_id = None
-
-    # Recent Q&A history (same collection)
-    if selected_collection:
-        st.divider()
-        st.subheader("Recent Q&A (DB)")
-        try:
-            recent = db.list_recent_qa_runs(selected_collection, limit=25)
-        except Exception:
-            recent = []
-        if recent:
-            # Show sequential numbers starting from 1 (oldest/first question is #1)
-            labels = [f"#{i+1} — {r['question'][:60]}{'…' if len(r['question']) > 60 else ''}" for i, r in enumerate(recent)]
-            pick = st.selectbox("Browse past answers", options=range(len(recent)), format_func=lambda i: labels[i], key="history_pick")
-            row = recent[pick]
-            full = db.get_qa_run(row["id"])
-            if full:
-                with st.expander("View stored answer"):
-                    st.markdown(f"**Q:** {full['question']}")
-                    st.markdown(f"**A:** {full['answer']}")
-                    # Delete button for this QA run
-                    if st.button("🗑️ Delete", key=f"delete_qa_{row['id']}"):
-                        db.delete_qa_run(row["id"])
-                        st.success("Deleted")
-                        st.rerun()
-        else:
-            st.caption("No saved Q&A yet for this collection.")
-
-    # Export training data (JSONL) for fine-tuning / preference pipelines
-    st.divider()
-    st.subheader("Export for training (JSONL)")
-    st.caption("Each line is one JSON object. Use likes for SFT; pair with regenerated answers for DPO later.")
-    exp_scope = st.radio("Scope", ["Current collection", "All collections"], horizontal=True, key="export_scope")
-    exp_rating = st.selectbox(
-        "Filter",
-        ["All rows", "Likes only", "Dislikes only", "Rated only (any)"],
-        key="export_rating",
-    )
-    exp_fmt_label = st.selectbox(
-        "Line format",
-        [
-            "record (full metadata)",
-            "sft_messages (chat pairs)",
-            "sft_alpaca (instruction/input/output)",
-        ],
-        key="export_fmt_label",
-    )
-    fmt_map = {
-        "record (full metadata)": "record",
-        "sft_messages (chat pairs)": "sft_messages",
-        "sft_alpaca (instruction/input/output)": "sft_alpaca",
-    }
-    exp_fmt = fmt_map[exp_fmt_label]
-
-    rating_filter = None
-    require_rating = False
-    if exp_rating == "Likes only":
-        rating_filter = "like"
-    elif exp_rating == "Dislikes only":
-        rating_filter = "dislike"
-    elif exp_rating == "Rated only (any)":
-        require_rating = True
-
-    coll_export = None
-    should_export = True
-    if exp_scope == "Current collection":
-        if selected_collection:
-            coll_export = selected_collection
-        else:
-            st.warning("Select a collection first, or choose All collections.")
-            should_export = False
-
-    try:
-        if should_export:
-            export_bytes = db.export_training_jsonl_bytes(
-                collection_name=coll_export,
-                rating_filter=rating_filter,
-                require_rating=require_rating,
-                format_name=exp_fmt,
-            )
-        else:
-            export_bytes = b""
-    except Exception as e:
-        export_bytes = b""
-        st.error(str(e))
-
-    ts = datetime.now(timezone.utc).strftime("%Y%m%d_%H%M%S")
-    fname = f"training_{exp_fmt}_{ts}.jsonl"
-    st.download_button(
-        label="Download JSONL",
-        data=export_bytes,
-        file_name=fname,
-        mime="application/x-ndjson",
-        key="download_training_jsonl",
-    )
+    st.subheader("LLM Settings")
+    st.write(f"**Provider:** {os.getenv('LLM_PROVIDER', 'ollama')}")
+    st.write(f"**Model:** {os.getenv('OLLAMA_MODEL', 'qwen35b-64k:latest')}")
+    chunk_strat = os.getenv('CHUNKING_STRATEGY', 'recursive')
+    st.write(f"**Chunking Strategy:** {chunk_strat}")
+    st.write(f"**Reranking:** {os.getenv('RERANKING', 'false')}")
 
 # Initialize Components
 emb = get_embeddings(os.getenv("EMBEDDING_MODEL", "all-MiniLM-L6-v2"))
@@ -294,8 +206,8 @@ st.title("Retrieval-Augmented Generation Knowledge Base")
 if selected_collection:
     st.write(f"Currently using collection: **{selected_collection}**")
 
-    # Tabs: Ask | Manage | System Prompt
-    tab_ask, tab_manage, tab_system = st.tabs(["Ask a Question", "Manage Documents", "System Prompt"])
+    # Tabs: Ask | Q&A History | Manage | System Prompt
+    tab_ask, tab_history, tab_manage, tab_system = st.tabs(["Ask a Question", "Q&A History", "Manage Documents", "System Prompt"])
 
     # ============== SYSTEM PROMPT TAB ==============
     with tab_system:
@@ -431,7 +343,6 @@ if selected_collection:
                     # Stream everything (collect while showing reasoning progress)
                     for phase, content in rag_engine.query_stream(
                         prompt,
-                        enable_ragas=enable_ragas,
                         chat_history=chat_history or None,
                         long_term_memory=long_term_mem or None,
                     ):
@@ -473,16 +384,6 @@ if selected_collection:
                     # Display metrics and sources
                     metrics_text = f"\n\n---\n📊 **Metrics:** {metrics.get('total_tokens', 0)} tokens | {metrics.get('tokens_per_second', 0)} tps | {metrics.get('duration', 0)}s"
 
-                    ragas = metrics.get("ragas")
-                    if ragas:
-                        metrics_text += f"\n\n**RAGAS Evaluation:**"
-                        if ragas.get("error"):
-                            metrics_text += f"\n- RAGAS Error: {ragas.get('error')}"
-                        else:
-                            metrics_text += f"\n- Faithfulness: {ragas.get('faithfulness', 0):.2f}"
-                            metrics_text += f"\n- Answer Relevance: {ragas.get('answer_relevancy', ragas.get('answer_relevance', 0)):.2f}"
-                            metrics_text += f"\n- Context Precision: {ragas.get('context_precision', 0):.2f}"
-
                     sources_text = f"\n\n**Sources:** {', '.join(processed_sources)}" if processed_sources else ""
 
                     st.markdown(f"{sources_text}{metrics_text}")
@@ -495,10 +396,7 @@ if selected_collection:
 
                     # Persist to database
                     try:
-                        ragas_m = metrics.get("ragas")
-                        if isinstance(ragas_m, dict) and "raw" in ragas_m:
-                            ragas_m = {k: v for k, v in ragas_m.items() if k != "raw"}
-                        metrics_for_db = {k: v for k, v in metrics.items() if k != "ragas"}
+                        metrics_for_db = {k: v for k, v in metrics.items()}
                         qa_run_id = db.insert_qa_run(
                             st.session_state.conversation_id,
                             selected_collection,
@@ -506,7 +404,6 @@ if selected_collection:
                             answer,
                             processed_sources,
                             metrics_for_db,
-                            ragas_m,
                             opt_log,
                             st.session_state.get("engine_key_string", ""),
                             list(q_emb) if q_emb is not None else None,
@@ -539,6 +436,32 @@ if selected_collection:
                     st.session_state.last_qa_run_id = None  # Clear to hide buttons after rating
                     st.success("Thanks!")
                     st.rerun()
+
+    # ============== Q&A HISTORY TAB ==============
+    with tab_history:
+        st.subheader("Recent Q&A (DB)")
+        st.caption("Browse and manage past Q&A runs stored in the database.")
+        try:
+            recent = db.list_recent_qa_runs(selected_collection, limit=25)
+        except Exception:
+            recent = []
+        if recent:
+            # Show sequential numbers starting from 1 (oldest/first question is #1)
+            labels = [f"#{i+1} — {r['question'][:60]}{'…' if len(r['question']) > 60 else ''}" for i, r in enumerate(recent)]
+            pick = st.selectbox("Browse past answers", options=range(len(recent)), format_func=lambda i: labels[i], key="history_pick")
+            row = recent[pick]
+            full = db.get_qa_run(row["id"])
+            if full:
+                with st.expander("View stored answer"):
+                    st.markdown(f"**Q:** {full['question']}")
+                    st.markdown(f"**A:** {full['answer']}")
+                    # Delete button for this QA run
+                    if st.button("🗑️ Delete", key=f"delete_qa_{row['id']}"):
+                        db.delete_qa_run(row["id"])
+                        st.success("Deleted")
+                        st.rerun()
+        else:
+            st.caption("No saved Q&A yet for this collection.")
 
     # ============== MANAGE TAB ==============
     with tab_manage:

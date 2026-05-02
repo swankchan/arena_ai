@@ -1,0 +1,9 @@
+{
+  "name": "rag-screenshots",
+  "version": "1.0.0",
+  "type": "module",
+  "dependencies": {
+    "puppeteer": "^23.1.0",
+    "puppeteer-core": "^22.15.0"
+  }
+}

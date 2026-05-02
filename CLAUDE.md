@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-This is a **Retrieval-Augmented Generation (RAG)** system with a Streamlit web interface, supporting local LLMs via Ollama. It implements vector search with Elasticsearch, reranking, conversation memory, and SQLite persistence for training data export.
+This is a **Retrieval-Augmented Generation (RAG)** system with a Streamlit web interface, supporting local LLMs via Ollama. It implements vector search with Elasticsearch, reranking, conversation memory, and SQLite persistence.
 
 ## Running the Application
 
@@ -38,9 +38,8 @@ curl http://localhost:9200
 | File | Purpose |
 |------|---------|
 | `app.py` | Streamlit web UI, session management, chat interface, collection/QA management, system prompt management |
-| `rag_engine.py` | Core RAG logic: document processing, retrieval, query optimization, RAGAS evaluation |
-| `db.py` | SQLite persistence for conversations, Q&A runs, messages, ratings, system prompts, and training export |
-| `export_training_jsonl.py` | CLI tool to export Q&A data for fine-tuning |
+| `rag_engine.py` | Core RAG logic: document processing, retrieval, query optimization |
+| `db.py` | SQLite persistence for conversations, Q&A runs, messages, ratings, system prompts |
 
 ### Data Flow
 
@@ -66,7 +65,7 @@ curl http://localhost:9200
 - **Vector Storage**: Elasticsearch stores dense vectors (1024-dim for `bge-large-en-v1.5`) with cosine similarity search.
 - **Memory Limits**: Short-term memory capped by `CHAT_HISTORY_MAX_MESSAGES` (default 12); long-term via `LONG_TERM_MEMORY_TOP_K` (default 3 past Q&A).
 - **Collection Management**: Collections are Elasticsearch indices with `rag_` prefix; names are auto-lowercased and validated.
-- **RAGAS Evaluation**: Optional evaluation using faithfulness, answer relevancy, and context precision metrics. Falls back to Ollama's OpenAI-compatible endpoint if LangChain wrapper fails.
+- **RAGAS Evaluation**: Removed. Response evaluation no longer includes RAGAS metrics.
 - **QA Management**: Users can browse and delete past Q&A runs from the database via the UI.
 - **System Prompt Management**: `collection_guard` is always active and protected. User-defined prompts can be enabled/disabled individually via the System Prompt tab; all enabled prompts are appended to `collection_guard`.
 
@@ -105,28 +104,10 @@ PERSIST_DIRECTORY=./chroma_db
 APP_DB_PATH=./rag_app.db
 ```
 
-## Exporting Training Data
-
-```bash
-# Full records with all metadata
-python export_training_jsonl.py -o training.jsonl
-
-# Likes only, chat format for SFT
-python export_training_jsonl.py -o likes.jsonl --rating like --format sft_messages
-
-# Alpaca format for specific collection
-python export_training_jsonl.py -o alpaca.jsonl --format sft_alpaca --collection my_kb
-```
-
-Formats:
-- `record`: Full fields including sources, metrics, user_rating
-- `sft_messages`: `{"messages": [{"role": "user"}, {"role": "assistant"}], "metadata": {}}`
-- `sft_alpaca`: Instruction/input/output style
-
 ## Development Notes
 
 - **Environment**: Uses `conda` environment named `rag` (Python 3.11+).
-- **Dependencies**: Standard ML/NLP stack including LangChain, ChromaDB, sentence-transformers, FlashRank, RAGAS.
+- **Dependencies**: Standard ML/NLP stack including LangChain, ChromaDB, sentence-transformers, FlashRank.
 - **No test suite**: There are no automated tests in this codebase.
 - **No linting/formatting config**: No pre-configured ruff, black, or mypy settings.
 - **SQLite threading**: Database connections use `check_same_thread=False` for Streamlit compatibility.
@@ -138,15 +119,6 @@ Formats:
 ```bash
 # Start the Streamlit web interface
 streamlit run app.py
-
-# Export training data (all records)
-python export_training_jsonl.py -o training.jsonl
-
-# Export likes-only for SFT (chat format)
-python export_training_jsonl.py -o likes.jsonl --rating like --format sft_messages
-
-# Export in Alpaca format for a specific collection
-python export_training_jsonl.py -o alpaca.jsonl --format sft_alpaca --collection my_kb
 ```
 
 ## Environment Variables
@@ -166,7 +138,6 @@ python export_training_jsonl.py -o alpaca.jsonl --format sft_alpaca --collection
 | `TOP_K` | Number of documents to retrieve | `4` |
 | `QUERY_TRANSFORMATION` | Use LLM to clarify queries | `true` |
 | `QUERY_EXPANSION` | Generate query variations | `true` |
-| `ENABLE_RAGAS` | Enable evaluation metrics | `false` |
 | `LONG_TERM_MEMORY_TOP_K` | Past Q&A snippets to inject | `3` |
 | `CHAT_HISTORY_MAX_MESSAGES` | Short-term memory turns | `12` |
 | `CHAT_HISTORY_MAX_CHARS_PER_MESSAGE` | Max chars per chat message | `2000` |
@@ -197,9 +168,3 @@ python export_training_jsonl.py -o alpaca.jsonl --format sft_alpaca --collection
 - **collection_guard**: Always active (lock + checkmark badges), cannot be deleted or disabled
 - **User prompts**: Each has an "Enabled" checkbox to toggle; all enabled prompts are appended to `collection_guard`
 - **Delete**: Available for user prompts (not `collection_guard`)
-
-### Export for Training
-- Filter by scope: Current collection or All collections
-- Filter by rating: All, Likes only, Dislikes only, Rated only
-- Output formats: record, sft_messages, sft_alpaca
-- Download as JSONL for SFT/DPO pipelines

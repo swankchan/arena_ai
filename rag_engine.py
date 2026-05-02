@@ -25,8 +25,6 @@ except ImportError:
     from langchain_classic.retrievers import ContextualCompressionRetriever
 from langchain_community.document_compressors.flashrank_rerank import FlashrankRerank
 from langchain_experimental.text_splitter import SemanticChunker
-from datasets import Dataset
-from ragas import evaluate
 from langchain_core.prompts import PromptTemplate
 
 # Load environment variables with override
@@ -182,86 +180,6 @@ IMPORTANT GUIDELINES:
             # Fallback to simple word-based estimate if tiktoken fails
             return len(text.split()) * 1.3 # common heuristic: 1.3 tokens per word
 
-    def evaluate_response(self, question: str, answer: str, contexts: List[str]):
-        """Evaluates the RAG response using RAGAS metrics."""
-        try:
-            # For RAGAS 0.4.x, we need to use the legacy metrics from ragas.metrics
-            # The collections metrics require InstructorLLM and are incompatible
-            from ragas.metrics import _Faithfulness, _AnswerRelevancy, _ContextPrecision
-            from ragas.llms import llm_factory
-            from ragas.embeddings import HuggingFaceEmbeddings
-            from openai import OpenAI
-
-            # Prepare data for RAGAS with the correct column names for legacy metrics
-            data = {
-                "user_input": [question],
-                "response": [answer],
-                "retrieved_contexts": [contexts],
-                "reference": [""]  # Reference is optional but needs to be present
-            }
-            dataset = Dataset.from_dict(data)
-
-            # Get the Ollama/OpenAI client for RAGAS
-            api_key = os.getenv("OPENAI_API_KEY")
-            base_url = None
-
-            if api_key:
-                # Real OpenAI usage
-                openai_client = OpenAI(api_key=api_key)
-                ragas_model = os.getenv("RAGAS_LLM_MODEL", "gpt-4o-mini")
-            else:
-                # Local Ollama via OpenAI-compatible API
-                ollama_base = os.getenv("OLLAMA_BASE_URL", "http://localhost:11434").rstrip("/")
-                base_url = os.getenv("OPENAI_BASE_URL", "").strip() or f"{ollama_base}/v1"
-                if not base_url.endswith("/v1"):
-                    base_url = base_url.rstrip("/") + "/v1"
-                openai_client = OpenAI(api_key="ollama", base_url=base_url)
-                ragas_model = os.getenv("RAGAS_LLM_MODEL", os.getenv("OLLAMA_MODEL", "qwen3.5:9b"))
-
-            ragas_llm = llm_factory(ragas_model, client=openai_client)
-            ragas_embeddings = HuggingFaceEmbeddings(model=self.embeddings.model_name)
-
-            # Initialize metrics with the LLM and Embeddings
-            faithfulness = _Faithfulness(llm=ragas_llm)
-            answer_relevance = _AnswerRelevancy(llm=ragas_llm, embeddings=ragas_embeddings)
-            context_precision = _ContextPrecision(llm=ragas_llm)
-
-            # Run evaluation
-            result = evaluate(
-                dataset=dataset,
-                metrics=[faithfulness, answer_relevance, context_precision]
-            )
-
-            # Normalize output keys so the Streamlit UI can reliably render them.
-            rec = result.to_pandas().to_dict(orient="records")[0]
-
-            def pick_value(*key_candidates: str):
-                # Exact match first
-                for k in key_candidates:
-                    if k in rec:
-                        return rec[k]
-                # Then substring match (handles *_score variants / naming changes)
-                for k, v in rec.items():
-                    kl = k.lower()
-                    for cand in key_candidates:
-                        if cand in kl:
-                            return v
-                return None
-
-            normalized = {
-                "faithfulness": pick_value("faithfulness", "faithfulness_score"),
-                "answer_relevancy": pick_value("answer_relevancy", "answer_relevancy_score"),
-                "answer_relevance": pick_value("answer_relevance", "answer_relevance_score"),
-                "context_precision": pick_value("context_precision", "context_precision_score"),
-            }
-
-            # Keep raw for debugging if needed.
-            normalized["raw"] = rec
-            return normalized
-        except Exception as e:
-            print(f"RAGAS Evaluation Error: {e}")
-            return {"error": str(e)}
-
     def _optimize_query(self, question: str):
         """Transforms and expands the user query for better retrieval."""
         optimized_queries = [question]
@@ -330,7 +248,6 @@ Question: {base_query}"""
     def query(
         self,
         question: str,
-        enable_ragas: bool = False,
         chat_history: Optional[List[Dict[str, Any]]] = None,
         long_term_memory: Optional[str] = None,
     ):
@@ -424,11 +341,6 @@ ANSWER: [Your final answer]
 
         contexts = [doc.page_content for doc in source_documents]
 
-        # RAGAS Evaluation (Optional, can be slow)
-        ragas_eval = None
-        if enable_ragas:
-            ragas_eval = self.evaluate_response(question, answer, contexts)
-
         token_count = self._count_tokens(full_text)
         tps = token_count / duration if duration > 0 else 0
 
@@ -440,15 +352,13 @@ ANSWER: [Your final answer]
             "metrics": {
                 "total_tokens": int(token_count),
                 "tokens_per_second": round(tps, 2),
-                "duration": round(duration, 2),
-                "ragas": ragas_eval
+                "duration": round(duration, 2)
             }
         }
 
     def query_stream(
         self,
         question: str,
-        enable_ragas: bool = False,
         chat_history: Optional[List[Dict[str, Any]]] = None,
         long_term_memory: Optional[str] = None,
     ):
@@ -566,11 +476,6 @@ ANSWER: [Your final answer]
 
         contexts = [doc.page_content for doc in source_documents]
 
-        # RAGAS Evaluation (skip in streaming mode - can be done separately)
-        ragas_eval = None
-        if enable_ragas:
-            ragas_eval = self.evaluate_response(question, answer, contexts)
-
         token_count = self._count_tokens(full_text)
         tps = token_count / duration if duration > 0 else 0
 
@@ -582,8 +487,7 @@ ANSWER: [Your final answer]
             "metrics": {
                 "total_tokens": int(token_count),
                 "tokens_per_second": round(tps, 2),
-                "duration": round(duration, 2),
-                "ragas": ragas_eval
+                "duration": round(duration, 2)
             }
         }
 
