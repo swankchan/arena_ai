@@ -48,6 +48,32 @@ def _qa_runs_has_column(conn: sqlite3.Connection, column: str) -> bool:
     return column in columns
 
 
+def _tabular_files_has_column(conn: sqlite3.Connection, column: str) -> bool:
+    """Check if tabular_files table has a specific column."""
+    columns = [col[1] for col in conn.execute("PRAGMA table_info(tabular_files)").fetchall()]
+    return column in columns
+
+
+def _conversations_has_column(conn: sqlite3.Connection, column: str) -> bool:
+    """Check if conversations table has a specific column."""
+    columns = [col[1] for col in conn.execute("PRAGMA table_info(conversations)").fetchall()]
+    return column in columns
+
+
+def extract_topic_from_text(text: str, max_length: int = 50) -> str:
+    """Extract a topic name from text, using the first max_length characters."""
+    if not text:
+        return "Untitled"
+    # Strip whitespace and get first max_length chars
+    clean_text = text.strip()[:max_length]
+    # Remove any trailing partial words
+    if len(text) > max_length and text[max_length] != ' ':
+        last_space = clean_text.rfind(' ')
+        if last_space > 0:
+            clean_text = clean_text[:last_space]
+    return clean_text.strip() if clean_text else "Untitled"
+
+
 def init_db(conn: Optional[sqlite3.Connection] = None) -> None:
     own = conn is None
     if own:
@@ -60,6 +86,7 @@ def init_db(conn: Optional[sqlite3.Connection] = None) -> None:
             CREATE TABLE IF NOT EXISTS conversations (
                 id TEXT PRIMARY KEY,
                 collection_name TEXT NOT NULL,
+                name TEXT,
                 created_at REAL NOT NULL
             );
 
@@ -112,6 +139,7 @@ def init_db(conn: Optional[sqlite3.Connection] = None) -> None:
                 row_count INTEGER DEFAULT 0,
                 columns_json TEXT,
                 metadata_json TEXT,
+                db_path TEXT,
                 created_at REAL NOT NULL
             );
 
@@ -130,6 +158,15 @@ def init_db(conn: Optional[sqlite3.Connection] = None) -> None:
             CREATE INDEX IF NOT EXISTS idx_system_prompts_default ON system_prompts(is_default);
             """
         )
+
+        # Migrate: add db_path column if it doesn't exist
+        if not _tabular_files_has_column(conn, "db_path"):
+            conn.execute("ALTER TABLE tabular_files ADD COLUMN db_path TEXT")
+
+        # Migrate: add name column to conversations if it doesn't exist
+        if not _conversations_has_column(conn, "name"):
+            conn.execute("ALTER TABLE conversations ADD COLUMN name TEXT")
+
         conn.commit()
     finally:
         if own:
@@ -139,18 +176,111 @@ def init_db(conn: Optional[sqlite3.Connection] = None) -> None:
     init_system_prompts()
 
 
-def create_conversation(collection_name: str, conn: Optional[sqlite3.Connection] = None) -> str:
+def create_conversation(collection_name: str, name: Optional[str] = None, conn: Optional[sqlite3.Connection] = None) -> str:
     own = conn is None
     if own:
         conn = get_connection()
     try:
         cid = str(uuid.uuid4())
-        conn.execute(
-            "INSERT INTO conversations (id, collection_name, created_at) VALUES (?, ?, ?)",
-            (cid, collection_name, time.time()),
-        )
+        if name:
+            conn.execute(
+                "INSERT INTO conversations (id, collection_name, name, created_at) VALUES (?, ?, ?, ?)",
+                (cid, collection_name, name, time.time()),
+            )
+        else:
+            conn.execute(
+                "INSERT INTO conversations (id, collection_name, created_at) VALUES (?, ?, ?)",
+                (cid, collection_name, time.time()),
+            )
         conn.commit()
         return cid
+    finally:
+        if own:
+            conn.close()
+
+
+def list_conversations(collection_name: str, conn: Optional[sqlite3.Connection] = None) -> List[Dict[str, Any]]:
+    """List all conversations for a collection, ordered by most recent first."""
+    own = conn is None
+    if own:
+        conn = get_connection()
+    try:
+        rows = conn.execute(
+            """
+            SELECT id, name, created_at,
+                   (SELECT COUNT(*) FROM messages WHERE conversation_id = conversations.id) as message_count,
+                   (SELECT MAX(created_at) FROM messages WHERE conversation_id = conversations.id) as last_active
+            FROM conversations
+            WHERE collection_name = ?
+            ORDER BY last_active DESC, created_at DESC
+            """,
+            (collection_name,),
+        ).fetchall()
+        return [dict(r) for r in rows]
+    finally:
+        if own:
+            conn.close()
+
+
+def get_conversation_by_id(conversation_id: str, conn: Optional[sqlite3.Connection] = None) -> Optional[Dict[str, Any]]:
+    """Get a specific conversation by ID."""
+    own = conn is None
+    if own:
+        conn = get_connection()
+    try:
+        row = conn.execute(
+            "SELECT * FROM conversations WHERE id = ?",
+            (conversation_id,),
+        ).fetchone()
+        return dict(row) if row else None
+    finally:
+        if own:
+            conn.close()
+
+
+def set_conversation_name_from_first_message(conversation_id: str, conn: Optional[sqlite3.Connection] = None) -> Optional[str]:
+    """Extract and set thread name from the first user message."""
+    own = conn is None
+    if own:
+        conn = get_connection()
+    try:
+        # Get the first user message for this conversation
+        row = conn.execute(
+            "SELECT content FROM messages WHERE conversation_id = ? AND role = 'user' ORDER BY created_at ASC LIMIT 1",
+            (conversation_id,),
+        ).fetchone()
+
+        if row:
+            topic = extract_topic_from_text(row["content"])
+            conn.execute(
+                "UPDATE conversations SET name = ? WHERE id = ?",
+                (topic, conversation_id)
+            )
+            conn.commit()
+            return topic
+        return None
+    finally:
+        if own:
+            conn.close()
+
+
+def delete_conversation(conversation_id: str, conn: Optional[sqlite3.Connection] = None) -> bool:
+    """Delete a conversation and all its associated data (messages, qa_runs)."""
+    own = conn is None
+    if own:
+        conn = get_connection()
+    try:
+        # Verify conversation exists and get collection_name
+        row = conn.execute(
+            "SELECT collection_name FROM conversations WHERE id = ?",
+            (conversation_id,),
+        ).fetchone()
+        if not row:
+            return False
+
+        conn.execute("DELETE FROM conversations WHERE id = ?", (conversation_id,))
+        conn.commit()
+        return True
     finally:
         if own:
             conn.close()
@@ -175,6 +305,18 @@ def insert_message(
             (conversation_id, role, content, qa_run_id, time.time()),
         )
         conn.commit()
+
+        # Set thread name from first user message
+        if role == "user":
+            # Check if this is the first user message by counting all user messages
+            # After commit, if count is 1, this was the first user message
+            existing_user_msg = conn.execute(
+                "SELECT COUNT(*) FROM messages WHERE conversation_id = ? AND role = 'user'",
+                (conversation_id,),
+            ).fetchone()
+            if existing_user_msg and existing_user_msg[0] == 1:
+                set_conversation_name_from_first_message(conversation_id, conn)
+
         return int(cur.lastrowid)
     finally:
         if own:
@@ -566,17 +708,70 @@ def delete_system_prompt(prompt_id: int, conn: Optional[sqlite3.Connection] = No
             conn.close()
 
 
+def delete_tabular_file_by_id(file_id: int, conn: Optional[sqlite3.Connection] = None) -> bool:
+    """Delete a specific tabular file by its ID.
+
+    Args:
+        file_id: The ID of the tabular file to delete
+        conn: Optional database connection
+
+    Returns:
+        True if file was deleted, False if not found
+    """
+    own = conn is None
+    if own:
+        conn = get_connection()
+    try:
+        # Get the database path before deleting
+        row = conn.execute(
+            "SELECT db_path, collection_name FROM tabular_files WHERE id = ?", (file_id,)
+        ).fetchone()
+
+        if not row:
+            return False
+
+        db_path = row['db_path']
+
+        # Delete analysis records first (cascade)
+        conn.execute("DELETE FROM tabular_analysis WHERE tabular_file_id = ?", (file_id,))
+        # Delete tabular file
+        conn.execute("DELETE FROM tabular_files WHERE id = ?", (file_id,))
+        conn.commit()
+
+        # Delete associated database file
+        if db_path and os.path.exists(db_path):
+            os.remove(db_path)
+
+        return True
+    finally:
+        if own:
+            conn.close()
+
+
 def delete_tabular_files_by_collection(collection_name: str, conn: Optional[sqlite3.Connection] = None) -> int:
     """Delete all tabular files associated with a collection."""
     own = conn is None
     if own:
         conn = get_connection()
     try:
+        # Get list of database paths to delete
+        db_paths = conn.execute(
+            "SELECT db_path FROM tabular_files WHERE collection_name = ?", (collection_name,)
+        ).fetchall()
+
         # Delete analysis records first (cascade)
         conn.execute("DELETE FROM tabular_analysis WHERE tabular_file_id IN (SELECT id FROM tabular_files WHERE collection_name = ?)", (collection_name,))
         # Delete tabular files
         result = conn.execute("DELETE FROM tabular_files WHERE collection_name = ?", (collection_name,))
         conn.commit()
+
+        # Delete associated database files
+        import os
+        for row in db_paths:
+            db_path = row['db_path']
+            if db_path and os.path.exists(db_path):
+                os.remove(db_path)
+
         return result.rowcount
     finally:
         if own:
