@@ -323,6 +323,29 @@ with st.sidebar:
             st.divider()
             st.write("**Delete Thread:**")
 
+            # Process delete request if confirmation received
+            delete_requested = st.session_state.get("_delete_thread_requested")
+            if delete_requested:
+                conv_id_to_delete = delete_requested
+                if db.delete_conversation(conv_id_to_delete):
+                    if st.session_state.conversation_id == conv_id_to_delete:
+                        # If deleting current thread, switch to most recent
+                        remaining = db.list_conversations(selected_collection)
+                        if remaining:
+                            st.session_state.conversation_id = remaining[0]["id"]
+                            st.session_state.messages = db.get_conversation_messages(st.session_state.conversation_id)
+                        else:
+                            # No remaining threads, create new one
+                            st.session_state.conversation_id = db.create_conversation(selected_collection)
+                            st.session_state.messages = []
+                            st.session_state.last_qa_run_id = None
+                    st.toast("✅ Thread deleted", icon="🎉")
+                    st.session_state["_delete_thread_requested"] = None
+                    st.rerun()
+                else:
+                    st.error("Failed to delete thread")
+                    st.session_state["_delete_thread_requested"] = None
+
             # Create buttons for each thread
             for conv in conversations:
                 conv_id = conv["id"]
@@ -333,30 +356,8 @@ with st.sidebar:
                     st.write(f"{marker} {thread_name}... ({conv_id[:8]}...)")
                 with col_btn2:
                     if st.button("🗑️", key=f"delete_conv_{conv_id}", help="Delete this thread"):
-                        # Show confirmation
-                        if st.session_state.get(f"confirm_delete_conv_{conv_id}", False):
-                            if db.delete_conversation(conv_id):
-                                if st.session_state.conversation_id == conv_id:
-                                    # If deleting current thread, switch to most recent
-                                    remaining = db.list_conversations(selected_collection)
-                                    if remaining:
-                                        st.session_state.conversation_id = remaining[0]["id"]
-                                        st.session_state.messages = db.get_conversation_messages(st.session_state.conversation_id)
-                                    else:
-                                        # No remaining threads, create new one
-                                        st.session_state.conversation_id = db.create_conversation(selected_collection)
-                                        st.session_state.messages = []
-                                    st.session_state.last_qa_run_id = None
-                                st.success("Thread deleted")
-                                st.session_state[f"confirm_delete_conv_{conv_id}"] = False
-                                st.rerun()
-                            else:
-                                st.error("Failed to delete thread")
-                                st.session_state[f"confirm_delete_conv_{conv_id}"] = False
-                        else:
-                            # Show confirmation toggle
-                            st.session_state[f"confirm_delete_conv_{conv_id}"] = True
-                            st.rerun()
+                        st.session_state["_delete_thread_requested"] = conv_id
+                        st.rerun()
 
     # Query Optimization Settings
     st.divider()
@@ -1053,6 +1054,38 @@ if selected_collection:
 
             ---
 
+            ### Conversation Memory
+
+            The RAG system maintains two types of memory:
+
+            **1. Short-Term Memory (Active in Current Thread)**
+            - Contains recent conversation history from the current chat thread
+            - Limited to 12 messages (configurable via `CHAT_HISTORY_MAX_MESSAGES`)
+            - Used for follow-up questions where the user refers to "it", "that", etc.
+            - Stored in SQLite `messages` table
+
+            **2. Long-Term Memory (Similar Past Q&A)**
+            - Searches past Q&A runs in the same collection for similar questions
+            - Uses cosine similarity on question embeddings to find relevant past interactions
+            - Limited to top 3 most similar past Q&A pairs (configurable)
+            - **Note**: Currently stored but not actively injected into prompts (feature ready for activation)
+            - Stored in SQLite `qa_runs` table with question embeddings
+
+            **Memory Flow:**
+            ```
+            User Question
+                 ↓
+            [Short-term] Chat history (last 12 messages) → Injected into context
+                 ↓
+            [Long-term] Search similar past Q&A (top 3) → Available for injection
+                 ↓
+            [Vector Search] Retrieve relevant document chunks (TOP_K)
+                 ↓
+            [LLM] Combine all context → Generate answer
+            ```
+
+            ---
+
             ### Multi-Query Expansion
 
             **Problem**: Single query may miss relevant docs
@@ -1088,7 +1121,7 @@ if selected_collection:
             ### Query Optimization Settings
 
             | Setting | When to Enable | Example |
-            |--|--|--|
+            |---|---|---|
             | Query Transformation | Vague questions | "Tell me about results" |
             | Query Expansion | Complex questions | "Compare Q1, Q2, Q3 results" |
 
@@ -1105,26 +1138,26 @@ if selected_collection:
             ### Components Overview
 
             ```
-            ┌─────────────────────────────────────────────────────────────┐
-            │                    Streamlit Web Interface                 │
-            │              (Your browser - app.py)                       │
-            └─────────────────────────┬─────────────────────────────────┘
-                                      │
-                                      ▼
-            ┌─────────────────────────────────────────────────────────────┐
-            │                   RAG Engine                              │
-            │              (rag_engine.py)                              │
-            │  - Query processing                                       │
-            │  - Retrieval orchestration                                │
-            │  - Response generation                                    │
-            └─────────────┬───────────────┬─────────────────────────────┘
-                          │               │
-                          ▼               ▼
-            ┌─────────────────┐   ┌──────────────────────────────────┐
-            │  Elasticsearch  │   │       SQLite Database            │
-            │  (Vector Store) │   │  (Conversations, Q&A, Prompts)   │
-            └─────────────────┘   └──────────────────────────────────┘
+            ┌────────────────────────────────────────────────────┐
+            │      Streamlit Web Interface (app.py)              │
+            │            (Your browser)                          │
+            └────────────────┬───────────────────────────────────┘
+                             │
+                             ▼
+            ┌────────────────────────────────────────────────────┐
+            │         RAG Engine (rag_engine.py)                 │
+            │      - Query processing                            │
+            │      - Retrieval orchestration                     │
+            │      - Response generation                         │
+            └──────────────┬───────────────────────────┬─────────┘
+                           │                           │
+                           ▼                           ▼
+            ┌──────────────────────┐  ┌──────────────────────────┐
+            │      Elasticsearch   │  │       SQLite Database    │
+            │      (Vector Store)  │  │       (Conversations,    │
+            └──────────────────────┘  └──────────────────────────┘
             ```
+
 
             ### Data Flow
 
@@ -1152,7 +1185,7 @@ if selected_collection:
             ### Environment Variables
 
             | Variable | Purpose | Default |
-            |--|--|--|
+            |---|---|---|
             | `LLM_PROVIDER` | LLM provider (ollama/openai) | `ollama` |
             | `OLLAMA_MODEL` | Model name for Ollama | `qwen3-coder-next:latest` |
             | `CHUNK_SIZE` | Text chunk size (tokens) | `1000` |
@@ -1165,7 +1198,7 @@ if selected_collection:
             ### Key Files
 
             | File | Purpose |
-            |--|--|
+            |---|---|
             | `app.py` | Streamlit web interface |
             | `rag_engine.py` | Core RAG logic |
             | `db.py` | SQLite persistence |
@@ -1207,6 +1240,206 @@ if selected_collection:
             - Check the "Help & About" tab for detailed explanations
             - Review the sidebar "Technical Details" for system info
             - Enable query optimization for better results
+            """)
+
+        # Application Usage
+        with st.expander("📱 Application Usage", expanded=True):
+            st.markdown("""
+            ### Overview
+
+            The RAG Knowledge Base provides multiple tabs for managing your documents and asking questions.
+            Below is a walkthrough of each feature.
+
+            ---
+
+            ### 1. Collection Management (Sidebar)
+
+            Collections organize your document knowledge bases. Think of each collection as a separate "workspace".
+
+            **Create a new collection:**
+            1. Enter a name (e.g., "project-alpha", "customer-support")
+            2. Click **Create**
+
+            **Rename a collection:**
+            1. Select the collection from the dropdown
+            2. Enter a new name in the text box
+            3. Click **Save**
+
+            **Delete a collection:**
+            1. Click **Delete** button
+            2. Confirm by typing the collection name
+            3. Click **Confirm**
+
+            ---
+
+            ### 2. Thread Management (Sidebar)
+
+            Each collection can have multiple conversation threads (threads).
+
+            **Create a new thread:**
+            - Click **+ New Thread** in the sidebar
+
+            **Switch between threads:**
+            - Use the dropdown under "Switch Thread"
+            - Select any thread to load its conversation history
+
+            **Delete a thread:**
+            - Click the trash icon next to a thread
+            - Toggle the confirmation switch
+            - Click again to confirm
+
+            ---
+
+            ### 3. Ask a Question Tab
+
+            This is where you interact with your knowledge base.
+
+            **Typical workflow:**
+            1. Type your question in the input box
+            2. Press Enter or click the send button
+            3. Watch the AI:
+               - Process your question
+               - Retrieve relevant documents
+               - Generate a reasoning chain
+               - Provide the final answer
+            4. Rate the answer with 👍 or 👍
+
+            **Tips for better results:**
+            - Be specific and clear
+            - Include key terms and context
+            - Try different phrasings if the first answer isn't good
+
+            ---
+
+            ### 4. Query Optimization Settings
+
+            Located in the sidebar under "Query Optimization":
+
+            **Query Transformation:**
+            - **Enable when:** Your question is vague or needs rephrasing
+            - **Example:** "Tell me about results" → "What were the Q4 2024 revenue figures?"
+            - **Use case:** When the AI doesn't understand your intent
+
+            **Query Expansion:**
+            - **Enable when:** You need comprehensive coverage
+            - **What it does:** Generates 3 query variations and merges results
+            - **Example:** "Compare performance" → 3 different angle queries
+
+            ---
+
+            ### 5. Q&A History Tab
+
+            Browse past conversations stored in the database.
+
+            **Features:**
+            - View up to 25 most recent Q&A runs
+            - Click to expand and see the full answer
+            - Delete individual Q&A runs
+
+            **Note:** Deleting a Q&A run also deletes associated messages.
+
+            ---
+
+            ### 6. Manage Documents Tab
+
+            Upload and manage documents for your collection.
+
+            **Upload documents:**
+            1. Select files (PDF, CSV, TXT, HTML, DOCX, XLSX, XLS)
+            2. Click **Process Documents**
+            3. Wait for processing to complete
+            4. Review the chunk count
+
+            **Supported formats:**
+            - **Text-based:** PDF, TXT, HTML, CSV, DOCX, XLSX, XLS
+            - **Document handling:** Text extraction and chunking
+
+            **Delete documents:**
+            - Click the trash icon next to a document
+            - This removes all chunks for that document
+
+            ---
+
+            ### 7. Tabular Analysis Tab
+
+            Analyze CSV/Excel data with SQL and natural language.
+
+            **Upload data:**
+            1. Go to "Manage Documents" tab
+            2. Upload your CSV or Excel file
+            3. Process it normally
+
+            **Natural Language Query:**
+            1. Select a table from the dropdown
+            2. Ask questions in plain English
+            3. The system converts to SQL and executes
+
+            **Direct SQL Query:**
+            1. View the table schema (columns shown)
+            2. Write your SQL query
+            3. Click "Run Query"
+            4. View results and download as CSV
+
+            ---
+
+            ### 8. System Prompt Tab
+
+            Manage AI behavior with custom prompts.
+
+            **Built-in prompts:**
+            - `collection_guard` - Always active, safety prompt
+              - Cannot be deleted or disabled
+              - Ensures AI sticks to document context
+
+            **Custom prompts:**
+            - Click to expand and view content
+            - Toggle "Enabled" checkbox to activate
+            - Click trash icon to delete
+
+            **Prompt order:**
+            - `collection_guard` is always applied first
+            - All enabled custom prompts are appended after
+
+            ---
+
+            ### 9. Help & About Tab
+
+            This tab contains:
+            - RAG explanation
+            - Architecture details
+            - Technical deep dives
+            - Configuration reference
+
+            ---
+
+            ### Screenshot Reference
+
+            ```
+            ┌─────────────────────────────────────────────────────────────────────────────┐
+            │                        RAG Knowledge Base                                   │
+            ├─────────────────────────────┬───────────────────────────────────────────────┤
+            │  [Collections ▼]            │  Ask a Question              Q&A History      │
+            │  [New name...]  Create      │  ┌──────────────────────────────────────────┐ │
+            │  [Rename] [Save] [Delete]   │  │ User: What is the revenue?               │ │
+            │                             │  │ Assistant: [Answer...]                   │ │
+            │  Threads                    │  │                                          │ │
+            │  [New Thread]               │  │ [👍 Like] [👎 Dislike]                   │ │
+            │  [Thread selector ▼]        │  └──────────────────────────────────────────┘ │
+            │                             │                                               │
+            │  Query Optimization         │  Manage Documents        Tabular Analysis     │
+            │  [✓] Query Transformation   │  ┌──────────────────────────────────────────┐ │
+            │  [ ] Query Expansion        │  │ Document list with delete buttons        │ │
+            │                             │  │ [Upload] Process Documents               │ │
+            │  Technical Details          │  └──────────────────────────────────────────┘ │
+            │  - Chunking: semantic       │                                               │
+            │  - Embedding: BAAI/bge...   │  System Prompt           Help & About         │
+            │  - Searching: Elasticsearch │  ┌──────────────────────────────────────────┐ │
+            │  - Rerank: FlashRank        │  │ [Prompt list with enable/delete]         │ │
+            │  - LLM: qwen3.5:9b          │  │ [Add new prompt form]                    │ │
+            │                             │  └──────────────────────────────────────────┘ │
+            └─────────────────────────────┴───────────────────────────────────────────────┘
+            ```
+
             """)
 
         # Footer
