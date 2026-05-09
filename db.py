@@ -808,3 +808,36 @@ def delete_collection_data(collection_name: str, conn: Optional[sqlite3.Connecti
             conn.close()
 
 
+def update_collection_name(old_name: str, new_name: str, conn: Optional[sqlite3.Connection] = None) -> bool:
+    """Update collection name across all affected tables.
+
+    Updates: conversations, qa_runs, tabular_files
+
+    Args:
+        old_name: Current collection name
+        new_name: New collection name
+        conn: Optional database connection
+
+    Returns:
+        True if successful, False otherwise
+    """
+    own = conn is None
+    if own:
+        conn = get_connection()
+    try:
+        # Update conversations
+        conn.execute("UPDATE conversations SET collection_name = ? WHERE collection_name = ?", (new_name, old_name))
+
+        # Update qa_runs
+        conn.execute("UPDATE qa_runs SET collection_name = ? WHERE collection_name = ?", (new_name, old_name))
+
+        # Update tabular_files
+        conn.execute("UPDATE tabular_files SET collection_name = ? WHERE collection_name = ?", (new_name, old_name))
+
+        conn.commit()
+        return True
+    finally:
+        if own:
+            conn.close()
+
+

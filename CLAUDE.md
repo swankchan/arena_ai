@@ -1,8 +1,9 @@
 # CLAUDE.md
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
-
+Working environment : conda activate rag
 ## Project Overview
+
 
 This is a **Retrieval-Augmented Generation (RAG)** system with a Streamlit web interface, supporting local LLMs via Ollama.
 
@@ -58,7 +59,7 @@ curl http://localhost:9200
 | Role | Model | Source |
 |------|-------|--------|
 | Generation | `qwen3.5:9b` | Ollama (local) |
-| Embeddings | `bge-large-en-v1.5` (1024-dim) | HuggingFace |
+| Embeddings | `BAAI/bge-large-en-v1.5` (1024-dim) | HuggingFace |
 | Reranking | `ms-marco-MiniLM-L-12-v2` | FlashRank |
 
 ### Key Technical Details

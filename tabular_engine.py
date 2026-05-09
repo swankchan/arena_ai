@@ -28,6 +28,9 @@ from datetime import datetime
 from dotenv import load_dotenv
 load_dotenv(override=True)
 
+# Documents directory for persistent storage
+DOCS_DIR = os.getenv("PERSIST_DIRECTORY", "./documents")
+
 
 class TabularDataHandler:
     """
@@ -128,25 +131,73 @@ class TabularDataHandler:
 
         return columns
 
-    def create_sqlite_db(self, df: pd.DataFrame, table_name: str) -> sqlite3.Connection:
+    def _get_db_dir(self) -> str:
+        """Get the directory for storing tabular SQLite databases."""
+        collection_dir = os.path.join(DOCS_DIR, self.collection_name, "tabular")
+        os.makedirs(collection_dir, exist_ok=True)
+        return collection_dir
+
+    def _get_db_path(self) -> str:
+        """Get the path to the tabular SQLite database file."""
+        return os.path.join(self._get_db_dir(), f"{self.table_name}.db")
+
+    def create_sqlite_db(self, df: pd.DataFrame, table_name: str, persist: bool = True) -> sqlite3.Connection:
         """
         Create a SQLite database from a pandas DataFrame.
 
         Args:
             df: DataFrame to convert
             table_name: Name for the table
+            persist: If True, save to file; if False, use in-memory
 
         Returns:
             SQLite connection object
         """
-        # Create in-memory database
-        conn = sqlite3.connect(':memory:')
-        conn.row_factory = sqlite3.Row
+        if persist:
+            # Create file-based database
+            db_path = self._get_db_path()
+            conn = sqlite3.connect(db_path)
+            conn.row_factory = sqlite3.Row
 
-        # Write DataFrame to SQLite
-        df.to_sql(table_name, conn, if_exists='replace', index=False)
+            # Write DataFrame to SQLite
+            df.to_sql(table_name, conn, if_exists='replace', index=False)
+            conn.commit()
+        else:
+            # Create in-memory database (for backward compatibility)
+            conn = sqlite3.connect(':memory:')
+            conn.row_factory = sqlite3.Row
+
+            # Write DataFrame to SQLite
+            df.to_sql(table_name, conn, if_exists='replace', index=False)
 
         return conn
+
+    def get_existing_connection(self) -> Optional[sqlite3.Connection]:
+        """
+        Get an existing connection to the persistent database if it exists.
+
+        Returns:
+            SQLite connection object or None if database doesn't exist
+        """
+        db_path = self._get_db_path()
+        if os.path.exists(db_path):
+            conn = sqlite3.connect(db_path)
+            conn.row_factory = sqlite3.Row
+            return conn
+        return None
+
+    def delete_database(self) -> bool:
+        """
+        Delete the persistent SQLite database file.
+
+        Returns:
+            True if file was deleted, False if it didn't exist
+        """
+        db_path = self._get_db_path()
+        if os.path.exists(db_path):
+            os.remove(db_path)
+            return True
+        return False
 
     def query_sql(self, conn: sqlite3.Connection, sql_query: str) -> List[Dict[str, Any]]:
         """
@@ -368,11 +419,14 @@ class TabularDataHandler:
             conn = sqlite3.connect(self.db_path, check_same_thread=False)
 
         try:
+            # Get the database path for persistent storage
+            db_path = self._get_db_path()
+
             cur = conn.execute(
                 """
                 INSERT INTO tabular_files
-                (collection_name, filename, table_name, row_count, columns_json, metadata_json, created_at)
-                VALUES (?, ?, ?, ?, ?, ?, ?)
+                (collection_name, filename, table_name, row_count, columns_json, metadata_json, db_path, created_at)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?)
                 """,
                 (
                     self.collection_name,
@@ -381,6 +435,7 @@ class TabularDataHandler:
                     metadata.get('row_count', 0),
                     json.dumps(metadata.get('columns', {})),
                     json.dumps(metadata),
+                    db_path,
                     datetime.now().timestamp()
                 )
             )
@@ -398,8 +453,8 @@ class TabularDataHandler:
 
         try:
             cur = conn.execute(
-                "SELECT * FROM tabular_files WHERE table_name LIKE ? ORDER BY created_at DESC",
-                (f"{self.table_name}%",)
+                "SELECT * FROM tabular_files WHERE collection_name = ? ORDER BY created_at DESC",
+                (self.collection_name,)
             )
             rows = cur.fetchall()
             # sqlite3.Row objects can be converted to dict
@@ -410,6 +465,76 @@ class TabularDataHandler:
                     row_dict[col[0]] = row[idx]
                 result.append(row_dict)
             return result
+        finally:
+            if own:
+                conn.close()
+
+    def get_db_path_by_filename(self, filename: str, conn: Optional[sqlite3.Connection] = None) -> Optional[str]:
+        """
+        Get the database path for a specific filename.
+
+        Args:
+            filename: Name of the file
+            conn: Optional database connection
+
+        Returns:
+            Path to the database file or None if not found
+        """
+        own = conn is None
+        if own:
+            conn = sqlite3.connect(self.db_path, check_same_thread=False)
+            conn.row_factory = sqlite3.Row
+
+        try:
+            cur = conn.execute(
+                "SELECT db_path FROM tabular_files WHERE filename = ? ORDER BY created_at DESC LIMIT 1",
+                (filename,)
+            )
+            row = cur.fetchone()
+            return row['db_path'] if row else None
+        finally:
+            if own:
+                conn.close()
+
+    def delete_file(self, file_id: int, conn: Optional[sqlite3.Connection] = None) -> bool:
+        """
+        Delete a tabular file by ID.
+
+        Args:
+            file_id: The ID of the file to delete
+            conn: Optional database connection
+
+        Returns:
+            True if file was deleted, False if not found
+        """
+        own = conn is None
+        if own:
+            conn = sqlite3.connect(self.db_path, check_same_thread=False)
+            conn.row_factory = sqlite3.Row
+
+        try:
+            # Get the database path before deleting
+            row = conn.execute(
+                "SELECT db_path FROM tabular_files WHERE id = ? AND collection_name = ?",
+                (file_id, self.collection_name)
+            ).fetchone()
+
+            if not row:
+                return False
+
+            db_path = row['db_path']
+
+            # Delete analysis records first (cascade)
+            conn.execute("DELETE FROM tabular_analysis WHERE tabular_file_id = ?", (file_id,))
+            # Delete tabular file
+            conn.execute("DELETE FROM tabular_files WHERE id = ? AND collection_name = ?", (file_id, self.collection_name))
+            conn.commit()
+
+            # Delete associated database file
+            if db_path and os.path.exists(db_path):
+                os.remove(db_path)
+
+            return True
         finally:
             if own:
                 conn.close()

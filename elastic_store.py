@@ -444,7 +444,14 @@ class ElasticStore:
             old_docs = old_stats['indices'][old_name]['primaries']['docs']['count']
             new_docs = new_stats['indices'][new_name]['primaries']['docs']['count']
 
-            if new_docs == 0:
+            # Allow renaming empty collections (metadata-only rename)
+            # In this case, we need to explicitly copy the mapping and settings to the new index
+            # and then delete the old index. The new index will be empty but with correct config.
+            if new_docs == 0 and old_docs == 0:
+                # Both are empty - just need to delete the old index
+                # The new index already exists with correct mapping (created at line 422)
+                pass  # Continue to delete old index
+            elif new_docs == 0:
                 client.indices.delete(index=new_name)
                 return False, "Rename failed: No documents were copied to new index"
 

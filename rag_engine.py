@@ -190,9 +190,9 @@ IMPORTANT GUIDELINES:
         2. Creates a SQLite database for SQL queries
         3. Generates analysis metadata
         4. Stores the data for Text-to-SQL queries
-        5. Still creates text chunks for semantic search
+        5. Does NOT create chunks for vector search (tabular data is queried via SQL)
 
-        Returns the number of chunks created.
+        Returns 0 (no chunks created for vector search).
         """
         import pandas as pd
 
@@ -206,21 +206,12 @@ IMPORTANT GUIDELINES:
         filename = os.path.basename(file_path)
         self.tabular_handler.store_metadata(filename, metadata)
 
-        # Create text chunks from the DataFrame for semantic search
-        # Convert DataFrame to markdown-style text for better retrieval
-        chunks = self._df_to_chunks(df, filename)
+        # Tabular data is NOT chunked for vector search
+        # It is queried directly via SQL/Pandas analysis
+        if progress_callback:
+            progress_callback(1.0)  # Complete
 
-        total_chunks = len(chunks)
-
-        # Add chunks to Elasticsearch
-        batch_size = 10000
-        for i in range(0, total_chunks, batch_size):
-            batch = chunks[i:i+batch_size]
-            self.vectorstore.add_documents(batch)
-            if progress_callback:
-                progress_callback((i + len(batch)) / total_chunks)
-
-        return total_chunks
+        return 0
 
     def _df_to_chunks(self, df: pd.DataFrame, source_name: str) -> List[Any]:
         """
@@ -360,7 +351,7 @@ Question: {base_query}"""
         chat_history: Optional[List[Dict[str, Any]]],
         long_term_memory: Optional[str],
     ) -> str:
-        """Format short-term chat and long-term memory blocks for injection before retrieved docs."""
+        """Format short-term chat memory block for injection before retrieved docs."""
         parts: List[str] = []
         max_msgs = int(os.getenv("CHAT_HISTORY_MAX_MESSAGES", "12"))
         max_chars = int(os.getenv("CHAT_HISTORY_MAX_CHARS_PER_MESSAGE", "2000"))
@@ -379,11 +370,7 @@ Question: {base_query}"""
             if lines:
                 parts.append("Recent conversation (short-term memory):\n" + "\n".join(lines))
 
-        if long_term_memory and long_term_memory.strip():
-            parts.append(
-                "Relevant past Q&A from stored history (long-term memory):\n"
-                + long_term_memory.strip()
-            )
+        # Long-term memory from past Q&A is disabled - each query is independent
 
         return "\n\n".join(parts) if parts else ""
 
@@ -764,7 +751,6 @@ Return ONLY the SQL query, nothing else. Use standard SQL syntax compatible with
         self,
         question: str,
         chat_history: Optional[List[Dict[str, Any]]] = None,
-        long_term_memory: Optional[str] = None,
     ):
         """Queries the RAG system and measures performance metrics with optional reasoning."""
         start_time = time.time()
@@ -835,9 +821,9 @@ ANSWER: [Your final answer]
             sql_results = self._query_tabular_sql(question)
             pandas_results = self._analyze_tabular_data(question)
 
-        # Always build generation context manually so short-term / long-term memory can be injected.
+        # Always build generation context manually so short-term memory can be injected.
         retrieved_text = "\n\n".join([doc.page_content for doc in source_documents])
-        memory_prefix = self._build_memory_prefix(chat_history, long_term_memory)
+        memory_prefix = self._build_memory_prefix(chat_history, None)
 
         # Check if tabular results should be included
         if self._has_tabular_data() and self._is_tabular_question(question):
@@ -889,7 +875,6 @@ ANSWER: [Your final answer]
         self,
         question: str,
         chat_history: Optional[List[Dict[str, Any]]] = None,
-        long_term_memory: Optional[str] = None,
     ):
         """
         Stream the RAG response token by token.
@@ -959,7 +944,7 @@ ANSWER: [Your final answer]
             pandas_results = self._analyze_tabular_data(question)
 
         retrieved_text = "\n\n".join([doc.page_content for doc in source_documents])
-        memory_prefix = self._build_memory_prefix(chat_history, long_term_memory)
+        memory_prefix = self._build_memory_prefix(chat_history, None)
 
         # Check if tabular results should be included
         if self._has_tabular_data() and self._is_tabular_question(question):
@@ -1094,7 +1079,7 @@ ANSWER: [Your final answer]
 
     @staticmethod
     def rename_collection(old_name: str, new_name: str) -> tuple:
-        """Renames a collection in Elasticsearch. Returns (success, message)."""
+        """Renames a collection in Elasticsearch and updates SQLite database. Returns (success, message)."""
         from elastic_store import ElasticStore
         import os
 
@@ -1106,7 +1091,16 @@ ANSWER: [Your final answer]
         try:
             # Rename the Elasticsearch index
             success, msg = ElasticStore.rename_index(old_index, new_index)
-            return success, msg
+            if not success:
+                return False, msg
+
+            # Update the database collection name
+            from db import update_collection_name
+            db_success = update_collection_name(old_name, new_name)
+            if not db_success:
+                return False, "Elasticsearch renamed but database update failed"
+
+            return True, f"Collection renamed successfully from '{old_name}' to '{new_name}'"
         except Exception as e:
             return False, f"Error renaming collection: {e}"
 
