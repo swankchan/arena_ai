@@ -24,7 +24,8 @@ import os
 import sqlite3
 import time
 import uuid
-from typing import Any, Dict, List, Optional, Sequence, Tuple
+from contextlib import contextmanager
+from typing import Any, Dict, Iterator, List, Optional, Sequence, Tuple
 
 # Default path relative to project root
 DEFAULT_DB_PATH = os.path.join(os.path.dirname(__file__), "rag_app.db")
@@ -37,9 +38,19 @@ def get_db_path() -> str:
 def get_connection() -> sqlite3.Connection:
     path = get_db_path()
     os.makedirs(os.path.dirname(os.path.abspath(path)) or ".", exist_ok=True)
-    conn = sqlite3.connect(path, check_same_thread=False)
+    conn = sqlite3.connect(path, check_same_thread=False, cached_statements=128)
     conn.row_factory = sqlite3.Row
     return conn
+
+
+@contextmanager
+def get_db_connection():
+    """Context manager for database connections with automatic cleanup."""
+    conn = get_connection()
+    try:
+        yield conn
+    finally:
+        conn.close()
 
 
 def _qa_runs_has_column(conn: sqlite3.Connection, column: str) -> bool:
@@ -339,7 +350,13 @@ def insert_qa_run(
     if own:
         conn = get_connection()
     try:
-        emb_json = json.dumps(list(question_embedding)) if question_embedding is not None else None
+        # Store embedding as BLOB (binary) for space efficiency
+        emb_blob = None
+        if question_embedding is not None:
+            import struct
+            emb_list = list(question_embedding)
+            # Pack floats as binary (4 bytes each)
+            emb_blob = struct.pack(f'{len(emb_list)}f', *emb_list)
         cur = conn.execute(
             """
             INSERT INTO qa_runs (
@@ -358,7 +375,7 @@ def insert_qa_run(
                 optimization_log or "",
                 engine_key or "",
                 time.time(),
-                emb_json,
+                emb_blob,
             ),
         )
         conn.commit()
@@ -391,7 +408,10 @@ def search_similar_qa(
     if own:
         conn = get_connection()
     try:
+        import struct
         qe = list(query_embedding)
+        # Pack query embedding as binary for comparison
+        qe_blob = struct.pack(f'{len(qe)}f', *qe)
         rows = conn.execute(
             """
             SELECT id, question, answer, question_embedding
@@ -405,8 +425,15 @@ def search_similar_qa(
             if exclude_qa_run_id is not None and row["id"] == exclude_qa_run_id:
                 continue
             try:
-                emb = json.loads(row["question_embedding"])
-            except (TypeError, json.JSONDecodeError):
+                # Try to load as BLOB first, fall back to JSON for compatibility
+                emb_blob = row["question_embedding"]
+                if isinstance(emb_blob, bytes):
+                    # BLOB format
+                    emb = list(struct.unpack(f'{len(qe)}f', emb_blob))
+                else:
+                    # JSON format (fallback for older records)
+                    emb = json.loads(emb_blob)
+            except (TypeError, json.JSONDecodeError, struct.error):
                 continue
             sim = _cosine_sim(qe, emb)
             scored.append((sim, row))

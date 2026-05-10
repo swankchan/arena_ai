@@ -15,10 +15,21 @@ limitations under the License.
 import os
 import time
 import json
+import logging
 import pandas as pd
 import tiktoken
 from typing import Any, Dict, List, Optional
 from dotenv import load_dotenv
+
+# Configure logging
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+    handlers=[
+        logging.FileHandler('rag_engine.log'),
+        logging.StreamHandler()
+    ]
+)
 
 from langchain_community.document_loaders import (
     PyPDFium2Loader,
@@ -309,7 +320,7 @@ Numeric column statistics:
         try:
             encoding = tiktoken.get_encoding("cl100k_base") # common encoding
             return len(encoding.encode(text))
-        except:
+        except Exception:
             # Fallback to simple word-based estimate if tiktoken fails
             return len(text.split()) * 1.3 # common heuristic: 1.3 tokens per word
 
@@ -328,7 +339,7 @@ Rewritten Question:"""
                 optimized_queries = [transformed]
                 transformation_log += f"**Transformed Query:** {transformed}\n"
             except Exception as e:
-                print(f"Query Transformation Error: {e}")
+                logging.error(f"Query Transformation Error: {e}")
 
         # 2. Query Expansion (Multi-Query)
         if os.getenv("QUERY_EXPANSION", "false").lower() == "true":
@@ -342,7 +353,7 @@ Question: {base_query}"""
                 optimized_queries.extend(variations[:3])
                 transformation_log += "**Expanded Queries:**\n" + "\n".join([f"- {v}" for v in variations[:3]])
             except Exception as e:
-                print(f"Query Expansion Error: {e}")
+                logging.error(f"Query Expansion Error: {e}")
 
         return list(set(optimized_queries)), transformation_log
 
@@ -351,7 +362,7 @@ Question: {base_query}"""
         chat_history: Optional[List[Dict[str, Any]]],
         long_term_memory: Optional[str],
     ) -> str:
-        """Format short-term chat memory block for injection before retrieved docs."""
+        """Format short-term chat memory and long-term memory blocks for injection before retrieved docs."""
         parts: List[str] = []
         max_msgs = int(os.getenv("CHAT_HISTORY_MAX_MESSAGES", "12"))
         max_chars = int(os.getenv("CHAT_HISTORY_MAX_CHARS_PER_MESSAGE", "2000"))
@@ -370,7 +381,9 @@ Question: {base_query}"""
             if lines:
                 parts.append("Recent conversation (short-term memory):\n" + "\n".join(lines))
 
-        # Long-term memory from past Q&A is disabled - each query is independent
+        # Long-term memory from past Q&A (optional, controlled by LONG_TERM_MEMORY_ENABLED env var)
+        if long_term_memory:
+            parts.append("Relevant past Q&A (long-term memory):\n" + long_term_memory)
 
         return "\n\n".join(parts) if parts else ""
 
@@ -477,6 +490,7 @@ Return ONLY the SQL query, nothing else. Use standard SQL syntax compatible with
                     sql_generation_log = f"Generated SQL using LLM: `{sql_query}`\n"
             except Exception as e:
                 error_msg = f"LLM SQL generation failed: {e}"
+                logging.error(f"SQL generation error for question '{question}': {e}")
 
         # If we still don't have a query, return error
         if not sql_query:
@@ -595,55 +609,63 @@ Return ONLY the SQL query, nothing else. Use standard SQL syntax compatible with
         question_lower = question.lower()
         column_names_lower = {c.lower(): c for c in column_names}
 
+        # Pre-compile regex patterns for performance
+        patterns = {
+            'total': re.compile(r'total\s+([a-zA-Z_][a-zA-Z0-9_]*)'),
+            'average': re.compile(r'average\s+([a-zA-Z_][a-zA-Z0-9_]*)'),
+            'sum_of': re.compile(r'sum\s+of\s+([a-zA-Z_][a-zA-Z0-9_]*)'),
+            'maximum': re.compile(r'(?:maximum|highest|largest)\s+([a-zA-Z_][a-zA-Z0-9_]*)'),
+            'minimum': re.compile(r'(?:minimum|lowest|smallest)\s+([a-zA-Z_][a-zA-Z0-9_]*)'),
+            'count': re.compile(r'count\s+(?:the\s+)?(number\s+of\s+)?(rows?|records?)'),
+            'show_me': re.compile(r'show\s+me\s+([a-zA-Z_,\s]+)\s+from\s+'),
+            'first': re.compile(r'first\s+(\d+)?\s*(rows?|records?)?'),
+            'last': re.compile(r'last\s+(\d+)?\s*(rows?|records?)?'),
+            'top_n': re.compile(r'(?:top|bottom|first|last)\s+(\d+)\s+(?:rows?|records?)'),
+            'order_by': re.compile(r'(?:sorted?|order(?:ed)?|sorted? by|order(?:ed)? by)\s+([a-zA-Z_][a-zA-Z0-9_]*)\s+(?:asc|desc|ascending|descending)?'),
+        }
+
         # Pattern: "What is the total [column]?"
-        total_match = re.search(r'total\s+([a-zA-Z_][a-zA-Z0-9_]*)', question_lower)
-        if total_match:
-            col = total_match.group(1)
+        if match := patterns['total'].search(question_lower):
+            col = match.group(1)
             col_normalized = col.lower()
             if col_normalized in column_names_lower:
                 return f"SELECT SUM({column_names_lower[col_normalized]}) as total FROM {table_name}"
 
         # Pattern: "What is the average [column]?"
-        avg_match = re.search(r'average\s+([a-zA-Z_][a-zA-Z0-9_]*)', question_lower)
-        if avg_match:
-            col = avg_match.group(1)
+        if match := patterns['average'].search(question_lower):
+            col = match.group(1)
             col_normalized = col.lower()
             if col_normalized in column_names_lower:
                 return f"SELECT AVG({column_names_lower[col_normalized]}) as average FROM {table_name}"
 
         # Pattern: "What is the sum of [column]?"
-        sum_match = re.search(r'sum\s+of\s+([a-zA-Z_][a-zA-Z0-9_]*)', question_lower)
-        if sum_match:
-            col = sum_match.group(1)
+        if match := patterns['sum_of'].search(question_lower):
+            col = match.group(1)
             col_normalized = col.lower()
             if col_normalized in column_names_lower:
                 return f"SELECT SUM({column_names_lower[col_normalized]}) as total FROM {table_name}"
 
         # Pattern: "What is the maximum [column]?"
-        max_match = re.search(r'maximum|highest|largest\s+([a-zA-Z_][a-zA-Z0-9_]*)', question_lower)
-        if max_match:
-            col = max_match.group(1)
+        if match := patterns['maximum'].search(question_lower):
+            col = match.group(1)
             col_normalized = col.lower()
             if col_normalized in column_names_lower:
                 return f"SELECT MAX({column_names_lower[col_normalized]}) as max_value FROM {table_name}"
 
         # Pattern: "What is the minimum [column]?"
-        min_match = re.search(r'minimum|lowest|smallest\s+([a-zA-Z_][a-zA-Z0-9_]*)', question_lower)
-        if min_match:
-            col = min_match.group(1)
+        if match := patterns['minimum'].search(question_lower):
+            col = match.group(1)
             col_normalized = col.lower()
             if col_normalized in column_names_lower:
                 return f"SELECT MIN({column_names_lower[col_normalized]}) as min_value FROM {table_name}"
 
         # Pattern: "Count the number of [rows/records]"
-        count_match = re.search(r'count\s+(?:the\s+)?(number\s+of\s+)?(rows?|records?)', question_lower)
-        if count_match:
+        if match := patterns['count'].search(question_lower):
             return f"SELECT COUNT(*) as count FROM {table_name}"
 
         # Pattern: "Show me [columns] from [table]"
-        select_match = re.search(r'show\s+me\s+([a-zA-Z_,\s]+)\s+from\s+', question_lower)
-        if select_match:
-            cols = select_match.group(1).strip()
+        if match := patterns['show_me'].search(question_lower):
+            cols = match.group(1).strip()
             # Validate columns exist
             valid_cols = [column_names_lower.get(c.strip().lower(), c.strip()) for c in cols.split(',') if c.strip().lower() in column_names_lower]
             if valid_cols:
@@ -653,19 +675,33 @@ Return ONLY the SQL query, nothing else. Use standard SQL syntax compatible with
         if 'all' in question_lower and ('data' in question_lower or 'rows' in question_lower or 'records' in question_lower):
             return f"SELECT * FROM {table_name}"
 
-        # Pattern: "What is the first [column]?" or "Show first rows"
-        first_match = re.search(r'first\s+(\d+)?\s*(rows?|records?)?', question_lower)
-        if first_match:
-            limit = first_match.group(1)
+        # Pattern: "Show first N rows" or "Show last N rows"
+        if match := patterns['top_n'].search(question_lower):
+            limit = match.group(1)
+            if 'top' in question_lower or 'first' in question_lower:
+                return f"SELECT * FROM {table_name} LIMIT {limit}"
+            else:
+                return f"SELECT * FROM {table_name} ORDER BY (SELECT 1) LIMIT {limit}"
+
+        # Pattern: "ORDER BY" support
+        if match := patterns['order_by'].search(question_lower):
+            order_col = match.group(1)
+            order_dir = match.group(2) or "ASC"
+            order_dir = "ASC" if order_dir.lower() in ("", "asc", "ascending") else "DESC"
+            if order_col.lower() in column_names_lower:
+                return f"SELECT * FROM {table_name} ORDER BY {column_names_lower[order_col.lower()]} {order_dir}"
+
+        # Pattern: "What is the first row" or "Show first rows"
+        if match := patterns['first'].search(question_lower):
+            limit = match.group(1)
             if limit:
                 return f"SELECT * FROM {table_name} LIMIT {limit}"
             else:
                 return f"SELECT * FROM {table_name} LIMIT 10"
 
-        # Pattern: "What is the last [column]?" or "Show last rows"
-        last_match = re.search(r'last\s+(\d+)?\s*(rows?|records?)?', question_lower)
-        if last_match:
-            limit = last_match.group(1)
+        # Pattern: "What is the last row" or "Show last rows"
+        if match := patterns['last'].search(question_lower):
+            limit = match.group(1)
             if limit:
                 return f"SELECT * FROM {table_name} ORDER BY (SELECT 1) LIMIT {limit}"
             else:
@@ -747,6 +783,60 @@ Return ONLY the SQL query, nothing else. Use standard SQL syntax compatible with
 
         return "\n\n".join(parts)
 
+    def _get_long_term_memory(self, question: str, collection_name: str, top_k: int = 3) -> str:
+        """
+        Retrieve similar past Q&A from the database for long-term memory.
+
+        Args:
+            question: Current question to find similar past Q&A
+            collection_name: Name of the collection
+            top_k: Number of past Q&A to retrieve
+
+        Returns:
+            Formatted string of past Q&A or empty string if disabled/not available
+        """
+        # Check if long-term memory is enabled
+        if os.getenv("LONG_TERM_MEMORY_ENABLED", "false").lower() != "true":
+            return ""
+
+        try:
+            import db as rag_db
+
+            # Get embedding for the question if available
+            try:
+                query_embedding = self.embeddings.embed_query(question)
+            except Exception:
+                query_embedding = None
+
+            if query_embedding is None:
+                return ""
+
+            # Search for similar past Q&A
+            similar_qa = rag_db.search_similar_qa(
+                collection_name=collection_name,
+                query_embedding=query_embedding,
+                top_k=top_k,
+            )
+
+            if not similar_qa:
+                return ""
+
+            # Format the memory entries
+            memory_parts = []
+            for item in similar_qa[:top_k]:
+                if item.get('similarity', 0) < 0.3:  # Threshold for relevance
+                    continue
+                memory_parts.append(
+                    f"Past Question {len(memory_parts)+1}: {item['question']}\n"
+                    f"Past Answer {len(memory_parts)+1}: {item['answer']}"
+                )
+
+            return "\n\n".join(memory_parts)
+
+        except Exception as e:
+            logging.error(f"Error retrieving long-term memory: {e}")
+            return ""
+
     def query(
         self,
         question: str,
@@ -782,6 +872,9 @@ Return ONLY the SQL query, nothing else. Use standard SQL syntax compatible with
         # Get system prompt from database
         system_prompt = self._get_system_prompt()
 
+        # Retrieve long-term memory if enabled
+        long_term_memory = self._get_long_term_memory(question, self.collection_name)
+
         # Define a prompt template that encourages reasoning.
         # In LangChain 1.x, prompts live in `langchain_core.prompts`.
         from langchain_core.prompts import PromptTemplate
@@ -789,8 +882,8 @@ Return ONLY the SQL query, nothing else. Use standard SQL syntax compatible with
         template = f"""{{system_prompt}}
 
 The context below may include:
-(1) recent conversation with the user,
-(2) similar past Q&A from stored history,
+(1) recent conversation with the user (short-term memory),
+(2) similar past Q&A from stored history (long-term memory),
 (3) retrieved document excerpts from the knowledge base.
 
 Use all relevant parts to answer. If the answer is not supported by the context, say that you don't know.
@@ -823,7 +916,7 @@ ANSWER: [Your final answer]
 
         # Always build generation context manually so short-term memory can be injected.
         retrieved_text = "\n\n".join([doc.page_content for doc in source_documents])
-        memory_prefix = self._build_memory_prefix(chat_history, None)
+        memory_prefix = self._build_memory_prefix(chat_history, long_term_memory)
 
         # Check if tabular results should be included
         if self._has_tabular_data() and self._is_tabular_question(question):
@@ -908,13 +1001,16 @@ ANSWER: [Your final answer]
         # Get system prompt from database
         system_prompt = self._get_system_prompt()
 
+        # Retrieve long-term memory if enabled
+        long_term_memory = self._get_long_term_memory(question, self.collection_name)
+
         from langchain_core.prompts import PromptTemplate
 
         template = f"""{{system_prompt}}
 
 The context below may include:
-(1) recent conversation with the user,
-(2) similar past Q&A from stored history,
+(1) recent conversation with the user (short-term memory),
+(2) similar past Q&A from stored history (long-term memory),
 (3) retrieved document excerpts from the knowledge base.
 
 Use all relevant parts to answer. If the answer is not supported by the context, say that you don't know.
@@ -944,7 +1040,7 @@ ANSWER: [Your final answer]
             pandas_results = self._analyze_tabular_data(question)
 
         retrieved_text = "\n\n".join([doc.page_content for doc in source_documents])
-        memory_prefix = self._build_memory_prefix(chat_history, None)
+        memory_prefix = self._build_memory_prefix(chat_history, long_term_memory)
 
         # Check if tabular results should be included
         if self._has_tabular_data() and self._is_tabular_question(question):
