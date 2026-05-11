@@ -34,11 +34,15 @@ db.init_db()
 # Streamlit App Configuration
 st.set_page_config(page_title="RAG KB ", layout="wide")
 
-# Custom CSS for chat message avatar colors (high contrast)
+# Custom CSS for chat message avatars
 st.markdown("""
 <style>
-[data-testid="stChatAvatarIcon-user"] { color: #FFD700 !important; }
-[data-testid="stChatAvatarIcon-assistant"] { color: #00FF00 !important; }
+/* Hide default Streamlit chat avatars */
+.stChatAvatarIcon {
+    display: none !important;
+}
+/* Chat message container spacing */
+.stChatMessage { gap: 0.5rem; }
 </style>
 """, unsafe_allow_html=True)
 
@@ -102,20 +106,28 @@ with st.sidebar:
     all_collections = list(es_collections) + [c for c in db_collections if c not in es_collections]
 
     # Select existing collection
-    selected_collection = None
     if all_collections:
-        # Restore st.session_state.collection if it's still valid
-        if st.session_state.collection and st.session_state.collection in all_collections:
-            pass  # Keep current
-        elif all_collections:
-            st.session_state.collection = all_collections[0]
+        # Use collection_select as the source of truth (it's updated by Streamlit before script runs)
+        # Fall back to collection if collection_select is not set or invalid
+        if "collection_select" in st.session_state and st.session_state.collection_select in all_collections:
+            selected_collection = st.session_state.collection_select
+        elif st.session_state.collection in all_collections:
+            selected_collection = st.session_state.collection
+        else:
+            selected_collection = all_collections[0]
+            st.session_state.collection = selected_collection
 
-        selected_collection = st.selectbox(
+        current_index = all_collections.index(selected_collection)
+
+        # Display the collection selector
+        st.selectbox(
             "",
             options=all_collections,
-            index=all_collections.index(st.session_state.collection),
+            index=current_index,
             key="collection_select"
         )
+
+        # Update session state to ensure consistency
         st.session_state.collection = selected_collection
 
         # Load previous messages from database for this conversation when switching collections
@@ -131,6 +143,8 @@ with st.sidebar:
                 st.session_state.conversation_id = db.create_conversation(selected_collection)
             st.session_state.messages = db.get_conversation_messages(st.session_state.conversation_id)
             st.session_state.last_qa_run_id = None
+    else:
+        selected_collection = None
 
     # Manage current collection section
     # Show caption only when a collection is selected
@@ -156,10 +170,9 @@ with st.sidebar:
     col1, col2 = st.columns(2)
 
     with col1:
-        # Save button - dimmed when no collection selected OR no name entered
-        save_disabled = not bool(selected_collection) or not name_entered
-        if st.button("Save", key="rename_btn", use_container_width=True, disabled=save_disabled,
-                     help="Rename current collection or save new collection name"):
+        # Rename button - only shown when a collection is selected
+        rename_disabled = not bool(selected_collection) or not name_entered
+        if st.button("Rename", key="rename_btn", use_container_width=True, disabled=rename_disabled):
             if selected_collection and new_name:
                 if new_name.lower().strip() != selected_collection:
                     new_name_clean = new_name.lower().strip()
@@ -179,8 +192,7 @@ with st.sidebar:
         # Create button - dimmed when no name entered
         create_disabled = not name_entered
         if st.button("Create", key="create_collection_btn", use_container_width=True,
-                     disabled=create_disabled,
-                     help="Create a new collection (becomes active immediately)"):
+                     disabled=create_disabled):
             if new_name:
                 new_name_clean = new_name.lower().strip()
                 # Get embedding dimensions for the index mapping
@@ -196,6 +208,8 @@ with st.sidebar:
                     st.session_state.collection = new_name_clean
                     st.session_state.conversation_collection = new_name_clean
                     st.session_state.conversation_id = db.create_conversation(new_name_clean)
+                    st.session_state.messages = []  # Clear messages for new collection
+                    st.session_state.rag_engine = None  # Clear cached engine to force re-initialization
                     st.success(message)
                     st.rerun()
                 else:
@@ -209,8 +223,7 @@ with st.sidebar:
 
         # Stage 1: Show delete button
         if st.session_state.delete_confirm_stage == 0:
-            if st.button("Delete", type="primary", key="delete_btn", use_container_width=True,
-                         help="Remove collection and all its data (requires confirmation)"):
+            if st.button("Delete", type="primary", key="delete_btn", use_container_width=True):
                 st.session_state.delete_confirm_stage = 1
                 st.rerun()
 
@@ -421,7 +434,7 @@ if selected_collection:
     st.session_state["engine_key_string"] = engine_key
 
 # Main Interface with Tabs
-st.title("Retrieval-Augmented Generation Knowledge Base")
+st.title("RAG KB")
 if selected_collection:
     st.write(f"Currently using collection: **{selected_collection}**")
 
@@ -695,7 +708,8 @@ if selected_collection:
 
         # Display Chat History
         for message in st.session_state.messages:
-            with st.chat_message(message["role"]):
+            avatar = "🧑" if message["role"] == "user" else "👽"
+            with st.chat_message(message["role"], avatar=avatar):
                 st.markdown(message["content"])
 
         # User Input
@@ -715,11 +729,11 @@ if selected_collection:
             except Exception:
                 pass
 
-            with st.chat_message("user"):
+            with st.chat_message("user", avatar="🧑"):
                 st.markdown(prompt)
 
             # Generate Response with Streaming
-            with st.chat_message("assistant"):
+            with st.chat_message("assistant", avatar="👽"):
                 try:
                     q_emb = None
                     try:
