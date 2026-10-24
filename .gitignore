@@ -1,22 +1,18 @@
 # Environment variables
 .env
 
-# Claude Code settings
+# Local agent settings
 .claude/
 memory/
 
-# Database files
+# Application data
+documents/
+lance_db/
 *.db
 *.sqlite3
 
-# Data
-documents/
-images/screenshots/
-
-# ChromaDB persistence
-chroma_db/
-
 # Temporary files
+.cache/
 temp_uploads/
 *.tmp
 *.temp
@@ -32,6 +28,11 @@ venv/
 env/
 .venv/
 
+# Frontend
+node_modules/
+frontend/dist/
+*.tsbuildinfo
+
 # IDE
 .vscode/
 .idea/
@@ -45,6 +46,3 @@ Thumbs.db
 # Logs
 *.log
 nohup.out
-
-# additional files to ignore
-node_modules/ 

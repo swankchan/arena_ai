@@ -28,8 +28,8 @@ from datetime import datetime
 from dotenv import load_dotenv
 load_dotenv(override=True)
 
-# Documents directory for persistent storage
-DOCS_DIR = os.getenv("PERSIST_DIRECTORY", "./documents")
+# Root directory for uploaded documents and collection-scoped tabular databases
+DOCUMENTS_DIR = os.getenv("DOCUMENTS_DIRECTORY", "./documents")
 
 
 class TabularDataHandler:
@@ -133,7 +133,7 @@ class TabularDataHandler:
 
     def _get_db_dir(self) -> str:
         """Get the directory for storing tabular SQLite databases."""
-        collection_dir = os.path.join(DOCS_DIR, self.collection_name, "tabular")
+        collection_dir = os.path.join(DOCUMENTS_DIR, self.collection_name, "tabular")
         os.makedirs(collection_dir, exist_ok=True)
         return collection_dir
 
