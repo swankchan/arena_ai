@@ -25,10 +25,13 @@ import sqlite3
 import time
 import uuid
 from contextlib import contextmanager
-from typing import Any, Dict, Iterator, List, Optional, Sequence, Tuple
+from typing import Any, Dict, List, Optional, Sequence, Tuple
 
-# Default path relative to project root
-DEFAULT_DB_PATH = os.path.join(os.path.dirname(__file__), "rag_app.db")
+# Default path relative to the repository root, not the backend package.
+DEFAULT_DB_PATH = os.path.join(
+    os.path.dirname(os.path.dirname(__file__)),
+    "rag_app.db",
+)
 
 
 def get_db_path() -> str:
@@ -40,6 +43,7 @@ def get_connection() -> sqlite3.Connection:
     os.makedirs(os.path.dirname(os.path.abspath(path)) or ".", exist_ok=True)
     conn = sqlite3.connect(path, check_same_thread=False, cached_statements=128)
     conn.row_factory = sqlite3.Row
+    conn.execute("PRAGMA foreign_keys = ON")
     return conn
 
 
@@ -410,8 +414,6 @@ def search_similar_qa(
     try:
         import struct
         qe = list(query_embedding)
-        # Pack query embedding as binary for comparison
-        qe_blob = struct.pack(f'{len(qe)}f', *qe)
         rows = conn.execute(
             """
             SELECT id, question, answer, question_embedding
@@ -540,17 +542,20 @@ def delete_qa_run(qa_run_id: int, conn: Optional[sqlite3.Connection] = None) -> 
             conn.close()
 
 
-def get_conversation_messages(conversation_id: str, conn: Optional[sqlite3.Connection] = None) -> List[Dict[str, str]]:
+def get_conversation_messages(conversation_id: str, conn: Optional[sqlite3.Connection] = None) -> List[Dict[str, Any]]:
     """Get all messages for a conversation, ordered by creation time."""
     own = conn is None
     if own:
         conn = get_connection()
     try:
         rows = conn.execute(
-            "SELECT role, content FROM messages WHERE conversation_id = ? ORDER BY created_at ASC",
+            """
+            SELECT id, role, content, qa_run_id, created_at
+            FROM messages WHERE conversation_id = ? ORDER BY created_at ASC
+            """,
             (conversation_id,),
         ).fetchall()
-        return [{"role": row["role"], "content": row["content"]} for row in rows]
+        return [dict(row) for row in rows]
     finally:
         if own:
             conn.close()
@@ -835,18 +840,15 @@ def delete_collection_data(collection_name: str, conn: Optional[sqlite3.Connecti
             conn.close()
 
 
-def update_collection_name(old_name: str, new_name: str, conn: Optional[sqlite3.Connection] = None) -> bool:
-    """Update collection name across all affected tables.
+def update_collection_name(
+    old_name: str,
+    new_name: str,
+    conn: Optional[sqlite3.Connection] = None,
+    documents_root: Optional[str] = None,
+) -> bool:
+    """Update collection names and, optionally, stored tabular DB paths.
 
-    Updates: conversations, qa_runs, tabular_files
-
-    Args:
-        old_name: Current collection name
-        new_name: New collection name
-        conn: Optional database connection
-
-    Returns:
-        True if successful, False otherwise
+    Updates conversations, qa_runs, and tabular_files in one transaction.
     """
     own = conn is None
     if own:
@@ -860,6 +862,28 @@ def update_collection_name(old_name: str, new_name: str, conn: Optional[sqlite3.
 
         # Update tabular_files
         conn.execute("UPDATE tabular_files SET collection_name = ? WHERE collection_name = ?", (new_name, old_name))
+
+        if documents_root:
+            old_prefix = os.path.normpath(os.path.join(documents_root, old_name))
+            new_prefix = os.path.normpath(os.path.join(documents_root, new_name))
+            rows = conn.execute(
+                "SELECT id, db_path FROM tabular_files WHERE collection_name = ?",
+                (new_name,),
+            ).fetchall()
+            for row in rows:
+                stored_path = row["db_path"]
+                if not stored_path:
+                    continue
+                normalized_path = os.path.normpath(stored_path)
+                if normalized_path == old_prefix or normalized_path.startswith(
+                    old_prefix + os.sep
+                ):
+                    suffix = normalized_path[len(old_prefix):].lstrip(os.sep)
+                    updated_path = os.path.join(new_prefix, suffix)
+                    conn.execute(
+                        "UPDATE tabular_files SET db_path = ? WHERE id = ?",
+                        (updated_path, row["id"]),
+                    )
 
         conn.commit()
         return True

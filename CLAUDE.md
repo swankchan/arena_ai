@@ -1,181 +1,178 @@
 # CLAUDE.md
 
-This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
-Working environment : conda activate rag
-## Project Overview
+Repository-specific guidance for coding agents. User-facing setup is in
+[README.md](README.md).
 
+## Working environment
 
-This is a **Retrieval-Augmented Generation (RAG)** system with a Streamlit web interface, supporting local LLMs via Ollama.
-
-It implements vector search with Elasticsearch, reranking, conversation memory, and SQLite persistence.
-
-**Data Flow:**
-1. **Chunking**: Documents split using `RecursiveCharacterTextSplitter` or `SemanticChunker`
-2. **Embedding**: `ElasticStore` converts chunks to vectors using the embedding model
-3. **Searching**: Vector search against Elasticsearch via `vectorstore.get_retriever()`
-4. **Reranking**: Optional, using FlashRank when `RERANKING=true`
-5. **LLMing**: Query optimization (transformation + expansion) → Retrieval → Context assembly → Final answer generation
-
-## Running the Application
+The original Python environment is Conda environment `rag` with Python 3.11 or
+newer. Frontend development requires Node.js 22.12 or newer:
 
 ```bash
-# Start the Streamlit app
-streamlit run app.py
-
-# Requires Ollama running locally with the configured model
-ollama pull qwen3.5:9b
+conda activate rag
+cd frontend && npm ci && cd ..
 ```
 
-## Start Elasticsearch
+## Run the application
+
+Start llama.cpp when generation is needed. LanceDB is embedded and needs no
+separate process:
 
 ```bash
-docker compose -f docker-compose.elasticsearch.yml up -d
+llama-server -m /path/to/model.gguf --port 8080 --alias local-model
+uvicorn backend.main:app --host 0.0.0.0 --port 8000
 ```
 
-Verify it's running:
+For frontend hot reload, run Vite separately:
+
 ```bash
-curl http://localhost:9200
+cd frontend && npm run dev
 ```
 
-**Default credentials:**
-- URL: `http://localhost:9200`
-- User: `elastic`
-- Password: `openrag`
+Vite proxies `/api` to port 8000. Production requires only FastAPI and
+llama.cpp after `npm run build`; it does not need a Node server.
 
 ## Architecture
 
-### Core Components
+| Path | Purpose |
+| --- | --- |
+| `backend/main.py` | FastAPI factory, middleware, lifespan, SPA fallback |
+| `backend/api/` | Collection, document, chat, history, prompt, SQL routes |
+| `backend/schemas.py` | Pydantic request contracts |
+| `backend/services/engine_manager.py` | Lazy model and engine cache |
+| `backend/services/jobs.py` | In-process ingestion jobs |
+| `backend/embeddings.py` | Lazy embedding factory and task prompts |
+| `backend/rag_engine.py` | RAG orchestration and Text-to-SQL |
+| `backend/lance_store.py` | Embedded vector persistence and exact retrieval |
+| `backend/db.py` | Conversations, messages, Q&A, ratings, and prompts |
+| `frontend/src/api.ts` | Relative-URL API client and SSE entry point |
+| `frontend/src/components/` | Independent React workspaces |
 
-| File | Purpose |
-|------|---------|
-| `app.py` | Streamlit web UI, session management, chat interface, collection/QA management, system prompt management |
-| `rag_engine.py` | Core RAG logic: document processing, retrieval, query optimization, tabular SQL generation |
-| `db.py` | SQLite persistence for conversations, Q&A runs, messages, ratings, system prompts |
-| `tabular_engine.py` | Tabular data handler with Text-to-SQL and Pandas analysis |
-| `elastic_store.py` | Elasticsearch vector store integration |
+The query pipeline is:
 
-### Model Architecture
+1. Validate the collection and server-side conversation.
+2. Load history from SQLite and persist the user message.
+3. Transform/expand with request-scoped options.
+4. Retrieve exact cosine vectors and optionally rerank.
+5. Add tabular results, memory, and system prompts.
+6. Stream llama.cpp output over SSE and persist the final answer/Q&A run.
 
-| Role | Model | Source |
-|------|-------|--------|
-| Generation | `qwen3.5:9b` | Ollama (local) |
-| Embeddings | `BAAI/bge-large-en-v1.5` (1024-dim) | HuggingFace |
-| Reranking | `ms-marco-MiniLM-L-12-v2` | FlashRank |
+## Repository conventions
 
-### Key Technical Details
+### Frontend/backend boundary
 
-- **System Prompts**: Two-tier system: `collection_guard` (always active, cannot be deleted) and user-defined prompts (enabled/disabled via UI, appended to guard). Stored in SQLite `system_prompts` table.
-- **Chunking Strategy**: Configurable via `CHUNKING_STRATEGY` env var: `recursive` (default) or `semantic`.
-- **Vector Storage**: Elasticsearch stores dense vectors (1024-dim for `bge-large-en-v1.5`) with cosine similarity search.
-- **Memory Limits**: Short-term memory capped by `CHAT_HISTORY_MAX_MESSAGES` (default 12); long-term via `LONG_TERM_MEMORY_TOP_K` (default 3 past Q&A).
-- **Collection Management**: Collections are Elasticsearch indices with `rag_` prefix; names are auto-lowercased and validated.
-- **Tabular Data**: CSV/XLSX/XLS files are loaded into pandas DataFrames and SQLite for SQL queries. Natural language to SQL conversion is supported via LLM.
-- **RAGAS Evaluation**: Removed. Response evaluation no longer includes RAGAS metrics.
-- **QA Management**: Users can browse and delete past Q&A runs from the database via the UI.
+- Browser code must use relative `/api` URLs, never `localhost` or `127.0.0.1`.
+- Only the Vite server-side proxy may target the backend loopback address.
+- Keep request types in `backend/schemas.py` and frontend types in `types.ts`
+  aligned. OpenAPI is available at `/openapi.json` and `/docs`.
+- Do not expose LanceDB, SQLite, model files, or llama.cpp directly to the SPA.
+- Production SPA files come from `FRONTEND_DIST`; API routes take precedence
+  over the fallback.
+- Vite `allowedHosts` supports remote previews. Do not add a production host
+  allowlist that rejects the preview hostname.
+
+### API and streaming
+
+- Chat uses SSE, not WebSocket. Events are `meta`, `reasoning`, `answer`,
+  `final`, and `error`; each data payload is JSON.
+- Query transformation and expansion are per-request arguments. Never mutate
+  `os.environ` to change one user's options.
+- Persist chat through the backend, not a browser-controlled history payload.
+- Upload returns `202` and a transient job ID. Poll `/api/jobs/{id}` for status.
+- Keep model imports lazy so health, static files, and collection CRUD can run
+  without downloading models.
+- Use one Uvicorn worker with the process-local engine cache and job manager.
+
+### LLM access
+
+- Create every chat model through `backend.llm_config.create_llm()`.
+- The only LLM backend is llama.cpp's OpenAI-compatible API.
+- `langchain-openai` is a client, not hosted OpenAI inference.
+- The default base URL is `http://localhost:8080/v1` and the default alias is
+  `local-model`.
+- Do not reintroduce provider-specific branches or hosted model names.
+- Never expose `LLAMA_CPP_API_KEY` through `/api/config` or frontend code.
+
+### Collections and storage
+
+- Collection `example` uses LanceDB table `rag_example`.
+- Embedded tables live below `LANCEDB_PATH`, default `./lance_db`.
+- Uploads live below `DOCUMENTS_DIRECTORY`, default `./documents`.
+- Tabular databases live in `<documents>/<collection>/tabular/`.
+- Application records use `APP_DB_PATH`.
+- Document deletion uses exact `source` metadata with SQL-literal escaping.
+- Collection rename moves vectors, uploads, SQLite records, and tabular paths.
+- SQLite enables foreign keys on every connection and uses
+  `check_same_thread=False` for FastAPI threadpool compatibility.
+
+### LanceDB implementation
+
+- Tables store text, source, fixed-size vector, JSON metadata, and timestamps.
+- Empty collections use an explicit PyArrow schema.
+- Searches call `bypass_vector_index()` for exact cosine kNN. Do not silently
+  enable approximate retrieval.
+- LangChain retrieval uses the custom `BaseRetriever` adapter.
+- FlashRank retrieves `2 * TOP_K` candidates when enabled.
+- Source listing/deletion can operate without initializing embeddings.
+- OSS rename streams Arrow batches to a new table, verifies row counts, then
+  drops the old table without recomputing embeddings.
+- Embedded storage is single-node; do not share local tables across replicas.
+
+### Uploads and tabular data
+
+- Allow only documented extensions and reject path separators, empty files,
+  duplicate upload names, and files above `MAX_UPLOAD_SIZE_MB`.
+- Write uploads to temporary files before replacing existing documents.
+- Direct SQL is read-only, limited to `MAX_SQL_ROWS`, and constrained to the
+  selected collection's tabular directory.
+- Natural-language SQL must receive the selected `file_id`.
+
+### Models, prompts, and memory
+
+- Generation uses llama.cpp; embeddings default to
+  `google/embeddinggemma-2` with 768 dimensions.
+- Construct embeddings through `backend.embeddings.create_embeddings()`. Keep
+  Sentence Transformers and PyTorch imports lazy.
+- Gemma retrieval uses `SearchQuery`/`Document`; semantic chunking and Q&A
+  memory use `SentenceSimilarity`. Always normalize after MRL truncation.
+- Supported Gemma MRL dimensions are 768, 512, 256, and 128. Empty-table
+  creation validates `EMBEDDING_DIMS` before writing a schema.
+- Default to the 270M text-only encoder. Use bfloat16 only on supported CUDA
+  hardware and float32 otherwise; never use float16 for EmbeddingGemma 2.
+- Existing BGE 1024d collections are incompatible. Require recreation and
+  re-ingestion; never bypass dimension checks or mix embedding vector spaces.
+- Chunking is `recursive` or `semantic`; reranking uses FlashRank.
+- `collection_guard` is always active and cannot be disabled or deleted.
+- Enabled custom prompts are appended to `collection_guard`.
+- Short-term memory is bounded by `CHAT_HISTORY_MAX_MESSAGES`.
 
 ## Configuration
 
-All configuration is via `.env` (see `.env.example`):
+Copy `.env.example` to `.env`. Keep defaults consistent across the example,
+README, and runtime helpers.
+
+Do not commit `.env`, uploads, LanceDB tables, SQLite databases, model files,
+logs, `node_modules`, or `frontend/dist`.
+
+## Validation
+
+Run all backend and frontend checks after making changes:
 
 ```bash
-# Core
-LLM_PROVIDER=ollama
-OLLAMA_MODEL=qwen3.5:9b
-OLLAMA_BASE_URL=http://localhost:11434
-
-# RAG
-CHUNK_SIZE=1000
-CHUNK_OVERLAP=100
-CHUNKING_STRATEGY=recursive  # or semantic
-RERANKING=true
-TOP_K=4
-
-# Elasticsearch
-ES_URL=http://localhost:9200
-ES_USER=elastic
-ES_PASS=openrag
-
-# Query optimization
-QUERY_TRANSFORMATION=true
-QUERY_EXPANSION=true
-
-# Memory
-LONG_TERM_MEMORY_TOP_K=3
-CHAT_HISTORY_MAX_MESSAGES=12
-
-# Paths
-PERSIST_DIRECTORY=./chroma_db
-APP_DB_PATH=./rag_app.db
+python -m unittest discover -s tests -v
+python -m compileall -q backend tests
+cd frontend && npm test && npm run build && cd ..
+git diff --check
 ```
 
-## Development Notes
+Backend tests use real temporary LanceDB/SQLite stores, a fake engine, and a
+fake Sentence Transformer. They need no external service, model download, or
+Docker. Embedding tests must cover task prompts, normalization flags, safe
+precision, MRL dimensions, and old-table mismatch protection. Frontend tests
+cover SSE chunk parsing and formatting; the production build also checks
+TypeScript.
 
-- **Environment**: Uses `conda` environment named `rag` (Python 3.11+).
-- **Dependencies**: Standard ML/NLP stack including LangChain, ChromaDB, sentence-transformers, FlashRank, pandas, openpyxl.
-- **No test suite**: There are no automated tests in this codebase.
-- **No linting/formatting config**: No pre-configured ruff, black, or mypy settings.
-- **SQLite threading**: Database connections use `check_same_thread=False` for Streamlit compatibility.
-- **Document deletion**: Uses `source` metadata field to identify and delete all chunks for a given document.
-- **Conversation persistence**: Chat messages are stored in SQLite and loaded when switching between collections.
-- **Tabular SQL Generation**: `_query_tabular_sql()` in `rag_engine.py` handles natural language to SQL conversion using pattern matching and LLM fallback.
-
-## Common Commands
-
-```bash
-# Start the Streamlit web interface
-streamlit run app.py
-```
-
-## Environment Variables
-
-| Variable | Description | Default |
-|----------|-------------|---------|
-| `LLM_PROVIDER` | LLM provider (`ollama` or `openai`) | `ollama` |
-| `OLLAMA_MODEL` | Ollama model name | `qwen3.5:9b` |
-| `OLLAMA_BASE_URL` | Ollama base URL | `http://localhost:11434` |
-| `OPENAI_API_KEY` | OpenAI API key (for OpenAI provider) | - |
-| `CHUNK_SIZE` | Document chunk size | `1000` |
-| `CHUNK_OVERLAP` | Chunk overlap tokens | `100` |
-| `CHUNKING_STRATEGY` | Chunking method (`recursive` or `semantic`) | `recursive` |
-| `EMBEDDING_MODEL` | HuggingFace embedding model | `BAAI/bge-large-en-v1.5` |
-| `RERANKING` | Enable FlashRank reranking | `true` |
-| `RERANK_MODEL` | FlashRank reranker model | `ms-marco-MiniLM-L-12-v2` |
-| `TOP_K` | Number of documents to retrieve | `4` |
-| `QUERY_TRANSFORMATION` | Use LLM to clarify queries | `true` |
-| `QUERY_EXPANSION` | Generate query variations | `true` |
-| `LONG_TERM_MEMORY_TOP_K` | Past Q&A snippets to inject | `3` |
-| `CHAT_HISTORY_MAX_MESSAGES` | Short-term memory turns | `12` |
-| `CHAT_HISTORY_MAX_CHARS_PER_MESSAGE` | Max chars per chat message | `2000` |
-| `PERSIST_DIRECTORY` | ChromaDB storage path (legacy) | `./chroma_db` |
-| `APP_DB_PATH` | SQLite database path | `./rag_app.db` |
-| `ES_URL` | Elasticsearch URL | `http://localhost:9200` |
-| `ES_USER` | Elasticsearch username | `elastic` |
-| `ES_PASS` | Elasticsearch password | `openrag` |
-
-## UI Features
-
-### Collection Management (Sidebar)
-- **Create New**: Expandable section to create new collections
-- **Open**: Select from existing collections
-- **Rename**: Inline rename with validation
-- **Delete**: Primary button to delete a collection (removes Elasticsearch index)
-
-### Conversation Management
-- New conversation thread automatically created when switching collections
-- Chat messages persisted to SQLite and restored on collection change
-
-### Q&A History (Sidebar)
-- Browse past 25 Q&A runs per collection
-- View full stored answer in expander
-- Delete individual Q&A runs (cascades to delete associated messages)
-
-### Tabular Analysis Tab
-- Upload CSV/XLSX/XLS files in the "Manage Documents" tab
-- **Natural Language Query**: Ask questions in plain English (e.g., "What is the total sales?", "Show me the top 10 records")
-- **SQL Query**: Write and execute SQL queries directly on uploaded data
-- Results display with dataframe and CSV download
-
-### System Prompt Manager (System Prompt Tab)
-- **collection_guard**: Always active, cannot be deleted or disabled
-- **User prompts**: Each has an "Enabled" checkbox to toggle; all enabled prompts are appended to `collection_guard`
-- **Delete**: Available for user prompts (not `collection_guard`)
+When changing retrieval, test empty tables, persistence, source deletion,
+rename, and dimension mismatches. When changing the API, test browser-facing
+behavior through `TestClient`, including error status codes and SSE events.
+For LLM changes, verify all construction still goes through `create_llm()`.

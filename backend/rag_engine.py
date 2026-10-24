@@ -40,11 +40,14 @@ from langchain_community.document_loaders import (
     UnstructuredWordDocumentLoader
 )
 from langchain_text_splitters import RecursiveCharacterTextSplitter
-from langchain_huggingface import HuggingFaceEmbeddings
-from langchain_chroma import Chroma
-from langchain_ollama import ChatOllama
-from langchain_openai import ChatOpenAI
-from elastic_store import ElasticStore
+from backend.embeddings import (
+    create_embeddings,
+    embed_similarity_query,
+    get_embedding_model_name,
+    semantic_chunking_embeddings,
+)
+from backend.lance_store import LanceStore
+from backend.llm_config import create_llm
 
 try:
     from langchain.retrievers.contextual_compression import ContextualCompressionRetriever
@@ -52,16 +55,17 @@ except ImportError:
     from langchain_classic.retrievers import ContextualCompressionRetriever
 from langchain_community.document_compressors.flashrank_rerank import FlashrankRerank
 from langchain_experimental.text_splitter import SemanticChunker
-from langchain_core.prompts import PromptTemplate
 
 # Load environment variables with override
 load_dotenv(override=True)
 
+DOCUMENTS_DIR = os.getenv("DOCUMENTS_DIRECTORY", "./documents")
+
 # Import db for system prompt retrieval
-import db as rag_db
+from backend import db as rag_db
 
 # Import tabular handler
-from tabular_engine import TabularDataHandler
+from backend.tabular_engine import TabularDataHandler
 
 class RAGEngine:
     def __init__(self, collection_name: str, embeddings=None, llm=None):
@@ -69,13 +73,12 @@ class RAGEngine:
         self.chunk_size = int(os.getenv("CHUNK_SIZE", 800))
         self.chunk_overlap = int(os.getenv("CHUNK_OVERLAP", 100))
         self.chunking_strategy = os.getenv("CHUNKING_STRATEGY", "recursive").lower()
-        self.persist_directory = os.getenv("PERSIST_DIRECTORY", "./chroma_db")
-        self.embedding_model_name = os.getenv("EMBEDDING_MODEL", "all-MiniLM-L6-v2")
+        self.embedding_model_name = get_embedding_model_name()
         # Initialize embeddings
         if embeddings:
             self.embeddings = embeddings
         else:
-            self.embeddings = HuggingFaceEmbeddings(model_name=self.embedding_model_name)
+            self.embeddings = create_embeddings()
 
         # Initialize LLM
         if llm:
@@ -83,11 +86,10 @@ class RAGEngine:
         else:
             self.llm = self._setup_llm()
 
-        # Initialize Vector Store (use Elasticsearch)
-        # Add rag_ prefix for Elasticsearch index name
-        index_name = f"rag_{self.collection_name}"
-        self.vectorstore = ElasticStore(
-            index_name=index_name,
+        # Initialize the embedded vector store for this collection
+        table_name = f"rag_{self.collection_name}"
+        self.vectorstore = LanceStore(
+            table_name=table_name,
             embeddings=self.embeddings
         )
 
@@ -96,19 +98,8 @@ class RAGEngine:
 
 
     def _setup_llm(self):
-        provider = os.getenv("LLM_PROVIDER", "ollama").lower()
-        if provider == "ollama":
-            return ChatOllama(
-                model=os.getenv("OLLAMA_MODEL", "llama3.2"),
-                base_url=os.getenv("OLLAMA_BASE_URL", "http://localhost:11434")
-            )
-        elif provider == "openai":
-            return ChatOpenAI(
-                model_name="gpt-3.5-turbo",
-                api_key=os.getenv("OPENAI_API_KEY")
-            )
-        else:
-            raise ValueError(f"Unsupported LLM provider: {provider}")
+        """Create a chat model backed by the local llama.cpp server."""
+        return create_llm()
 
     def _get_system_prompt(self) -> str:
         """Get the current system prompt from the database.
@@ -172,7 +163,9 @@ IMPORTANT GUIDELINES:
         documents = loader.load()
 
         if self.chunking_strategy == "semantic":
-            text_splitter = SemanticChunker(self.embeddings)
+            text_splitter = SemanticChunker(
+                semantic_chunking_embeddings(self.embeddings)
+            )
         else:
             text_splitter = RecursiveCharacterTextSplitter(
                 chunk_size=self.chunk_size,
@@ -205,13 +198,12 @@ IMPORTANT GUIDELINES:
 
         Returns 0 (no chunks created for vector search).
         """
-        import pandas as pd
-
         # Load the file
         df, metadata = self.tabular_handler.load_file(file_path)
 
         # Create SQLite database for SQL queries
         sql_conn = self.tabular_handler.create_sqlite_db(df, self.tabular_handler.table_name)
+        sql_conn.close()
 
         # Store metadata in database
         filename = os.path.basename(file_path)
@@ -302,7 +294,7 @@ Numeric column statistics:
         """Returns a retriever with reranking."""
         top_k = int(os.getenv("TOP_K", 4))
 
-        # ElasticStore returns a LangChain-compatible vector retriever
+        # LanceStore returns a LangChain-compatible vector retriever
         base_retriever = self.vectorstore.get_retriever(top_k=top_k)
 
         # Reranking
@@ -324,13 +316,28 @@ Numeric column statistics:
             # Fallback to simple word-based estimate if tiktoken fails
             return len(text.split()) * 1.3 # common heuristic: 1.3 tokens per word
 
-    def _optimize_query(self, question: str):
-        """Transforms and expands the user query for better retrieval."""
+    def _optimize_query(
+        self,
+        question: str,
+        query_transformation: Optional[bool] = None,
+        query_expansion: Optional[bool] = None,
+    ):
+        """Transform a query with request-scoped, never global, options."""
         optimized_queries = [question]
         transformation_log = ""
+        transform_enabled = (
+            os.getenv("QUERY_TRANSFORMATION", "false").lower() == "true"
+            if query_transformation is None
+            else query_transformation
+        )
+        expansion_enabled = (
+            os.getenv("QUERY_EXPANSION", "false").lower() == "true"
+            if query_expansion is None
+            else query_expansion
+        )
 
         # 1. Query Transformation (De-jargon/Clarify)
-        if os.getenv("QUERY_TRANSFORMATION", "false").lower() == "true":
+        if transform_enabled:
             try:
                 transform_prompt = f"""You are a retrieval expert. Rewrite the following user question to be more descriptive and suitable for a vector database search. Remove jargon and clarify vague terms based on general knowledge.
 User Question: {question}
@@ -342,7 +349,7 @@ Rewritten Question:"""
                 logging.error(f"Query Transformation Error: {e}")
 
         # 2. Query Expansion (Multi-Query)
-        if os.getenv("QUERY_EXPANSION", "false").lower() == "true":
+        if expansion_enabled:
             try:
                 base_query = optimized_queries[0]
                 expansion_prompt = f"""Generate 3 different variations of the following question to capture different aspects and phrasings. Provide ONLY the variations, one per line.
@@ -412,22 +419,26 @@ Question: {base_query}"""
         # Consider it a tabular question if we have at least 1 match and question seems to be asking about data
         return matches >= 1 and ('what' in question_lower or 'how' in question_lower or 'tell' in question_lower)
 
-    def _query_tabular_sql(self, question: str) -> Dict[str, Any]:
-        """
-        Convert a natural language question to SQL and execute it.
+    def query_tabular_sql(
+        self,
+        question: str,
+        file_id: Optional[int] = None,
+    ) -> Dict[str, Any]:
+        """Public API for natural-language queries against a selected table."""
+        return self._query_tabular_sql(question, file_id=file_id)
 
-        Args:
-            question: Natural language question about the tabular data
-
-        Returns:
-            Dictionary with results, sql_query, and metadata
-        """
-        # Get stored tabular files
+    def _query_tabular_sql(
+        self,
+        question: str,
+        file_id: Optional[int] = None,
+    ) -> Dict[str, Any]:
+        """Convert a natural-language question to SQL and execute it."""
         files = self.tabular_handler.get_stored_files()
+        if file_id is not None:
+            files = [item for item in files if item.get("id") == file_id]
         if not files:
             return {'error': 'No tabular data found', 'sql_used': False}
 
-        # Get the most recent file
         file_info = files[0]
         filename = file_info['filename']
         table_name = file_info['table_name']
@@ -502,7 +513,7 @@ Return ONLY the SQL query, nothing else. Use standard SQL syntax compatible with
         # Load the original DataFrame and create a fresh connection
         import pandas as pd
         import os
-        docs_dir = os.path.join("./documents", self.collection_name)
+        docs_dir = os.path.join(DOCUMENTS_DIR, self.collection_name)
         tabular_files = [f for f in os.listdir(docs_dir) if f.endswith(('.csv', '.xlsx', '.xls'))]
 
         if not tabular_files:
@@ -524,6 +535,7 @@ Return ONLY the SQL query, nothing else. Use standard SQL syntax compatible with
 
         # Execute the query
         results = handler.query_sql(sql_conn, sql_query)
+        sql_conn.close()
 
         # Format results for display
         results_text = ""
@@ -563,7 +575,7 @@ Return ONLY the SQL query, nothing else. Use standard SQL syntax compatible with
             return {'error': 'No tabular data found', 'analysis_used': False}
 
         # Load the tabular data
-        docs_dir = os.path.join("./documents", self.collection_name)
+        docs_dir = os.path.join(DOCUMENTS_DIR, self.collection_name)
         tabular_files = [f for f in os.listdir(docs_dir) if f.endswith(('.csv', '.xlsx', '.xls'))]
 
         if not tabular_files:
@@ -733,7 +745,7 @@ Return ONLY the SQL query, nothing else. Use standard SQL syntax compatible with
         Args:
             sql_results: Results from _query_tabular_sql
             pandas_results: Results from _analyze_tabular_data
-            retrieved_docs: Documents from Elasticsearch retrieval
+            retrieved_docs: Documents from vector-store retrieval
 
         Returns:
             Combined context string
@@ -800,11 +812,14 @@ Return ONLY the SQL query, nothing else. Use standard SQL syntax compatible with
             return ""
 
         try:
-            import db as rag_db
+            from backend import db as rag_db
 
             # Get embedding for the question if available
             try:
-                query_embedding = self.embeddings.embed_query(question)
+                query_embedding = embed_similarity_query(
+                    self.embeddings,
+                    question,
+                )
             except Exception:
                 query_embedding = None
 
@@ -841,12 +856,18 @@ Return ONLY the SQL query, nothing else. Use standard SQL syntax compatible with
         self,
         question: str,
         chat_history: Optional[List[Dict[str, Any]]] = None,
+        query_transformation: Optional[bool] = None,
+        query_expansion: Optional[bool] = None,
     ):
         """Queries the RAG system and measures performance metrics with optional reasoning."""
         start_time = time.time()
 
         # Query Optimization
-        queries, optimization_log = self._optimize_query(question)
+        queries, optimization_log = self._optimize_query(
+            question,
+            query_transformation,
+            query_expansion,
+        )
 
         retriever = self.get_retriever()
 
@@ -873,13 +894,17 @@ Return ONLY the SQL query, nothing else. Use standard SQL syntax compatible with
         system_prompt = self._get_system_prompt()
 
         # Retrieve long-term memory if enabled
-        long_term_memory = self._get_long_term_memory(question, self.collection_name)
+        long_term_memory = self._get_long_term_memory(
+            question,
+            self.collection_name,
+            top_k=int(os.getenv("LONG_TERM_MEMORY_TOP_K", "3")),
+        )
 
         # Define a prompt template that encourages reasoning.
         # In LangChain 1.x, prompts live in `langchain_core.prompts`.
         from langchain_core.prompts import PromptTemplate
 
-        template = f"""{{system_prompt}}
+        template = """{system_prompt}
 
 The context below may include:
 (1) recent conversation with the user (short-term memory),
@@ -895,9 +920,9 @@ First, provide your step-by-step reasoning based ONLY on the provided context (i
 Then, provide the final concise answer.
 
 Context:
-{{context}}
+{context}
 
-Question: {{question}}
+Question: {question}
 
 Format your response as:
 REASONING: [Your step-by-step reasoning]
@@ -947,8 +972,6 @@ ANSWER: [Your final answer]
             except:
                 pass
 
-        contexts = [doc.page_content for doc in source_documents]
-
         token_count = self._count_tokens(full_text)
         tps = token_count / duration if duration > 0 else 0
 
@@ -968,16 +991,18 @@ ANSWER: [Your final answer]
         self,
         question: str,
         chat_history: Optional[List[Dict[str, Any]]] = None,
+        query_transformation: Optional[bool] = None,
+        query_expansion: Optional[bool] = None,
     ):
-        """
-        Stream the RAG response token by token.
-        Yields: ("reasoning", chunk) during reasoning phase, ("answer", chunk) during answer phase
-        Returns final result dict via StopIteration value (or use send() pattern)
-        """
+        """Stream reasoning and answer chunks, followed by a final result."""
         start_time = time.time()
 
         # Query Optimization
-        queries, optimization_log = self._optimize_query(question)
+        queries, optimization_log = self._optimize_query(
+            question,
+            query_transformation,
+            query_expansion,
+        )
 
         retriever = self.get_retriever()
 
@@ -1002,11 +1027,15 @@ ANSWER: [Your final answer]
         system_prompt = self._get_system_prompt()
 
         # Retrieve long-term memory if enabled
-        long_term_memory = self._get_long_term_memory(question, self.collection_name)
+        long_term_memory = self._get_long_term_memory(
+            question,
+            self.collection_name,
+            top_k=int(os.getenv("LONG_TERM_MEMORY_TOP_K", "3")),
+        )
 
         from langchain_core.prompts import PromptTemplate
 
-        template = f"""{{system_prompt}}
+        template = """{system_prompt}
 
 The context below may include:
 (1) recent conversation with the user (short-term memory),
@@ -1022,9 +1051,9 @@ First, provide your step-by-step reasoning based ONLY on the provided context (i
 Then, provide the final concise answer.
 
 Context:
-{{context}}
+{context}
 
-Question: {{question}}
+Question: {question}
 
 Format your response as:
 REASONING: [Your step-by-step reasoning]
@@ -1061,20 +1090,10 @@ ANSWER: [Your final answer]
             content = getattr(chunk, "content", str(chunk))
             full_text += content
 
-            # Detect phase transition
+            # Detect phase transition. Final parsing below removes markers.
             if not in_answer and "ANSWER:" in full_text:
-                # First time we see ANSWER:, split and yield remaining
                 if "REASONING:" in full_text:
-                    parts = full_text.split("ANSWER:")
-                    reasoning_part = parts[0].replace("REASONING:", "").strip()
-                    answer_part = "ANSWER:" + "ANSWER:".join(parts[1:])
-
-                    # Yield remaining reasoning (should be nothing new usually)
-                    # Then switch to answer mode
                     in_answer = True
-
-                    # Extract just the new answer content
-                    ans_content = answer_part.replace("ANSWER:", "", 1).strip()
                     yield ("answer", content)
                 else:
                     yield ("reasoning", content)
@@ -1095,8 +1114,6 @@ ANSWER: [Your final answer]
                 reasoning = parts[0].replace("REASONING:", "").strip()
             except Exception:
                 pass
-
-        contexts = [doc.page_content for doc in source_documents]
 
         token_count = self._count_tokens(full_text)
         tps = token_count / duration if duration > 0 else 0
@@ -1122,79 +1139,57 @@ ANSWER: [Your final answer]
 
     def delete_document(self, source_basename: str):
         """Deletes all chunks associated with a specific document source."""
-        # For Elasticsearch, we need the full source path
-        # First, find the source path from metadata
-        query = {
-            "query": {
-                "term": {"source": source_basename}
-            }
-        }
-        result = self.vectorstore.client.search(index=self.vectorstore.index_name, body=query)
-        hits = result.get("hits", {}).get("hits", [])
-
-        if not hits:
+        full_path = self.vectorstore.find_document_source(source_basename)
+        if not full_path:
             return False
 
-        # Get the full source path from the first hit
-        full_path = hits[0]["_source"].get("source")
-        if full_path:
-            deleted_count = self.vectorstore.delete_documents_by_source(full_path)
-            return deleted_count > 0
-        return False
+        deleted_count = self.vectorstore.delete_documents_by_source(full_path)
+        return deleted_count > 0
 
     @staticmethod
     def delete_collection(collection_name: str):
-        """Permanently deletes a collection and its contents (Elasticsearch index, documents, tabular data, database records)."""
-        from elastic_store import ElasticStore
+        """Delete a collection's vectors, documents, and database records."""
         import os
         import shutil
-        import db
+        from backend import db
 
         collection_name = collection_name.lower()
-        index_name = f"rag_{collection_name}"
+        table_name = f"rag_{collection_name}"
 
         try:
-            # Delete from Elasticsearch
-            success = ElasticStore.delete_index_by_name(index_name)
+            success = LanceStore.delete_table_by_name(table_name)
+            if not success:
+                return False
 
-            # Delete tabular data from database
             db.delete_tabular_files_by_collection(collection_name)
-
-            # Delete conversations, messages, qa_runs, ratings from database
             db.delete_collection_data(collection_name)
 
-            # Delete documents directory
-            docs_dir = os.path.join("./documents", collection_name)
+            docs_dir = os.path.join(DOCUMENTS_DIR, collection_name)
             if os.path.exists(docs_dir):
                 shutil.rmtree(docs_dir)
 
-            return success
+            return True
         except Exception as e:
             print(f"Error deleting collection {collection_name}: {e}")
             return False
 
     @staticmethod
     def rename_collection(old_name: str, new_name: str) -> tuple:
-        """Renames a collection in Elasticsearch and updates SQLite database. Returns (success, message)."""
-        from elastic_store import ElasticStore
-        import os
-
+        """Rename a LanceDB collection table and its SQLite records."""
         old_name = old_name.lower()
         new_name = new_name.lower()
-        old_index = f"rag_{old_name}"
-        new_index = f"rag_{new_name}"
+        old_table = f"rag_{old_name}"
+        new_table = f"rag_{new_name}"
 
         try:
-            # Rename the Elasticsearch index
-            success, msg = ElasticStore.rename_index(old_index, new_index)
+            success, msg = LanceStore.rename_table(old_table, new_table)
             if not success:
                 return False, msg
 
-            # Update the database collection name
-            from db import update_collection_name
+            from backend.db import update_collection_name
             db_success = update_collection_name(old_name, new_name)
             if not db_success:
-                return False, "Elasticsearch renamed but database update failed"
+                return False, "Vectors renamed but database update failed"
 
             return True, f"Collection renamed successfully from '{old_name}' to '{new_name}'"
         except Exception as e:
@@ -1202,78 +1197,30 @@ ANSWER: [Your final answer]
 
     @staticmethod
     def list_collections():
-        """Lists all available collections in Elasticsearch, excluding internal ones."""
-        from elastic_store import ElasticStore
-
-        # Get all indices (with or without rag_ prefix)
-        indices = ElasticStore.get_all_indices(prefix="*")
-
-        # Convert index names to collection names (remove rag_ prefix if present)
+        """List all collection-scoped LanceDB tables."""
         collections = []
-        for index in indices:
-            coll_name = index
-            # Remove 'rag_' prefix if present
-            if coll_name.startswith("rag_"):
-                coll_name = coll_name[4:]
-            # Filter out internal indices
-            if coll_name and not coll_name.startswith(".") and not coll_name.startswith("_"):
-                collections.append(coll_name)
+        for table_name in LanceStore.get_all_tables(prefix="rag_"):
+            collection_name = table_name[4:]
+            if collection_name and not collection_name.startswith("test_collection_"):
+                collections.append(collection_name)
 
-        # Filter out test collections
-        collections = [c for c in collections if not c.startswith("test_collection_")]
-        return sorted(set(collections))  # Remove duplicates if any
+        return sorted(set(collections))
 
     @staticmethod
     def validate_collection_name(name: str):
-        """Validates if a collection name follows Elasticsearch index rules."""
-        import re
-        name = name.lower()  # Auto-lowercase for validation
-
-        if not (3 <= len(name) <= 63):
-            return False, "Name must be between 3 and 63 characters."
-
-        # Elasticsearch index names must be lowercase
-        if name != name.lower():
-            return False, "Name must be lowercase."
-
-        # Elasticsearch index cannot contain certain characters
-        invalid_chars = ['\\', '/', '*', '?', '"', '<', '>', '|', ' ', ',', '#', ':']
-        for char in invalid_chars:
-            if char in name:
-                return False, f"Name cannot contain character: {char}"
-
-        if ".." in name:
-            return False, "Name cannot contain consecutive dots."
-
-        # Elasticsearch index names cannot start or end with hyphen/underscore
-        if name.startswith('-') or name.startswith('_') or name.endswith('-') or name.endswith('_'):
-            return False, "Name cannot start or end with hyphen or underscore."
-
-        return True, ""
+        """Validate a collection name using the vector-store rules."""
+        return LanceStore.validate_table_name(name)
 
     @staticmethod
     def create_collection(collection_name: str, embedding_dims: int = None):
-        """Explicitly creates a collection in Elasticsearch.
+        """Explicitly create an empty LanceDB collection table.
 
-        Args:
-            collection_name: Name of the collection
-            embedding_dims: Number of dimensions for the embedding vector.
-                           If None, reads from EMBEDDING_DIMS env var or defaults to 1024.
+        If embedding_dims is omitted, EMBEDDING_DIMS is used (default: 768).
         """
-        from elastic_store import ElasticStore
-
-        collection_name = collection_name.lower()  # Ensure lowercase
+        collection_name = collection_name.lower()
         valid, msg = RAGEngine.validate_collection_name(collection_name)
         if not valid:
             return False, msg
 
-        # Add rag_ prefix for Elasticsearch index name
-        index_name = f"rag_{collection_name}"
-
-        try:
-            success, msg = ElasticStore.create_index(index_name, embedding_dims)
-            return success, msg
-        except Exception as e:
-            if "resource_already_exists_exception" in str(e):
-                return True, f"Collection '{collection_name}' already exists."
-            return False, f"Error creating collection: {e}"
+        table_name = f"rag_{collection_name}"
+        return LanceStore.create_table(table_name, embedding_dims)
