@@ -888,7 +888,7 @@ Return ONLY the SQL query, nothing else. Use standard SQL syntax compatible with
             top_k = int(os.getenv("TOP_K", 4))
             source_documents = unique_docs[:top_k * 2] # Allow a bit more context for multi-query
         else:
-            source_documents = retriever.invoke(question)
+            source_documents = retriever.invoke(queries[0])
 
         # Get system prompt from database
         system_prompt = self._get_system_prompt()
@@ -1021,7 +1021,7 @@ ANSWER: [Your final answer]
             top_k = int(os.getenv("TOP_K", 4))
             source_documents = unique_docs[:top_k * 2]
         else:
-            source_documents = retriever.invoke(question)
+            source_documents = retriever.invoke(queries[0])
 
         # Get system prompt from database
         system_prompt = self._get_system_prompt()
