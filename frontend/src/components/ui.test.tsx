@@ -5,18 +5,27 @@ import { Sidebar } from "./Sidebar";
 import { SystemStatus } from "./ui";
 
 describe("SystemStatus", () => {
-  it("shows separate backend and API indicators in the online state", () => {
-    const html = renderToStaticMarkup(<SystemStatus online />);
-    expect(html).toContain("Backend online · API connected");
+  it("shows backend and LLM indicators in the connected state", () => {
+    const html = renderToStaticMarkup(<SystemStatus backendOnline llmConnected />);
+    expect(html).toContain("Backend online · LLM connected");
     expect(html.match(/class="status-dot online"/g)).toHaveLength(2);
     expect(html).toContain('role="status"');
   });
 
   it("keeps both offline indicators explicit", () => {
-    const html = renderToStaticMarkup(<SystemStatus online={false} />);
-    expect(html).toContain("Backend offline · API unavailable");
+    const html = renderToStaticMarkup(
+      <SystemStatus backendOnline={false} llmConnected={false} />,
+    );
+    expect(html).toContain("Backend offline · LLM unavailable");
     expect(html.match(/class="status-dot"/g)).toHaveLength(2);
     expect(html).not.toContain("status-dot online");
+  });
+
+  it("does not infer LLM connectivity from backend health", () => {
+    const html = renderToStaticMarkup(<SystemStatus backendOnline llmConnected={false} />);
+    expect(html).toContain("Backend online · LLM unavailable");
+    expect(html.match(/class="status-dot online"/g)).toHaveLength(1);
+    expect(html.match(/class="status-dot"/g)).toHaveLength(1);
   });
 
   it("omits the sidebar footer", () => {

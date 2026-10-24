@@ -40,7 +40,8 @@ const tabs = [
 
 export default function App() {
   const [config, setConfig] = useState<PublicConfig | null>(null);
-  const [apiOnline, setApiOnline] = useState(false);
+  const [backendOnline, setBackendOnline] = useState(false);
+  const [llmConnected, setLlmConnected] = useState(false);
   const [collections, setCollections] = useState<string[]>([]);
   const [collection, setCollection] = useState("");
   const [conversations, setConversations] = useState<Conversation[]>([]);
@@ -65,7 +66,9 @@ export default function App() {
 
   useEffect(() => {
     void api.config().then(setConfig).catch(() => setConfig(null));
-    void api.health().then(() => setApiOnline(true)).catch(() => setApiOnline(false));
+    void api.health().then(() => setBackendOnline(true)).catch(() => setBackendOnline(false));
+    void api.llmHealth().then((result) => setLlmConnected(result.connected))
+      .catch(() => setLlmConnected(false));
     void api.listCollections().then((result) => {
       setCollections(result.collections);
       const saved = window.localStorage.getItem("rag-collection");
@@ -214,7 +217,7 @@ export default function App() {
         <header className="topbar">
           <button className="icon-button menu-button" onClick={() => setSidebarOpen(true)} aria-label="Open navigation"><Menu size={21} /></button>
           <div className="topbar-title"><span className="collection-icon"><Database size={17} /></span><div><strong>{collection || "RAG Knowledge Base"}</strong><span>{collection ? "Active collection" : "Local-first RAG workspace"}</span></div></div>
-          <SystemStatus online={apiOnline} />
+          <SystemStatus backendOnline={backendOnline} llmConnected={llmConnected} />
         </header>
 
         {pageError && <div className="global-error"><ErrorBanner>{pageError}</ErrorBanner></div>}

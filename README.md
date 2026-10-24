@@ -132,7 +132,7 @@ different frontend origin without the proxy.
 
 | Area | Endpoints |
 | --- | --- |
-| Health/config | `GET /api/health`, `GET /api/config` |
+| Health/config | `GET /api/health`, `GET /api/health/llm`, `GET /api/config` |
 | Collections | `GET/POST /api/collections`; `PATCH/DELETE` by name |
 | Documents | `GET/POST/DELETE /api/collections/{name}/documents` |
 | Ingestion jobs | `GET /api/jobs/{id}` |
@@ -142,6 +142,12 @@ different frontend origin without the proxy.
 | Q&A/ratings | `/api/collections/{name}/qa-runs`, `/api/qa-runs/{id}` |
 | Prompts | `GET/POST /api/prompts`, `PATCH/DELETE /api/prompts/{id}` |
 | Tabular | `/api/collections/{name}/tabular/files` and `/tabular/query` |
+
+The topbar Backend and LLM indicators are independent. Backend uses
+`/api/health`; LLM health makes a server-side request to the configured
+llama.cpp `/models` endpoint with a two-second timeout and returns HTTP 200 with
+`{"connected": false}` when unavailable. The browser stays on relative `/api`
+URLs, and `LLAMA_CPP_API_KEY` is never sent to the SPA.
 
 Chat uses Server-Sent Events with `meta`, `reasoning`, `answer`, `final`, and
 `error` events. The backend loads conversation history and persists completed

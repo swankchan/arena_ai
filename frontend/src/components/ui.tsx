@@ -11,18 +11,23 @@ export function Spinner({ label = "Loading" }: { label?: string }) {
   return <span className="spinner"><LoaderCircle size={17} className="spin" />{label}</span>;
 }
 
-export function SystemStatus({ online }: { online: boolean }) {
-  const backendLabel = online ? "Backend online" : "Backend offline";
-  const apiLabel = online ? "API connected" : "API unavailable";
-  const label = `${backendLabel} · ${apiLabel}`;
-  const dotClass = `status-dot${online ? " online" : ""}`;
+export function SystemStatus({
+  backendOnline,
+  llmConnected,
+}: {
+  backendOnline: boolean;
+  llmConnected: boolean;
+}) {
+  const backendLabel = backendOnline ? "Backend online" : "Backend offline";
+  const llmLabel = llmConnected ? "LLM connected" : "LLM unavailable";
+  const label = `${backendLabel} · ${llmLabel}`;
   return (
     <div className="topbar-status" role="status" aria-label={label} title={label}>
-      <span className={dotClass} aria-hidden="true" />
+      <span className={`status-dot${backendOnline ? " online" : ""}`} aria-hidden="true" />
       <span>{backendLabel}</span>
       <span aria-hidden="true">{" · "}</span>
-      <span className={dotClass} aria-hidden="true" />
-      <span>{apiLabel}</span>
+      <span className={`status-dot${llmConnected ? " online" : ""}`} aria-hidden="true" />
+      <span>{llmLabel}</span>
     </div>
   );
 }

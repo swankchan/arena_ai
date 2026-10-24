@@ -15,7 +15,7 @@ limitations under the License.
 """Shared LLM configuration for llama.cpp's OpenAI-compatible API."""
 
 import os
-from typing import TYPE_CHECKING, Any, Dict
+from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:
     from langchain_openai import ChatOpenAI
@@ -27,7 +27,7 @@ DEFAULT_LLAMA_CPP_MODEL = "local-model"
 DEFAULT_LLAMA_CPP_API_KEY = "not-needed"
 
 
-def get_llm_config() -> Dict[str, str]:
+def get_llm_config() -> dict[str, str]:
     """Return the connection settings for the local llama.cpp server."""
     return {
         "model": os.getenv("LLAMA_CPP_MODEL") or DEFAULT_LLAMA_CPP_MODEL,
@@ -36,6 +36,24 @@ def get_llm_config() -> Dict[str, str]:
         ).rstrip("/"),
         "api_key": os.getenv("LLAMA_CPP_API_KEY") or DEFAULT_LLAMA_CPP_API_KEY,
     }
+
+
+async def check_llm_connection(timeout: float = 2.0) -> bool:
+    """Check llama.cpp's models endpoint without loading a model."""
+    import httpx
+
+    config = get_llm_config()
+    headers = {"Authorization": f"Bearer {config['api_key']}"}
+    try:
+        async with httpx.AsyncClient(timeout=timeout) as client:
+            response = await client.get(
+                f"{config['base_url']}/models",
+                headers=headers,
+            )
+        return response.is_success
+    except (httpx.HTTPError, httpx.InvalidURL):
+        # An unavailable model server must not make the backend health check fail.
+        return False
 
 
 def create_llm(**kwargs: Any) -> "ChatOpenAI":
@@ -47,6 +65,6 @@ def create_llm(**kwargs: Any) -> "ChatOpenAI":
     """
     from langchain_openai import ChatOpenAI
 
-    config: Dict[str, Any] = get_llm_config()
+    config: dict[str, Any] = get_llm_config()
     config.update(kwargs)
     return ChatOpenAI(**config)

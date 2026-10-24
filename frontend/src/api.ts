@@ -61,6 +61,7 @@ const collectionPath = (name: string) => `/collections/${encodeURIComponent(name
 
 export const api = {
   health: () => request<{ status: string }>("/health"),
+  llmHealth: () => request<{ connected: boolean }>("/health/llm"),
   config: () => request<PublicConfig>("/config"),
 
   listCollections: () => request<{ collections: string[] }>("/collections"),

@@ -8,7 +8,7 @@ import time
 import unittest
 from pathlib import Path
 from types import SimpleNamespace
-from unittest.mock import patch
+from unittest.mock import AsyncMock, patch
 
 from fastapi.testclient import TestClient
 from langchain_core.documents import Document
@@ -136,6 +136,18 @@ class APITest(unittest.TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.json()["embedding_model"], "test/fake-embedding")
         self.assertEqual(response.json()["embedding_dimensions"], 3)
+
+    def test_llm_health_uses_independent_connectivity_check(self):
+        with patch(
+            "backend.api.system.check_llm_connection",
+            new_callable=AsyncMock,
+        ) as check:
+            check.return_value = True
+            response = self.client.get("/api/health/llm")
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json(), {"connected": True})
+        check.assert_awaited_once_with()
 
     def test_collection_and_document_crud_with_rename(self):
         self.assertEqual(self._create().status_code, 201)
