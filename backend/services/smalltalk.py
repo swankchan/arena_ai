@@ -10,6 +10,7 @@ import unicodedata
 
 from langchain_core.messages import HumanMessage, SystemMessage
 
+from backend.services.telemetry import estimate_tokens
 
 MAX_SMALLTALK_CHARS = 120
 SMALLTALK_MAX_OUTPUT_TOKENS = 80
@@ -178,16 +179,6 @@ def smalltalk_messages(message: str):
     ]
 
 
-def _estimate_tokens(text: str) -> int:
-    try:
-        import tiktoken
-
-        encoding = tiktoken.get_encoding("cl100k_base")
-        return len(encoding.encode(text))
-    except Exception:
-        return int(len(text.split()) * 1.3)
-
-
 def stream_smalltalk(llm, message: str):
     """Stream a bounded social reply through the shared llama.cpp chat model."""
     start_time = time.time()
@@ -212,7 +203,7 @@ def stream_smalltalk(llm, message: str):
         raise RuntimeError("The smalltalk response was empty.")
 
     duration = time.time() - start_time
-    token_count = _estimate_tokens(full_text)
+    token_count = estimate_tokens(full_text)
     tokens_per_second = token_count / duration if duration > 0 else 0
     yield (
         "final",

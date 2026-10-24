@@ -4,6 +4,7 @@ import type {
   DocumentItem,
   FinalChatEvent,
   IngestionJob,
+  Metrics,
   Prompt,
   PublicConfig,
   QARun,
@@ -129,6 +130,7 @@ interface StreamCallbacks {
   onMeta?: (conversationId: string) => void;
   onReasoning: (text: string) => void;
   onAnswer: (text: string) => void;
+  onMetrics?: (metrics: Metrics) => void;
   onFinal: (result: FinalChatEvent) => void;
 }
 
@@ -159,6 +161,8 @@ export async function streamChat(
       callbacks.onReasoning((data as { text: string }).text);
     } else if (event === "answer") {
       callbacks.onAnswer((data as { text: string }).text);
+    } else if (event === "metrics") {
+      callbacks.onMetrics?.(data as Metrics);
     } else if (event === "final") {
       callbacks.onFinal(data as FinalChatEvent);
     } else if (event === "error") {

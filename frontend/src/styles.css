@@ -215,6 +215,9 @@ select { height: 41px; padding: 0 11px; }
 .source-chip { display: inline-flex; align-items: center; gap: 5px; padding: 4px 7px; color: #5b6480; background: #eef1f6; border: 1px solid #e2e7ef; border-radius: 5px; font-size: 9.5px; }
 .metrics-row { display: flex; flex-wrap: wrap; gap: 13px; margin-top: 11px; color: #939cac; font-size: 9.5px; }
 .metrics-row span { display: inline-flex; align-items: center; gap: 4px; }
+.metrics-row .tps-metric { color: #68758a; font-variant-numeric: tabular-nums; }
+.metrics-row.live .tps-metric { color: #5e5fd4; font-weight: 700; }
+.metrics-row .metrics-live-label { color: #898ae7; font-size: 8.5px; letter-spacing: .04em; text-transform: uppercase; }
 .rating-row { display: flex; align-items: center; gap: 4px; margin-top: 12px; color: #929bab; font-size: 10px; }
 .rating-row > span { margin-right: 5px; }
 .rating-row .icon-button { width: 26px; height: 26px; flex-basis: 26px; }

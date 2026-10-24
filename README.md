@@ -149,8 +149,13 @@ llama.cpp `/models` endpoint with a two-second timeout and returns HTTP 200 with
 `{"connected": false}` when unavailable. The browser stays on relative `/api`
 URLs, and `LLAMA_CPP_API_KEY` is never sent to the SPA.
 
-Chat uses Server-Sent Events with `meta`, `reasoning`, `answer`, `final`, and
-`error` events. The backend loads conversation history and persists completed
+Chat uses Server-Sent Events with `meta`, `reasoning`, `answer`, `metrics`,
+`final`, and `error` events. During generation, throttled `metrics` events show
+a live estimated tokens/s rate at most once every 250 ms. The estimate uses
+streamed text and elapsed request time, including query optimization,
+retrieval, and other RAG work; it is not provider-reported token usage or a
+pure LLM decode benchmark. The existing `final` metrics remain unchanged after
+completion. The backend loads conversation history and persists completed
 answers; the browser does not supply trusted history.
 
 Document upload returns `202 Accepted` and a job ID. Poll the job endpoint for

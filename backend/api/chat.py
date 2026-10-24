@@ -15,7 +15,7 @@ from backend.schemas import ChatRequest
 from backend.services import collections
 from backend.services.collections import normalize_name
 from backend.services.smalltalk import is_smalltalk, stream_smalltalk
-
+from backend.services.telemetry import LiveMetricsMeter
 
 router = APIRouter(prefix="/api/collections", tags=["chat"])
 logger = logging.getLogger(__name__)
@@ -82,12 +82,16 @@ def chat(collection_name: str, payload: ChatRequest, request: Request):
                     query_expansion=payload.query_expansion,
                 )
 
+            live_metrics = LiveMetricsMeter()
             for phase, content in events:
                 if phase == "final":
                     final_result = content
                     break
                 if phase in {"reasoning", "answer"}:
                     yield _event(phase, {"text": content})
+                    metrics_update = live_metrics.add_text(str(content))
+                    if metrics_update is not None:
+                        yield _event("metrics", metrics_update)
 
             if final_result is None:
                 raise RuntimeError("The response stream ended without a final result.")

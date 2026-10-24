@@ -42,6 +42,7 @@ llama.cpp after `npm run build`; it does not need a Node server.
 | `backend/services/engine_manager.py` | Lazy model and engine cache |
 | `backend/services/jobs.py` | In-process ingestion jobs |
 | `backend/services/smalltalk.py` | Social router and isolated LLM guard |
+| `backend/services/telemetry.py` | Shared token estimates and throttled live metrics |
 | `backend/embeddings.py` | Lazy embedding factory and task prompts |
 | `backend/rag_engine.py` | RAG orchestration and Text-to-SQL |
 | `backend/lance_store.py` | Embedded vector persistence and exact retrieval |
@@ -83,7 +84,11 @@ this document-query pipeline:
 ### API and streaming
 
 - Chat uses SSE, not WebSocket. Events are `meta`, `reasoning`, `answer`,
-  `final`, and `error`; each data payload is JSON.
+  `metrics`, `final`, and `error`; each data payload is JSON. Optional `metrics`
+  events are additive and throttled to 250 ms for the live tokens/s estimate.
+  They reuse the final token estimator but measure elapsed request time,
+  including RAG work. Do not describe them as exact provider usage or pure LLM
+  decode telemetry, and keep the existing `final` metrics contract unchanged.
 - Query transformation and expansion are per-request arguments. Never mutate
   `os.environ` to change one user's options.
 - Persist chat through the backend, not a browser-controlled history payload.

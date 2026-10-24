@@ -285,6 +285,36 @@ class APITest(unittest.TestCase):
             404,
         )
 
+    def test_sse_stream_forwards_live_metrics_without_replacing_final_metrics(self):
+        self._create()
+        conversation = self.client.post(
+            "/api/collections/alpha/conversations",
+            json={},
+        ).json()
+        live = {"total_tokens": 3, "tokens_per_second": 7.5, "duration": 0.4}
+        with patch(
+            "backend.api.chat.LiveMetricsMeter.add_text",
+            return_value=live,
+        ):
+            response = self.client.post(
+                "/api/collections/alpha/chat",
+                json={
+                    "conversation_id": conversation["id"],
+                    "question": "What is in the document?",
+                },
+            )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.text.count("event: metrics"), 2)
+        self.assertIn('"tokens_per_second": 7.5', response.text)
+        final_line = next(
+            line for line in response.text.splitlines()
+            if '"qa_run_id"' in line
+        )
+        final = json.loads(final_line.removeprefix("data: "))
+        self.assertEqual(final["metrics"]["total_tokens"], 8)
+        self.assertEqual(final["metrics"]["tokens_per_second"], 4.0)
+
     def test_smalltalk_uses_isolated_llm_without_qa_persistence(self):
         self._create()
         conversation = self.client.post(

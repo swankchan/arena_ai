@@ -17,7 +17,6 @@ import time
 import json
 import logging
 import pandas as pd
-import tiktoken
 from typing import Any, Dict, List, Optional
 from dotenv import load_dotenv
 
@@ -48,6 +47,7 @@ from backend.embeddings import (
 )
 from backend.lance_store import LanceStore
 from backend.llm_config import create_llm
+from backend.services.telemetry import estimate_tokens
 
 try:
     from langchain.retrievers.contextual_compression import ContextualCompressionRetriever
@@ -309,13 +309,8 @@ Numeric column statistics:
         return base_retriever
 
     def _count_tokens(self, text: str):
-        """Estimate token count using tiktoken (OpenAI) or a heuristic."""
-        try:
-            encoding = tiktoken.get_encoding("cl100k_base") # common encoding
-            return len(encoding.encode(text))
-        except Exception:
-            # Fallback to simple word-based estimate if tiktoken fails
-            return len(text.split()) * 1.3 # common heuristic: 1.3 tokens per word
+        """Estimate token count with the shared chat telemetry estimator."""
+        return estimate_tokens(text)
 
     def _format_recent_history(self, chat_history) -> str:
         """Format bounded server-side history for generation or query rewriting."""

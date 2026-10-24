@@ -14,7 +14,7 @@ import {
   Zap,
 } from "lucide-react";
 import { api, streamChat } from "../api";
-import type { ChatMessage, FinalChatEvent, QueryOptions } from "../types";
+import type { ChatMessage, FinalChatEvent, Metrics, QueryOptions } from "../types";
 import { ErrorBanner, Markdown, Spinner } from "./ui";
 
 interface ChatProps {
@@ -31,6 +31,31 @@ const suggestions = [
   "What are the most important findings?",
   "Compare the main topics in this collection",
 ];
+
+export function MessageMetrics({
+  metrics,
+  streaming = false,
+}: {
+  metrics: Metrics;
+  streaming?: boolean;
+}) {
+  const tpsTitle = streaming
+    ? "Best-effort live estimate from streamed text and elapsed request time, including retrieval and other RAG work."
+    : "Final backend metrics for the completed request.";
+  return (
+    <div
+      className={`metrics-row${streaming ? " live" : ""}`}
+      aria-label={streaming ? "Live estimated chat performance" : "Final chat performance"}
+    >
+      <span><Zap size={13} />{metrics.total_tokens ?? 0} tokens</span>
+      <span><Clock3 size={13} />{metrics.duration ?? 0}s</span>
+      <span className="tps-metric" title={tpsTitle}>
+        {metrics.tokens_per_second ?? 0} tokens/s{streaming ? " est." : ""}
+      </span>
+      {streaming && <span className="metrics-live-label">Live estimate</span>}
+    </div>
+  );
+}
 
 export function Chat({
   collection,
@@ -112,6 +137,10 @@ export function Chat({
             ...message,
             content: message.content + text,
           })),
+          onMetrics: (metrics) => updateAssistant(assistantId, (message) => ({
+            ...message,
+            metrics,
+          })),
           onFinal: (result: FinalChatEvent) => {
             finalReceived = true;
             updateAssistant(assistantId, (message) => ({
@@ -136,6 +165,7 @@ export function Chat({
       updateAssistant(assistantId, (message) => ({
         ...message,
         streaming: false,
+        metrics: undefined,
         error: !aborted,
         content: aborted
           ? message.content || "Generation stopped."
@@ -222,11 +252,7 @@ export function Chat({
                     )}
 
                     {message.metrics && (
-                      <div className="metrics-row">
-                        <span><Zap size={13} />{message.metrics.total_tokens || 0} tokens</span>
-                        <span><Clock3 size={13} />{message.metrics.duration || 0}s</span>
-                        <span>{message.metrics.tokens_per_second || 0} tokens/s</span>
-                      </div>
+                      <MessageMetrics metrics={message.metrics} streaming={message.streaming} />
                     )}
 
                     {message.role === "assistant" && message.qa_run_id && !message.streaming && (
