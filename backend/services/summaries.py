@@ -8,9 +8,8 @@ from typing import Any
 from langchain_core.messages import HumanMessage, SystemMessage
 
 from backend import db
-from backend.lance_store import LanceStore
-from backend.services import tabular
-from backend.services.collections import normalize_name, table_name
+from backend.services.collections import normalize_name
+from backend.services.content_metadata import ContentMetadataProvider
 
 logger = logging.getLogger(__name__)
 MAX_SUMMARY_SOURCES = 12
@@ -39,34 +38,17 @@ def _clean_summary(content: str) -> str:
     return summary
 
 
-def _tabular_excerpts(collection_name: str) -> list[dict[str, str]]:
-    excerpts = []
-    files = tabular.list_files(collection_name)[:MAX_SUMMARY_TABULAR_FILES]
-    for item in files:
-        columns = ", ".join((item.get("columns") or {}).keys())
-        text = (
-            f"Structured data table with {item.get('row_count', 0)} rows. "
-            f"Columns: {columns or 'not available'}."
-        )
-        excerpts.append({
-            "source": item["filename"],
-            "text": text[:MAX_SUMMARY_CHARS_PER_SOURCE],
-        })
-    return excerpts
-
-
 def refresh_collection_summary(
     collection_name: str,
     llm_factory: Callable[[], Any],
 ) -> str:
     """Regenerate from current document text and bounded tabular schemas."""
     normalized = normalize_name(collection_name)
-    excerpts = LanceStore.get_table_summary_excerpts(
-        table_name(normalized),
+    excerpts = ContentMetadataProvider(normalized).get_excerpts(
         max_sources=MAX_SUMMARY_SOURCES,
+        max_tabular_files=MAX_SUMMARY_TABULAR_FILES,
         max_chars_per_source=MAX_SUMMARY_CHARS_PER_SOURCE,
     )
-    excerpts.extend(_tabular_excerpts(normalized))
     if not excerpts:
         db.delete_collection_summary(normalized)
         return ""

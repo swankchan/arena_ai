@@ -16,7 +16,6 @@ import os
 import time
 import json
 import logging
-import pandas as pd
 from typing import Any, Dict, List, Optional
 from dotenv import load_dotenv
 
@@ -34,9 +33,7 @@ from langchain_community.document_loaders import (
     PyPDFium2Loader,
     TextLoader,
     UnstructuredHTMLLoader,
-    CSVLoader,
-    UnstructuredExcelLoader,
-    UnstructuredWordDocumentLoader
+    UnstructuredWordDocumentLoader,
 )
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 from backend.embeddings import (
@@ -139,27 +136,19 @@ IMPORTANT GUIDELINES:
 - Do not use your general knowledge - stick strictly to the context
 - If the context does not contain enough information to answer fully, say what you can based on the context"""
 
-    def add_documents(self, file_path: str, progress_callback=None):
-        """Loads, splits, and adds documents to the current collection with progress reporting."""
+    def add_vector_document(self, file_path: str, progress_callback=None):
+        """Load, split, and embed one non-tabular document."""
         ext = file_path.lower().split('.')[-1]
-
-        # Handle tabular data specially
-        if ext in ["csv", "xlsx", "xls"]:
-            return self._add_tabular_document(file_path, progress_callback)
-
-        # Non-tabular documents
         if ext == "pdf":
             loader = PyPDFium2Loader(file_path)
-        elif ext == "csv":
-            loader = CSVLoader(file_path)
-        elif ext in ["xlsx", "xls"]:
-            loader = UnstructuredExcelLoader(file_path)
         elif ext in ["docx", "doc"]:
             loader = UnstructuredWordDocumentLoader(file_path)
         elif ext in ["html", "htm"]:
             loader = UnstructuredHTMLLoader(file_path)
-        else:
+        elif ext == "txt":
             loader = TextLoader(file_path)
+        else:
+            raise ValueError(f"Unsupported vector document type: {ext}")
 
         documents = loader.load()
 
@@ -185,111 +174,6 @@ IMPORTANT GUIDELINES:
                 progress_callback((i + len(batch)) / total_chunks)
 
         return total_chunks
-
-    def _add_tabular_document(self, file_path: str, progress_callback=None) -> int:
-        """
-        Handle tabular data files (CSV, XLSX, XLS) specially.
-
-        This method:
-        1. Loads the file into a pandas DataFrame
-        2. Creates a SQLite database for SQL queries
-        3. Generates analysis metadata
-        4. Stores the data for Text-to-SQL queries
-        5. Does NOT create chunks for vector search (tabular data is queried via SQL)
-
-        Returns 0 (no chunks created for vector search).
-        """
-        # Load the file
-        df, metadata = self.tabular_handler.load_file(file_path)
-
-        # Create SQLite database for SQL queries
-        sql_conn = self.tabular_handler.create_sqlite_db(df, self.tabular_handler.table_name)
-        sql_conn.close()
-
-        # Store metadata in database
-        filename = os.path.basename(file_path)
-        self.tabular_handler.store_metadata(filename, metadata)
-
-        # Tabular data is NOT chunked for vector search
-        # It is queried directly via SQL/Pandas analysis
-        if progress_callback:
-            progress_callback(1.0)  # Complete
-
-        return 0
-
-    def _df_to_chunks(self, df: pd.DataFrame, source_name: str) -> List[Any]:
-        """
-        Convert a DataFrame to text chunks for vector search.
-
-        Creates chunks with:
-        1. A schema chunk describing column types
-        2. Sample data chunks showing actual values
-        3. Combined text for each row with column names
-
-        Args:
-            df: DataFrame to convert
-            source_name: Name of the source file
-
-        Returns:
-            List of Document objects
-        """
-        from langchain_core.documents import Document
-
-        chunks = []
-
-        # Get column information
-        columns_info = ", ".join([f"{col} ({df[col].dtype})" for col in df.columns])
-
-        # Schema chunk
-        schema_text = f"""Table: {source_name}
-Columns: {columns_info}
-Row count: {len(df)}
-
-This table contains structured data from {source_name}. Use SQL queries to analyze numeric columns and filter by categorical columns."""
-        chunks.append(Document(
-            page_content=schema_text,
-            metadata={"source": source_name, "chunk_type": "schema"}
-        ))
-
-        # Sample data chunk (first 10000 rows as formatted table)
-        if len(df) > 0:
-            sample_rows = df.head(10000)
-            try:
-                sample_text = "Sample data (first 10000 rows):\n\n" + sample_rows.to_markdown(index=False)
-            except ImportError:
-                # Fallback if tabulate is not installed
-                sample_text = "Sample data (first 10000 rows):\n\n" + sample_rows.to_string(index=False)
-            chunks.append(Document(
-                page_content=sample_text,
-                metadata={"source": source_name, "chunk_type": "sample"}
-            ))
-
-        # Full data chunk (10000 or all rows, but truncated if too large)
-        if len(df) <= 10000:
-            # Small dataset: include all rows
-            try:
-                full_text = "All data:\n\n" + df.to_markdown(index=False)
-            except ImportError:
-                full_text = "All data:\n\n" + df.to_string(index=False)
-        else:
-            # Large dataset: include summary stats
-            try:
-                numeric_summary = df.describe().to_markdown()
-            except ImportError:
-                numeric_summary = df.describe().to_string()
-            full_text = f"""Data summary (first 10000 rows shown):
-
-{df.head(10000).to_markdown(index=False)}
-
-Numeric column statistics:
-{numeric_summary}
-"""
-        chunks.append(Document(
-            page_content=full_text,
-            metadata={"source": source_name, "chunk_type": "data"}
-        ))
-
-        return chunks
 
     def get_retriever(self):
         """Returns a retriever with reranking."""

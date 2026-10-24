@@ -3,7 +3,6 @@
 import ntpath
 import uuid
 from pathlib import Path
-from typing import List
 
 from fastapi import UploadFile
 
@@ -37,7 +36,7 @@ def safe_filename(filename: str) -> str:
     return cleaned
 
 
-async def save_uploads(collection_name: str, uploads: List[UploadFile]) -> List[Path]:
+async def save_uploads(collection_name: str, uploads: list[UploadFile]) -> list[Path]:
     if not uploads:
         raise ValueError("Choose at least one file to upload.")
 
@@ -83,34 +82,3 @@ async def save_uploads(collection_name: str, uploads: List[UploadFile]) -> List[
         temporary.replace(destination)
         saved.append(destination)
     return saved
-
-
-def process_saved_documents(
-    engine,
-    paths: List[Path],
-    progress_callback,
-) -> dict:
-    total_chunks = 0
-    processed_files = 0
-    errors: List[str] = []
-    total = len(paths)
-
-    for index, path in enumerate(paths):
-        def update(progress: float, _index=index) -> None:
-            progress_callback((_index + progress) / total)
-
-        try:
-            total_chunks += engine.add_documents(
-                str(path),
-                progress_callback=update,
-            )
-            processed_files += 1
-        except Exception as exc:
-            errors.append(f"{path.name}: {exc}")
-
-    progress_callback(1.0)
-    return {
-        "processed_files": processed_files,
-        "total_chunks": total_chunks,
-        "errors": errors,
-    }

@@ -61,6 +61,17 @@ def make_chunk(chunk_id, source=None):
     )
 
 
+class VectorOnlyIngestionTest(unittest.TestCase):
+    def test_tabular_files_cannot_fall_through_to_text_vectorization(self):
+        engine = RAGEngine.__new__(RAGEngine)
+        for filename in ("sales.csv", "sales.xlsx", "sales.xls"):
+            with self.subTest(filename=filename), self.assertRaisesRegex(
+                ValueError,
+                "Unsupported vector document type",
+            ):
+                engine.add_vector_document(filename)
+
+
 class OptimizedQueryRetrievalTest(unittest.TestCase):
     def setUp(self):
         self.env = patch.dict(os.environ, {"TOP_K": "4"})

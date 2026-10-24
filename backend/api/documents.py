@@ -12,7 +12,8 @@ from fastapi import (
 from backend.lance_store import LanceStore
 from backend.services import collections
 from backend.services.collections import normalize_name, table_name
-from backend.services.documents import process_saved_documents, save_uploads
+from backend.services.documents import save_uploads
+from backend.services.ingestion import process_saved_documents
 from backend.services.summaries import try_refresh_collection_summary
 
 router = APIRouter(prefix="/api", tags=["documents"])
@@ -78,12 +79,38 @@ async def upload_documents(
     engines = request.app.state.engines
 
     def worker(progress):
-        engine = engines.get_engine(normalized)
-        result = process_saved_documents(engine, paths, progress)
+        vector_engine = None
+        tabular_handler = None
+
+        def get_vector_engine():
+            nonlocal vector_engine
+            if vector_engine is None:
+                vector_engine = engines.get_engine(normalized)
+            return vector_engine
+
+        def get_tabular_handler():
+            nonlocal tabular_handler
+            if tabular_handler is None:
+                from backend.tabular_engine import TabularDataHandler
+
+                tabular_handler = TabularDataHandler(normalized)
+            return tabular_handler
+
+        def get_summary_llm():
+            if vector_engine is not None:
+                return vector_engine.llm
+            return engines.get_llm()
+
+        result = process_saved_documents(
+            paths,
+            get_vector_engine,
+            get_tabular_handler,
+            progress,
+        )
         if result["processed_files"]:
             result["summary_error"] = try_refresh_collection_summary(
                 normalized,
-                lambda: engine.llm,
+                get_summary_llm,
             )
         return result
 

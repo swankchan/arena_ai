@@ -41,11 +41,14 @@ llama.cpp after `npm run build`; it does not need a Node server.
 | `backend/schemas.py` | Pydantic request contracts |
 | `backend/services/engine_manager.py` | Lazy model and engine cache |
 | `backend/services/jobs.py` | In-process ingestion jobs |
+| `backend/services/ingestion.py` | Explicit vector/tabular upload dispatch and aggregates |
+| `backend/services/content_metadata.py` | Common bounded content excerpts for collection features |
 | `backend/services/smalltalk.py` | Social router and isolated LLM guard |
 | `backend/services/telemetry.py` | Shared token estimates and throttled live metrics |
 | `backend/services/summaries.py` | Automatic collection descriptions from bounded content |
 | `backend/embeddings.py` | Lazy embedding factory and task prompts |
-| `backend/rag_engine.py` | RAG orchestration and Text-to-SQL |
+| `backend/rag_engine.py` | Vector-only ingestion, RAG orchestration, and Text-to-SQL |
+| `backend/tabular_engine.py` | Tabular loading, SQLite persistence, and SQL/Pandas queries |
 | `backend/lance_store.py` | Embedded vector persistence and exact retrieval |
 | `backend/db.py` | Conversations, messages, Q&A, ratings, and prompts |
 | `frontend/src/api.ts` | Relative-URL API client and SSE entry point |
@@ -118,9 +121,11 @@ this document-query pipeline:
 - Document deletion uses exact `source` metadata with SQL-literal escaping.
 - Collection rename moves vectors, uploads, SQLite records, and tabular paths.
 - Generate collection descriptions only through `services/summaries.py` after a
-  successful upload batch or vector/tabular deletion. Use bounded document
-  excerpts and tabular schemas, persist them in `collection_summaries`, and
-  preserve the last good summary on LLM failure without rolling back source
+  successful upload batch or vector/tabular deletion. Read bounded document
+  excerpts and tabular schemas through `ContentMetadataProvider` so summary
+  generation does not depend on LanceDB/tabular storage details. Persist
+  descriptions in `collection_summaries` and preserve the last good summary on
+  LLM failure without rolling back source
   data. Rename moves this metadata; empty collections and collection deletion
   clear it. The summary GET endpoint must never invoke an LLM.
 - SQLite enables foreign keys on every connection and uses
@@ -144,6 +149,19 @@ this document-query pipeline:
 - Allow only documented extensions and reject path separators, empty files,
   duplicate upload names, and files above `MAX_UPLOAD_SIZE_MB`.
 - Write uploads to temporary files before replacing existing documents.
+- Classify saved files as `vector` or `tabular` in `services/ingestion.py`, not
+  inside RAGEngine. Vector documents use `add_vector_document()`; tabular files
+  use TabularDataHandler to create SQLite data and metadata.
+- Never add duplicate CSV/Excel vector indexing. Preserve SQLite Text-to-SQL
+  for precise aggregation, and keep RAGEngine's vector ingestion guarded against
+  tabular files falling through to a text loader.
+- Construct vector engines and tabular handlers through lazy per-upload
+  factories. A tabular-only batch must not initialize RAGEngine/EmbeddingGemma;
+  automatic descriptions use the shared llama.cpp client in that case.
+- Job results retain `processed_files`, `total_chunks`, and `errors`, and also
+  expose `vector_files`, `tabular_files`, `total_rows`, and per-file
+  `file_results` (`name`, `kind`, status, chunks or rows/columns, and error).
+  Keep vector chunks and tabular rows distinct in API consumers and UI text.
 - Direct SQL is read-only, limited to `MAX_SQL_ROWS`, and constrained to the
   selected collection's tabular directory.
 - Natural-language SQL must receive the selected `file_id`.
@@ -210,8 +228,10 @@ model clients. They need no external service, model download, or Docker.
 Embedding tests must cover task prompts, normalization flags, safe precision,
 MRL dimensions, and old-table mismatch protection. Smalltalk tests must cover
 whole-message matching, prompt-injection fallback, system-message isolation,
-and Q&A-memory exclusion. Frontend tests cover SSE chunk parsing and
-formatting; the production build also checks TypeScript.
+and Q&A-memory exclusion. Frontend tests cover SSE chunk parsing, formatting, and distinct vector/tabular
+ingestion totals; the production build also checks TypeScript. Ingestion tests
+must cover explicit dispatch, per-file failures, real CSV-to-SQLite queries, and
+the guarantee that tabular-only uploads do not construct a vector engine.
 
 When changing retrieval, test empty tables, persistence, source deletion,
 rename, and dimension mismatches. Multi-query tests must cover RRF agreement,

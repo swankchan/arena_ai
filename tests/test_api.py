@@ -56,7 +56,7 @@ class FakeEngine:
             },
         }
 
-    def add_documents(self, path, progress_callback=None):
+    def add_vector_document(self, path, progress_callback=None):
         self.uploads.append(path)
         if progress_callback:
             progress_callback(0.5)
@@ -533,6 +533,15 @@ class APITest(unittest.TestCase):
         self.assertEqual(job["status"], "succeeded", job)
         self.assertEqual(job["total_chunks"], 3)
         self.assertEqual(job["processed_files"], 1)
+        self.assertEqual(job["vector_files"], 1)
+        self.assertEqual(job["tabular_files"], 0)
+        self.assertEqual(job["total_rows"], 0)
+        self.assertEqual(job["file_results"], [{
+            "name": "notes.txt",
+            "kind": "vector",
+            "status": "succeeded",
+            "chunks": 3,
+        }])
         self.assertEqual(
             (self.documents / "alpha" / "notes.txt").read_text(encoding="utf-8"),
             "hello world",
@@ -559,6 +568,63 @@ class APITest(unittest.TestCase):
         self.assertEqual(too_large.status_code, 413)
         self.assertFalse((self.documents / "alpha" / "large.txt").exists())
         self.assertEqual(list((self.documents / "alpha").glob("*.upload")), [])
+
+    def test_tabular_upload_builds_sqlite_without_starting_vector_engine(self):
+        self._create()
+        with patch(
+            "backend.tabular_engine.DOCUMENTS_DIR",
+            str(self.documents),
+        ), patch(
+            "backend.api.documents.try_refresh_collection_summary",
+            return_value=None,
+        ) as refresh:
+            uploaded = self.client.post(
+                "/api/collections/alpha/documents",
+                files={
+                    "files": (
+                        "sales.csv",
+                        b"region,amount\nHK,10\nUK,20\n",
+                        "text/csv",
+                    ),
+                },
+            )
+            job = self._wait_for_job(uploaded.json())
+
+        self.assertEqual(uploaded.status_code, 202, uploaded.text)
+        self.assertEqual(job["status"], "succeeded", job)
+        self.assertEqual(job["processed_files"], 1)
+        self.assertEqual(job["vector_files"], 0)
+        self.assertEqual(job["tabular_files"], 1)
+        self.assertEqual(job["total_chunks"], 0)
+        self.assertEqual(job["total_rows"], 2)
+        self.assertEqual(job["file_results"], [{
+            "name": "sales.csv",
+            "kind": "tabular",
+            "status": "succeeded",
+            "rows": 2,
+            "columns": 2,
+        }])
+        self.assertEqual(self.engines.engines, {})
+        refresh.assert_called_once()
+        self.assertIs(refresh.call_args.args[1](), self.engines.smalltalk_llm)
+
+        files = self.client.get("/api/collections/alpha/tabular/files").json()["files"]
+        self.assertEqual(len(files), 1)
+        self.assertEqual(files[0]["filename"], "sales.csv")
+        self.assertEqual(files[0]["row_count"], 2)
+        result = self.client.post(
+            "/api/collections/alpha/tabular/query",
+            json={
+                "file_id": files[0]["id"],
+                "query": "SELECT SUM(amount) AS total FROM tabular_alpha",
+            },
+        )
+        self.assertEqual(result.status_code, 200, result.text)
+        self.assertEqual(result.json()["rows"], [{"total": 30}])
+        self.assertEqual(
+            self.client.get("/api/collections/alpha/documents").json()["documents"],
+            [],
+        )
 
     def test_tabular_file_listing_read_only_sql_and_natural_query(self):
         self._create()

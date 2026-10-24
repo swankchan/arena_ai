@@ -12,6 +12,7 @@ import {
 import { api } from "../api";
 import type { DocumentItem, IngestionJob, PublicConfig } from "../types";
 import { formatBytes } from "../lib/format";
+import { formatIngestionCompletion, formatIngestionCounts } from "../lib/ingestion";
 import { ErrorBanner, Spinner } from "./ui";
 
 export function Documents({
@@ -76,7 +77,7 @@ export function Documents({
         if (inputRef.current) inputRef.current.value = "";
         await Promise.all([loadDocuments(), onSummaryChanged()]);
         onNotice(
-          `Processed ${current.processed_files} files into ${current.total_chunks} chunks.`
+          formatIngestionCompletion(current)
           + (current.summary_error ? " Collection description was not updated." : ""),
         );
       } else {
@@ -107,7 +108,7 @@ export function Documents({
   return (
     <div className="page-stack">
       <header className="page-heading">
-        <div><span className="eyebrow">Knowledge ingestion</span><h1>Documents</h1><p>Upload source material and build the exact-cosine vector index for {collection}.</p></div>
+        <div><span className="eyebrow">Knowledge ingestion</span><h1>Documents</h1><p>Upload documents for vector search or CSV/Excel files for SQL analysis in {collection}.</p></div>
         <button className="button secondary" onClick={() => void loadDocuments()}><RefreshCw size={16} />Refresh</button>
       </header>
 
@@ -160,7 +161,7 @@ export function Documents({
 
         {job && (
           <div className="job-status">
-            <div><strong>{busy ? "Building knowledge index" : job.status === "succeeded" ? "Processing complete" : "Processing failed"}</strong><span>{job.processed_files}/{job.total_files} files · {job.total_chunks} chunks</span></div>
+            <div><strong>{busy ? "Processing uploads" : job.status === "succeeded" ? "Processing complete" : "Processing failed"}</strong><span>{formatIngestionCounts(job)}</span></div>
             <div className="progress-track"><span style={{ width: `${Math.round(job.progress * 100)}%` }} /></div>
             <small>{Math.round(job.progress * 100)}% · {job.status}</small>
             {!!job.errors.length && <div className="job-errors">{job.errors.map((item) => <p key={item}>{item}</p>)}</div>}

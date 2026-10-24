@@ -46,7 +46,7 @@ class CollectionSummaryTest(unittest.TestCase):
             "text": "Install the driver and diagnose hardware failures.",
         }]
         with patch(
-            "backend.services.summaries.LanceStore.get_table_summary_excerpts",
+            "backend.services.content_metadata.LanceStore.get_table_summary_excerpts",
             return_value=excerpts,
         ):
             summary = refresh_collection_summary("Alpha", lambda: llm)
@@ -65,10 +65,10 @@ class CollectionSummaryTest(unittest.TestCase):
     def test_tabular_only_collection_uses_bounded_schema_metadata(self):
         llm = FakeSummaryLLM("Sales records with regional amounts.")
         with patch(
-            "backend.services.summaries.LanceStore.get_table_summary_excerpts",
+            "backend.services.content_metadata.LanceStore.get_table_summary_excerpts",
             return_value=[],
         ), patch(
-            "backend.services.summaries.tabular.list_files",
+            "backend.services.content_metadata.tabular.list_files",
             return_value=[{
                 "filename": "sales.csv",
                 "row_count": 25,
@@ -87,7 +87,7 @@ class CollectionSummaryTest(unittest.TestCase):
         db.set_collection_summary("alpha", "Old description")
         llm_factory = Mock()
         with patch(
-            "backend.services.summaries.LanceStore.get_table_summary_excerpts",
+            "backend.services.content_metadata.LanceStore.get_table_summary_excerpts",
             return_value=[],
         ):
             self.assertEqual(refresh_collection_summary("alpha", llm_factory), "")
@@ -99,7 +99,7 @@ class CollectionSummaryTest(unittest.TestCase):
         db.set_collection_summary("alpha", "Last known good description")
         llm = FakeSummaryLLM(error=RuntimeError("llama.cpp offline"))
         with patch(
-            "backend.services.summaries.LanceStore.get_table_summary_excerpts",
+            "backend.services.content_metadata.LanceStore.get_table_summary_excerpts",
             return_value=[{"source": "/docs/a.txt", "text": "new content"}],
         ), self.assertRaisesRegex(RuntimeError, "offline"):
             refresh_collection_summary("alpha", lambda: llm)

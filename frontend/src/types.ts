@@ -78,6 +78,16 @@ export interface DocumentItem {
   name: string;
 }
 
+export interface IngestionFileResult {
+  name: string;
+  kind: "vector" | "tabular";
+  status: "succeeded" | "failed";
+  chunks?: number;
+  rows?: number;
+  columns?: number;
+  error?: string;
+}
+
 export interface IngestionJob {
   id: string;
   collection: string;
@@ -86,7 +96,11 @@ export interface IngestionJob {
   filenames: string[];
   processed_files: number;
   total_files: number;
+  vector_files: number;
+  tabular_files: number;
   total_chunks: number;
+  total_rows: number;
+  file_results: IngestionFileResult[];
   errors: string[];
   summary_error?: string | null;
   created_at: number;

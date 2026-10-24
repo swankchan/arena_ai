@@ -9,8 +9,9 @@ is required.
 
 - Decoupled SPA and JSON/SSE API with an OpenAPI schema.
 - Document collections backed by local LanceDB tables.
-- PDF, HTML, TXT, DOCX, CSV, XLSX, and XLS ingestion.
-- Background ingestion jobs with progress reporting.
+- PDF, HTML, TXT, and DOCX ingestion into the vector index.
+- CSV, XLSX, and XLS ingestion into SQLite for SQL/Pandas analysis.
+- Background ingestion jobs with explicit vector/tabular progress and results.
 - Exact cosine retrieval with optional FlashRank reranking.
 - Task-prompted EmbeddingGemma 2 embeddings with normalized 768d vectors.
 - Request-scoped query transformation and expansion.
@@ -37,18 +38,22 @@ LanceDB, SQLite, or llama.cpp.
 | `backend/main.py` | FastAPI composition, CORS, lifespan, and SPA serving |
 | `backend/api/` | Typed HTTP and SSE endpoints |
 | `backend/services/` | Engine cache, collection operations, uploads, and jobs |
+| `backend/services/ingestion.py` | Explicit vector/tabular dispatch and per-file results |
+| `backend/services/content_metadata.py` | Bounded vector excerpts and tabular schemas for summaries |
 | `backend/services/smalltalk.py` | Smalltalk router and isolated guard |
 | `backend/embeddings.py` | Lazy Gemma loading and task-specific prompts |
-| `backend/rag_engine.py` | Retrieval, query optimization, and generation |
+| `backend/rag_engine.py` | Vector-only ingestion, retrieval, query optimization, and generation |
 | `backend/lance_store.py` | Embedded tables and exact vector search |
 | `backend/db.py` | SQLite persistence |
-| `backend/tabular_engine.py` | CSV/Excel loading and pandas analysis |
+| `backend/tabular_engine.py` | CSV/Excel loading, SQLite storage, Text-to-SQL, and pandas analysis |
 | `frontend/` | React, Vite, and TypeScript single-page application |
 | `tests/` | Real LanceDB/SQLite API tests with deterministic engines |
 
 Heavy models are loaded lazily only when an endpoint needs them. Collection
 management and the built frontend can start without downloading an embedding
-model or contacting llama.cpp.
+model or contacting llama.cpp. Tabular-only uploads construct the SQLite handler
+without initializing RAGEngine or EmbeddingGemma; summary generation uses the
+shared llama.cpp client when no vector engine was needed.
 
 ## Requirements
 
@@ -159,7 +164,12 @@ completion. The backend loads conversation history and persists completed
 answers; the browser does not supply trusted history.
 
 Document upload returns `202 Accepted` and a job ID. Poll the job endpoint for
-queued/running status, progress, chunk counts, and per-file errors. Jobs are
+queued/running status, progress, and per-file errors. Each job reports
+`processed_files`, `vector_files`, `tabular_files`, `total_chunks`, `total_rows`,
+and `file_results` with each file's `kind` and status. `total_chunks` counts only
+vector documents; `total_rows` counts tabular input. CSV/Excel files are not
+also embedded into LanceDB, so a successful tabular file reports its row and
+column counts instead of a misleading standalone `0 chunks` result. Jobs are
 transient and process-local, so no Redis or external queue is needed.
 
 ### Automatic collection descriptions
@@ -172,8 +182,9 @@ collection renames, and cleared when no content remains. Existing collections
 receive a description after their next successful ingestion.
 
 Generation uses bounded source-diverse document excerpts and tabular schemas,
-not the entire collection. A summary failure does not roll back indexed data:
-the job or deletion response includes `summary_error`, and the last successful
+not the entire collection. `ContentMetadataProvider` isolates those storage
+details from summary generation. A summary failure does not roll back indexed
+data: the job or deletion response includes `summary_error`, and the last successful
 description is retained. `GET /api/collections/{name}/summary` reads the current
 metadata without invoking an LLM.
 
@@ -323,9 +334,10 @@ git diff --check
 
 Backend tests use temporary LanceDB/SQLite directories and deterministic fake
 model clients. They cover collection/document CRUD, SSE chat, persistence,
-ratings, prompts, upload validation, jobs, read-only SQL, SPA fallback, Gemma
-task prompts, safe precision, MRL validation, old-collection dimension
-protection, RRF ordering, history-aware follow-up retrieval, and smalltalk
+ratings, prompts, upload validation, explicit vector/tabular jobs, lazy
+vector-engine dispatch, real CSV-to-SQLite ingestion, read-only SQL, SPA
+fallback, Gemma task prompts, safe precision, MRL validation, old-collection
+dimension protection, RRF ordering, history-aware follow-up retrieval, and smalltalk
 injection fallback. No model download, Docker, or llama.cpp server is needed
 for these tests.
 
