@@ -41,6 +41,7 @@ llama.cpp after `npm run build`; it does not need a Node server.
 | `backend/schemas.py` | Pydantic request contracts |
 | `backend/services/engine_manager.py` | Lazy model and engine cache |
 | `backend/services/jobs.py` | In-process ingestion jobs |
+| `backend/services/smalltalk.py` | Social router and isolated LLM guard |
 | `backend/embeddings.py` | Lazy embedding factory and task prompts |
 | `backend/rag_engine.py` | RAG orchestration and Text-to-SQL |
 | `backend/lance_store.py` | Embedded vector persistence and exact retrieval |
@@ -48,7 +49,9 @@ llama.cpp after `npm run build`; it does not need a Node server.
 | `frontend/src/api.ts` | Relative-URL API client and SSE entry point |
 | `frontend/src/components/` | Independent React workspaces |
 
-The query pipeline is:
+After collection and conversation validation, chat routes complete allowlisted
+social messages to the isolated smalltalk responder. Every other message uses
+this document-query pipeline:
 
 1. Validate the collection and server-side conversation.
 2. Load history from SQLite and persist the user message.
@@ -144,6 +147,14 @@ The query pipeline is:
 - Chunking is `recursive` or `semantic`; reranking uses FlashRank.
 - `collection_guard` is always active and cannot be disabled or deleted.
 - Enabled custom prompts are appended to `collection_guard`.
+- Smalltalk uses full-message allowlisting plus a real `SystemMessage`; it is
+  not an unguarded bypass of `collection_guard`. The responder revalidates its
+  input and receives no history, documents, SQL, retrieval, or other tools.
+- Smalltalk obtains llama.cpp through `EngineManager.get_llm()` without creating
+  a RAG engine or loading embeddings. Persist thread messages only, not Q&A
+  runs, ratings, or long-term-memory embeddings.
+- Do not replace the allowlist with substring matching. Uncertain input and
+  appended instructions must fall back to RAG; guard tests are mandatory.
 - Short-term memory is bounded by `CHAT_HISTORY_MAX_MESSAGES`.
 
 ## Configuration
@@ -165,12 +176,13 @@ cd frontend && npm test && npm run build && cd ..
 git diff --check
 ```
 
-Backend tests use real temporary LanceDB/SQLite stores, a fake engine, and a
-fake Sentence Transformer. They need no external service, model download, or
-Docker. Embedding tests must cover task prompts, normalization flags, safe
-precision, MRL dimensions, and old-table mismatch protection. Frontend tests
-cover SSE chunk parsing and formatting; the production build also checks
-TypeScript.
+Backend tests use real temporary LanceDB/SQLite stores, a fake engine, and fake
+model clients. They need no external service, model download, or Docker.
+Embedding tests must cover task prompts, normalization flags, safe precision,
+MRL dimensions, and old-table mismatch protection. Smalltalk tests must cover
+whole-message matching, prompt-injection fallback, system-message isolation,
+and Q&A-memory exclusion. Frontend tests cover SSE chunk parsing and
+formatting; the production build also checks TypeScript.
 
 When changing retrieval, test empty tables, persistence, source deletion,
 rename, and dimension mismatches. When changing the API, test browser-facing

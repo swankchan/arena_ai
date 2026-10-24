@@ -15,6 +15,7 @@ is required.
 - Task-prompted EmbeddingGemma 2 embeddings with normalized 768d vectors.
 - Request-scoped query transformation and expansion.
 - Streaming answers, sources, metrics, and conversation memory.
+- Guarded smalltalk for common greetings, thanks, and feedback.
 - Natural-language and read-only direct SQL analysis for tabular data.
 - SQLite conversations, Q&A history, ratings, and system prompts.
 - Responsive collection, thread, document, and prompt management.
@@ -36,6 +37,7 @@ LanceDB, SQLite, or llama.cpp.
 | `backend/main.py` | FastAPI composition, CORS, lifespan, and SPA serving |
 | `backend/api/` | Typed HTTP and SSE endpoints |
 | `backend/services/` | Engine cache, collection operations, uploads, and jobs |
+| `backend/services/smalltalk.py` | Smalltalk router and isolated guard |
 | `backend/embeddings.py` | Lazy Gemma loading and task-specific prompts |
 | `backend/rag_engine.py` | Retrieval, query optimization, and generation |
 | `backend/lance_store.py` | Embedded tables and exact vector search |
@@ -95,6 +97,8 @@ Set `LLAMA_CPP_MODEL` if you choose another model alias.
 
 ### 3. Start the application
 
+For normal use or production, run **one** backend server without auto-reload:
+
 ```bash
 uvicorn backend.main:app --host 0.0.0.0 --port 8000
 ```
@@ -104,7 +108,12 @@ same origin. Interactive API documentation is available at `/docs`.
 
 ## Development servers
 
-Run the backend and Vite in separate terminals:
+The development command below is an **alternative** to the normal command
+above, not an additional step. Stop the normal server first because both
+commands listen on port 8000. The `--reload` option automatically restarts the
+backend after Python code changes and is not needed for normal use.
+
+For development only, run the backend and Vite in separate terminals:
 
 ```bash
 uvicorn backend.main:app --reload --host 0.0.0.0 --port 8000
@@ -141,6 +150,19 @@ answers; the browser does not supply trusted history.
 Document upload returns `202 Accepted` and a job ID. Poll the job endpoint for
 queued/running status, progress, chunk counts, and per-file errors. Jobs are
 transient and process-local, so no Redis or external queue is needed.
+
+### Smalltalk routing
+
+Short, whole-message allowlisted greetings, thanks, and feedback use a dedicated
+system guard with the same llama.cpp model. This path does not initialize the
+RAG engine or embeddings, read conversation history, retrieve documents, call
+SQL/tools, or create Q&A history and long-term-memory entries. The messages
+remain in their conversation thread.
+
+Any additional instructions or uncertain input use the normal RAG path. The
+allowlist is deliberately conservative, so unrecognized social phrasing may
+still receive a grounded response. Prompt guards are not a substitute for
+authentication, authorization, or backend permission checks.
 
 ## Configuration
 
@@ -262,12 +284,12 @@ cd ..
 git diff --check
 ```
 
-Backend tests use temporary LanceDB/SQLite directories, a deterministic fake
-engine, and a fake Sentence Transformer. They cover collection/document CRUD,
-SSE chat, persistence, ratings, prompts, upload validation, jobs, read-only
-SQL, SPA fallback, Gemma task prompts, safe precision, MRL validation, and
-old-collection dimension protection. No model download, Docker, or llama.cpp
-server is needed for these tests.
+Backend tests use temporary LanceDB/SQLite directories and deterministic fake
+model clients. They cover collection/document CRUD, SSE chat, persistence,
+ratings, prompts, upload validation, jobs, read-only SQL, SPA fallback, Gemma
+task prompts, safe precision, MRL validation, old-collection dimension
+protection, and smalltalk injection fallback. No model download, Docker, or
+llama.cpp server is needed for these tests.
 
 See [CLAUDE.md](CLAUDE.md) for implementation conventions.
 

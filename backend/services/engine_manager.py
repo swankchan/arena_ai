@@ -33,6 +33,10 @@ class EngineManager:
                     self._llm = create_llm()
         return self._llm
 
+    def get_llm(self):
+        """Return the shared llama.cpp client without initializing RAG models."""
+        return self._get_llm()
+
     def get_engine(self, collection_name: str):
         with self._lock:
             engine = self._engines.get(collection_name)

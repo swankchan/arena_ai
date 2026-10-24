@@ -62,6 +62,8 @@ export interface FinalChatEvent {
   optimization_log: string;
   sources: string[];
   metrics: Metrics;
+  route: "rag" | "smalltalk";
+  // Smalltalk keeps sources empty and has no Q&A/rating/memory entry.
   persistence_error: string | null;
 }
 
