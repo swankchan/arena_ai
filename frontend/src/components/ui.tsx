@@ -11,6 +11,36 @@ export function Spinner({ label = "Loading" }: { label?: string }) {
   return <span className="spinner"><LoaderCircle size={17} className="spin" />{label}</span>;
 }
 
+export function CollectionSummary({ summary }: { summary: string }) {
+  const text = summary.trim() || "Add documents to generate an automatic description";
+  return (
+    <span className="collection-summary" title={summary.trim() || undefined}>
+      {text}
+    </span>
+  );
+}
+
+export function SystemStatus({
+  backendOnline,
+  llmConnected,
+}: {
+  backendOnline: boolean;
+  llmConnected: boolean;
+}) {
+  const backendLabel = backendOnline ? "Backend online" : "Backend offline";
+  const llmLabel = llmConnected ? "LLM connected" : "LLM unavailable";
+  const label = `${backendLabel} · ${llmLabel}`;
+  return (
+    <div className="topbar-status" role="status" aria-label={label} title={label}>
+      <span className={`status-dot${backendOnline ? " online" : ""}`} aria-hidden="true" />
+      <span>{backendLabel}</span>
+      <span aria-hidden="true">{" · "}</span>
+      <span className={`status-dot${llmConnected ? " online" : ""}`} aria-hidden="true" />
+      <span>{llmLabel}</span>
+    </div>
+  );
+}
+
 export function ErrorBanner({ children }: { children: ReactNode }) {
   return <div className="alert error"><AlertCircle size={18} /><span>{children}</span></div>;
 }

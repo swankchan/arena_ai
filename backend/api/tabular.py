@@ -5,7 +5,7 @@ from fastapi import APIRouter, HTTPException, Request, status
 from backend.schemas import NaturalLanguageQueryRequest, SQLQueryRequest
 from backend.services import collections, tabular
 from backend.services.collections import normalize_name
-
+from backend.services.summaries import try_refresh_collection_summary
 
 router = APIRouter(prefix="/api/collections", tags=["tabular"])
 
@@ -34,11 +34,15 @@ def list_tabular_files(collection_name: str):
 
 
 @router.delete("/{collection_name}/tabular/files/{file_id}")
-def delete_tabular_file(collection_name: str, file_id: int):
+def delete_tabular_file(collection_name: str, file_id: int, request: Request):
     normalized = _collection(collection_name)
     if not tabular.delete_file(normalized, file_id):
         raise HTTPException(status.HTTP_404_NOT_FOUND, "Tabular file not found.")
-    return {"deleted": file_id}
+    summary_error = try_refresh_collection_summary(
+        normalized,
+        request.app.state.engines.get_llm,
+    )
+    return {"deleted": file_id, "summary_error": summary_error}
 
 
 @router.post("/{collection_name}/tabular/query")

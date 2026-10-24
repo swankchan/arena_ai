@@ -28,6 +28,12 @@ export interface Conversation {
   last_active?: number | null;
 }
 
+export interface CollectionSummary {
+  collection: string;
+  summary: string;
+  updated_at: number | null;
+}
+
 export interface ChatMessage {
   id?: number | string;
   role: "user" | "assistant";
@@ -62,12 +68,24 @@ export interface FinalChatEvent {
   optimization_log: string;
   sources: string[];
   metrics: Metrics;
+  route: "rag" | "smalltalk";
+  // Smalltalk keeps sources empty and has no Q&A/rating/memory entry.
   persistence_error: string | null;
 }
 
 export interface DocumentItem {
   source: string;
   name: string;
+}
+
+export interface IngestionFileResult {
+  name: string;
+  kind: "vector" | "tabular";
+  status: "succeeded" | "failed";
+  chunks?: number;
+  rows?: number;
+  columns?: number;
+  error?: string;
 }
 
 export interface IngestionJob {
@@ -78,8 +96,13 @@ export interface IngestionJob {
   filenames: string[];
   processed_files: number;
   total_files: number;
+  vector_files: number;
+  tabular_files: number;
   total_chunks: number;
+  total_rows: number;
+  file_results: IngestionFileResult[];
   errors: string[];
+  summary_error?: string | null;
   created_at: number;
   updated_at: number;
 }

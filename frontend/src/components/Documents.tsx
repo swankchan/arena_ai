@@ -12,16 +12,19 @@ import {
 import { api } from "../api";
 import type { DocumentItem, IngestionJob, PublicConfig } from "../types";
 import { formatBytes } from "../lib/format";
+import { formatIngestionCompletion, formatIngestionCounts } from "../lib/ingestion";
 import { ErrorBanner, Spinner } from "./ui";
 
 export function Documents({
   collection,
   config,
   onNotice,
+  onSummaryChanged,
 }: {
   collection: string;
   config: PublicConfig | null;
   onNotice: (message: string) => void;
+  onSummaryChanged: () => Promise<void>;
 }) {
   const [documents, setDocuments] = useState<DocumentItem[]>([]);
   const [files, setFiles] = useState<File[]>([]);
@@ -70,10 +73,13 @@ export function Documents({
         setJob(current);
       }
       if (current.status === "succeeded") {
-        onNotice(`Processed ${current.processed_files} files into ${current.total_chunks} chunks.`);
         setFiles([]);
         if (inputRef.current) inputRef.current.value = "";
-        await loadDocuments();
+        await Promise.all([loadDocuments(), onSummaryChanged()]);
+        onNotice(
+          formatIngestionCompletion(current)
+          + (current.summary_error ? " Collection description was not updated." : ""),
+        );
       } else {
         setError(current.errors.join(" · ") || "Document processing failed.");
       }
@@ -86,8 +92,11 @@ export function Documents({
     if (!window.confirm(`Delete all chunks from ${document.name}?`)) return;
     try {
       const result = await api.deleteDocument(collection, document.source);
-      onNotice(`Deleted ${result.deleted_chunks} chunks from ${document.name}.`);
-      await loadDocuments();
+      await Promise.all([loadDocuments(), onSummaryChanged()]);
+      onNotice(
+        `Deleted ${result.deleted_chunks} chunks from ${document.name}.`
+        + (result.summary_error ? " Collection description was not updated." : ""),
+      );
     } catch (caught) {
       setError(caught instanceof Error ? caught.message : "Delete failed.");
     }
@@ -99,7 +108,7 @@ export function Documents({
   return (
     <div className="page-stack">
       <header className="page-heading">
-        <div><span className="eyebrow">Knowledge ingestion</span><h1>Documents</h1><p>Upload source material and build the exact-cosine vector index for {collection}.</p></div>
+        <div><span className="eyebrow">Knowledge ingestion</span><h1>Documents</h1><p>Upload documents for vector search or CSV/Excel files for SQL analysis in {collection}.</p></div>
         <button className="button secondary" onClick={() => void loadDocuments()}><RefreshCw size={16} />Refresh</button>
       </header>
 
@@ -152,7 +161,7 @@ export function Documents({
 
         {job && (
           <div className="job-status">
-            <div><strong>{busy ? "Building knowledge index" : job.status === "succeeded" ? "Processing complete" : "Processing failed"}</strong><span>{job.processed_files}/{job.total_files} files · {job.total_chunks} chunks</span></div>
+            <div><strong>{busy ? "Processing uploads" : job.status === "succeeded" ? "Processing complete" : "Processing failed"}</strong><span>{formatIngestionCounts(job)}</span></div>
             <div className="progress-track"><span style={{ width: `${Math.round(job.progress * 100)}%` }} /></div>
             <small>{Math.round(job.progress * 100)}% · {job.status}</small>
             {!!job.errors.length && <div className="job-errors">{job.errors.map((item) => <p key={item}>{item}</p>)}</div>}

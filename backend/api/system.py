@@ -5,9 +5,11 @@ import os
 from fastapi import APIRouter
 
 from backend.config import SUPPORTED_EXTENSIONS, get_max_upload_bytes
-from backend.embeddings import get_embedding_dimensions, get_embedding_model_name
-from backend.llm_config import get_llm_config
-
+from backend.embeddings import (
+    get_embedding_dimensions,
+    get_embedding_model_name,
+)
+from backend.llm_config import check_llm_connection, get_llm_config
 
 router = APIRouter(prefix="/api", tags=["system"])
 
@@ -15,6 +17,11 @@ router = APIRouter(prefix="/api", tags=["system"])
 @router.get("/health")
 def health():
     return {"status": "ok"}
+
+
+@router.get("/health/llm")
+async def llm_health():
+    return {"connected": await check_llm_connection()}
 
 
 @router.get("/config")

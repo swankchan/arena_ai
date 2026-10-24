@@ -14,7 +14,8 @@ from backend.embeddings import embed_similarity_query
 from backend.schemas import ChatRequest
 from backend.services import collections
 from backend.services.collections import normalize_name
-
+from backend.services.smalltalk import is_smalltalk, stream_smalltalk
+from backend.services.telemetry import LiveMetricsMeter
 
 router = APIRouter(prefix="/api/collections", tags=["chat"])
 logger = logging.getLogger(__name__)
@@ -55,7 +56,14 @@ def chat(collection_name: str, payload: ChatRequest, request: Request):
     else:
         conversation_id = db.create_conversation(normalized)
 
-    history = db.get_conversation_messages(conversation_id)
+    route = "smalltalk" if is_smalltalk(payload.question) else "rag"
+    # Social replies never receive conversation history. Uncertain messages
+    # always use the existing grounded RAG pipeline.
+    history = (
+        None
+        if route == "smalltalk"
+        else db.get_conversation_messages(conversation_id)
+    )
     db.insert_message(conversation_id, "user", payload.question)
     engines = request.app.state.engines
 
@@ -63,18 +71,27 @@ def chat(collection_name: str, payload: ChatRequest, request: Request):
         final_result = None
         try:
             yield _event("meta", {"conversation_id": conversation_id})
-            engine = engines.get_engine(normalized)
-            for phase, content in engine.query_stream(
-                payload.question,
-                chat_history=history or None,
-                query_transformation=payload.query_transformation,
-                query_expansion=payload.query_expansion,
-            ):
+            if route == "smalltalk":
+                events = stream_smalltalk(engines.get_llm(), payload.question)
+            else:
+                engine = engines.get_engine(normalized)
+                events = engine.query_stream(
+                    payload.question,
+                    chat_history=history or None,
+                    query_transformation=payload.query_transformation,
+                    query_expansion=payload.query_expansion,
+                )
+
+            live_metrics = LiveMetricsMeter()
+            for phase, content in events:
                 if phase == "final":
                     final_result = content
                     break
                 if phase in {"reasoning", "answer"}:
                     yield _event(phase, {"text": content})
+                    metrics_update = live_metrics.add_text(str(content))
+                    if metrics_update is not None:
+                        yield _event("metrics", metrics_update)
 
             if final_result is None:
                 raise RuntimeError("The response stream ended without a final result.")
@@ -85,30 +102,35 @@ def chat(collection_name: str, payload: ChatRequest, request: Request):
             qa_run_id = None
             persistence_error = None
             try:
-                try:
-                    question_embedding = embed_similarity_query(
-                        engine.embeddings,
+                if route == "smalltalk":
+                    # Keep the thread, but do not pollute document Q&A history,
+                    # ratings, or embedding-based long-term memory.
+                    db.insert_message(conversation_id, "assistant", answer)
+                else:
+                    try:
+                        question_embedding = embed_similarity_query(
+                            engine.embeddings,
+                            payload.question,
+                        )
+                    except Exception:
+                        question_embedding = None
+                    qa_run_id = db.insert_qa_run(
+                        conversation_id,
+                        normalized,
                         payload.question,
+                        answer,
+                        sources,
+                        metrics,
+                        final_result.get("optimization_log", ""),
+                        get_engine_key(normalized),
+                        question_embedding,
                     )
-                except Exception:
-                    question_embedding = None
-                qa_run_id = db.insert_qa_run(
-                    conversation_id,
-                    normalized,
-                    payload.question,
-                    answer,
-                    sources,
-                    metrics,
-                    final_result.get("optimization_log", ""),
-                    get_engine_key(normalized),
-                    question_embedding,
-                )
-                db.insert_message(
-                    conversation_id,
-                    "assistant",
-                    answer,
-                    qa_run_id=qa_run_id,
-                )
+                    db.insert_message(
+                        conversation_id,
+                        "assistant",
+                        answer,
+                        qa_run_id=qa_run_id,
+                    )
             except Exception as exc:
                 logger.exception("Could not persist chat response")
                 persistence_error = str(exc)
@@ -121,6 +143,7 @@ def chat(collection_name: str, payload: ChatRequest, request: Request):
                 "optimization_log": final_result.get("optimization_log", ""),
                 "sources": sources,
                 "metrics": metrics,
+                "route": route,
                 "persistence_error": persistence_error,
             })
         except Exception as exc:

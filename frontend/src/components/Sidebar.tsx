@@ -31,7 +31,6 @@ interface SidebarProps {
   queryOptions: QueryOptions;
   onQueryOptions: (options: QueryOptions) => void;
   config: PublicConfig | null;
-  apiOnline: boolean;
 }
 
 type Dialog = "create" | "rename" | "delete" | null;
@@ -148,7 +147,7 @@ export function Sidebar(props: SidebarProps) {
 
           {props.config && (
             <section className="sidebar-section technical">
-              <div className="section-label"><span>Runtime</span><span className={`status-dot ${props.apiOnline ? "online" : ""}`} /></div>
+              <div className="section-label"><span>Runtime</span></div>
               <dl>
                 <div><dt>LLM</dt><dd>{props.config.llm.model}</dd></div>
                 <div><dt>Vectors</dt><dd>LanceDB · exact cosine</dd></div>
@@ -159,7 +158,6 @@ export function Sidebar(props: SidebarProps) {
             </section>
           )}
         </div>
-        <footer className="sidebar-footer"><span className={`status-dot ${props.apiOnline ? "online" : ""}`} />{props.apiOnline ? "API connected" : "API unavailable"}<span>·</span>Local first</footer>
       </aside>
 
       {dialog && (

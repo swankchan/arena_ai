@@ -1,9 +1,11 @@
 import type {
   ChatMessage,
+  CollectionSummary,
   Conversation,
   DocumentItem,
   FinalChatEvent,
   IngestionJob,
+  Metrics,
   Prompt,
   PublicConfig,
   QARun,
@@ -61,9 +63,12 @@ const collectionPath = (name: string) => `/collections/${encodeURIComponent(name
 
 export const api = {
   health: () => request<{ status: string }>("/health"),
+  llmHealth: () => request<{ connected: boolean }>("/health/llm"),
   config: () => request<PublicConfig>("/config"),
 
   listCollections: () => request<{ collections: string[] }>("/collections"),
+  collectionSummary: (name: string) =>
+    request<CollectionSummary>(`${collectionPath(name)}/summary`),
   createCollection: (name: string) =>
     request<{ name: string; created: boolean }>("/collections", json("POST", { name })),
   renameCollection: (name: string, newName: string) =>
@@ -74,7 +79,7 @@ export const api = {
   listDocuments: (collection: string) =>
     request<{ documents: DocumentItem[] }>(`${collectionPath(collection)}/documents`),
   deleteDocument: (collection: string, source: string) =>
-    request<{ deleted_chunks: number }>(
+    request<{ deleted_chunks: number; summary_error?: string | null }>(
       `${collectionPath(collection)}/documents?source=${encodeURIComponent(source)}`,
       { method: "DELETE" },
     ),
@@ -114,7 +119,10 @@ export const api = {
   listTabularFiles: (collection: string) =>
     request<{ files: TabularFile[] }>(`${collectionPath(collection)}/tabular/files`),
   deleteTabularFile: (collection: string, id: number) =>
-    request<{ deleted: number }>(`${collectionPath(collection)}/tabular/files/${id}`, { method: "DELETE" }),
+    request<{ deleted: number; summary_error?: string | null }>(
+      `${collectionPath(collection)}/tabular/files/${id}`,
+      { method: "DELETE" },
+    ),
   querySQL: (collection: string, fileId: number, query: string) =>
     request<SQLResult>(`${collectionPath(collection)}/tabular/query`, json("POST", { file_id: fileId, query })),
   queryNatural: (collection: string, fileId: number, question: string) =>
@@ -128,6 +136,7 @@ interface StreamCallbacks {
   onMeta?: (conversationId: string) => void;
   onReasoning: (text: string) => void;
   onAnswer: (text: string) => void;
+  onMetrics?: (metrics: Metrics) => void;
   onFinal: (result: FinalChatEvent) => void;
 }
 
@@ -158,6 +167,8 @@ export async function streamChat(
       callbacks.onReasoning((data as { text: string }).text);
     } else if (event === "answer") {
       callbacks.onAnswer((data as { text: string }).text);
+    } else if (event === "metrics") {
+      callbacks.onMetrics?.(data as Metrics);
     } else if (event === "final") {
       callbacks.onFinal(data as FinalChatEvent);
     } else if (event === "error") {

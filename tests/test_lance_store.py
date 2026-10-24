@@ -80,6 +80,7 @@ class LanceStoreTest(unittest.TestCase):
         self.assertEqual(results[0].page_content, "apple document")
         self.assertAlmostEqual(results[0].metadata["score"], 1.0)
         self.assertEqual(results[0].metadata["page"], 1)
+        self.assertTrue(results[0].metadata["chunk_id"])
         self.assertNotIn("empty_value", results[0].metadata)
         self.assertEqual(self.store.similarity_search("apple query", top_k=0), [])
 
@@ -94,6 +95,33 @@ class LanceStoreTest(unittest.TestCase):
             reopened.find_document_source("apple.txt"),
             "/docs/apple.txt",
         )
+        reopened_result = reopened.similarity_search("apple query", top_k=1)[0]
+        self.assertEqual(
+            reopened_result.metadata["chunk_id"],
+            results[0].metadata["chunk_id"],
+        )
+
+    def test_summary_excerpts_are_bounded_and_source_diverse(self):
+        self.store.add_documents([
+            self._document("alpha first chunk", "/docs/a.txt"),
+            self._document("alpha second chunk", "/docs/a.txt"),
+            self._document("beta content", "/docs/b.txt"),
+            self._document("quoted source content", "/docs/o'reilly.txt"),
+        ])
+
+        excerpts = LanceStore.get_table_summary_excerpts(
+            "rag_demo",
+            max_sources=2,
+            max_chars_per_source=12,
+        )
+
+        self.assertEqual(
+            [item["source"] for item in excerpts],
+            ["/docs/a.txt", "/docs/o'reilly.txt"],
+        )
+        self.assertTrue(excerpts[0]["text"].startswith("alpha first"))
+        self.assertEqual(excerpts[1]["text"], "quoted sourc")
+        self.assertTrue(all(len(item["text"]) <= 12 for item in excerpts))
 
     def test_retriever_and_reranking_candidate_count(self):
         self.store.add_documents([

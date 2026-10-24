@@ -7,16 +7,16 @@ default single worker also avoids concurrent embedding and LanceDB write loads.
 import threading
 import time
 import uuid
+from collections.abc import Callable
 from concurrent.futures import ThreadPoolExecutor
-from typing import Callable, Dict, List, Optional
 
 from backend.config import get_ingestion_workers
 
 
 class JobManager:
-    def __init__(self, max_workers: Optional[int] = None):
+    def __init__(self, max_workers: int | None = None):
         self._lock = threading.RLock()
-        self._jobs: Dict[str, dict] = {}
+        self._jobs: dict[str, dict] = {}
         self._executor = ThreadPoolExecutor(
             max_workers=max_workers or get_ingestion_workers(),
             thread_name_prefix="rag-ingestion",
@@ -25,7 +25,7 @@ class JobManager:
     def submit(
         self,
         collection_name: str,
-        filenames: List[str],
+        filenames: list[str],
         worker: Callable[[Callable[[float], None]], dict],
     ) -> dict:
         job_id = uuid.uuid4().hex
@@ -39,7 +39,11 @@ class JobManager:
                 "filenames": filenames,
                 "processed_files": 0,
                 "total_files": len(filenames),
+                "vector_files": 0,
+                "tabular_files": 0,
                 "total_chunks": 0,
+                "total_rows": 0,
+                "file_results": [],
                 "errors": [],
                 "created_at": now,
                 "updated_at": now,
@@ -76,14 +80,14 @@ class JobManager:
                 )
                 job["progress"] = 1.0 if job["status"] == "succeeded" else job["progress"]
                 job["updated_at"] = time.time()
-        except Exception as exc:
+        except Exception as exc:  # noqa: BLE001 - isolate worker failure
             with self._lock:
                 job = self._jobs[job_id]
                 job["status"] = "failed"
                 job["errors"] = [str(exc)]
                 job["updated_at"] = time.time()
 
-    def get(self, job_id: str) -> Optional[dict]:
+    def get(self, job_id: str) -> dict | None:
         with self._lock:
             job = self._jobs.get(job_id)
             return dict(job) if job else None

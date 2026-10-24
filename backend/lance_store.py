@@ -245,6 +245,7 @@ class LanceStore:
                 metadata = {}
 
             metadata["source"] = row.get("source", "")
+            metadata["chunk_id"] = str(row["id"])
             distance = row.get("_distance")
             if distance is not None:
                 metadata["distance"] = float(distance)
@@ -290,6 +291,48 @@ class LanceStore:
         if table_name not in _list_table_names(database):
             return []
         return _list_sources(database.open_table(table_name))
+
+    @staticmethod
+    def get_table_summary_excerpts(
+        table_name: str,
+        max_sources: int = 12,
+        max_chars_per_source: int = 1200,
+    ) -> List[Dict[str, str]]:
+        """Read bounded, source-diverse text without loading ML models."""
+        if max_sources <= 0 or max_chars_per_source <= 0:
+            return []
+        database = _connect()
+        if table_name not in _list_table_names(database):
+            return []
+
+        table = database.open_table(table_name)
+        sources = _list_sources(table)
+        if len(sources) > max_sources:
+            if max_sources == 1:
+                sources = sources[:1]
+            else:
+                indices = [
+                    index * (len(sources) - 1) // (max_sources - 1)
+                    for index in range(max_sources)
+                ]
+                sources = [sources[index] for index in indices]
+
+        excerpts = []
+        for source in sources:
+            rows = (
+                table.search()
+                .where(f"source = {_sql_literal(source)}")
+                .select(["text"])
+                .limit(2)
+                .to_list()
+            )
+            text = "\n".join(str(row.get("text") or "") for row in rows).strip()
+            if text:
+                excerpts.append({
+                    "source": source,
+                    "text": text[:max_chars_per_source],
+                })
+        return excerpts
 
     @staticmethod
     def delete_table_document(table_name: str, source: str) -> int:
