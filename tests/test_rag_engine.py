@@ -72,6 +72,36 @@ class VectorOnlyIngestionTest(unittest.TestCase):
                 engine.add_vector_document(filename)
 
 
+class RerankerConfigurationTest(unittest.TestCase):
+    def test_reranker_returns_top_k_instead_of_library_default(self):
+        engine = RAGEngine.__new__(RAGEngine)
+        engine.vectorstore = Mock()
+        base_retriever = Mock()
+        engine.vectorstore.get_retriever.return_value = base_retriever
+
+        with patch.dict(os.environ, {
+            "RERANKING": "true",
+            "RERANK_MODEL": "ms-marco-MiniLM-L-12-v2",
+            "TOP_K": "4",
+        }), patch(
+            "backend.rag_engine.FlashrankRerank",
+        ) as ranker, patch(
+            "backend.rag_engine.ContextualCompressionRetriever",
+        ) as compression:
+            retriever = engine.get_retriever()
+
+        engine.vectorstore.get_retriever.assert_called_once_with(top_k=4)
+        ranker.assert_called_once_with(
+            model="ms-marco-MiniLM-L-12-v2",
+            top_n=4,
+        )
+        compression.assert_called_once_with(
+            base_compressor=ranker.return_value,
+            base_retriever=base_retriever,
+        )
+        self.assertIs(retriever, compression.return_value)
+
+
 class OptimizedQueryRetrievalTest(unittest.TestCase):
     def setUp(self):
         self.env = patch.dict(os.environ, {"TOP_K": "4"})

@@ -184,7 +184,10 @@ IMPORTANT GUIDELINES:
 
         # Reranking
         if os.getenv("RERANKING", "false").lower() == "true":
-            compressor = FlashrankRerank(model=os.getenv("RERANK_MODEL", "ms-marco-MiniLM-L-12-v2"))
+            compressor = FlashrankRerank(
+                model=os.getenv("RERANK_MODEL", "ms-marco-MiniLM-L-12-v2"),
+                top_n=top_k,
+            )
             compression_retriever = ContextualCompressionRetriever(
                 base_compressor=compressor, base_retriever=base_retriever
             )
