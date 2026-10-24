@@ -158,7 +158,6 @@ export function Sidebar(props: SidebarProps) {
             </section>
           )}
         </div>
-        <footer className="sidebar-footer">Local first</footer>
       </aside>
 
       {dialog && (

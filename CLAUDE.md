@@ -72,9 +72,9 @@ this document-query pipeline:
 - Do not expose LanceDB, SQLite, model files, or llama.cpp directly to the SPA.
 - Production SPA files come from `FRONTEND_DIST`; API routes take precedence
   over the fallback.
-- The shared `/api/health` state appears once as the combined Backend/API
-  `SystemStatus` in the topbar. The sidebar footer only says `Local first`; do
-  not add duplicate indicators for the same health check.
+- The shared `/api/health` state appears in the topbar `SystemStatus` with
+  separate Backend and API dots and labels. The sidebar has no footer status or
+  `Local first` row; do not add duplicate indicators for the same health check.
 - Vite `allowedHosts` supports remote previews. Do not add a production host
   allowlist that rejects the preview hostname.
 

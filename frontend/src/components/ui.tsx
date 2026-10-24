@@ -12,13 +12,17 @@ export function Spinner({ label = "Loading" }: { label?: string }) {
 }
 
 export function SystemStatus({ online }: { online: boolean }) {
-  const label = online
-    ? "Backend online · API connected"
-    : "Backend offline · API unavailable";
+  const backendLabel = online ? "Backend online" : "Backend offline";
+  const apiLabel = online ? "API connected" : "API unavailable";
+  const label = `${backendLabel} · ${apiLabel}`;
+  const dotClass = `status-dot${online ? " online" : ""}`;
   return (
     <div className="topbar-status" role="status" aria-label={label} title={label}>
-      <span className={`status-dot ${online ? "online" : ""}`} aria-hidden="true" />
-      {label}
+      <span className={dotClass} aria-hidden="true" />
+      <span>{backendLabel}</span>
+      <span aria-hidden="true">{" · "}</span>
+      <span className={dotClass} aria-hidden="true" />
+      <span>{apiLabel}</span>
     </div>
   );
 }
