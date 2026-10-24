@@ -131,6 +131,14 @@ class APITest(unittest.TestCase):
     def _create(self, name="alpha"):
         return self.client.post("/api/collections", json={"name": name})
 
+    def _wait_for_job(self, job):
+        for _ in range(100):
+            job = self.client.get(f"/api/jobs/{job['id']}").json()
+            if job["status"] in {"succeeded", "failed"}:
+                return job
+            time.sleep(0.02)
+        self.fail(f"Ingestion job did not finish: {job}")
+
     def test_public_config_reports_embedding_dimensions(self):
         response = self.client.get("/api/config")
         self.assertEqual(response.status_code, 200)
@@ -184,6 +192,7 @@ class APITest(unittest.TestCase):
             "/api/collections/alpha/conversations",
             json={},
         ).json()
+        db.set_collection_summary("alpha", "Preserved generated description")
 
         renamed = self.client.patch(
             "/api/collections/alpha",
@@ -205,6 +214,10 @@ class APITest(unittest.TestCase):
         )
         beta_threads = self.client.get("/api/collections/beta/conversations").json()
         self.assertEqual(beta_threads["conversations"][0]["id"], conversation["id"])
+        self.assertEqual(
+            db.get_collection_summary("beta")["summary"],
+            "Preserved generated description",
+        )
 
         mismatch = self.client.request(
             "DELETE",
@@ -218,8 +231,87 @@ class APITest(unittest.TestCase):
             json={"confirmation": "beta"},
         )
         self.assertEqual(removed.status_code, 200)
+        self.assertIsNone(db.get_collection_summary("beta"))
         self.assertFalse((self.documents / "beta").exists())
         self.assertEqual(self.client.get("/api/collections").json()["collections"], [])
+
+    def test_collection_summary_ingest_rename_and_delete_lifecycle(self):
+        self._create()
+        store = LanceStore("rag_alpha", embeddings=FakeEmbeddings())
+        store.add_documents([
+            Document(
+                page_content="Product setup and warranty policies.",
+                metadata={"source": "/docs/policy.txt"},
+            ),
+        ])
+        empty = self.client.get("/api/collections/alpha/summary")
+        self.assertEqual(empty.status_code, 200)
+        self.assertEqual(empty.json()["summary"], "")
+
+        def generate_summary(name, _llm_factory):
+            return db.set_collection_summary(
+                name,
+                "Product setup and warranty policies.",
+            )["summary"]
+
+        with patch(
+            "backend.services.summaries.refresh_collection_summary",
+            side_effect=generate_summary,
+        ) as refresh:
+            uploaded = self.client.post(
+                "/api/collections/alpha/documents",
+                files={"files": ("notes.txt", b"policy notes", "text/plain")},
+            )
+            job = self._wait_for_job(uploaded.json())
+
+        self.assertEqual(job["status"], "succeeded", job)
+        self.assertIsNone(job["summary_error"])
+        refresh.assert_called_once()
+        summary = self.client.get("/api/collections/alpha/summary").json()
+        self.assertEqual(summary["summary"], "Product setup and warranty policies.")
+        self.assertIsNotNone(summary["updated_at"])
+
+        renamed = self.client.patch(
+            "/api/collections/alpha",
+            json={"new_name": "beta"},
+        )
+        self.assertEqual(renamed.status_code, 200, renamed.text)
+        self.assertEqual(
+            self.client.get("/api/collections/beta/summary").json()["summary"],
+            "Product setup and warranty policies.",
+        )
+        self.assertIsNone(db.get_collection_summary("alpha"))
+
+        deleted = self.client.delete(
+            "/api/collections/beta/documents",
+            params={"source": "policy.txt"},
+        )
+        self.assertEqual(deleted.status_code, 200, deleted.text)
+        self.assertIsNone(deleted.json()["summary_error"])
+        self.assertEqual(
+            self.client.get("/api/collections/beta/summary").json()["summary"],
+            "",
+        )
+
+    def test_summary_failure_does_not_fail_document_ingestion(self):
+        self._create()
+        with patch(
+            "backend.services.summaries.refresh_collection_summary",
+            side_effect=RuntimeError("llama.cpp offline"),
+        ):
+            uploaded = self.client.post(
+                "/api/collections/alpha/documents",
+                files={"files": ("notes.txt", b"hello world", "text/plain")},
+            )
+            job = self._wait_for_job(uploaded.json())
+
+        self.assertEqual(job["status"], "succeeded", job)
+        self.assertEqual(job["processed_files"], 1)
+        self.assertEqual(job["total_chunks"], 3)
+        self.assertEqual(
+            job["summary_error"],
+            "Automatic collection description could not be updated.",
+        )
 
     def test_sse_chat_history_and_rating(self):
         self._create()

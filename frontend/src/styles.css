@@ -101,12 +101,13 @@ h1, h2, h3 { font-family: "Manrope", "DM Sans", sans-serif; }
 
 .main-shell { min-width: 0; flex: 1; display: flex; flex-direction: column; }
 .topbar { height: 66px; flex: 0 0 66px; display: flex; align-items: center; gap: 14px; padding: 0 27px; background: rgba(255,255,255,.9); border-bottom: 1px solid var(--line); backdrop-filter: blur(10px); }
-.topbar-title { display: flex; align-items: center; gap: 10px; }
+.topbar-title { display: flex; align-items: center; gap: 10px; min-width: 0; }
 .collection-icon { width: 32px; height: 32px; display: grid; place-items: center; color: var(--primary); background: var(--primary-soft); border-radius: 9px; }
-.topbar-title > div { display: flex; flex-direction: column; }
+.topbar-title > div { display: flex; flex-direction: column; min-width: 0; }
 .topbar-title strong { font-size: 13.5px; }
 .topbar-title span:not(.collection-icon) { color: var(--muted); font-size: 10px; }
-.topbar-status { display: flex; align-items: center; gap: 7px; margin-left: auto; color: var(--muted); font-size: 11px; }
+.topbar-title .collection-summary { display: block; max-width: min(620px, 48vw); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.topbar-status { display: flex; flex-shrink: 0; align-items: center; gap: 7px; margin-left: auto; color: var(--muted); font-size: 11px; }
 .menu-button { display: none !important; }
 .workspace-tabs { min-height: 53px; flex: 0 0 53px; display: flex; align-items: end; gap: 3px; padding: 0 26px; overflow-x: auto; background: #fff; border-bottom: 1px solid var(--line); scrollbar-width: none; }
 .workspace-tabs button { position: relative; height: 53px; display: flex; align-items: center; gap: 7px; padding: 2px 15px 0; color: #748095; background: transparent; font-size: 12px; font-weight: 600; white-space: nowrap; }

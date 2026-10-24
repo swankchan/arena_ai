@@ -1,5 +1,6 @@
 import type {
   ChatMessage,
+  CollectionSummary,
   Conversation,
   DocumentItem,
   FinalChatEvent,
@@ -66,6 +67,8 @@ export const api = {
   config: () => request<PublicConfig>("/config"),
 
   listCollections: () => request<{ collections: string[] }>("/collections"),
+  collectionSummary: (name: string) =>
+    request<CollectionSummary>(`${collectionPath(name)}/summary`),
   createCollection: (name: string) =>
     request<{ name: string; created: boolean }>("/collections", json("POST", { name })),
   renameCollection: (name: string, newName: string) =>
@@ -76,7 +79,7 @@ export const api = {
   listDocuments: (collection: string) =>
     request<{ documents: DocumentItem[] }>(`${collectionPath(collection)}/documents`),
   deleteDocument: (collection: string, source: string) =>
-    request<{ deleted_chunks: number }>(
+    request<{ deleted_chunks: number; summary_error?: string | null }>(
       `${collectionPath(collection)}/documents?source=${encodeURIComponent(source)}`,
       { method: "DELETE" },
     ),
@@ -116,7 +119,10 @@ export const api = {
   listTabularFiles: (collection: string) =>
     request<{ files: TabularFile[] }>(`${collectionPath(collection)}/tabular/files`),
   deleteTabularFile: (collection: string, id: number) =>
-    request<{ deleted: number }>(`${collectionPath(collection)}/tabular/files/${id}`, { method: "DELETE" }),
+    request<{ deleted: number; summary_error?: string | null }>(
+      `${collectionPath(collection)}/tabular/files/${id}`,
+      { method: "DELETE" },
+    ),
   querySQL: (collection: string, fileId: number, query: string) =>
     request<SQLResult>(`${collectionPath(collection)}/tabular/query`, json("POST", { file_id: fileId, query })),
   queryNatural: (collection: string, fileId: number, question: string) =>

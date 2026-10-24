@@ -101,6 +101,28 @@ class LanceStoreTest(unittest.TestCase):
             results[0].metadata["chunk_id"],
         )
 
+    def test_summary_excerpts_are_bounded_and_source_diverse(self):
+        self.store.add_documents([
+            self._document("alpha first chunk", "/docs/a.txt"),
+            self._document("alpha second chunk", "/docs/a.txt"),
+            self._document("beta content", "/docs/b.txt"),
+            self._document("quoted source content", "/docs/o'reilly.txt"),
+        ])
+
+        excerpts = LanceStore.get_table_summary_excerpts(
+            "rag_demo",
+            max_sources=2,
+            max_chars_per_source=12,
+        )
+
+        self.assertEqual(
+            [item["source"] for item in excerpts],
+            ["/docs/a.txt", "/docs/o'reilly.txt"],
+        )
+        self.assertTrue(excerpts[0]["text"].startswith("alpha first"))
+        self.assertEqual(excerpts[1]["text"], "quoted sourc")
+        self.assertTrue(all(len(item["text"]) <= 12 for item in excerpts))
+
     def test_retriever_and_reranking_candidate_count(self):
         self.store.add_documents([
             self._document("apple document", "/docs/apple.txt"),

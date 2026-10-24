@@ -2,7 +2,24 @@ import type { ComponentProps } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
 import { Sidebar } from "./Sidebar";
-import { SystemStatus } from "./ui";
+import { CollectionSummary, SystemStatus } from "./ui";
+
+describe("CollectionSummary", () => {
+  it("shows the generated description with full text on hover", () => {
+    const html = renderToStaticMarkup(
+      <CollectionSummary summary="Product setup and warranty policies." />,
+    );
+    expect(html).toContain("Product setup and warranty policies.");
+    expect(html).toContain('title="Product setup and warranty policies."');
+    expect(html).toContain('class="collection-summary"');
+  });
+
+  it("explains when no automatic description exists yet", () => {
+    const html = renderToStaticMarkup(<CollectionSummary summary="" />);
+    expect(html).toContain("Add documents to generate an automatic description");
+    expect(html).not.toContain("title=");
+  });
+});
 
 describe("SystemStatus", () => {
   it("shows backend and LLM indicators in the connected state", () => {

@@ -12,7 +12,15 @@ import type { SQLResult, TabularFile } from "../types";
 import { downloadCSV, formatDate } from "../lib/format";
 import { EmptyState, ErrorBanner, Spinner } from "./ui";
 
-export function Tabular({ collection, onNotice }: { collection: string; onNotice: (message: string) => void }) {
+export function Tabular({
+  collection,
+  onNotice,
+  onSummaryChanged,
+}: {
+  collection: string;
+  onNotice: (message: string) => void;
+  onSummaryChanged: () => Promise<void>;
+}) {
   const [files, setFiles] = useState<TabularFile[]>([]);
   const [selectedId, setSelectedId] = useState<number | null>(null);
   const [question, setQuestion] = useState("");
@@ -73,10 +81,13 @@ export function Tabular({ collection, onNotice }: { collection: string; onNotice
   const remove = async () => {
     if (!selected || !window.confirm(`Delete ${selected.filename} and its tabular database?`)) return;
     try {
-      await api.deleteTabularFile(collection, selected.id);
-      onNotice(`${selected.filename} deleted.`);
+      const response = await api.deleteTabularFile(collection, selected.id);
       setSelectedId(null);
-      await load();
+      await Promise.all([load(), onSummaryChanged()]);
+      onNotice(
+        `${selected.filename} deleted.`
+        + (response.summary_error ? " Collection description was not updated." : ""),
+      );
     } catch (caught) {
       setError(caught instanceof Error ? caught.message : "Delete failed.");
     }

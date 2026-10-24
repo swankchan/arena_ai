@@ -105,6 +105,12 @@ def init_db(conn: Optional[sqlite3.Connection] = None) -> None:
                 created_at REAL NOT NULL
             );
 
+            CREATE TABLE IF NOT EXISTS collection_summaries (
+                collection_name TEXT PRIMARY KEY,
+                summary TEXT NOT NULL,
+                updated_at REAL NOT NULL
+            );
+
             CREATE TABLE IF NOT EXISTS qa_runs (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 conversation_id TEXT NOT NULL REFERENCES conversations(id) ON DELETE CASCADE,
@@ -189,6 +195,83 @@ def init_db(conn: Optional[sqlite3.Connection] = None) -> None:
 
     # Initialize default system prompts if none exist
     init_system_prompts()
+
+
+def get_collection_summary(
+    collection_name: str,
+    conn: Optional[sqlite3.Connection] = None,
+) -> Optional[dict]:
+    own = conn is None
+    if own:
+        conn = get_connection()
+    try:
+        row = conn.execute(
+            """
+            SELECT summary, updated_at FROM collection_summaries
+            WHERE collection_name = ?
+            """,
+            (collection_name,),
+        ).fetchone()
+        if not row:
+            return None
+        return {
+            "collection": collection_name,
+            "summary": row["summary"],
+            "updated_at": row["updated_at"],
+        }
+    finally:
+        if own:
+            conn.close()
+
+
+def set_collection_summary(
+    collection_name: str,
+    summary: str,
+    conn: Optional[sqlite3.Connection] = None,
+) -> dict:
+    own = conn is None
+    if own:
+        conn = get_connection()
+    try:
+        updated_at = time.time()
+        conn.execute(
+            """
+            INSERT INTO collection_summaries (collection_name, summary, updated_at)
+            VALUES (?, ?, ?)
+            ON CONFLICT(collection_name) DO UPDATE SET
+                summary = excluded.summary,
+                updated_at = excluded.updated_at
+            """,
+            (collection_name, summary, updated_at),
+        )
+        conn.commit()
+        return {
+            "collection": collection_name,
+            "summary": summary,
+            "updated_at": updated_at,
+        }
+    finally:
+        if own:
+            conn.close()
+
+
+def delete_collection_summary(
+    collection_name: str,
+    conn: Optional[sqlite3.Connection] = None,
+) -> bool:
+    own = conn is None
+    if own:
+        conn = get_connection()
+    try:
+        result = conn.execute(
+            "DELETE FROM collection_summaries WHERE collection_name = ?",
+            (collection_name,),
+        )
+        conn.commit()
+        return result.rowcount > 0
+    finally:
+        if own:
+            conn.close()
 
 
 def create_conversation(collection_name: str, name: Optional[str] = None, conn: Optional[sqlite3.Connection] = None) -> str:
@@ -833,6 +916,12 @@ def delete_collection_data(collection_name: str, conn: Optional[sqlite3.Connecti
         # Delete conversations
         deleted['conversations'] = conn.execute("DELETE FROM conversations WHERE collection_name = ?", (collection_name,)).rowcount
 
+        # Delete generated collection metadata
+        deleted['collection_summaries'] = conn.execute(
+            "DELETE FROM collection_summaries WHERE collection_name = ?",
+            (collection_name,),
+        ).rowcount
+
         conn.commit()
         return deleted
     finally:
@@ -856,6 +945,12 @@ def update_collection_name(
     try:
         # Update conversations
         conn.execute("UPDATE conversations SET collection_name = ? WHERE collection_name = ?", (new_name, old_name))
+
+        # Move generated collection metadata with the collection
+        conn.execute(
+            "UPDATE collection_summaries SET collection_name = ? WHERE collection_name = ?",
+            (new_name, old_name),
+        )
 
         # Update qa_runs
         conn.execute("UPDATE qa_runs SET collection_name = ? WHERE collection_name = ?", (new_name, old_name))

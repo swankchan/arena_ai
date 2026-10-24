@@ -26,7 +26,7 @@ import { History as HistoryWorkspace } from "./components/History";
 import { Prompts } from "./components/Prompts";
 import { Sidebar } from "./components/Sidebar";
 import { Tabular } from "./components/Tabular";
-import { ErrorBanner, Spinner, SystemStatus } from "./components/ui";
+import { CollectionSummary, ErrorBanner, Spinner, SystemStatus } from "./components/ui";
 import "./styles.css";
 
 const tabs = [
@@ -44,6 +44,7 @@ export default function App() {
   const [llmConnected, setLlmConnected] = useState(false);
   const [collections, setCollections] = useState<string[]>([]);
   const [collection, setCollection] = useState("");
+  const [collectionSummaries, setCollectionSummaries] = useState<Record<string, string>>({});
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [conversationId, setConversationId] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<WorkspaceTab>("ask");
@@ -64,6 +65,19 @@ export default function App() {
     toastTimer.current = window.setTimeout(() => setToast(""), 4500);
   }, []);
 
+  const refreshCollectionSummary = useCallback(async () => {
+    if (!collection) return;
+    try {
+      const result = await api.collectionSummary(collection);
+      setCollectionSummaries((current) => ({
+        ...current,
+        [collection]: result.summary,
+      }));
+    } catch {
+      // Keep the last successful description if a refresh is unavailable.
+    }
+  }, [collection]);
+
   useEffect(() => {
     void api.config().then(setConfig).catch(() => setConfig(null));
     void api.health().then(() => setBackendOnline(true)).catch(() => setBackendOnline(false));
@@ -77,6 +91,10 @@ export default function App() {
       setPageError(caught instanceof Error ? caught.message : "Could not load collections.");
     }).finally(() => setLoading(false));
   }, []);
+
+  useEffect(() => {
+    void refreshCollectionSummary();
+  }, [refreshCollectionSummary]);
 
   useEffect(() => {
     if (config && !optionsInitialized.current) {
@@ -216,7 +234,7 @@ export default function App() {
       <main className="main-shell">
         <header className="topbar">
           <button className="icon-button menu-button" onClick={() => setSidebarOpen(true)} aria-label="Open navigation"><Menu size={21} /></button>
-          <div className="topbar-title"><span className="collection-icon"><Database size={17} /></span><div><strong>{collection || "RAG Knowledge Base"}</strong><span>{collection ? "Active collection" : "Local-first RAG workspace"}</span></div></div>
+          <div className="topbar-title"><span className="collection-icon"><Database size={17} /></span><div><strong>{collection || "RAG Knowledge Base"}</strong>{collection ? <CollectionSummary summary={collectionSummaries[collection] || ""} /> : <span>Local-first RAG workspace</span>}</div></div>
           <SystemStatus backendOnline={backendOnline} llmConnected={llmConnected} />
         </header>
 
@@ -243,8 +261,8 @@ export default function App() {
                 />
               </div>
               {activeTab === "history" && <HistoryWorkspace key={collection} collection={collection} onNotice={notify} />}
-              {activeTab === "documents" && <Documents key={collection} collection={collection} config={config} onNotice={notify} />}
-              {activeTab === "tabular" && <Tabular key={collection} collection={collection} onNotice={notify} />}
+              {activeTab === "documents" && <Documents key={collection} collection={collection} config={config} onNotice={notify} onSummaryChanged={refreshCollectionSummary} />}
+              {activeTab === "tabular" && <Tabular key={collection} collection={collection} onNotice={notify} onSummaryChanged={refreshCollectionSummary} />}
               {activeTab === "prompts" && <Prompts onNotice={notify} />}
               {activeTab === "about" && <About config={config} />}
             </div>

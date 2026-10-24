@@ -133,7 +133,7 @@ different frontend origin without the proxy.
 | Area | Endpoints |
 | --- | --- |
 | Health/config | `GET /api/health`, `GET /api/health/llm`, `GET /api/config` |
-| Collections | `GET/POST /api/collections`; `PATCH/DELETE` by name |
+| Collections | `GET/POST /api/collections`; `GET .../{name}/summary`; `PATCH/DELETE` by name |
 | Documents | `GET/POST/DELETE /api/collections/{name}/documents` |
 | Ingestion jobs | `GET /api/jobs/{id}` |
 | Chat | `POST /api/collections/{name}/chat` |
@@ -161,6 +161,21 @@ answers; the browser does not supply trusted history.
 Document upload returns `202 Accepted` and a job ID. Poll the job endpoint for
 queued/running status, progress, chunk counts, and per-file errors. Jobs are
 transient and process-local, so no Redis or external queue is needed.
+
+### Automatic collection descriptions
+
+After a successful upload batch, llama.cpp generates one short sentence describing
+the current collection and saves it in SQLite. The description appears below the
+collection name in the topbar; there is no manual description field. It is
+regenerated after vector-document or tabular-file deletion, preserved across
+collection renames, and cleared when no content remains. Existing collections
+receive a description after their next successful ingestion.
+
+Generation uses bounded source-diverse document excerpts and tabular schemas,
+not the entire collection. A summary failure does not roll back indexed data:
+the job or deletion response includes `summary_error`, and the last successful
+description is retained. `GET /api/collections/{name}/summary` reads the current
+metadata without invoking an LLM.
 
 ### Smalltalk routing
 

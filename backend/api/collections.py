@@ -2,9 +2,9 @@
 
 from fastapi import APIRouter, HTTPException, Request, Response, status
 
+from backend import db
 from backend.schemas import CollectionCreate, CollectionDelete, CollectionRename
 from backend.services import collections
-
 
 router = APIRouter(prefix="/api/collections", tags=["collections"])
 
@@ -22,6 +22,21 @@ def _raise_service_error(exc: Exception):
 @router.get("")
 def list_collections():
     return {"collections": collections.list_collections()}
+
+
+@router.get("/{collection_name}/summary")
+def collection_summary(collection_name: str):
+    try:
+        normalized = collections.normalize_name(collection_name)
+    except ValueError as exc:
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, str(exc)) from exc
+    if normalized not in collections.list_collections():
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Collection not found.")
+    return db.get_collection_summary(normalized) or {
+        "collection": normalized,
+        "summary": "",
+        "updated_at": None,
+    }
 
 
 @router.post("")

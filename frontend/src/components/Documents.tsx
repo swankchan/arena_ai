@@ -18,10 +18,12 @@ export function Documents({
   collection,
   config,
   onNotice,
+  onSummaryChanged,
 }: {
   collection: string;
   config: PublicConfig | null;
   onNotice: (message: string) => void;
+  onSummaryChanged: () => Promise<void>;
 }) {
   const [documents, setDocuments] = useState<DocumentItem[]>([]);
   const [files, setFiles] = useState<File[]>([]);
@@ -70,10 +72,13 @@ export function Documents({
         setJob(current);
       }
       if (current.status === "succeeded") {
-        onNotice(`Processed ${current.processed_files} files into ${current.total_chunks} chunks.`);
         setFiles([]);
         if (inputRef.current) inputRef.current.value = "";
-        await loadDocuments();
+        await Promise.all([loadDocuments(), onSummaryChanged()]);
+        onNotice(
+          `Processed ${current.processed_files} files into ${current.total_chunks} chunks.`
+          + (current.summary_error ? " Collection description was not updated." : ""),
+        );
       } else {
         setError(current.errors.join(" · ") || "Document processing failed.");
       }
@@ -86,8 +91,11 @@ export function Documents({
     if (!window.confirm(`Delete all chunks from ${document.name}?`)) return;
     try {
       const result = await api.deleteDocument(collection, document.source);
-      onNotice(`Deleted ${result.deleted_chunks} chunks from ${document.name}.`);
-      await loadDocuments();
+      await Promise.all([loadDocuments(), onSummaryChanged()]);
+      onNotice(
+        `Deleted ${result.deleted_chunks} chunks from ${document.name}.`
+        + (result.summary_error ? " Collection description was not updated." : ""),
+      );
     } catch (caught) {
       setError(caught instanceof Error ? caught.message : "Delete failed.");
     }

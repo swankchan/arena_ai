@@ -11,6 +11,15 @@ export function Spinner({ label = "Loading" }: { label?: string }) {
   return <span className="spinner"><LoaderCircle size={17} className="spin" />{label}</span>;
 }
 
+export function CollectionSummary({ summary }: { summary: string }) {
+  const text = summary.trim() || "Add documents to generate an automatic description";
+  return (
+    <span className="collection-summary" title={summary.trim() || undefined}>
+      {text}
+    </span>
+  );
+}
+
 export function SystemStatus({
   backendOnline,
   llmConnected,

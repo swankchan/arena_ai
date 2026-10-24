@@ -1,7 +1,5 @@
 """Document upload, ingestion-job, listing, and deletion endpoints."""
 
-from typing import List
-
 from fastapi import (
     APIRouter,
     File,
@@ -15,7 +13,7 @@ from backend.lance_store import LanceStore
 from backend.services import collections
 from backend.services.collections import normalize_name, table_name
 from backend.services.documents import process_saved_documents, save_uploads
-
+from backend.services.summaries import try_refresh_collection_summary
 
 router = APIRouter(prefix="/api", tags=["documents"])
 
@@ -44,12 +42,20 @@ def list_documents(collection_name: str):
 
 
 @router.delete("/collections/{collection_name}/documents")
-def delete_document(collection_name: str, source: str):
+def delete_document(collection_name: str, source: str, request: Request):
     normalized = _require_collection(collection_name)
     deleted = LanceStore.delete_table_document(table_name(normalized), source)
     if not deleted:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "Document not found.")
-    return {"source": source, "deleted_chunks": deleted}
+    summary_error = try_refresh_collection_summary(
+        normalized,
+        request.app.state.engines.get_llm,
+    )
+    return {
+        "source": source,
+        "deleted_chunks": deleted,
+        "summary_error": summary_error,
+    }
 
 
 @router.post(
@@ -59,7 +65,7 @@ def delete_document(collection_name: str, source: str):
 async def upload_documents(
     collection_name: str,
     request: Request,
-    files: List[UploadFile] = File(...),
+    files: list[UploadFile] = File(...),
 ):
     normalized = _require_collection(collection_name)
     try:
@@ -73,7 +79,13 @@ async def upload_documents(
 
     def worker(progress):
         engine = engines.get_engine(normalized)
-        return process_saved_documents(engine, paths, progress)
+        result = process_saved_documents(engine, paths, progress)
+        if result["processed_files"]:
+            result["summary_error"] = try_refresh_collection_summary(
+                normalized,
+                lambda: engine.llm,
+            )
+        return result
 
     job = request.app.state.jobs.submit(
         normalized,

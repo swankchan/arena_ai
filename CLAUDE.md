@@ -43,6 +43,7 @@ llama.cpp after `npm run build`; it does not need a Node server.
 | `backend/services/jobs.py` | In-process ingestion jobs |
 | `backend/services/smalltalk.py` | Social router and isolated LLM guard |
 | `backend/services/telemetry.py` | Shared token estimates and throttled live metrics |
+| `backend/services/summaries.py` | Automatic collection descriptions from bounded content |
 | `backend/embeddings.py` | Lazy embedding factory and task prompts |
 | `backend/rag_engine.py` | RAG orchestration and Text-to-SQL |
 | `backend/lance_store.py` | Embedded vector persistence and exact retrieval |
@@ -116,6 +117,12 @@ this document-query pipeline:
 - Application records use `APP_DB_PATH`.
 - Document deletion uses exact `source` metadata with SQL-literal escaping.
 - Collection rename moves vectors, uploads, SQLite records, and tabular paths.
+- Generate collection descriptions only through `services/summaries.py` after a
+  successful upload batch or vector/tabular deletion. Use bounded document
+  excerpts and tabular schemas, persist them in `collection_summaries`, and
+  preserve the last good summary on LLM failure without rolling back source
+  data. Rename moves this metadata; empty collections and collection deletion
+  clear it. The summary GET endpoint must never invoke an LLM.
 - SQLite enables foreign keys on every connection and uses
   `check_same_thread=False` for FastAPI threadpool compatibility.
 

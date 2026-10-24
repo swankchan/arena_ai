@@ -28,6 +28,12 @@ export interface Conversation {
   last_active?: number | null;
 }
 
+export interface CollectionSummary {
+  collection: string;
+  summary: string;
+  updated_at: number | null;
+}
+
 export interface ChatMessage {
   id?: number | string;
   role: "user" | "assistant";
@@ -82,6 +88,7 @@ export interface IngestionJob {
   total_files: number;
   total_chunks: number;
   errors: string[];
+  summary_error?: string | null;
   created_at: number;
   updated_at: number;
 }
