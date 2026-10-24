@@ -26,7 +26,7 @@ import { History as HistoryWorkspace } from "./components/History";
 import { Prompts } from "./components/Prompts";
 import { Sidebar } from "./components/Sidebar";
 import { Tabular } from "./components/Tabular";
-import { ErrorBanner, Spinner } from "./components/ui";
+import { ErrorBanner, Spinner, SystemStatus } from "./components/ui";
 import "./styles.css";
 
 const tabs = [
@@ -208,14 +208,13 @@ export default function App() {
         queryOptions={queryOptions}
         onQueryOptions={setQueryOptions}
         config={config}
-        apiOnline={apiOnline}
       />
 
       <main className="main-shell">
         <header className="topbar">
           <button className="icon-button menu-button" onClick={() => setSidebarOpen(true)} aria-label="Open navigation"><Menu size={21} /></button>
           <div className="topbar-title"><span className="collection-icon"><Database size={17} /></span><div><strong>{collection || "RAG Knowledge Base"}</strong><span>{collection ? "Active collection" : "Local-first RAG workspace"}</span></div></div>
-          <div className="topbar-status"><span className={`status-dot ${apiOnline ? "online" : ""}`} />{apiOnline ? "Backend online" : "Backend offline"}</div>
+          <SystemStatus online={apiOnline} />
         </header>
 
         {pageError && <div className="global-error"><ErrorBanner>{pageError}</ErrorBanner></div>}

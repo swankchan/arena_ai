@@ -264,6 +264,17 @@ preserves predictable ranking rather than silently enabling quantized ANN.
 Query cost grows with the number of chunks; benchmark before adding an
 approximate index to a large corpus.
 
+When query transformation is enabled, bounded server-side conversation history
+helps rewrite follow-up questions into standalone retrieval queries in the same
+LLM call. The original question remains unchanged for generation and
+persistence. Disabling transformation also disables this rewriting; failed or
+empty rewrites fall back to the original question.
+
+Expanded queries retain deterministic order. Multi-query result lists are fused
+with reciprocal rank fusion (RRF) using stable LanceDB chunk IDs, while the
+final context remains capped at `2 * TOP_K`. Existing per-query FlashRank
+reranking is unchanged.
+
 ## Migrating from Elasticsearch
 
 Old Elasticsearch indices are not converted automatically. Reprocess original
@@ -288,8 +299,9 @@ Backend tests use temporary LanceDB/SQLite directories and deterministic fake
 model clients. They cover collection/document CRUD, SSE chat, persistence,
 ratings, prompts, upload validation, jobs, read-only SQL, SPA fallback, Gemma
 task prompts, safe precision, MRL validation, old-collection dimension
-protection, and smalltalk injection fallback. No model download, Docker, or
-llama.cpp server is needed for these tests.
+protection, RRF ordering, history-aware follow-up retrieval, and smalltalk
+injection fallback. No model download, Docker, or llama.cpp server is needed
+for these tests.
 
 See [CLAUDE.md](CLAUDE.md) for implementation conventions.
 

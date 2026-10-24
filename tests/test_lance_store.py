@@ -80,6 +80,7 @@ class LanceStoreTest(unittest.TestCase):
         self.assertEqual(results[0].page_content, "apple document")
         self.assertAlmostEqual(results[0].metadata["score"], 1.0)
         self.assertEqual(results[0].metadata["page"], 1)
+        self.assertTrue(results[0].metadata["chunk_id"])
         self.assertNotIn("empty_value", results[0].metadata)
         self.assertEqual(self.store.similarity_search("apple query", top_k=0), [])
 
@@ -93,6 +94,11 @@ class LanceStoreTest(unittest.TestCase):
         self.assertEqual(
             reopened.find_document_source("apple.txt"),
             "/docs/apple.txt",
+        )
+        reopened_result = reopened.similarity_search("apple query", top_k=1)[0]
+        self.assertEqual(
+            reopened_result.metadata["chunk_id"],
+            results[0].metadata["chunk_id"],
         )
 
     def test_retriever_and_reranking_candidate_count(self):

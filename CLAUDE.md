@@ -55,8 +55,9 @@ this document-query pipeline:
 
 1. Validate the collection and server-side conversation.
 2. Load history from SQLite and persist the user message.
-3. Transform/expand with request-scoped options.
-4. Retrieve exact cosine vectors and optionally rerank.
+3. Transform with bounded history and expand with request-scoped options.
+4. Retrieve exact cosine vectors per query, optionally rerank per query, and
+   fuse multiple ranked lists with RRF.
 5. Add tabular results, memory, and system prompts.
 6. Stream llama.cpp output over SSE and persist the final answer/Q&A run.
 
@@ -71,6 +72,9 @@ this document-query pipeline:
 - Do not expose LanceDB, SQLite, model files, or llama.cpp directly to the SPA.
 - Production SPA files come from `FRONTEND_DIST`; API routes take precedence
   over the fallback.
+- The shared `/api/health` state appears once as the combined Backend/API
+  `SystemStatus` in the topbar. The sidebar footer only says `Local first`; do
+  not add duplicate indicators for the same health check.
 - Vite `allowedHosts` supports remote previews. Do not add a production host
   allowlist that rejects the preview hostname.
 
@@ -156,6 +160,17 @@ this document-query pipeline:
 - Do not replace the allowlist with substring matching. Uncertain input and
   appended instructions must fall back to RAG; guard tests are mandatory.
 - Short-term memory is bounded by `CHAT_HISTORY_MAX_MESSAGES`.
+- Query transformation uses the same bounded history and per-message character
+  limit to turn follow-ups into standalone retrieval queries without an extra
+  LLM call. It runs only when transformation is enabled; errors and empty
+  rewrites fall back to the original question. Generation and persistence keep
+  the original user question.
+- Query deduplication preserves order. Multi-query retrieval uses stable
+  `chunk_id` metadata and RRF (`K=60`), with deterministic tie-breaking and a
+  final `2 * TOP_K` limit. Do not collapse identical text from different
+  sources, and do not replace exact vector search with hybrid/ANN retrieval.
+- Keep the existing per-query FlashRank path unchanged unless a separate
+  evaluated change explicitly moves to global reranking.
 
 ## Configuration
 
@@ -185,6 +200,9 @@ and Q&A-memory exclusion. Frontend tests cover SSE chunk parsing and
 formatting; the production build also checks TypeScript.
 
 When changing retrieval, test empty tables, persistence, source deletion,
-rename, and dimension mismatches. When changing the API, test browser-facing
+rename, and dimension mismatches. Multi-query tests must cover RRF agreement,
+query-order independence, source-aware deduplication, and both query paths.
+Follow-up tests must cover bounded history, disabled transformation, and
+fallbacks. When changing the API, test browser-facing
 behavior through `TestClient`, including error status codes and SSE events.
 For LLM changes, verify all construction still goes through `create_llm()`.

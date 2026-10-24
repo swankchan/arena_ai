@@ -245,6 +245,7 @@ class LanceStore:
                 metadata = {}
 
             metadata["source"] = row.get("source", "")
+            metadata["chunk_id"] = str(row["id"])
             distance = row.get("_distance")
             if distance is not None:
                 metadata["distance"] = float(distance)

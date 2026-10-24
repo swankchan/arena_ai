@@ -11,6 +11,18 @@ export function Spinner({ label = "Loading" }: { label?: string }) {
   return <span className="spinner"><LoaderCircle size={17} className="spin" />{label}</span>;
 }
 
+export function SystemStatus({ online }: { online: boolean }) {
+  const label = online
+    ? "Backend online · API connected"
+    : "Backend offline · API unavailable";
+  return (
+    <div className="topbar-status" role="status" aria-label={label} title={label}>
+      <span className={`status-dot ${online ? "online" : ""}`} aria-hidden="true" />
+      {label}
+    </div>
+  );
+}
+
 export function ErrorBanner({ children }: { children: ReactNode }) {
   return <div className="alert error"><AlertCircle size={18} /><span>{children}</span></div>;
 }
