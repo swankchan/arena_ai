@@ -1,0 +1,479 @@
+diff --git a/index.html b/index.html
+index 500952b..95e5ffb 100644
+--- a/index.html
++++ b/index.html
+@@ -61,7 +61,7 @@
+ 
+       // 只預載會用到的那個世界。
+       var NY_MODULES = ['js/nyc-geodata.js','js/city-config.js','js/tsl-materials.js','js/trees.js','js/actor-models.js','js/vehicle-lights.js','js/pedestrians.js','js/lighting.js','js/city-grid.js','js/boroughs.js','js/buildings.js','js/fire-escapes.js','js/landmarks.js','js/street-details.js','js/road-network.js','js/road-paint.js','js/traffic.js','js/pedestrian-system.js','js/pedestrian-routes.js','js/controllers.js','js/touch-controls.js','js/gamepad-controls.js','js/cameras.js','js/nyc-map.js','js/scene-culling.js','js/post-processing.js','js/audio-synthesis.js','js/audio-events.js','js/audio-sources.js','js/audio-acoustics.js','js/audio-system.js','js/world.js','js/main.js'];
+-      var HK_MODULES = ['js/world.js','js/hk/main.js?v=2026-10-25.13','js/hk/build.js','js/hk/config.js','js/hk/city.js','js/hk/markings.js','js/hk/lighting.js','js/hk/traffic.js','js/hk/pedestrians.js','js/hk/map.js','js/hk/csdi.js','js/hk/fleet.js','js/hk/vehicles.js','js/hk/drive.js','js/hk-geodata.js','js/hk-coastline.js'];
++      var HK_MODULES = ['js/world.js','js/hk/main.js?v=2026-10-25.14','js/hk/build.js','js/hk/config.js','js/hk/city.js','js/hk/markings.js','js/hk/lighting.js','js/hk/traffic.js','js/hk/pedestrians.js','js/hk/map.js','js/hk/csdi.js','js/hk/fleet.js','js/hk/vehicles.js','js/hk/drive.js','js/hk-geodata.js','js/hk-coastline.js'];
+       for (var i = 0; i < (isHK ? HK_MODULES : NY_MODULES).length; i++) {
+         var link = document.createElement('link');
+         link.rel = 'modulepreload';
+@@ -97,7 +97,7 @@
+ 
+     // 建置版本：同時寫在 js/hk/build.js（有測試保證兩邊一致）。
+     // 入口模組帶 ?v= 可以強制瀏覽器重新抓取，唔會出現「新 main.js + 舊 traffic.js」這種混用。
+-    const HK_BUILD = '2026-10-25.13';
++    const HK_BUILD = '2026-10-25.14';
+     window.__SLOP_HK_BUILD = HK_BUILD;
+ 
+     const world = getWorldId();
+diff --git a/js/hk/build.js b/js/hk/build.js
+index 0d9d2ad..1a54eb6 100644
+--- a/js/hk/build.js
++++ b/js/hk/build.js
+@@ -9,4 +9,4 @@
+ // ① index.html 用 `?v=<BUILD>` 載入入口模組（入口強制更新）；
+ // ② 診斷面板顯示版本，一眼看出係唔係新舊混用；
+ // ③ main.js 對所有「可能未存在」的方法用 optional call（見下），舊模組頂多冇功能，唔會炸死世界。
+-export const BUILD = '2026-10-25.13';
++export const BUILD = '2026-10-25.14';
+diff --git a/js/hk/config.js b/js/hk/config.js
+index b45dcb5..1b38ad9 100644
+--- a/js/hk/config.js
++++ b/js/hk/config.js
+@@ -354,15 +354,18 @@ export const SPAWN = (() => {
+ 
+ // --- 跟車模型（簡化 IDM；抽出來是為了可以單元測試）------------------------------------------------
+ /**
+- * 目標速度：以「淨車距」決定，淨距 = 前車距離 − 車長 − 靜止安全距。
+- * @param {number} gap 與前車沿線距離（m），無前車傳 Infinity
++ * 目標速度：以「淨車距」決定。
++ * gap 是兩車中心的沿線距離，所以要扣除前後車各自半車長，再扣靜止安全距。
++ * @param {number} gap 與前車沿線中心距離（m），無前車傳 Infinity
+  * @param {number} length 本車長（m）
+  * @param {number} vmax 最高速（m/s）
+  * @param {number} headway 每米淨距對應的速度（s/m），越大越保守
++ * @param {number} leaderLength 前車長（m）；省略時沿用同車長情境，保持 API 相容
+  */
+-export function followSpeed(gap, length, vmax, headway = 1.1) {
++export function followSpeed(gap, length, vmax, headway = 1.1, leaderLength = length) {
+   if (!Number.isFinite(gap)) return vmax;
+-  const safe = Math.max(0, gap - length - 3);
++  const bodyClearance = gap - (length + leaderLength) / 2;
++  const safe = Math.max(0, bodyClearance - 3);
+   return Math.min(vmax, Math.max(0, safe / headway));
+ }
+ 
+diff --git a/js/hk/drive.js b/js/hk/drive.js
+index 231bdff..139b8f8 100644
+--- a/js/hk/drive.js
++++ b/js/hk/drive.js
+@@ -170,10 +170,24 @@ export function createPlayer(scene, colliders) {
+       const dz = state.z - nz;
+       const d2 = dx * dx + dz * dz;
+       if (d2 > state.radius * state.radius) continue;
+-      const d = Math.sqrt(d2) || 1e-4;
+-      const push = state.radius - d;
+-      state.x += (dx / d) * push;
+-      state.z += (dz / d) * push;
++      if (d2 < 1e-8) {
++        // 圓心在盒內（或盒邊）時 dx / dz 都是零，不能用法線推出去：
++        // 舊寫法會得到零位移，玩家傳送／被 AI 推入地標後便永遠卡住。
++        // 與上面的 OBB 一樣，沿最淺的一條邊推出，再補上玩家半徑。
++        const cx = (c.minX + c.maxX) / 2;
++        const cz = (c.minZ + c.maxZ) / 2;
++        const lx = state.x - cx;
++        const lz = state.z - cz;
++        const pushX = (c.maxX - c.minX) / 2 - Math.abs(lx);
++        const pushZ = (c.maxZ - c.minZ) / 2 - Math.abs(lz);
++        if (pushX < pushZ) state.x += Math.sign(lx || 1) * (pushX + state.radius);
++        else state.z += Math.sign(lz || 1) * (pushZ + state.radius);
++      } else {
++        const d = Math.sqrt(d2);
++        const push = state.radius - d;
++        state.x += (dx / d) * push;
++        state.z += (dz / d) * push;
++      }
+       state.speed *= 0.35;
+     }
+   }
+diff --git a/js/hk/lighting.js b/js/hk/lighting.js
+index f6611b2..6110587 100644
+--- a/js/hk/lighting.js
++++ b/js/hk/lighting.js
+@@ -101,9 +101,11 @@ export function createHongKongLighting(scene, { shadows = true, renderer = null,
+   sun.target.position.set(0, 0, 0);
+   scene.add(hemi, sun, sun.target);
+ 
+-  // 天空底色 + 霧：即使天空著色器出問題，畫面仍然有顏色而不是全黑
+-  scene.background = new THREE.Color(PRESETS[preset].sky);
+-  scene.fog = new THREE.Fog(PRESETS[preset].fog, PRESETS[preset].fogNear, PRESETS[preset].fogFar);
++  // 天空底色 + 霧：即使天空著色器出問題，畫面仍然有顏色而不是全黑。
++  // URL 的 ?light= 是外部輸入；無效值要與 applyPreset 一樣回退，唔可以喺 boot 直接 throw。
++  const initial = PRESETS[preset] || PRESETS.golden;
++  scene.background = new THREE.Color(initial.sky);
++  scene.fog = new THREE.Fog(initial.fog, initial.fogNear, initial.fogFar);
+ 
+   let activeId = 'golden';
+   const sunOffset = new THREE.Vector3();
+diff --git a/js/hk/main.js b/js/hk/main.js
+index f13449b..e3e6a31 100644
+--- a/js/hk/main.js
++++ b/js/hk/main.js
+@@ -411,7 +411,7 @@ export async function startHongKong() {
+     ShiftLeft: 'boost', ShiftRight: 'boost',
+     Space: 'brake'
+   };
+-  let timeIndex = 0;
++  let timeIndex = Math.max(0, TIME_CYCLE.indexOf(lighting.activeId));
+ 
+   /** 套用光線預設（G 鍵循環、HUD 按鈕直接揀，兩者走同一條路）。 */
+   function applyLighting(id) {
+@@ -457,12 +457,7 @@ export async function startHongKong() {
+     if (/^Digit[1-9]$/.test(e.code)) {
+       const index = Number(e.code.slice(5)) - 1;
+       const tp = HK.TELEPORTS[index];
+-      if (tp) {
+-        player.state.x = tp.x;
+-        player.state.z = tp.z;
+-        player.state.heading = tp.heading;
+-        player.state.speed = 0;
+-      }
++      if (tp) teleportTo(tp.x, tp.z, tp.heading);
+     }
+   });
+   window.addEventListener('keyup', (e) => {
+@@ -483,10 +478,7 @@ export async function startHongKong() {
+     if (!btn) return;
+     const tp = HK.TELEPORTS[Number(btn.dataset.tp)];
+     if (!tp) return;
+-    player.state.x = tp.x;
+-    player.state.z = tp.z;
+-    player.state.heading = tp.heading;
+-    player.state.speed = 0;
++    teleportTo(tp.x, tp.z, tp.heading);
+   });
+   syncModeButtons();
+ 
+@@ -613,12 +605,16 @@ export async function startHongKong() {
+   });
+   mark('diagnostics');
+ 
+-  /** 傳送到世界座標（地圖點擊用）：保留車頭方向，速度歸零。 */
+-  function teleportTo(x, z) {
++  /** 所有傳送入口共用：即時同步車身與鏡頭錨點；地圖點擊保留原車頭方向。 */
++  function teleportTo(x, z, heading = player.state.heading) {
+     player.state.x = x;
+     player.state.z = z;
++    player.state.heading = heading;
+     player.state.speed = 0;
+-    chase.smoothed.set(x - Math.sin(player.state.heading) * 9.5, 6, z - Math.cos(player.state.heading) * 9.5);
++    player.sync();
++    chase.smoothed.set(x - Math.sin(heading) * 9.5, 6, z - Math.cos(heading) * 9.5);
++    chase.lookAt.set(x, 1.6, z);
++    return player.state;
+   }
+ 
+   // --- 地圖（M 開關；點地圖傳送）-------------------------------------------------------------------
+@@ -638,6 +634,7 @@ export async function startHongKong() {
+   let elapsed = 0;
+   let bumpCount = 0;
+   let frameNow = 0;
++  let mapTime = 0;
+   // 第一幀先在 try/catch 內畫一次：着色器若編不過，會顯示錯誤而唔係黑畫面
+   try {
+     player.update(0.016);
+@@ -683,10 +680,22 @@ export async function startHongKong() {
+       else player.sync?.();
+     }
+     chase.update(dt, player.state);
+-    pedestrians.update?.(dt);
++    pedestrians.update?.(dt, camera.position);
+     lighting.update(player.state);
+     if (skyLighting) skyLighting.update(player.state);
+     updateHud(dt);
++    // 地圖唔需要 60 Hz 重畫；每 250 ms 更新玩家與車流，關閉時 map.update 只更新資料。
++    mapTime += dt;
++    if (mapTime >= 0.25) {
++      mapTime = 0;
++      const carPositions = [];
++      for (const vehicle of [...traffic.cars, ...traffic.heavy]) {
++        if (!vehicle.lane) continue;
++        const pose = HK.poseAt(vehicle.lane, vehicle.s);
++        carPositions.push({ x: pose.x, z: pose.z });
++      }
++      map.update(player.state, carPositions);
++    }
+     updateDiagnostics();
+ 
+     renderFrame();
+diff --git a/js/hk/traffic.js b/js/hk/traffic.js
+index 15707a0..6af7647 100644
+--- a/js/hk/traffic.js
++++ b/js/hk/traffic.js
+@@ -220,14 +220,20 @@ export function createHongKongTraffic(scene) {
+       for (let i = 0; i < n; i++) {
+         const cur = list[i];
+         let gap = Infinity;
++        // 預設值沿用舊有「玩家作為路障」的保守距離；若前車是 AI，就用它的實際車長。
++        let leaderLength = cur.length;
+         if (n > 1) {
+           const next = list[(i + 1) % n];
+           gap = next.s - cur.s;
+           if (gap <= 0) gap += lane.len;
++          leaderLength = next.length ?? 4.6;
+         }
+         const pg = playerGap(lane, cur.s, playerState);
+-        if (pg < gap) gap = Math.max(0, pg - 4.5);
+-        const desired = HK.followSpeed(gap, cur.length, cur.vmax ?? 14);
++        if (pg < gap) {
++          gap = Math.max(0, pg - 4.5);
++          leaderLength = cur.length;
++        }
++        const desired = HK.followSpeed(gap, cur.length, cur.vmax ?? 14, 1.1, leaderLength);
+         if (cur.hitCooldown > 0) {
+           // 剛剛撞到玩家：停 1.2 秒，唔好一路頂住佢推
+           cur.hitCooldown -= dt;
+@@ -243,12 +249,16 @@ export function createHongKongTraffic(scene) {
+         if (cur.s >= lane.len) {
+           const wrapped = cur.s - lane.len;
+           let ahead = Infinity;
++          let aheadLength = cur.length;
+           for (const other of list) {
+             if (other === cur) continue;
+             const rel = other.s >= wrapped ? other.s : other.s + lane.len;
+-            if (rel < ahead) ahead = rel;
++            if (rel < ahead) {
++              ahead = rel;
++              aheadLength = other.length ?? 4.6;
++            }
+           }
+-          if (ahead === Infinity || ahead - wrapped >= cur.length + 3) {
++          if (ahead === Infinity || ahead - wrapped >= (cur.length + aheadLength) / 2 + 3) {
+             cur.s = wrapped;
+           } else {
+             cur.s = Math.min(prevS, lane.len - 0.01); // 排隊等位（下一幀再試），唔可以疊住前面
+diff --git a/tests/helpers/hk-traffic-harness.cjs b/tests/helpers/hk-traffic-harness.cjs
+index 2578b02..67af4b4 100644
+--- a/tests/helpers/hk-traffic-harness.cjs
++++ b/tests/helpers/hk-traffic-harness.cjs
+@@ -57,6 +57,7 @@ const { pathToFileURL } = require('node:url');
+   const startLanes = traffic.cars.map((c) => traffic.lanes.indexOf(c.lane));
+   const startHeavyLanes = traffic.heavy.map((v) => traffic.lanes.indexOf(v.lane));
+   let minSameLaneGap = Infinity;
++  let minBodyClearance = Infinity;
+   const ft0 = Date.now();
+   for (let frame = 0; frame < 200; frame++) {
+     traffic.update(1 / 30, camera);
+@@ -69,13 +70,20 @@ const { pathToFileURL } = require('node:url');
+     for (const v of [...traffic.cars, ...traffic.heavy]) {
+       if (!v.lane) continue;
+       const list = byLane.get(v.lane) || [];
+-      list.push(v.s);
++      list.push(v);
+       byLane.set(v.lane, list);
+     }
+-    for (const list of byLane.values()) {
++    for (const [lane, list] of byLane) {
+       if (list.length < 2) continue;
+-      list.sort((a, b) => a - b);
+-      for (let i = 1; i < list.length; i++) minSameLaneGap = Math.min(minSameLaneGap, list[i] - list[i - 1]);
++      list.sort((a, b) => a.s - b.s);
++      for (let i = 0; i < list.length; i++) {
++        const cur = list[i];
++        const next = list[(i + 1) % list.length];
++        let gap = next.s - cur.s;
++        if (gap <= 0) gap += lane.len;
++        minSameLaneGap = Math.min(minSameLaneGap, gap);
++        minBodyClearance = Math.min(minBodyClearance, gap - ((cur.length ?? 4.6) + (next.length ?? 4.6)) / 2);
++      }
+     }
+   }
+   const frameMs = (Date.now() - ft0) / 200;
+@@ -142,11 +150,37 @@ const { pathToFileURL } = require('node:url');
+ 
+   const positions = traffic.cars.map((c) => c.s);
+   const finite = positions.every((s) => Number.isFinite(s));
++
++  // 混合車種跟車：車長 4.6 m 的私家車中心距 11.8 m 巴士 8 m，車身已重疊 0.2 m。
++  // 由靜止更新一幀，舊算法仍會加速；修正後目標速度必須是零。
++  const follower = traffic.cars[0];
++  const leader = traffic.heavy.find((v) => v.kind === 'bus');
++  const mixedLane = traffic.lanes.find((lane) => lane.len > 200);
++  const parkedLane = traffic.lanes.find((lane) => lane !== mixedLane);
++  for (const vehicle of [...traffic.cars, ...traffic.heavy]) {
++    // Instanced cars 每幀都會放置，所以唔可以借 lane=null 將佢哋暫時移除。
++    vehicle.lane = parkedLane;
++    vehicle.s = 10;
++    vehicle.speed = 0;
++    vehicle.hitCooldown = 1;
++  }
++  follower.lane = mixedLane;
++  leader.lane = mixedLane;
++  follower.s = 92;
++  leader.s = 100;
++  follower.speed = 0;
++  leader.speed = 0;
++  follower.hitCooldown = 0;
++  leader.hitCooldown = 1;
++  traffic.update(1 / 60, camera);
++  const mixedFollowerSpeed = follower.speed;
++
+   console.log(JSON.stringify({
+     cars: traffic.counts.cars,
+     laneChanges,
+     heavyLaneChanges,
+     minSameLaneGap: +minSameLaneGap.toFixed(2),
++    minBodyClearance: +minBodyClearance.toFixed(3),
+     bumpHit: bump.hit,
+     bumpedSpeed: +player.speed.toFixed(2),
+     pushedBy: +pushed.toFixed(2),
+@@ -157,6 +191,7 @@ const { pathToFileURL } = require('node:url');
+     buildMs,
+     frameMs: +frameMs.toFixed(3),
+     finite,
++    mixedFollowerSpeed: +mixedFollowerSpeed.toFixed(4),
+     busSideHit: busBump.hit,
+     busClearance: +busClearance.toFixed(2),
+     busStopped: +busStopped.toFixed(2),
+diff --git a/tests/hk-drive.test.mjs b/tests/hk-drive.test.mjs
+index 1bb3ab9..3275635 100644
+--- a/tests/hk-drive.test.mjs
++++ b/tests/hk-drive.test.mjs
+@@ -90,6 +90,24 @@ test('樓宇碰撞用 OBB：沿每一條車道都開得通，唔會再有隱形
+   assert.equal(obbBlocked, 0, `改成 OBB 之後車道應該全部開得通，但仍然有 ${obbBlocked} 點被擋：${blocked.join(' · ')}`);
+ });
+ 
++test('地標 AABB：圓心在盒內都會沿最淺邊推出，唔再零位移卡住', { skip }, async () => {
++  const { THREE, drive } = await load();
++  const scene = new THREE.Scene();
++  const box = { minX: -5, maxX: 5, minZ: -5, maxZ: 5 };
++  const player = drive.createPlayer(scene, [box]);
++  const R = player.state.radius;
++
++  for (const [x, z] of [[0, 0], [4, 0], [-4, 2], [0, -4]]) {
++    Object.assign(player.state, { x, z, speed: 8 });
++    player.resolve();
++    const outside = player.state.x <= box.minX - R + 1e-8 || player.state.x >= box.maxX + R - 1e-8 ||
++      player.state.z <= box.minZ - R + 1e-8 || player.state.z >= box.maxZ + R - 1e-8;
++    assert.ok(outside, `由 (${x}, ${z}) 出發仍被困在擴張盒內：(${player.state.x}, ${player.state.z})`);
++    assert.equal(player.root.position.x, player.state.x, 'resolve 要即時同步車身 x');
++    assert.equal(player.root.position.z, player.state.z, 'resolve 要即時同步車身 z');
++  }
++});
++
+ test('玩家紅的士：有四個會轉、會自轉的車輪，兩盞頭燈、車底軟影同懸掛樞軸', { skip }, async () => {
+   const { THREE, HK, drive, vehicles } = await load();
+   scene: {
+@@ -248,11 +266,16 @@ test('光線：四個預設可以直接揀（唔止 G 鍵循環）', { skip }, a
+     sys.applyPreset(id);
+     assert.equal(sys.activeId, id, `applyPreset('${id}') 要真正生效`);
+   }
++  const fallbackScene = new THREE.Scene();
++  const fallback = lighting.createHongKongLighting(fallbackScene, { shadows: false, preset: '?broken-url-value' });
++  assert.equal(fallback.activeId, 'golden', '無效 ?light= 值要安全回退，唔可以令 boot throw');
++  assert.equal(fallbackScene.background.getHex(), fallback.PRESETS.golden.sky);
+   // HUD 要有得直接揀，唔需要記住 G 鍵
+   const main = readFileSync(new URL('../js/hk/main.js', import.meta.url), 'utf8');
+   assert.match(main, /const LIGHT_PRESETS = \[/, '要有光線預設清單');
+   assert.match(main, /data-light="\$\{p\.id\}"/, 'HUD 要有光線按鈕');
+   assert.match(main, /closest\('\[data-light\]'\)/, '按光線按鈕要切換');
+   assert.match(main, /e\.code === 'KeyC'/, 'C 鍵要切換視角');
++  assert.match(main, /TIME_CYCLE\.indexOf\(lighting\.activeId\)/, 'G 鍵要由 URL 實際預設繼續循環');
+   assert.match(main, /data-cam="\$\{m\.id\}"/, 'HUD 要有視角按鈕');
+ });
+diff --git a/tests/hk-map.test.mjs b/tests/hk-map.test.mjs
+index 07c2b8f..40be4e5 100644
+--- a/tests/hk-map.test.mjs
++++ b/tests/hk-map.test.mjs
+@@ -6,10 +6,13 @@
+ import test from 'node:test';
+ import assert from 'node:assert/strict';
+ import { existsSync } from 'node:fs';
+-import { JSDOM } from 'jsdom';
++import { readFileSync } from 'node:fs';
++import vm from 'node:vm';
+ 
+ const jsdomPath = new URL('../node_modules/jsdom/package.json', import.meta.url);
+ const skip = existsSync(jsdomPath) ? false : 'jsdom is not installed (npm install jsdom --no-save)';
++// 真係先判斷 skip 才載入；static import 會令「冇裝 jsdom 時略過」形同虛設。
++const { JSDOM } = skip ? {} : await import('jsdom');
+ 
+ /** 一個記錄所有繪畫指令的 2D context：可以斷言「真係畫過」。 */
+ function makeContext() {
+@@ -172,3 +175,44 @@ test('冇樓宇起在海中心（真實海岸線 vs 手繪種子陸地的差異
+   assert.equal(inWater.length, 0, `有 ${inWater.length} 棟樓在海中心`);
+   assert.ok(HK.BUILDINGS.length > 1200, `樓宇太少：${HK.BUILDINGS.length}`);
+ });
++
++test('主迴圈會更新地圖，並且把相機位置傳給行人 LOD', () => {
++  const main = readFileSync(new URL('../js/hk/main.js', import.meta.url), 'utf8');
++  assert.match(main, /map\.update\(player\.state, carPositions\)/, '地圖唔可以只喺開啟時畫一次初始狀態');
++  assert.match(main, /mapTime >= 0\.25/, '地圖重畫要節流，唔好每幀掃千幾棟樓');
++  assert.match(main, /pedestrians\.update\?\.\(dt, camera\.position\)/, '主迴圈要保留行人遠近 LOD');
++});
++
++test('數字鍵、HUD、地圖傳送共用即時車身與鏡頭重設', () => {
++  const main = readFileSync(new URL('../js/hk/main.js', import.meta.url), 'utf8');
++  const start = main.indexOf('  function teleportTo(');
++  const end = main.indexOf('  // --- 地圖', start);
++  assert.ok(start >= 0 && end > start, '搵到共用的 teleportTo');
++
++  const calls = [];
++  const player = {
++    state: { x: 1, z: 2, heading: 0.3, speed: 20 },
++    sync: () => calls.push(['sync'])
++  };
++  const chase = {
++    smoothed: { set: (...args) => calls.push(['smoothed', ...args]) },
++    lookAt: { set: (...args) => calls.push(['lookAt', ...args]) }
++  };
++  const context = { player, chase };
++  vm.runInNewContext(main.slice(start, end), context);
++
++  context.teleportTo(100, 200, 1.2);
++  assert.equal(player.state.x, 100);
++  assert.equal(player.state.z, 200);
++  assert.equal(player.state.heading, 1.2);
++  assert.equal(player.state.speed, 0);
++  assert.deepEqual(calls[0], ['sync'], '傳送後要即時同步車身，唔好等下一幀');
++  assert.ok(calls.some((call) => call[0] === 'smoothed'), '要重設追尾鏡頭位置錨點');
++  assert.ok(calls.some((call) => call[0] === 'lookAt'), '要重設鏡頭注視點');
++
++  context.teleportTo(300, 400);
++  assert.equal(player.state.heading, 1.2, '地圖點擊冇指定 heading 時要保留車頭方向');
++  assert.equal([...main.matchAll(/teleportTo\(tp\.x, tp\.z, tp\.heading\)/g)].length, 2,
++    '數字鍵與 HUD 都要行共用傳送路徑');
++  assert.doesNotMatch(main, /player\.state\.x = tp\.x/, '預設傳送唔應再繞過共用重設');
++});
+diff --git a/tests/hk-traffic.test.cjs b/tests/hk-traffic.test.cjs
+index 7d65870..edcb497 100644
+--- a/tests/hk-traffic.test.cjs
++++ b/tests/hk-traffic.test.cjs
+@@ -23,12 +23,16 @@ test('the traffic system builds and simulates without hanging', () => {
+   assert.equal(report.minibuses, 10);
+   assert.equal(report.trams, 3);
+   assert.ok(report.finite, 'a car ended up at a non-finite distance along its lane');
++  assert.equal(report.mixedFollowerSpeed, 0,
++    '私家車與巴士車身已重疊時，跟車模型仍然加速（冇計前車車長）');
+   assert.ok(report.buildMs < 2000, `traffic build took ${report.buildMs} ms`);
+   assert.ok(report.frameMs < 12, `traffic update costs ${report.frameMs} ms/frame`);
+   // 「啲車好似棋子咁跳」的回歸測試：200 幀之内冇任何一架車換車道
+   assert.equal(report.laneChanges, 0, `${report.laneChanges} 架車喺自己條街中途跳去第二條車道`);
+   assert.equal(report.heavyLaneChanges, 0, `${report.heavyLaneChanges} 架巴士／小巴中途跳車道`);
+   assert.ok(report.minSameLaneGap > 1.5, `同一條車道有車疊在一起（最細間距 ${report.minSameLaneGap} m）`);
++  assert.ok(report.minBodyClearance > 0,
++    `按前後車半車長計算仍有車身重疊（淨距 ${report.minBodyClearance} m）`);
+   // 撞車反應
+   assert.equal(report.bumpHit, true, '玩家貼住一架車都冇碰撞反應');
+   assert.ok(report.bumpedSpeed < 3, `撞車之後速度仍然係 ${report.bumpedSpeed} m/s`);
+diff --git a/tests/hk-world.test.cjs b/tests/hk-world.test.cjs
+index d1b0f58..2015c63 100644
+--- a/tests/hk-world.test.cjs
++++ b/tests/hk-world.test.cjs
+@@ -176,6 +176,12 @@ test('car following: keep the gap, stop behind a stopped car, never exceed vmax'
+   assert.ok(HK.followSpeed(40, 4.6, 14) > mid, 'more room → faster');
+   assert.ok(HK.followSpeed(400, 11.8, 11) <= 11);
+   assert.ok(HK.followSpeed(20, 11.8, 11, 1.25) < HK.followSpeed(20, 11.8, 11, 1.1), 'a longer headway is slower');
++  assert.equal(HK.followSpeed(20, 4.6, 14), HK.followSpeed(20, 4.6, 14, 1.1, 4.6),
++    '同車長情境要保持原有數值（API 相容）');
++  assert.equal(HK.followSpeed(8, 4.6, 14, 1.1, 11.8), 0,
++    '私家車中心距巴士 8 m 時車身已重疊，唔可以仍然輸出正速度');
++  assert.ok(HK.followSpeed(12, 4.6, 14, 1.1, 11.8) < HK.followSpeed(12, 4.6, 14),
++    '長巴士應比同長私家車需要更大中心間距');
+ });
+ 
+ test('both worlds can be reached from the UI', () => {
