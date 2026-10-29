@@ -37,16 +37,23 @@ LanceDB, SQLite, or llama.cpp.
 | --- | --- |
 | `backend/main.py` | FastAPI composition, CORS, lifespan, and SPA serving |
 | `backend/api/` | Typed HTTP and SSE endpoints |
+| `backend/schemas.py` | Pydantic request contracts |
 | `backend/services/` | Engine cache, collection operations, uploads, and jobs |
+| `backend/services/engine_manager.py` | Lazy model and engine cache |
+| `backend/services/jobs.py` | In-process ingestion jobs |
 | `backend/services/ingestion.py` | Explicit vector/tabular dispatch and per-file results |
 | `backend/services/content_metadata.py` | Bounded vector excerpts and tabular schemas for summaries |
 | `backend/services/smalltalk.py` | Smalltalk router and isolated guard |
+| `backend/services/telemetry.py` | Shared token estimates and throttled live metrics |
+| `backend/services/summaries.py` | Automatic collection descriptions |
 | `backend/embeddings.py` | Lazy Gemma loading and task-specific prompts |
 | `backend/rag_engine.py` | Vector-only ingestion, retrieval, query optimization, and generation |
 | `backend/lance_store.py` | Embedded tables and exact vector search |
 | `backend/db.py` | SQLite persistence |
 | `backend/tabular_engine.py` | CSV/Excel loading, SQLite storage, Text-to-SQL, and pandas analysis |
 | `frontend/` | React, Vite, and TypeScript single-page application |
+| `frontend/src/api.ts` | Relative-URL API client and SSE entry point |
+| `frontend/src/components/` | Independent React workspaces |
 | `tests/` | Real LanceDB/SQLite API tests with deterministic engines |
 
 Heavy models are loaded lazily only when an endpoint needs them. Collection
@@ -54,6 +61,19 @@ management and the built frontend can start without downloading an embedding
 model or contacting llama.cpp. Tabular-only uploads construct the SQLite handler
 without initializing RAGEngine or EmbeddingGemma; summary generation uses the
 shared llama.cpp client when no vector engine was needed.
+
+### Document-query pipeline
+
+After collection and conversation validation, allowlisted social messages go to
+the isolated smalltalk responder. Every other message follows this pipeline:
+
+1. Validate the collection and server-side conversation.
+2. Load history from SQLite and persist the user message.
+3. Transform with bounded history and expand with request-scoped options.
+4. Retrieve exact cosine vectors per query, optionally rerank per query, and
+   fuse multiple ranked lists with reciprocal rank fusion (RRF).
+5. Add tabular results, memory, and system prompts.
+6. Stream llama.cpp output over SSE and persist the final answer and Q&A run.
 
 ## Requirements
 
@@ -318,6 +338,133 @@ Old Elasticsearch indices are not converted automatically. Reprocess original
 uploads to build LanceDB tables. The Elasticsearch service and its Python
 packages are no longer required.
 
+## Implementation conventions
+
+These rules keep the frontend/backend contract, local storage, and model
+behavior consistent when changing the application.
+
+### Frontend/backend boundary
+
+- Browser code must use relative `/api` URLs, never `localhost` or `127.0.0.1`.
+  Only the Vite server-side proxy may target the backend loopback address.
+- Keep request contracts in `backend/schemas.py` aligned with frontend types in
+  `frontend/src/types.ts`. OpenAPI is available at `/openapi.json` and `/docs`.
+- Do not expose LanceDB, SQLite, model files, or llama.cpp directly to the SPA.
+- Production SPA files come from `FRONTEND_DIST`; API routes take precedence
+  over the SPA fallback.
+- Backend and LLM status are independent. `/api/health` checks FastAPI, while
+  `/api/health/llm` checks llama.cpp with a two-second timeout. LLM failure
+  returns `{"connected": false}` without changing Backend health; never infer
+  one status from the other. The sidebar has no footer status or `Local first`
+  row.
+- Vite `allowedHosts` supports remote previews. Do not add a production host
+  allowlist that rejects the preview hostname.
+
+### API and streaming
+
+- Chat uses SSE, not WebSocket. Events are `meta`, `reasoning`, `answer`,
+  `metrics`, `final`, and `error`; each data payload is JSON. Optional live
+  metrics are additive and throttled to 250 ms. Keep the existing `final`
+  metrics contract unchanged.
+- Query transformation and expansion are request-scoped arguments. Never
+  mutate `os.environ` to change one user's options.
+- Persist chat through the backend, not a browser-controlled history payload.
+- Upload returns `202` and a transient job ID. Poll `/api/jobs/{id}` for status.
+- Keep model imports lazy so health, static files, and collection CRUD can run
+  without downloading models.
+- Use one Uvicorn worker with the process-local engine cache and job manager.
+
+### LLM access
+
+- Create every chat model through `backend.llm_config.create_llm()`.
+- The only LLM backend is llama.cpp's OpenAI-compatible API.
+  `langchain-openai` is a client, not hosted OpenAI inference.
+- The default base URL is `http://localhost:8080/v1` and the default alias is
+  `local-model`.
+- Do not reintroduce provider-specific branches or hosted model names.
+- Never expose `LLAMA_CPP_API_KEY` through `/api/config` or frontend code.
+
+### Collections and storage
+
+- Collection `example` uses LanceDB table `rag_example`. Embedded tables live
+  below `LANCEDB_PATH`, uploads below `DOCUMENTS_DIRECTORY`, tabular databases
+  in `<documents>/<collection>/tabular/`, and application records at
+  `APP_DB_PATH`.
+- Document deletion uses exact `source` metadata with SQL-literal escaping.
+- Collection rename moves vectors, uploads, SQLite records, tabular paths, and
+  collection-summary metadata.
+- Generate collection descriptions only through `services/summaries.py` after
+  a successful upload batch or vector/tabular deletion. Read bounded document
+  excerpts and tabular schemas through `ContentMetadataProvider`, persist the
+  result in `collection_summaries`, and preserve the last good summary on LLM
+  failure without rolling back source data. Empty collections and collection
+  deletion clear it. The summary GET endpoint must never invoke an LLM.
+- SQLite enables foreign keys on every connection and uses
+  `check_same_thread=False` for FastAPI threadpool compatibility.
+
+### LanceDB implementation
+
+- Tables store text, source, fixed-size vector, JSON metadata, and timestamps.
+  Empty collections use an explicit PyArrow schema.
+- Searches call `bypass_vector_index()` for exact cosine kNN. Do not silently
+  enable approximate retrieval.
+- LangChain retrieval uses the custom `BaseRetriever` adapter.
+- FlashRank retrieves `2 * TOP_K` candidates when enabled.
+- Source listing and deletion must work without initializing embeddings.
+- Rename streams Arrow batches to a new table, verifies row counts, then drops
+  the old table without recomputing embeddings.
+- Embedded storage is single-node; do not share local tables across replicas.
+
+### Uploads and tabular data
+
+- Allow only documented extensions and reject path separators, empty files,
+  duplicate upload names, and files above `MAX_UPLOAD_SIZE_MB`. Write uploads
+  to temporary files before replacing existing documents.
+- Classify saved files as `vector` or `tabular` in `services/ingestion.py`, not
+  inside RAGEngine. Vector documents use `add_vector_document()`; tabular files
+  use TabularDataHandler to create SQLite data and metadata.
+- Never add duplicate CSV/Excel vector indexing. Preserve SQLite Text-to-SQL
+  for precise aggregation, and keep RAGEngine's vector ingestion guarded
+  against tabular files falling through to a text loader.
+- Construct vector engines and tabular handlers through lazy per-upload
+  factories. A tabular-only batch must not initialize RAGEngine or
+  EmbeddingGemma; automatic descriptions use the shared llama.cpp client.
+- Job results retain `processed_files`, `total_chunks`, and `errors`, and also
+  expose `vector_files`, `tabular_files`, `total_rows`, and per-file
+  `file_results` (`name`, `kind`, status, chunks or rows/columns, and error).
+  Keep vector chunks and tabular rows distinct in API consumers and UI text.
+- Direct SQL is read-only, limited to `MAX_SQL_ROWS`, and constrained to the
+  selected collection's tabular directory. Natural-language SQL must receive
+  the selected `file_id`.
+
+### Models, prompts, and memory
+
+- Construct embeddings through `backend.embeddings.create_embeddings()` and
+  keep Sentence Transformers and PyTorch imports lazy. See
+  [EmbeddingGemma 2](#embeddinggemma-2) for task prompts, precision, MRL sizes,
+  normalization, and old-vector incompatibility rules.
+- `collection_guard` is always active and cannot be disabled or deleted.
+  Enabled custom prompts are appended to it.
+- Smalltalk uses full-message allowlisting plus a real `SystemMessage`; it is
+  not an unguarded bypass of `collection_guard`. The responder revalidates its
+  input and receives no history, documents, SQL, retrieval, or other tools.
+- Smalltalk obtains llama.cpp through `EngineManager.get_llm()` without creating
+  a RAG engine or loading embeddings. Persist thread messages only, not Q&A
+  runs, ratings, or long-term-memory embeddings.
+- Do not replace the smalltalk allowlist with substring matching. Uncertain
+  input and appended instructions must fall back to RAG.
+- Short-term memory is bounded by `CHAT_HISTORY_MAX_MESSAGES`.
+- Query transformation uses the same bounded history and per-message character
+  limit without an extra LLM call. It runs only when enabled; errors and empty
+  rewrites fall back to the original question. Generation and persistence keep
+  the original user question.
+- Query deduplication preserves order. Multi-query retrieval uses stable
+  `chunk_id` metadata and RRF (`K=60`), deterministic tie-breaking, and a final
+  `2 * TOP_K` limit. Do not collapse identical text from different sources or
+  replace exact vector search with hybrid/ANN retrieval.
+- Keep the existing per-query FlashRank path unchanged unless a separately
+  evaluated change explicitly moves to global reranking.
+
 ## Development and validation
 
 ```bash
@@ -337,11 +484,25 @@ model clients. They cover collection/document CRUD, SSE chat, persistence,
 ratings, prompts, upload validation, explicit vector/tabular jobs, lazy
 vector-engine dispatch, real CSV-to-SQLite ingestion, read-only SQL, SPA
 fallback, Gemma task prompts, safe precision, MRL validation, old-collection
-dimension protection, RRF ordering, history-aware follow-up retrieval, and smalltalk
-injection fallback. No model download, Docker, or llama.cpp server is needed
-for these tests.
+dimension protection, RRF ordering, history-aware follow-up retrieval, and
+smalltalk injection fallback. No model download, Docker, or llama.cpp server is
+needed for these tests.
 
-See [CLAUDE.md](CLAUDE.md) for implementation conventions.
+Frontend tests cover SSE chunk parsing, formatting, and distinct
+vector/tabular ingestion totals; the production build also checks TypeScript.
+When changing retrieval, test empty tables, persistence, source deletion,
+rename, and dimension mismatches. Multi-query tests must cover RRF agreement,
+query-order independence, source-aware deduplication, and both query paths.
+Follow-up tests must cover bounded history, disabled transformation, and
+fallbacks.
+
+When changing the API, test browser-facing behavior through `TestClient`,
+including error status codes and SSE events. For LLM changes, verify all
+construction still goes through `create_llm()`. Smalltalk tests must cover
+whole-message matching, prompt-injection fallback, system-message isolation,
+and Q&A-memory exclusion. Ingestion tests must cover explicit dispatch,
+per-file failures, real CSV-to-SQLite queries, and the guarantee that
+tabular-only uploads do not construct a vector engine.
 
 ## License
 
