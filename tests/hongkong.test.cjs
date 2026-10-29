@@ -383,6 +383,23 @@ test('Hong Kong buses use a detailed two-deck model with instanced wheels and de
   assert.doesNotMatch(traffic, /busGlass|busRoof/);
 });
 
+test('Hong Kong bus doors and side destination sign face the left-hand-traffic kerb', () => {
+  const actor = read('js/actor-models.js');
+  const materialStart = actor.indexOf('function createHongKongBusMaterial()');
+  const material = actor.slice(materialStart, actor.indexOf('const HELI_PARTS', materialStart));
+  assert.ok(materialStart > 0);
+  assert.match(material, /const curb = step\(0\.0, p\.x\)/, 'model front is +z, so the left kerb side is +x');
+  assert.match(material, /const d0 = door\(s\.frontDoor\[0\], s\.frontDoor\[1\]\)/);
+  assert.match(material, /const d1 = door\(s\.middleDoor\[0\], s\.middleDoor\[1\]\)/);
+  assert.match(material, /driverWin[\s\S]*?one\.sub\(curb\)/, 'right-hand-drive cab stays opposite the doors');
+
+  const signStart = actor.indexOf('function buildHongKongBusSignGeometry()');
+  const signs = actor.slice(signStart, actor.indexOf('let _hkBusLoftedMat', signStart));
+  assert.ok(signStart > 0);
+  assert.match(signs, /rotateY\(Math\.PI \/ 2\)/);
+  assert.match(signs, /side\.translate\(carBodyHalfWidthAt\(s, 4\.15, 2\.43\) \+ 0\.008, 2\.43, 4\.15\)/);
+});
+
 test('Hong Kong traffic renders taxis with the catalog body and livery', () => {
   const traffic = read('js/cities/hongkong/traffic.js');
   assert.match(traffic, /from '\.\.\/\.\.\/taxi-styles\.js'/);

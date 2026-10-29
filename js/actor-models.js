@@ -2068,8 +2068,8 @@ function buildHongKongBusSignGeometry() {
   front.rotateX(-Math.atan2(s.rake * 1.25 * 0.62, 2.9));
   front.translate(0, yF, s.zFront - hkBusRake(yF, s.zFront) + 0.014);
   panels.push(front);
-  const side = new THREE.PlaneGeometry(1.4, 0.22).rotateY(-Math.PI / 2);
-  side.translate(-(carBodyHalfWidthAt(s, 4.15, 2.43) + 0.008), 2.43, 4.15);
+  const side = new THREE.PlaneGeometry(1.4, 0.22).rotateY(Math.PI / 2);
+  side.translate(carBodyHalfWidthAt(s, 4.15, 2.43) + 0.008, 2.43, 4.15);
   panels.push(side);
   const rear = new THREE.PlaneGeometry(0.58, 0.22);
   const uv = rear.attributes.uv;
@@ -2096,7 +2096,8 @@ function createHongKongBusMaterial() {
   const front = smoothstep(0.1, 0.35, n.z).mul(step(s.zFront - 0.85, p.z)).mul(isBody);
   const rear = smoothstep(0.1, 0.35, n.z.negate()).mul(step(p.z, s.zRear + 0.85)).mul(isBody);
   const side = smoothstep(0.5, 0.75, abs(n.x)).mul(isBody);
-  const curb = step(p.x, 0.0);
+  // The model faces +z: left / kerb is +x in Hong Kong, while the right-hand-drive cab stays on -x.
+  const curb = step(0.0, p.x);
 
   // Separate lower- and upper-deck windshields, with a centre post only on the lower driver's windshield.
   const frontLowerSeal = roundedRect(vec2(p.x, p.y.sub(1.58)), vec2(1.16, 0.65), 0.13).mul(front);
