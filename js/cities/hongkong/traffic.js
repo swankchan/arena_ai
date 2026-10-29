@@ -6,10 +6,11 @@ import {
   buildCarGeometry,
   createLoftedCarMaterial
 } from '../../actor-models.js';
+import { DEFAULT_TAXI_STYLE, getTaxiStyle } from '../../taxi-styles.js';
 
 // Hong Kong road traffic. Cars follow the generated drivable graph, keep left, and are restaged around the player when
-// they drift beyond the visible halo. Everything is instanced: one draw call for the car bodies, one for the wheels,
-// and two for the double-decker buses.
+// they drift beyond the visible halo. Private cars and taxis each have an instanced body mesh with shared wheels;
+// the double-decker buses use three more meshes.
 
 const LANE_CLEARANCE = 0.42;
 
@@ -56,10 +57,14 @@ function samplePath(points, distances, s) {
   };
 }
 
-export function createHongKongTraffic(scene, { getFocus }) {
+export function createHongKongTraffic(scene, { getFocus, taxiStyle }) {
   const group = new THREE.Group();
   group.name = 'HongKongTraffic';
   scene.add(group);
+
+  const style = getTaxiStyle(taxiStyle) ?? getTaxiStyle(DEFAULT_TAXI_STYLE);
+  const taxiSpec = BODY_SPECS[style?.body] ?? BODY_SPECS.taxi;
+  const taxiPaint = new THREE.Color(style?.paint ?? 0xc6202b);
 
   const nodes = GEO.roadGraph.nodes;
   const graph = GEO.roadGraph.links;
@@ -106,23 +111,112 @@ export function createHongKongTraffic(scene, { getFocus }) {
     return list.length ? list : drivable;
   };
 
-  const TAXI_RED = new THREE.Color(0xb21f2a);
-  const PALETTE = [
-    TAXI_RED, TAXI_RED, new THREE.Color(0xe5e7e3), new THREE.Color(0x171a1e),
-    new THREE.Color(0x8f969c), new THREE.Color(0x26394f), new THREE.Color(0xd6b13c)
+  const PRIVATE_PALETTE = [
+    new THREE.Color(0xe5e7e3),
+    new THREE.Color(0x171a1e),
+    new THREE.Color(0x8f969c),
+    new THREE.Color(0x26394f),
+    new THREE.Color(0xd6b13c)
   ];
 
   const CAR_COUNT = 190;
   const BUS_COUNT = 22;
+  const cars = [];
+  const buses = [];
+  const focus = getFocus;
+  const restageRadius = 620;
+  const createVehicle = (index, kind, taxi = false) => {
+    const nearLinks = linksNear(focus().x, focus().z);
+    const link = drivable[Math.floor(hash(index + (kind === 'bus' ? 501 : 0)) * drivable.length)] ?? 0;
+    const startLink = nearLinks[Math.floor(hash(index + (kind === 'bus' ? 733 : 91)) * nearLinks.length)] ?? link;
+    const s = total[startLink] * hash(index * 3.7);
+    const point = samplePath(paths[startLink], lengths[startLink], s);
+    return {
+      kind, index, link: startLink,
+      point,
+      x: point.x, z: point.z, heading: point.heading, speed: 0,
+      prevX: point.x, prevZ: point.z, prevHeading: point.heading,
+      // Collision shove keeps a struck car visibly displaced from its lane until the offset decays.
+      pushX: 0, pushZ: 0,
+      halfW: kind === 'bus' ? 1.26 : 0.86,
+      halfL: kind === 'bus' ? 5.6 : 2.18,
+      mass: kind === 'bus' ? 12000 : 1600,
+      s, dir: 1,
+      targetSpeed: kind === 'bus' ? 9.5 : 11 + hash(index) * 4.5,
+      followCap: Infinity,
+      taxi,
+      taxiSlot: -1,
+      privateSlot: -1,
+      paint: taxi ? taxiPaint : PRIVATE_PALETTE[index % PRIVATE_PALETTE.length],
+      wheelSpin: 0,
+      restage: 0
+    };
+  };
+
+  for (let i = 0; i < CAR_COUNT; i++) {
+    const taxi = i % 7 < 2;
+    const car = createVehicle(i, 'car', taxi);
+    car.dir = graph[car.link][5] === -1 ? -1 : 1;
+    if (graph[car.link][5] === 0 && hash(i + 17) < 0.5) car.dir = -1;
+    cars.push(car);
+  }
+  for (let i = 0; i < BUS_COUNT; i++) {
+    const bus = createVehicle(i, 'bus');
+    bus.dir = graph[bus.link][5] === -1 ? -1 : 1;
+    if (graph[bus.link][5] === 0 && hash(i + 29) < 0.5) bus.dir = -1;
+    buses.push(bus);
+  }
+
+  // A deterministic handful of cars start in each district so the harbour view and the main streets are alive at once.
+  const seeds = [
+    [20, -29], [343, 283], [1419, 467], [2446, 193], [1316, -1517], [1187, -2580], [1013, -4143]
+  ];
+  for (let i = 0; i < cars.length; i++) {
+    if (i >= 84) break;
+    const [sx, sz] = seeds[i % seeds.length];
+    const near = linksNear(sx, sz);
+    const link = near[Math.floor(hash(i * 3.1 + 7) * near.length)];
+    if (link === undefined) continue;
+    cars[i].link = link;
+    cars[i].s = total[link] * hash(i * 5.7);
+    cars[i].dir = graph[link][5] === -1 ? -1 : (graph[link][5] === 0 && hash(i) < 0.5 ? -1 : 1);
+  }
+
+  // Compact, stable instance slots keep class changes out of the render loop: a car's taxi/private role is fixed.
+  let privateCount = 0;
+  let taxiCount = 0;
+  for (const car of cars) {
+    if (car.taxi) car.taxiSlot = taxiCount++;
+    else car.privateSlot = privateCount++;
+  }
+
   const carGeo = buildCarGeometry(BODY_SPECS.sedan, false);
-  carGeo.setAttribute('paintColor', new THREE.InstancedBufferAttribute(new Float32Array(CAR_COUNT * 3), 3));
-  carGeo.setAttribute('carState', new THREE.InstancedBufferAttribute(new Float32Array(CAR_COUNT * 4), 4));
-  const carMaterial = createLoftedCarMaterial(BODY_SPECS.sedan);
-  const carMesh = new THREE.InstancedMesh(carGeo, carMaterial, CAR_COUNT);
+  carGeo.setAttribute('paintColor', new THREE.InstancedBufferAttribute(new Float32Array(Math.max(1, privateCount) * 3), 3));
+  carGeo.setAttribute('carState', new THREE.InstancedBufferAttribute(new Float32Array(Math.max(1, privateCount) * 4), 4));
+  const carMesh = new THREE.InstancedMesh(carGeo, createLoftedCarMaterial(BODY_SPECS.sedan), Math.max(1, privateCount));
+  carMesh.count = privateCount;
   carMesh.castShadow = true;
   carMesh.receiveShadow = true;
   carMesh.frustumCulled = false;
   carMesh.name = 'HongKongCars';
+
+  const taxiGeo = buildCarGeometry(taxiSpec, false);
+  taxiGeo.setAttribute('paintColor', new THREE.InstancedBufferAttribute(new Float32Array(Math.max(1, taxiCount) * 3), 3));
+  taxiGeo.setAttribute('carState', new THREE.InstancedBufferAttribute(new Float32Array(Math.max(1, taxiCount) * 4), 4));
+  const taxiMesh = new THREE.InstancedMesh(taxiGeo, createLoftedCarMaterial(taxiSpec, null, { livery: style.livery }), Math.max(1, taxiCount));
+  taxiMesh.count = taxiCount;
+  taxiMesh.castShadow = true;
+  taxiMesh.receiveShadow = true;
+  taxiMesh.frustumCulled = false;
+  taxiMesh.name = 'HongKongTaxis';
+
+  const taxiPaintArray = taxiGeo.attributes.paintColor.array;
+  for (let i = 0; i < taxiCount; i++) {
+    taxiPaintArray[i * 3] = taxiPaint.r;
+    taxiPaintArray[i * 3 + 1] = taxiPaint.g;
+    taxiPaintArray[i * 3 + 2] = taxiPaint.b;
+  }
+  taxiGeo.attributes.paintColor.needsUpdate = true;
 
   // Wheels: a single instanced cylinder, four per car, aligned with the body.
   const wheelMesh = new THREE.InstancedMesh(
@@ -159,64 +253,7 @@ export function createHongKongTraffic(scene, { getFocus }) {
   for (let i = 0; i < BUS_COUNT; i++) busBody.setColorAt(i, busColors[i % busColors.length]);
   busBody.instanceColor.needsUpdate = true;
 
-  group.add(carMesh, wheelMesh);
-
-  const cars = [];
-  const buses = [];
-  const focus = getFocus;
-  const restageRadius = 620;
-  const createVehicle = (index, kind) => {
-    const nearLinks = linksNear(focus().x, focus().z);
-    const link = drivable[Math.floor(hash(index + (kind === 'bus' ? 501 : 0)) * drivable.length)] ?? 0;
-    const startLink = nearLinks[Math.floor(hash(index + (kind === 'bus' ? 733 : 91)) * nearLinks.length)] ?? link;
-    const s = total[startLink] * hash(index * 3.7);
-    const point = samplePath(paths[startLink], lengths[startLink], s);
-    return {
-      kind, index, link: startLink,
-      point,
-      x: point.x, z: point.z, heading: point.heading, speed: 0,
-      prevX: point.x, prevZ: point.z, prevHeading: point.heading,
-      // Collision shove keeps a struck car visibly displaced from its lane until the offset decays.
-      pushX: 0, pushZ: 0,
-      halfW: kind === 'bus' ? 1.26 : 0.86,
-      halfL: kind === 'bus' ? 5.6 : 2.18,
-      mass: kind === 'bus' ? 12000 : 1600,
-      s, dir: 1,
-      targetSpeed: kind === 'bus' ? 9.5 : 11 + hash(index) * 4.5,
-      followCap: Infinity,
-      paint: PALETTE[index % PALETTE.length],
-      wheelSpin: 0,
-      restage: 0
-    };
-  };
-
-  for (let i = 0; i < CAR_COUNT; i++) {
-    const car = createVehicle(i, 'car');
-    car.dir = graph[car.link][5] === -1 ? -1 : 1;
-    if (graph[car.link][5] === 0 && hash(i + 17) < 0.5) car.dir = -1;
-    cars.push(car);
-  }
-  for (let i = 0; i < BUS_COUNT; i++) {
-    const bus = createVehicle(i, 'bus');
-    bus.dir = graph[bus.link][5] === -1 ? -1 : 1;
-    if (graph[bus.link][5] === 0 && hash(i + 29) < 0.5) bus.dir = -1;
-    buses.push(bus);
-  }
-
-  // A deterministic handful of cars start in each district so the harbour view and the main streets are alive at once.
-  const seeds = [
-    [20, -29], [343, 283], [1419, 467], [2446, 193], [1316, -1517], [1187, -2580], [1013, -4143]
-  ];
-  for (let i = 0; i < cars.length; i++) {
-    if (i >= 84) break;
-    const [sx, sz] = seeds[i % seeds.length];
-    const near = linksNear(sx, sz);
-    const link = near[Math.floor(hash(i * 3.1 + 7) * near.length)];
-    if (link === undefined) continue;
-    cars[i].link = link;
-    cars[i].s = total[link] * hash(i * 5.7);
-    cars[i].dir = graph[link][5] === -1 ? -1 : (graph[link][5] === 0 && hash(i) < 0.5 ? -1 : 1);
-  }
+  group.add(carMesh, taxiMesh, wheelMesh);
 
   const matrix = new THREE.Matrix4();
   const quat = new THREE.Quaternion();
@@ -314,11 +351,15 @@ export function createHongKongTraffic(scene, { getFocus }) {
       matrix.compose(pos.set(vehicle.x, 4.13, vehicle.z), quat, scaleOne);
       busRoof.setMatrixAt(slot, matrix);
     } else {
-      carMesh.setMatrixAt(slot, matrix);
-      const paint = carMesh.geometry.attributes.paintColor.array;
-      paint[slot * 3] = vehicle.paint.r;
-      paint[slot * 3 + 1] = vehicle.paint.g;
-      paint[slot * 3 + 2] = vehicle.paint.b;
+      if (vehicle.taxi) {
+        taxiMesh.setMatrixAt(vehicle.taxiSlot, matrix);
+      } else {
+        carMesh.setMatrixAt(vehicle.privateSlot, matrix);
+        const paint = carMesh.geometry.attributes.paintColor.array;
+        paint[vehicle.privateSlot * 3] = vehicle.paint.r;
+        paint[vehicle.privateSlot * 3 + 1] = vehicle.paint.g;
+        paint[vehicle.privateSlot * 3 + 2] = vehicle.paint.b;
+      }
       // Wheels are children of the body in spirit: local left/right ±0.79 m, axles ±1.38 m, centre 0.34 m up.
       wheelQuat.setFromAxisAngle(up, vehicle.heading);
       for (let k = 0; k < 4; k++) {
@@ -351,6 +392,7 @@ export function createHongKongTraffic(scene, { getFocus }) {
     for (let i = 0; i < cars.length; i++) renderVehicle(cars[i], i, false);
     for (let i = 0; i < buses.length; i++) renderVehicle(buses[i], i, true);
     carMesh.instanceMatrix.needsUpdate = true;
+    taxiMesh.instanceMatrix.needsUpdate = true;
     wheelMesh.instanceMatrix.needsUpdate = true;
     busBody.instanceMatrix.needsUpdate = true;
     busGlass.instanceMatrix.needsUpdate = true;

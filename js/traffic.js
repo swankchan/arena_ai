@@ -20,6 +20,7 @@ import {
   createBusWheelMaterial,
   createLoftedBusMaterial
 } from './actor-models.js';
+import { DEFAULT_TAXI_STYLE, getTaxiStyle } from './taxi-styles.js';
 
 // Cars and buses follow the road graph, obey signals, yield at crossings and react to collisions.
 // Vehicles replenish around the player; pedestrian-system.js manages the nearby walking population.
@@ -63,6 +64,16 @@ function createBusDestinationTexture() {
 }
 
 const clamp = (x, lo, hi) => Math.max(lo, Math.min(hi, x));
+
+function newYorkTaxiStyle() {
+  const style = getTaxiStyle(DEFAULT_TAXI_STYLE);
+  return {
+    style,
+    spec: BODY_SPECS[style?.body] ?? BODY_SPECS.taxi,
+    livery: style?.livery ?? 'nyc',
+    paint: style?.paint ?? 0xffbe14
+  };
+}
 
 function createTrafficSystem(scene, sidewalks, obstacles, signalIntersections) {
   const group = new THREE.Group();
@@ -138,18 +149,19 @@ function createTrafficSystem(scene, sidewalks, obstacles, signalIntersections) {
   }
 
   // Build 3 distinct 3D LoftGeometry vehicle classes (Taxi, Sedan/NYPD, SUV) with separate spinning 3D wheels
-  const taxiGeo = buildCarGeometry(BODY_SPECS.taxi, false);
+  const nycTaxi = newYorkTaxiStyle();
+  const taxiGeo = buildCarGeometry(nycTaxi.spec, false);
   const sedanGeo = buildCarGeometry(BODY_SPECS.sedan, false);
   const suvGeo = buildCarGeometry(BODY_SPECS.suv, false);
   const carWheelLeftGeo = buildSteerableWheelGeo(BODY_SPECS.sedan, -1);
   const carWheelRightGeo = buildSteerableWheelGeo(BODY_SPECS.sedan, 1);
 
-  const taxiMat = createLoftedCarMaterial(BODY_SPECS.taxi);
+  const taxiMat = createLoftedCarMaterial(nycTaxi.spec, null, { livery: nycTaxi.livery });
   const sedanMat = createLoftedCarMaterial(BODY_SPECS.sedan);
   const suvMat = createLoftedCarMaterial(BODY_SPECS.suv);
   const carWheelMat = createLoftedCarMaterial(BODY_SPECS.sedan, 0xffbe14);
 
-  const taxiYellow = new THREE.Color(0xffbe14);
+  const taxiYellow = new THREE.Color(nycTaxi.paint);
   const policeWhite = new THREE.Color(0xf6f9fc);
   const sedanPalette = [
     new THREE.Color(0x1c2026), // Black Town Car / Uber
@@ -213,7 +225,7 @@ function createTrafficSystem(scene, sidewalks, obstacles, signalIntersections) {
       g.setAttribute('carState', new THREE.InstancedBufferAttribute(new Float32Array(n * 4), 4));
       return new THREE.InstancedMesh(g, mat, n);
     };
-    bodies[kind] = { near: lodMesh(geo), far: lodMesh(buildCarProxyGeometry(BODY_SPECS[kind])) };
+    bodies[kind] = { near: lodMesh(geo), far: lodMesh(buildCarProxyGeometry(kind === 'taxi' ? nycTaxi.spec : BODY_SPECS[kind])) };
   }
   const bodyMeshes = Object.values(bodies).flatMap((b) => [b.near, b.far]);
 
@@ -1369,7 +1381,7 @@ function createTrafficSystem(scene, sidewalks, obstacles, signalIntersections) {
     const rotY = c.yaw + c.yawOffset;
     const sinY = Math.sin(rotY);
     const cosY = Math.cos(rotY);
-    const spec = BODY_SPECS[c.bodyType];
+    const spec = c.bodyType === 'taxi' ? nycTaxi.spec : BODY_SPECS[c.bodyType];
     const forwardDist = (c.x - c.prevX) * sinY + (c.z - c.prevZ) * cosY;
     const rawStep = forwardDist / spec.wheelRadius;
     c.wheelSpin = (c.wheelSpin + Math.sign(rawStep) * Math.min(Math.abs(rawStep), 0.48)) % (Math.PI * 2);
@@ -1511,7 +1523,7 @@ function createTrafficSystem(scene, sidewalks, obstacles, signalIntersections) {
         const v = litVehicles[i];
         const fade = smoothDistFade(v._effDist, vehCutoff * 0.62, vehCutoff);
         if (fade <= 0.001) continue;
-        const spec = v.bus ? BUS_SPEC : BODY_SPECS[v.bodyType];
+        const spec = v.bus ? BUS_SPEC : (v.bodyType === 'taxi' ? nycTaxi.spec : BODY_SPECS[v.bodyType]);
         const fullReach = HEADLIGHTS.distance;
         let maxReach = fullReach;
         if (player.active && v.pAhead > 0 && v.pAhead < 30) {
@@ -1765,9 +1777,10 @@ function createHighwayTraffic(scene, lanes) {
   const group = new THREE.Group();
   group.name = 'HighwayTraffic';
   scene.add(group);
+  const nycTaxi = newYorkTaxiStyle();
   const KINDS = ['taxi', 'sedan', 'suv'];
   const PALETTES = {
-    taxi: [0xffbe14],
+    taxi: [nycTaxi.paint],
     sedan: [0x1c2026, 0xcfd6de, 0x1d3b6c, 0x52575e, 0x6e1f24, 0x8a8f96, 0xe9ecef],
     suv: [0x16191e, 0xf0f3f7, 0x3a434d, 0x28382e, 0xbec6cf, 0x5b2a2a]
   };
@@ -1810,13 +1823,16 @@ function createHighwayTraffic(scene, lanes) {
   // the traffic's cached car material (per-instance paintColor & carState)
   const meshes = {};
   for (const kind of KINDS) {
-    const spec = BODY_SPECS[kind];
+    const spec = kind === 'taxi' ? nycTaxi.spec : BODY_SPECS[kind];
+    const mat = kind === 'taxi'
+      ? createLoftedCarMaterial(spec, null, { livery: nycTaxi.livery })
+      : createLoftedCarMaterial(spec);
     const n = Math.max(1, counts[kind]);
     meshes[kind] = [0, 1, 2].map((lod) => {
       const geo = lod === 2 ? buildCarProxyGeometry(spec) : buildCarGeometry(spec, lod === 0);
       geo.setAttribute('paintColor', new THREE.InstancedBufferAttribute(new Float32Array(n * 3), 3));
       geo.setAttribute('carState', new THREE.InstancedBufferAttribute(new Float32Array(n * 4), 4));
-      const mesh = new THREE.InstancedMesh(geo, createLoftedCarMaterial(spec), n);
+      const mesh = new THREE.InstancedMesh(geo, mat, n);
       mesh.count = 0;
       mesh.frustumCulled = false;
       mesh.castShadow = lod === 0;
@@ -2042,7 +2058,7 @@ function createHighwayTraffic(scene, lanes) {
       const facing = -(dx * sy + dz * cy) / d;
       const k = (Math.min(1, (d - 40) / 80) / (1 + (d / 2000) ** 2)) * ease(dip);
       const size = Math.max(0.6, d * pxAt1m * 3);
-      const spec = BODY_SPECS[c.kind];
+      const spec = c.kind === 'taxi' ? nycTaxi.spec : BODY_SPECS[c.kind];
       for (let e = 0; e < 2; e++) {
         const front = e === 0;
         const w = k * (0.3 + 0.7 * flareFacing(front ? facing : -facing));
@@ -2096,7 +2112,7 @@ function createHighwayTraffic(scene, lanes) {
         const t = clamp((hwyCutoff - c._effDist) / Math.max(1, hwyCutoff * 0.38), 0, 1);
         const fade = (t * t * (3 - 2 * t)) * ease(Math.min(c.u, c.lane.len - c.u));
         if (fade <= 0.001) continue;
-        const spec = BODY_SPECS[c.kind];
+        const spec = c.kind === 'taxi' ? nycTaxi.spec : BODY_SPECS[c.kind];
         const baseInt = HEADLIGHTS.intensity * beamScale * fade;
         // Reuse the exact rendered transform, including the road slope and underpass dip.
         c._mesh.getMatrixAt(c._slot, m4);

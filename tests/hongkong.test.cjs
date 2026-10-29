@@ -263,3 +263,84 @@ test('Hong Kong colliders leave the drivable graph clear', () => {
   assert.ok(blocked < total * 0.04,
     `${(100 * blocked / total).toFixed(2)}% of the drivable graph is inside a collider`);
 });
+
+
+test('the Hong Kong taxi has a dedicated Crown Comfort body spec', () => {
+  const source = read('js/actor-models.js');
+  const start = source.indexOf('BODY_SPECS.hkTaxi');
+  const end = source.indexOf('\nfor (const spec of Object.values(BODY_SPECS))', start);
+  assert.ok(start > 0 && end > start, 'hkTaxi is declared before the spec loop');
+  const hk = source.slice(start, end);
+  assert.match(hk, /name: 'hkTaxi'/);
+  assert.match(hk, /sign: true/);
+  assert.match(hk, /zFront: 2\.25/);
+  assert.match(hk, /zRear: -2\.25/);
+  assert.match(hk, /\[0, 0\.86\]/);
+  assert.match(hk, /roofY: \[\[0\.20, 1\.49\]/);
+  assert.match(hk, /bumpers: \[\[0\.45, 0\.085\], \[0\.48, 0\.09\]\]/);
+  assert.match(source, /BODY_SPECS\.taxi = Object\.assign\(\{\}, BODY_SPECS\.sedan/);
+});
+
+test('the taxi material takes a livery mode and keeps the New York badge gated', () => {
+  const source = read('js/actor-models.js');
+  assert.match(source, /const livery = options\.livery \?\? \(options\.taxiLivery === false \? 'none' : 'nyc'\)/);
+  assert.match(source, /`\$\{spec\.name\}_\$\{fixedColorHex \?\? 'instanced'\}_\$\{livery\}`/);
+  assert.match(source, /spec\.sign && livery === 'nyc'/);
+});
+
+test('the player car resolves body, paint and livery from the taxi catalog', () => {
+  const source = read('js/controllers.js');
+  assert.match(source, /from '\.\/taxi-styles\.js'/);
+  assert.match(source, /getTaxiStyle\(carTheme\.taxiStyle\)/);
+  assert.match(source, /BODY_SPECS\[style\?\.body\]/);
+  assert.match(source, /createLoftedCarMaterial\(spec, paint, \{ livery \}\)/);
+  assert.match(source, /style\?\.plate/);
+  assert.match(source, /style\?\.doorDecal === 'nyc'/);
+});
+
+test('the Hong Kong theme selects the Crown Comfort taxi style', () => {
+  const source = read('js/cities/hongkong/index.js');
+  assert.match(source, /const TAXI_STYLE = 'hk-urban'/);
+  assert.match(source, /taxiStyle: TAXI_STYLE/);
+  assert.doesNotMatch(source, /taxiLivery: false/);
+});
+
+test('Hong Kong livery paints a silver roof, black trim and chrome nose', () => {
+  const source = read('js/actor-models.js');
+  for (const token of ['hkRoof', 'hkLower', 'hkStrip', 'hkGrille', 'hkGrilleSurround', 'hkHeadlightBezel']) {
+    assert.match(source, new RegExp(`const ${token} = livery === 'hk'`), `${token} is livery-gated`);
+  }
+  assert.match(source, /hkRoof/);
+  assert.match(source, /max\(hkLower, hkStrip\)/);
+  assert.match(source, /body = mix\(body, color\(0xf2f4f5\), plateFront\)/);
+  assert.match(source, /one\.sub\(max\(glass, seal, chromeBelt\)\)/);
+});
+
+test('Hong Kong livery adds door lettering, a seat sticker and a roof sign texture', () => {
+  const source = read('js/actor-models.js');
+  assert.match(source, /function hkTaxiSideTexture\(\)/);
+  assert.match(source, /function hkTaxiSignTexture\(\)/);
+  assert.match(source, /c\.width = 2048/);
+  assert.match(source, /TAXI 4 SEATS/);
+  assert.match(source, /的士/);
+  assert.match(source, /const hkDecal = /);
+  assert.match(source, /hkTaxiSideTexture\(\)/);
+  assert.match(source, /hkTaxiSignTexture\(\), vec2/);
+  assert.match(source, /one\.sub\(signU\)/);
+});
+
+test('Hong Kong traffic renders taxis with the catalog body and livery', () => {
+  const traffic = read('js/cities/hongkong/traffic.js');
+  assert.match(traffic, /from '\.\.\/\.\.\/taxi-styles\.js'/);
+  assert.match(traffic, /getTaxiStyle\(taxiStyle\)/);
+  assert.match(traffic, /buildCarGeometry\(taxiSpec, false\)/);
+  assert.match(traffic, /createLoftedCarMaterial\(taxiSpec, null, \{ livery: style\.livery \}\)/);
+  assert.match(traffic, /'HongKongTaxis'/);
+  assert.match(traffic, /taxiSlot/);
+  assert.match(traffic, /privateSlot/);
+  assert.match(traffic, /vehicle\.taxi/);
+  assert.doesNotMatch(traffic, /TAXI_RED/);
+
+  const index = read('js/cities/hongkong/index.js');
+  assert.equal((index.match(/taxiStyle: TAXI_STYLE/g) || []).length, 2, 'theme and traffic call both use the style');
+});

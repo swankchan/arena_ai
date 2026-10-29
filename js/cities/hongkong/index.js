@@ -15,6 +15,8 @@ import {
 // Hong Kong pack: both shores of Victoria Harbour, from Central to Mong Kok, built from real OpenStreetMap blocks,
 // streets and landmark sites. The engine in js/main.js only sees the world object returned by build().
 
+const TAXI_STYLE = 'hk-urban';
+
 export const city = {
   id: 'hongkong',
   name: '香港 Hong Kong',
@@ -39,7 +41,7 @@ export const city = {
     // The traffic restaging halo follows the camera. CameraSystem is created after build(), so the focus is a mutable
     // point that update() keeps in sync.
     const focus = { x: SPAWN.car.x, z: SPAWN.car.z };
-    const traffic = createHongKongTraffic(scene, { getFocus: () => focus });
+    const traffic = createHongKongTraffic(scene, { getFocus: () => focus, taxiStyle: TAXI_STYLE });
     markInit?.('traffic');
 
     const harbour = createHongKongHarbour(scene);
@@ -69,11 +71,8 @@ export const city = {
       defaultMode: city.defaultMode,
       theme: {
         car: {
-          paint: 0xc6202b,
           label: '香港的士',
-          taxiLivery: false,
-          nycDoorDecals: false,
-          plate: 'hk'
+          taxiStyle: TAXI_STYLE
         }
       },
       entityLabels: {

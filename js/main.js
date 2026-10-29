@@ -11,6 +11,7 @@ import { CameraSystem, CAMERA_PRESETS } from './cameras.js';
 import { LightingSystem } from './lighting.js';
 import { createTeleportTo } from './teleport.js';
 import { CITIES, getCity } from './cities/registry.js';
+import { getTaxiStyle } from './taxi-styles.js';
 
 // Application shell: home-screen city picker, renderer setup, HUD wiring and the frame loop.
 // City-specific world building lives in js/cities/<id>/index.js.
@@ -44,7 +45,18 @@ function renderCityCards() {
     cta.className = 'city-card-cta';
     cta.textContent = 'Enter city →';
 
-    card.append(badge, name, tagline, description, cta);
+    const taxiStyle = getTaxiStyle(city.taxiStyle);
+    if (taxiStyle) {
+      const taxi = document.createElement('span');
+      taxi.className = 'city-card-taxi';
+      const dot = document.createElement('span');
+      dot.className = 'city-card-taxi-dot';
+      dot.style.background = `#${taxiStyle.paint.toString(16).padStart(6, '0')}`;
+      taxi.append(dot, document.createTextNode(taxiStyle.label));
+      card.append(badge, name, tagline, description, taxi, cta);
+    } else {
+      card.append(badge, name, tagline, description, cta);
+    }
     card.addEventListener('click', () => startCity(city.id));
     list.appendChild(card);
   }

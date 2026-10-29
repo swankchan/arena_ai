@@ -34,6 +34,7 @@ function keyboardHarness(nyc = {}) {
       './city-config.js': config,
       './tsl-materials.js': {},
       './actor-models.js': {},
+      './taxi-styles.js': {},
       './pedestrians.js': {},
       './vehicle-lights.js': {},
       './landmarks.js': {}

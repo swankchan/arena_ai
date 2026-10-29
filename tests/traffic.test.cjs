@@ -259,3 +259,14 @@ test('crossing pedestrians fall back to a sidewalk when nearby crosswalks are un
   assert.equal(ped.node, null);
   assert.equal(ped.z, 210);
 });
+
+
+test('New York AI taxis resolve body, livery and paint from the catalog', () => {
+  const traffic = readFileSync(join(__dirname, '../js/traffic.js'), 'utf8');
+  assert.match(traffic, /import \{ DEFAULT_TAXI_STYLE, getTaxiStyle \} from '\.\/taxi-styles\.js';/);
+  assert.match(traffic, /function newYorkTaxiStyle\(\)/);
+  assert.match(traffic, /BODY_SPECS\[style\?\.body\] \?\? BODY_SPECS\.taxi/);
+  assert.match(traffic, /livery: style\?\.livery \?\? 'nyc'/);
+  assert.match(traffic, /paint: style\?\.paint \?\? 0xffbe14/);
+  assert.equal((traffic.match(/const nycTaxi = newYorkTaxiStyle\(\)/g) || []).length, 2);
+});

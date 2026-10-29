@@ -19,6 +19,7 @@ import {
   buildHelicopterTailRotorGeometry,
   createLoftedHelicopterMaterial
 } from './actor-models.js';
+import { DEFAULT_TAXI_STYLE, getTaxiStyle } from './taxi-styles.js';
 import { PersonCrowd, PersonRig } from './pedestrians.js';
 import { HEADLIGHTS, createVehicleHeadlight, placeVehicleHeadlight } from './vehicle-lights.js';
 import { bryantParkLawn } from './landmarks.js';
@@ -496,7 +497,7 @@ class ThirdPersonControllerManager {
   }
 
   // =========================================================================
-  // 2. CAR (3D LOFTED SCULPTED NYC MEDALLION YELLOW TAXI SEDAN)
+  // 2. CAR (REGION-SPECIFIC LOFTED TAXI)
   // =========================================================================
   createCarEntity() {
     const carTheme = this.theme?.car ?? {};
@@ -506,10 +507,14 @@ class ThirdPersonControllerManager {
     const chassisPivot = new THREE.Group();
     root.add(chassisPivot);
 
-    const spec = BODY_SPECS.taxi;
-    const taxiLoftMat = createLoftedCarMaterial(spec, carTheme.paint ?? 0xffbe14, {
-      taxiLivery: carTheme.taxiLivery !== false
-    });
+    const style = getTaxiStyle(carTheme.taxiStyle) ?? getTaxiStyle(DEFAULT_TAXI_STYLE);
+    const spec = BODY_SPECS[style?.body] ?? BODY_SPECS.taxi;
+    const paint = carTheme.paint ?? style?.paint ?? 0xffbe14;
+    const livery = style?.livery ?? (carTheme.taxiLivery === false ? 'none' : 'nyc');
+    const plateMode = carTheme.plate ?? style?.plate ?? 'nyc';
+    const doorDecal = carTheme.nycDoorDecals === false ? null : (style?.doorDecal === 'nyc' ? 'nyc' : null);
+
+    const taxiLoftMat = createLoftedCarMaterial(spec, paint, { livery });
 
     // 1. 3D Lofted Taxi Body + Curved Windscreens + Crowned Roof + Side Mirrors + Roof Sign
     const carBodyGeo = buildCarGeometry(spec, false);
@@ -518,8 +523,8 @@ class ThirdPersonControllerManager {
     carBodyMesh.receiveShadow = true;
     chassisPivot.add(carBodyMesh);
 
-    // 2. City door decals: New York's T&LC medallion badge, or a plain Hong Kong urban-taxi door.
-    if (carTheme.nycDoorDecals !== false) {
+    // 2. Optional physical New York T&LC door badges; Hong Kong lettering lives in the body material.
+    if (doorDecal === 'nyc') {
       const doorDecalTex = createTaxiDoorDecalTexture();
       const doorDecalMat = new THREE.MeshStandardNodeMaterial({
         map: doorDecalTex,
@@ -537,7 +542,7 @@ class ThirdPersonControllerManager {
     }
 
     // 3. Bumper plates: Hong Kong's white front / yellow rear plates, or New York's Empire Gold pair.
-    if (carTheme.plate === 'hk') {
+    if (plateMode === 'hk') {
       const frontPlateMat = new THREE.MeshStandardNodeMaterial({ map: createHKLicensePlateTexture(false), roughness: 0.34 });
       const rearPlateMat = new THREE.MeshStandardNodeMaterial({ map: createHKLicensePlateTexture(true), roughness: 0.34 });
       const rearPlate = new THREE.Mesh(new THREE.BoxGeometry(0.32, 0.14, 0.02), rearPlateMat);
@@ -584,7 +589,7 @@ class ThirdPersonControllerManager {
     }
 
     // 5. Ground contact shadow and paired headlight spotlights
-    const carShadowGeo = new THREE.PlaneGeometry(2.22, 5.05);
+    const carShadowGeo = new THREE.PlaneGeometry(spec.halfWidth[2][1] * 2 + 0.36, spec.zFront - spec.zRear + 0.55);
     carShadowGeo.rotateX(-Math.PI * 0.5);
     const carShadow = new THREE.Mesh(carShadowGeo, createContactShadowMaterial());
     carShadow.position.set(0, 0.02, 0.0);

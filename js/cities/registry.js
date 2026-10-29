@@ -3,6 +3,7 @@
 export const CITIES = [
   {
     id: 'newyork',
+    taxiStyle: 'nyc-medallion',
     name: 'New York',
     short: 'NYC',
     badge: 'Full detail',
@@ -12,6 +13,7 @@ export const CITIES = [
   },
   {
     id: 'hongkong',
+    taxiStyle: 'hk-urban',
     name: '香港 Hong Kong',
     short: 'HK',
     badge: 'Full detail',
@@ -21,6 +23,7 @@ export const CITIES = [
   },
   {
     id: 'grid',
+    taxiStyle: 'nyc-medallion',
     name: 'Grid City',
     short: 'GRID',
     badge: 'Demo',

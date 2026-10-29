@@ -80,6 +80,18 @@ Cities are packs loaded on demand:
 
 Without a `player` adapter the controllers use Manhattan's real blocks and shoreline. New York keeps exactly that behaviour.
 
+## Taxi styles
+
+A city's taxi is a catalog entry in `js/taxi-styles.js` plus a body in `BODY_SPECS` (`js/actor-models.js`). A style names its body, paint, shader livery, plate mode and optional door decal. The player car and the city's AI traffic both resolve the same entry.
+
+To add a region's taxi:
+
+1. Add a `BODY_SPECS` entry for the body.
+2. Add a `TAXI_STYLES` entry in `js/taxi-styles.js`.
+3. Set `taxiStyle` on the city card in `js/cities/registry.js` and in the city theme's `car` object.
+
+Hong Kong uses `hk-urban` (`BODY_SPECS.hkTaxi`, livery `hk`); New York uses `nyc-medallion` (`BODY_SPECS.taxi`, livery `nyc`).
+
 ## Colliders and traffic
 
 Two rules keep a generated city drivable and its traffic physical:
