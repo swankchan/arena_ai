@@ -13,6 +13,7 @@ import {
 import { createTreeField } from '../../trees.js';
 import { segmentWall, lotObb } from './colliders.js';
 import { AREA_LABELS } from './meta.js';
+import { createHongKongTrafficAids } from './traffic-aids.js';
 
 // The Hong Kong static world: real land, blocks, lots, parks and landmark sites from OpenStreetMap, with every
 // building generated procedurally inside its real lot. No OSM building footprint is used for ordinary buildings.
@@ -231,7 +232,7 @@ function styleFor(styleList, glass, h, x, z) {
   return styleList[2];
 }
 
-function createStreetProps(root, roadSamples, lampSamples) {
+function createStreetProps(root, lampSamples) {
   // Lamps: a dark pole with a warm head. Instanced, one draw call per part.
   if (lampSamples.length) {
     const pole = new THREE.InstancedMesh(
@@ -272,47 +273,8 @@ function createStreetProps(root, roadSamples, lampSamples) {
     }
   }
 
-  // Lane dashes: Hong Kong's white centre lines, only on roads wide enough to carry two lanes.
-  const dashes = [];
-  for (const road of roadSamples) {
-    if (road.width < 10) continue;
-    const flat = road.flat;
-    let carry = 0;
-    for (let i = 2; i + 1 < flat.length; i += 2) {
-      const x1 = flat[i - 2], z1 = flat[i - 1], x2 = flat[i], z2 = flat[i + 1];
-      const dx = x2 - x1, dz = z2 - z1;
-      const length = Math.hypot(dx, dz);
-      if (length < 0.01) continue;
-      const angle = Math.atan2(dx, dz);
-      let dist = carry;
-      while (dist < length) {
-        if (dist > 2.6) {
-          dashes.push([x1 + (dx * dist) / length, z1 + (dz * dist) / length, angle]);
-        }
-        dist += 10.5;
-      }
-      carry = dist - length;
-    }
-  }
-  if (dashes.length) {
-    const geometry = new THREE.BoxGeometry(0.22, 0.018, 3.1);
-    const material = new THREE.MeshStandardMaterial({
-      color: 0xd8d3c2, roughness: 0.66, metalness: 0.02, emissive: 0x1c1a13, emissiveIntensity: 0.22
-    });
-    const mesh = new THREE.InstancedMesh(geometry, material, dashes.length);
-    const matrix = new THREE.Matrix4();
-    const quat = new THREE.Quaternion();
-    const up = new THREE.Vector3(0, 1, 0);
-    const one = new THREE.Vector3(1, 1, 1);
-    dashes.forEach(([x, z, angle], index) => {
-      quat.setFromAxisAngle(up, angle);
-      matrix.compose(new THREE.Vector3(x, 0.015, z), quat, one);
-      mesh.setMatrixAt(index, matrix);
-    });
-    mesh.receiveShadow = true;
-    mesh.frustumCulled = false;
-    root.add(mesh);
-  }
+  // Surveyed TIS_16 paint is added by createHongKongTrafficAids(). Do not synthesise centre/lane lines from OSM
+  // carriageway widths here: doing so puts plausible but unlocated markings over the official road layout.
 }
 
 // Hong Kong blade signs: coloured panels with vertical Chinese lettering. One canvas per palette keeps the whole
@@ -752,7 +714,7 @@ export function buildHongKongWorld(scene, { setStatus = () => {} } = {}) {
       carry = dist - length;
     }
   }
-  createStreetProps(root, roadSamples, lampSamples);
+  createStreetProps(root, lampSamples);
 
   // -------------------------------------------------------------------------------------------------------------------
   // 6. Trees: park groves and street trees
@@ -830,6 +792,8 @@ export function buildHongKongWorld(scene, { setStatus = () => {} } = {}) {
     return WATER_LEVEL;
   }
 
+  const trafficAids = createHongKongTrafficAids(root, { getGroundHeight });
+
   // The spawn must be on the sidewalk, clear of every generated lot, close to Statue Square.
   let personSpawn = { x: 0, z: 8, heading: 2.4 };
   let bestSpawn = Infinity;
@@ -869,7 +833,8 @@ export function buildHongKongWorld(scene, { setStatus = () => {} } = {}) {
     skippedLots,
     lamps: lampSamples.length,
     trees: treeField.stats.trees,
-    signs: signs.length
+    signs: signs.length,
+    trafficAids: trafficAids.stats
   };
   console.info('[hongkong] static world', stats);
 
@@ -889,6 +854,7 @@ export function buildHongKongWorld(scene, { setStatus = () => {} } = {}) {
     getGroundHeight,
     update,
     treeField,
-    landmarks
+    landmarks,
+    trafficAids
   };
 }

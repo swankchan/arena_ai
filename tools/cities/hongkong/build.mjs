@@ -12,6 +12,7 @@ import { buildRoadGraph } from '../../geo/roadgraph.mjs';
 import { emitGeo } from '../../geo/emit.mjs';
 import { bbox, ringArea } from '../../geo/geom.mjs';
 import { coastlineQuery, landmarksQuery, parksQuery, roadQueries } from './queries.mjs';
+import { buildTrafficAids } from './traffic-aids.mjs';
 
 const DATA = fileURLToPath(new URL('../../data/hongkong/', import.meta.url));
 const DEFAULT_OUT = fileURLToPath(new URL('../../../js/hk-geodata.js', import.meta.url));
@@ -88,6 +89,7 @@ export async function buildHongKong({ outFile = DEFAULT_OUT } = {}) {
   const serviceRoads = surfaced.filter((r) => !r.name && overlapsBounds(flatBBox(r.pts.flat()), core));
   const graphRoads = surfaced.filter((r) => overlapsBounds(flatBBox(r.pts.flat()), core));
   const roadGraph = buildRoadGraph(graphRoads, { merge: 1.0 });
+  const trafficAids = buildTrafficAids({ frame, dataDir: path.join(DATA, 'traffic-aids') });
 
   const points = {};
   const pointNames = {};
@@ -103,7 +105,7 @@ export async function buildHongKong({ outFile = DEFAULT_OUT } = {}) {
   console.log(`[hk] ${parks.length} parks, ${Object.keys(landmarks).length} landmarks, ${mapRoads.length} named road ways (+${serviceRoads.length} service lanes), ${roadGraph.links.length} road links`);
 
   const GEO = {
-    version: 2,
+    version: 3,
     city: 'hongkong',
     frame: {
       bearingDeg: cfg.frame.bearingDeg,
@@ -127,12 +129,13 @@ export async function buildHongKong({ outFile = DEFAULT_OUT } = {}) {
     parks,
     landmarks,
     points,
-    pointNames
+    pointNames,
+    trafficAids
   };
 
   emitGeo(GEO, outFile, {
     title: 'Hong Kong — Victoria Harbour, Central to Causeway Bay and Tsim Sha Tsui to Mong Kok.',
-    sources: 'OpenStreetMap © OpenStreetMap contributors (ODbL); coastline, roads, parks and landmark footprints via Overpass.',
+    sources: 'OpenStreetMap © OpenStreetMap contributors (ODbL); coastline, roads, parks and landmark footprints via Overpass. Hong Kong Transport Department TIS_16 Traffic Aids Drawings (24 April 2026 mirror).',
     note: 'Flat world: the Mid-Levels and the Peak are outside the detailed core.'
   });
   return GEO;

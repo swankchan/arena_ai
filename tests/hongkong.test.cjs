@@ -9,11 +9,17 @@ const CJK = /[\u3400-\u9fff]/;
 let geo;
 let meta;
 let registry;
+let aidGeometry;
+let hkFrame;
 
 test.before(async () => {
   geo = (await import('../js/hk-geodata.js')).GEO;
   meta = await import('../js/cities/hongkong/meta.js');
   registry = await import('../js/cities/registry.js');
+  aidGeometry = await import('../js/cities/hongkong/traffic-aid-geometry.js');
+  const { default: config } = await import('../tools/cities/hongkong/config.mjs');
+  const { makeFrame } = await import('../tools/geo/frame.mjs');
+  hkFrame = makeFrame(config.frame);
 });
 
 test('Hong Kong is a full-detail city pack in the registry', () => {
@@ -417,4 +423,125 @@ test('Hong Kong traffic renders taxis with the catalog body and livery', () => {
 
   const index = read('js/cities/hongkong/index.js');
   assert.equal((index.match(/taxiStyle: TAXI_STYLE/g) || []).length, 2, 'theme and traffic call both use the style');
+});
+
+test('the TIS_16 slice preserves all six layer counts, provenance and WGS84-to-world coordinates', () => {
+  const aids = geo.trafficAids;
+  const manifest = JSON.parse(read('tools/data/hongkong/traffic-aids/source.json'));
+  assert.equal(geo.version, 3);
+  assert.equal(aids.marks.length, 121);
+  assert.equal(aids.crossings.length, 10);
+  assert.equal(aids.yellowBoxes.length, 4);
+  assert.equal(aids.yellowBoxPolygons.length, 0);
+  assert.equal(aids.signals.length, 82);
+  assert.equal(aids.source.sourceUpdated, '2026-04-24');
+  assert.equal(aids.source.publisher, 'Hong Kong SAR Government Transport Department');
+  assert.deepEqual(aids.bbox, [114.1585, 22.2807, 114.1612, 22.2827]);
+  for (const [name, entry] of Object.entries(manifest.layers)) {
+    assert.match(entry.query, new RegExp(`/${entry.layerId}/query\\?`));
+    assert.match(entry.query, /geometry=114\.1585%2C22\.2807%2C114\.1612%2C22\.2827/);
+    assert.match(entry.sha256, /^[0-9a-f]{64}$/);
+    assert.ok(name.startsWith('DTAD_'));
+  }
+
+  const stop = aids.marks.find((mark) => mark.id === 60378 && mark.layer === 'DTAD_RD_MARK_LINE');
+  const [x, z] = hkFrame.toWorld(114.159348, 22.280776);
+  assert.ok(stop, 'the original OBJECTID survives the build');
+  assert.ok(Math.abs(stop.parts[0][0] - x) <= 0.00101);
+  assert.ok(Math.abs(stop.parts[0][1] - z) <= 0.00101);
+});
+
+test('surveyed paint renders every core feature with upward triangles and no invented zebra', () => {
+  const data = aidGeometry.buildTrafficAidPaint(geo.trafficAids);
+  assert.equal(data.stats.sourceRoadMarkFeatures, 121);
+  assert.equal(data.stats.renderedRoadMarkFeatures, 121);
+  assert.equal(data.stats.skippedRoadMarkFeatures, 0);
+  assert.equal(data.stats.renderedCrossingFeatures, 10);
+  assert.equal(data.stats.crossingStripes, 72);
+  assert.equal(data.stats.signalCrossings, 10);
+  assert.equal(data.stats.zebraCrossings, 0, 'no ZIGZAGL/R evidence exists in the Statue Square core');
+  assert.equal(data.stats.openCrossingParts, 0);
+  assert.equal(data.stats.touchingCrossingFaces, 0);
+  assert.equal(data.stats.yellowBoxFeatures, 4);
+  assert.equal(data.stats.yellowBoxPolygons, 0);
+  assert.equal(data.position.length / 3, data.paint.length / 3);
+  assert.equal(data.position.length / 3, data.side.length / 2);
+  assert.equal(data.position.length / 3, data.color.length / 3);
+  assert.ok(data.position.every(Number.isFinite));
+  for (let i = 0; i < data.index.length; i += 3) {
+    const [a, b, c] = data.index.slice(i, i + 3).map((index) => data.position.slice(index * 3, index * 3 + 3));
+    const ux = b[0] - a[0], uz = b[2] - a[2], vx = c[0] - a[0], vz = c[2] - a[2];
+    assert.ok(uz * vx - ux * vz > 0, `paint triangle ${i / 3} must face +Y`);
+  }
+});
+
+test('RM1002 and RM1003 break opposite sides of the digitised direction', () => {
+  for (const [type, leftDuty, rightDuty] of [['RM1002', 1, 1 / 6], ['RM1003', 1 / 6, 1]]) {
+    const data = aidGeometry.buildTrafficAidPaint({
+      marks: [{ id: 1, layer: 'DTAD_RD_MARK_LINE_C', type, parts: [[0, 0, 12, 0]] }],
+      crossings: [], yellowBoxes: [], yellowBoxPolygons: [], signals: []
+    });
+    for (let i = 0; i < data.paint.length; i += 3) {
+      const z = data.position[(i / 3) * 3 + 2];
+      assert.ok(Math.abs(data.paint[i + 2] - (z < 0 ? leftDuty : rightDuty)) < 1e-8,
+        `${type} has the wrong continuous/broken side at z=${z}`);
+    }
+  }
+});
+
+test('crossing faces include only enclosed stripes, including four loose edges, and keep ladder gaps empty', () => {
+  const rings = [
+    [0, 0, 0.5, 0, 0.5, 2, 0, 2, 0, 0],
+    [1.5, 0, 2, 0, 2, 2, 1.5, 2, 1.5, 0]
+  ];
+  const aids = {
+    marks: [], crossings: [{ id: 1, type: 'SOLID', parts: rings }],
+    yellowBoxes: [], yellowBoxPolygons: [], signals: []
+  };
+  const data = aidGeometry.buildTrafficAidPaint(aids);
+  assert.equal(data.stats.crossingStripes, 2);
+  assert.equal(data.stats.signalCrossings, 1);
+  assert.equal(data.stats.touchingCrossingFaces, 0);
+  let area = 0;
+  for (let i = 0; i < data.index.length; i += 3) {
+    const [a, b, c] = data.index.slice(i, i + 3).map((index) => data.position.slice(index * 3, index * 3 + 3));
+    area += Math.abs((b[0] - a[0]) * (c[2] - a[2]) - (b[2] - a[2]) * (c[0] - a[0])) * 0.5;
+  }
+  assert.ok(Math.abs(area - 2) < 1e-8, 'two 0.5 x 2 m stripes and not the 2 x 2 m crossing outline');
+
+  const loose = aidGeometry.crossingFaces([
+    [0, 0, 1, 0], [1, 0, 1, 1], [1, 1, 0, 1], [0, 1, 0, 0]
+  ]);
+  assert.equal(loose.faces.length, 1, 'four surveyed loose edges close one stripe');
+  assert.equal(loose.touching, 0);
+
+  const zebra = aidGeometry.buildTrafficAidPaint({
+    ...aids,
+    marks: [{ id: 2, type: 'ZIGZAGL', parts: [[0, 0, 0, 2]] }]
+  });
+  assert.equal(zebra.stats.zebraCrossings, 1, 'nearby surveyed zigzags are the white-zebra evidence');
+});
+
+test('coincident signal points collapse to assemblies without losing source IDs, codes or angles', () => {
+  const { assemblies, stats } = aidGeometry.clusterSignalPoints(geo.trafficAids.signals);
+  assert.equal(stats.sourceSignalPoints, 82);
+  assert.equal(stats.admittedSignalPoints, 82);
+  assert.equal(stats.refusedSignalPoints, 0);
+  assert.equal(stats.signalAssemblies, 44);
+  assert.equal(stats.collapsedSignalPoints, 38);
+  assert.equal(assemblies.reduce((sum, assembly) => sum + assembly.sourceCount, 0), 82);
+  assert.equal(new Set(assemblies.flatMap((assembly) => assembly.ids)).size, 82);
+  assert.equal(assemblies.flatMap((assembly) => assembly.codes).length, 82);
+  assert.equal(assemblies.flatMap((assembly) => assembly.angles).length, 82);
+});
+
+test('Hong Kong replaces procedural lane dashes with surveyed aids and never invents signal phases', () => {
+  const world = read('js/cities/hongkong/world.js');
+  const aids = read('js/cities/hongkong/traffic-aids.js');
+  assert.match(world, /createHongKongTrafficAids\(root, \{ getGroundHeight \}\)/);
+  assert.doesNotMatch(world, /road\.width < 10/);
+  assert.doesNotMatch(world, /BoxGeometry\(0\.22, 0\.018, 3\.1\)/);
+  assert.match(aids, /HongKongSurveyedRoadPaint/);
+  assert.match(aids, /inert-no-official-phase-data/);
+  assert.doesNotMatch(aids, /SIGNAL_TIMING|avenueAmber|streetAmber/);
 });

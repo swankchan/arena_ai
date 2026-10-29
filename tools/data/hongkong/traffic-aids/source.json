@@ -1,0 +1,67 @@
+{
+  "schema": 1,
+  "dataset": "Traffic Aids Drawings (2nd generation)",
+  "datasetUrl": "https://data.gov.hk/en-data/dataset/hk-td-tis_16-traffic-aids-drawings-v2",
+  "publisher": "Hong Kong SAR Government Transport Department",
+  "mirror": {
+    "name": "Digitized Traffic Aids Drawings in Hong Kong",
+    "itemId": "942c27b1c99c4369a5d1483f706f29ce",
+    "itemUrl": "https://www.arcgis.com/sharing/rest/content/items/942c27b1c99c4369a5d1483f706f29ce?f=pjson",
+    "service": "https://services3.arcgis.com/6j1KwZfY2fZrfNMR/arcgis/rest/services/Digitized_Traffic_Aids_Drawings_in_Hong_Kong/FeatureServer",
+    "sourceUpdated": "2026-04-24",
+    "note": "Public Esri China (Hong Kong) mirror of the Transport Department/CSDI dataset; not represented as the latest monthly extract."
+  },
+  "retrieved": "2026-10-29",
+  "bbox": [
+    114.1585,
+    22.2807,
+    114.1612,
+    22.2827
+  ],
+  "geometryCRS": "EPSG:4326",
+  "geometryPrecision": 6,
+  "layers": {
+    "DTAD_RD_MARK_LINE": {
+      "layerId": 23,
+      "file": "DTAD_RD_MARK_LINE.geojson",
+      "count": 35,
+      "sha256": "6eaeb8ea3cb8e0372a8feba5110e5a029be3bd430f6592eee3a4c11a69749dae",
+      "query": "https://services3.arcgis.com/6j1KwZfY2fZrfNMR/arcgis/rest/services/Digitized_Traffic_Aids_Drawings_in_Hong_Kong/FeatureServer/23/query?where=1%3D1&geometry=114.1585%2C22.2807%2C114.1612%2C22.2827&geometryType=esriGeometryEnvelope&inSR=4326&spatialRel=esriSpatialRelIntersects&outFields=*&returnGeometry=true&outSR=4326&geometryPrecision=6&resultRecordCount=2000&f=geojson"
+    },
+    "DTAD_RD_MARK_LINE_C": {
+      "layerId": 24,
+      "file": "DTAD_RD_MARK_LINE_C.geojson",
+      "count": 86,
+      "sha256": "fe1eedef86267001a3de2032f1de23cf414f7b39d5bf50330f51f7b0f878215d",
+      "query": "https://services3.arcgis.com/6j1KwZfY2fZrfNMR/arcgis/rest/services/Digitized_Traffic_Aids_Drawings_in_Hong_Kong/FeatureServer/24/query?where=1%3D1&geometry=114.1585%2C22.2807%2C114.1612%2C22.2827&geometryType=esriGeometryEnvelope&inSR=4326&spatialRel=esriSpatialRelIntersects&outFields=*&returnGeometry=true&outSR=4326&geometryPrecision=6&resultRecordCount=2000&f=geojson"
+    },
+    "DTAD_TRAFFIC_LIGHT_PT": {
+      "layerId": 30,
+      "file": "DTAD_TRAFFIC_LIGHT_PT.geojson",
+      "count": 82,
+      "sha256": "762150fc8817f4a304a0130586e085a6552c5125e158f2b1874bc76c0f964b1c",
+      "query": "https://services3.arcgis.com/6j1KwZfY2fZrfNMR/arcgis/rest/services/Digitized_Traffic_Aids_Drawings_in_Hong_Kong/FeatureServer/30/query?where=1%3D1&geometry=114.1585%2C22.2807%2C114.1612%2C22.2827&geometryType=esriGeometryEnvelope&inSR=4326&spatialRel=esriSpatialRelIntersects&outFields=*&returnGeometry=true&outSR=4326&geometryPrecision=6&resultRecordCount=2000&f=geojson"
+    },
+    "DTAD_CROSSING_LINE": {
+      "layerId": 21,
+      "file": "DTAD_CROSSING_LINE.geojson",
+      "count": 10,
+      "sha256": "b7d8dbc837e1243a4f2695a4026d13900b975a45052c2dc22d84916ac97fc740",
+      "query": "https://services3.arcgis.com/6j1KwZfY2fZrfNMR/arcgis/rest/services/Digitized_Traffic_Aids_Drawings_in_Hong_Kong/FeatureServer/21/query?where=1%3D1&geometry=114.1585%2C22.2807%2C114.1612%2C22.2827&geometryType=esriGeometryEnvelope&inSR=4326&spatialRel=esriSpatialRelIntersects&outFields=*&returnGeometry=true&outSR=4326&geometryPrecision=6&resultRecordCount=2000&f=geojson"
+    },
+    "DTAD_YL_BOX_LINE": {
+      "layerId": 19,
+      "file": "DTAD_YL_BOX_LINE.geojson",
+      "count": 4,
+      "sha256": "2b01bb8715a569bf7380453720e1a301d6a81723dd5b3852a6d3d806e741c28e",
+      "query": "https://services3.arcgis.com/6j1KwZfY2fZrfNMR/arcgis/rest/services/Digitized_Traffic_Aids_Drawings_in_Hong_Kong/FeatureServer/19/query?where=1%3D1&geometry=114.1585%2C22.2807%2C114.1612%2C22.2827&geometryType=esriGeometryEnvelope&inSR=4326&spatialRel=esriSpatialRelIntersects&outFields=*&returnGeometry=true&outSR=4326&geometryPrecision=6&resultRecordCount=2000&f=geojson"
+    },
+    "DTAD_YL_BOX_POLY": {
+      "layerId": 20,
+      "file": "DTAD_YL_BOX_POLY.geojson",
+      "count": 0,
+      "sha256": "977f4e08f2fc6ec1e7e0ec2bd6d95dcc8071562f761dcd1ff102bc627578526f",
+      "query": "https://services3.arcgis.com/6j1KwZfY2fZrfNMR/arcgis/rest/services/Digitized_Traffic_Aids_Drawings_in_Hong_Kong/FeatureServer/20/query?where=1%3D1&geometry=114.1585%2C22.2807%2C114.1612%2C22.2827&geometryType=esriGeometryEnvelope&inSR=4326&spatialRel=esriSpatialRelIntersects&outFields=*&returnGeometry=true&outSR=4326&geometryPrecision=6&resultRecordCount=2000&f=geojson"
+    }
+  }
+}
