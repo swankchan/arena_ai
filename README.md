@@ -1,509 +1,121 @@
-# RAG Knowledge Base
+# Slop New York
 
-A local-first retrieval-augmented generation application with a **React +
-TypeScript frontend**, **FastAPI backend**, embedded **LanceDB**, and a local
-GGUF model served by **llama.cpp**. No Docker or external vector-database server
-is required.
+A city simulation built with [three.js](https://threejs.org/), WebGPURenderer, and TSL. Pick a city on the home screen and explore it on foot, by car, by bicycle, or by helicopter.
 
-## Features
+[Try it live](https://mrdoob.github.io/slop-newyork/)
 
-- Decoupled SPA and JSON/SSE API with an OpenAPI schema.
-- Document collections backed by local LanceDB tables.
-- PDF, HTML, TXT, and DOCX ingestion into the vector index.
-- CSV, XLSX, and XLS ingestion into SQLite for SQL/Pandas analysis.
-- Background ingestion jobs with explicit vector/tabular progress and results.
-- Exact cosine retrieval with optional FlashRank reranking.
-- Task-prompted EmbeddingGemma 2 embeddings with normalized 768d vectors.
-- Request-scoped query transformation and expansion.
-- Streaming answers, sources, metrics, and conversation memory.
-- Guarded smalltalk for common greetings, thanks, and feedback.
-- Natural-language and read-only direct SQL analysis for tabular data.
-- SQLite conversations, Q&A history, ratings, and system prompts.
-- Responsive collection, thread, document, and prompt management.
+## Cities
 
-## Architecture
+- **New York** — the full-detail world: every Manhattan block from 125th St to the Battery, real landmarks, subway entrances, avenue traffic signals, environmental audio synthesis, street map and minimap, and 11 camera presets (including the scenic and aerial rigs).
+- **Hong Kong** — the full-detail harbour city: Central, Admiralty, Wan Chai, Causeway Bay, Tsim Sha Tsui, Jordan, Yau Ma Tei and Mong Kok, built from OpenStreetMap blocks and streets with Chinese names, neon blade signs, red urban taxis, trams, the Star Ferry, harbour water, street map and minimap, and nine camera presets.
+- **Grid City** — a procedural 7×7 downtown generated in code at load: sidewalks, glass and stone towers, a central plaza with fountain, trees, street lamps and four teleport destinations. It has no external map data, map overlay or audio, and offers the three follow cameras.
 
-```text
-React SPA ── REST + SSE ── FastAPI ── RAGEngine
-                              ├── LanceDB
-                              ├── SQLite
-                              └── llama.cpp
-```
+Add `?city=hongkong` (or `?city=grid`, `?city=newyork`) to the URL to skip the picker.
 
-The browser only calls relative `/api` URLs. It never connects directly to
-LanceDB, SQLite, or llama.cpp.
+## Controls
 
-| Path | Responsibility |
+| Input | Action |
 | --- | --- |
-| `backend/main.py` | FastAPI composition, CORS, lifespan, and SPA serving |
-| `backend/api/` | Typed HTTP and SSE endpoints |
-| `backend/schemas.py` | Pydantic request contracts |
-| `backend/services/` | Engine cache, collection operations, uploads, and jobs |
-| `backend/services/engine_manager.py` | Lazy model and engine cache |
-| `backend/services/jobs.py` | In-process ingestion jobs |
-| `backend/services/ingestion.py` | Explicit vector/tabular dispatch and per-file results |
-| `backend/services/content_metadata.py` | Bounded vector excerpts and tabular schemas for summaries |
-| `backend/services/smalltalk.py` | Smalltalk router and isolated guard |
-| `backend/services/telemetry.py` | Shared token estimates and throttled live metrics |
-| `backend/services/summaries.py` | Automatic collection descriptions |
-| `backend/embeddings.py` | Lazy Gemma loading and task-specific prompts |
-| `backend/rag_engine.py` | Vector-only ingestion, retrieval, query optimization, and generation |
-| `backend/lance_store.py` | Embedded tables and exact vector search |
-| `backend/db.py` | SQLite persistence |
-| `backend/tabular_engine.py` | CSV/Excel loading, SQLite storage, Text-to-SQL, and pandas analysis |
-| `frontend/` | React, Vite, and TypeScript single-page application |
-| `frontend/src/api.ts` | Relative-URL API client and SSE entry point |
-| `frontend/src/components/` | Independent React workspaces |
-| `tests/` | Real LanceDB/SQLite API tests with deterministic engines |
+| `1` `2` `3` `4` | Walk, drive, cycle, fly |
+| `5`–`0`, `V` / `Shift+V` | Camera presets, cycle cameras |
+| `W` `A` `S` `D` | Move / steer |
+| `Space` | Jump / ascend |
+| `Q` `C` | Descend (helicopter) |
+| `B` | Horn |
+| `N` | Toggle sound |
+| `M` | Full-screen map |
+| `H` | Hide / show the HUD |
 
-Heavy models are loaded lazily only when an endpoint needs them. Collection
-management and the built frontend can start without downloading an embedding
-model or contacting llama.cpp. Tabular-only uploads construct the SQLite handler
-without initializing RAGEngine or EmbeddingGemma; summary generation uses the
-shared llama.cpp client when no vector engine was needed.
+Touch controls and gamepads are supported. The teleport menu is generated from the active city's destinations.
 
-### Document-query pipeline
+## Development
 
-After collection and conversation validation, allowlisted social messages go to
-the isolated smalltalk responder. Every other message follows this pipeline:
+No build step: the app is native ES modules. Serve the directory over HTTP (the modules will not load from `file://`):
 
-1. Validate the collection and server-side conversation.
-2. Load history from SQLite and persist the user message.
-3. Transform with bounded history and expand with request-scoped options.
-4. Retrieve exact cosine vectors per query, optionally rerank per query, and
-   fuse multiple ranked lists with reciprocal rank fusion (RRF).
-5. Add tabular results, memory, and system prompts.
-6. Stream llama.cpp output over SSE and persist the final answer and Q&A run.
-
-## Requirements
-
-- Python 3.11 or newer.
-- Node.js 22.12 or newer for frontend development and builds.
-- A llama.cpp server with a GGUF model.
-- Local storage for embedding and reranking models.
-
-Node.js is **not** required in production after `frontend/dist` has been built.
-
-## Quick start
-
-### 1. Install and build
-
-```bash
-python -m venv .venv
-source .venv/bin/activate
-pip install -r requirements.txt
-cp .env.example .env
-
-cd frontend
-npm ci
-npm run build
-cd ..
+```sh
+npx serve .
 ```
 
-If you use the existing Conda environment, run `conda activate rag` before
-installing the Python dependencies.
+Run the test suite with Node:
 
-### 2. Start llama.cpp
-
-```bash
-llama-server \
-  -m /path/to/model.gguf \
-  --port 8080 \
-  --alias local-model
+```sh
+node --test "tests/*.test.cjs"
 ```
 
-Verify the OpenAI-compatible endpoint:
+## Adding a city
 
-```bash
-curl http://localhost:8080/v1/models
-```
+Cities are packs loaded on demand:
 
-Set `LLAMA_CPP_MODEL` if you choose another model alias.
+1. Add a card to `js/cities/registry.js` with a dynamic loader:
 
-### 3. Start the application
+   ```js
+   {
+     id: 'mycity',
+     name: 'My City',
+     short: 'MC',
+     badge: 'Demo',
+     tagline: 'One line for the home screen',
+     description: 'A sentence about the world.',
+     load: () => import('./mycity/index.js')
+   }
+   ```
 
-For normal use or production, run **one** backend server without auto-reload:
+2. Create `js/cities/mycity/index.js` exporting `city` with metadata (`id`, `name`, `short`, `storageKey`) and `build({ scene, renderer, lightingSystem, markInit, setStatus })`.
 
-```bash
-uvicorn backend.main:app --host 0.0.0.0 --port 8000
-```
+`build()` returns a world object. Required: `colliders`. Optional:
 
-Open `http://localhost:8000`. FastAPI serves the React build and API from the
-same origin. Interactive API documentation is available at `/docs`.
-
-## Development servers
-
-The development command below is an **alternative** to the normal command
-above, not an additional step. Stop the normal server first because both
-commands listen on port 8000. The `--reload` option automatically restarts the
-backend after Python code changes and is not needed for normal use.
-
-For development only, run the backend and Vite in separate terminals:
-
-```bash
-uvicorn backend.main:app --reload --host 0.0.0.0 --port 8000
-```
-
-```bash
-cd frontend
-npm run dev
-```
-
-Open `http://localhost:5173`. Vite proxies `/api` to port 8000, while browser
-code continues to use relative URLs. Configure `CORS_ORIGINS` if you use a
-different frontend origin without the proxy.
-
-## API overview
-
-| Area | Endpoints |
+| Field | Purpose |
 | --- | --- |
-| Health/config | `GET /api/health`, `GET /api/health/llm`, `GET /api/config` |
-| Collections | `GET/POST /api/collections`; `GET .../{name}/summary`; `PATCH/DELETE` by name |
-| Documents | `GET/POST/DELETE /api/collections/{name}/documents` |
-| Ingestion jobs | `GET /api/jobs/{id}` |
-| Chat | `POST /api/collections/{name}/chat` |
-| Conversations | `GET/POST /api/collections/{name}/conversations` |
-| Messages | `GET` messages; `DELETE` conversation by ID |
-| Q&A/ratings | `/api/collections/{name}/qa-runs`, `/api/qa-runs/{id}` |
-| Prompts | `GET/POST /api/prompts`, `PATCH/DELETE /api/prompts/{id}` |
-| Tabular | `/api/collections/{name}/tabular/files` and `/tabular/query` |
+| `spawn(mode)` | Per-mode starting point `{ x, z, heading?, y? }` |
+| `update(dt, elapsed, { cameraSystem, controllerManager })` | Per-frame city systems |
+| `updateCulling(cameraPosition)` | Distance / chunk culling |
+| `dynamicRoots` | Moving hierarchies whose matrices are finalized after updates |
+| `teleports` | `{ id, name, sub, x, z, heading }` entries for the teleport menu |
+| `cameraPresets` | Subset of camera ids (`chase`, `action`, `pov`, plus scenic ids) |
+| `roadNames`, `placeNames`, `locationLabel(x, z)` | Street-corner HUD labels |
+| `defaultMode` | Initial mode (`person`, `car`, `cyclist`, `helicopter`) |
+| `entityLabels` | Rename the shared actors in the HUD |
+| `player` | Ground adapter: `{ bounds, getGroundHeight(x, z, mode), isPointOnSidewalk(x, z) }` |
+| `createMap(...)`, `createAudio(...)` | Optional map overlay and audio system |
 
-The topbar Backend and LLM indicators are independent. Backend uses
-`/api/health`; LLM health makes a server-side request to the configured
-llama.cpp `/models` endpoint with a two-second timeout and returns HTTP 200 with
-`{"connected": false}` when unavailable. The browser stays on relative `/api`
-URLs, and `LLAMA_CPP_API_KEY` is never sent to the SPA.
+Without a `player` adapter the controllers use Manhattan's real blocks and shoreline. New York keeps exactly that behaviour.
 
-Chat uses Server-Sent Events with `meta`, `reasoning`, `answer`, `metrics`,
-`final`, and `error` events. During generation, throttled `metrics` events show
-a live estimated tokens/s rate at most once every 250 ms. The estimate uses
-streamed text and elapsed request time, including query optimization,
-retrieval, and other RAG work; it is not provider-reported token usage or a
-pure LLM decode benchmark. The existing `final` metrics remain unchanged after
-completion. The backend loads conversation history and persists completed
-answers; the browser does not supply trusted history.
+## Colliders and traffic
 
-Document upload returns `202 Accepted` and a job ID. Poll the job endpoint for
-queued/running status, progress, and per-file errors. Each job reports
-`processed_files`, `vector_files`, `tabular_files`, `total_chunks`, `total_rows`,
-and `file_results` with each file's `kind` and status. `total_chunks` counts only
-vector documents; `total_rows` counts tabular input. CSV/Excel files are not
-also embedded into LanceDB, so a successful tabular file reports its row and
-column counts instead of a misleading standalone `0 chunks` result. Jobs are
-transient and process-local, so no Redis or external queue is needed.
+Two rules keep a generated city drivable and its traffic physical:
 
-### Automatic collection descriptions
+**Colliders must match visible geometry.** Entries in `world.colliders` are axis-aligned boxes unless they provide an `obb`. `js/controllers.js` uses `obb` in its narrow phase, so rotated buildings and diagonal seawalls must supply one; an AABB around a rotated rectangle reaches into the street and feels like an invisible wall. Landmarks and props that are rendered as axis-aligned boxes can stay AABBs. Verify clearance against the real drivable graph by sampling link centre lines and asserting that collider overlaps stay near zero (see `tests/hongkong.test.cjs`). Hong Kong's AABB colliders covered 27% of wide-road centre-line metres; with oriented footprints it is ~1.6%, and the remainder is visible landmark geometry.
 
-After a successful upload batch, llama.cpp generates one short sentence describing
-the current collection and saves it in SQLite. The description appears below the
-collection name in the topbar; there is no manual description field. It is
-regenerated after vector-document or tabular-file deletion, preserved across
-collection renames, and cleared when no content remains. Existing collections
-receive a description after their next successful ingestion.
+**Traffic keeps its route; contacts come from the shared solver.** Cars advance kinematically along the road graph, then resolve car-to-car and car-to-player contacts with `js/vehicle-physics.js` (`vehicleContact`, `sweptVehicleContact`, `resolveVehicleContact`), exactly as New York does. Keep a contact correction as a decaying positional `push` so a struck car visibly moves but settles back into its lane instead of leaving the graph. Pass `controllerManager` through the city `update` and run the traffic collision pass after the controllers have moved the player.
 
-Generation uses bounded source-diverse document excerpts and tabular schemas,
-not the entire collection. `ContentMetadataProvider` isolates those storage
-details from summary generation. A summary failure does not roll back indexed
-data: the job or deletion response includes `summary_error`, and the last successful
-description is retained. `GET /api/collections/{name}/summary` reads the current
-metadata without invoking an LLM.
+Add following before enabling contacts: cap a car's speed by the gap to the leader on the same link and direction. Without it, collision-enabled traffic spends its time rear-ending the car in front. `tests/hongkong-collision.test.cjs` covers separation, momentum, player push-out, helicopter/distance ignores, and following caps.
 
-### Smalltalk routing
+## Geographic data
 
-Short, whole-message allowlisted greetings, thanks, and feedback use a dedicated
-system guard with the same llama.cpp model. This path does not initialize the
-RAG engine or embeddings, read conversation history, retrieve documents, call
-SQL/tools, or create Q&A history and long-term-memory entries. The messages
-remain in their conversation thread.
+New York's geometry is generated from NYC Open Data, MTA subway entrances, NYC Parks and © OpenStreetMap contributors, then baked into `js/nyc-geodata.js`.
 
-Any additional instructions or uncertain input use the normal RAG path. The
-allowlist is deliberately conservative, so unrecognized social phrasing may
-still receive a grounded response. Prompt guards are not a substitute for
-authentication, authorization, or backend permission checks.
+To rebuild it (requires the source extracts in `tools/data`, see `tools/build-geodata.mjs`):
 
-## Configuration
-
-Configuration is loaded from `.env`. Defaults match `.env.example`.
-
-| Variable | Default | Purpose |
-| --- | --- | --- |
-| `LLAMA_CPP_BASE_URL` | `http://localhost:8080/v1` | llama.cpp API base URL |
-| `LLAMA_CPP_MODEL` | `local-model` | Model alias sent in API requests |
-| `LLAMA_CPP_API_KEY` | `not-needed` | Placeholder or configured server key |
-| `EMBEDDING_MODEL` | `google/embeddinggemma-2` | Hugging Face embedding model |
-| `EMBEDDING_DIMS` | `768` | Native size; MRL also supports 512, 256, 128 |
-| `EMBEDDING_BATCH_SIZE` | `32` | Texts encoded per model batch |
-| `EMBEDDING_TEXT_ONLY` | `true` | Skip unused vision/audio encoders |
-| `EMBEDDING_DEVICE` | Auto | Optional `cpu`, `cuda`, `cuda:0`, or `mps` |
-| `LANCEDB_PATH` | `./lance_db` | Embedded vector-store directory |
-| `CHUNK_SIZE` | `1000` | Recursive chunk size |
-| `CHUNK_OVERLAP` | `100` | Recursive chunk overlap |
-| `CHUNKING_STRATEGY` | `recursive` | `recursive` or `semantic` |
-| `TOP_K` | `4` | Retrieved result count |
-| `RERANKING` | `true` | Enable FlashRank reranking |
-| `RERANK_MODEL` | `ms-marco-MiniLM-L-12-v2` | FlashRank model |
-| `QUERY_TRANSFORMATION` | `true` | Default query clarification setting |
-| `QUERY_EXPANSION` | `true` | Default query expansion setting |
-| `LONG_TERM_MEMORY_TOP_K` | `3` | Past Q&A memory limit |
-| `CHAT_HISTORY_MAX_MESSAGES` | `12` | Short-term history message limit |
-| `CHAT_HISTORY_MAX_CHARS_PER_MESSAGE` | `2000` | Per-message history limit |
-| `DOCUMENTS_DIRECTORY` | `./documents` | Upload and tabular-data root |
-| `APP_DB_PATH` | `./rag_app.db` | Application SQLite database |
-| `FRONTEND_DIST` | `./frontend/dist` | Production SPA build directory |
-| `CORS_ORIGINS` | Local Vite origins | Comma-separated allowed origins |
-| `MAX_UPLOAD_SIZE_MB` | `50` | Per-file upload limit |
-| `MAX_SQL_ROWS` | `1000` | Direct SQL result-row limit |
-| `INGESTION_WORKERS` | `1` | Process-local ingestion worker count |
-
-`LLAMA_CPP_BASE_URL` must include `/v1`, not `/chat/completions`. The placeholder
-API key only satisfies the client when llama.cpp authentication is disabled.
-No API key is exposed through the public configuration endpoint.
-
-## EmbeddingGemma 2
-
-The default model is `google/embeddinggemma-2`. The first embedding request
-downloads it from Hugging Face unless it is already cached. The dependency
-file requires Sentence Transformers 6.1 or newer and Transformers 5.18 or
-newer.
-
-Retrieval uses the model's asymmetric `SearchQuery` and `Document` prompts.
-Documents currently use the built-in untitled-document form. Semantic chunking
-and question-to-question memory use `SentenceSimilarity` instead. All three
-paths share one lazily loaded model and produce normalized vectors.
-
-The current application ingests text, so `EMBEDDING_TEXT_ONLY=true` skips the
-vision and audio encoders and loads the 270M-parameter text encoder instead of
-the full 740M-parameter model. Supported CUDA devices use bfloat16; other
-devices use float32. Float16 is not compatible with this model.
-
-The native vector size is 768. For lower storage usage, `EMBEDDING_DIMS` also
-accepts the MRL sizes 512, 256, and 128. Queries and documents always use the
-same configured size and are normalized after truncation.
-
-### Re-ingesting existing collections
-
-Changing the model does not migrate existing vectors. In particular, old BGE
-collections contain 1024d vectors and cannot be searched with 768d Gemma
-vectors. LanceDB rejects that dimension mismatch rather than silently mixing
-them. Vector spaces from different models are incompatible even when their
-dimensions happen to match.
-
-1. Keep the original documents and the old collection until verification.
-2. Configure the new model and dimension, then restart the API process.
-3. Create a new collection and upload the original documents again.
-4. Verify retrieval, then remove or rename collections as needed.
-
-There is no automatic vector migration or destructive upgrade. Conversation
-text and ratings remain in SQLite, but old embedding-based Q&A memory vectors
-are not recomputed.
-
-## Local data and deployment
-
-- Uploads are stored in `documents/<collection>/`.
-- Tabular SQLite databases live below each collection's `tabular/` directory.
-- LanceDB tables live below `LANCEDB_PATH` with the `rag_` prefix.
-- Application state uses `APP_DB_PATH`.
-- Existing vector and SQLite paths are unchanged by the frontend/backend split.
-
-The current application is a local, single-user, single-node deployment. It
-has no authentication layer. Add authentication and transport security before
-exposing it to an untrusted network. Do not run multiple API replicas against
-the same local LanceDB files, and use one Uvicorn worker for the in-process job
-runner.
-
-Local documents, LanceDB tables, databases, model files, logs, frontend builds,
-and environment files are excluded from Git.
-
-## Retrieval behavior
-
-Searches explicitly bypass vector indexes and use exact cosine kNN. This
-preserves predictable ranking rather than silently enabling quantized ANN.
-Query cost grows with the number of chunks; benchmark before adding an
-approximate index to a large corpus.
-
-When query transformation is enabled, bounded server-side conversation history
-helps rewrite follow-up questions into standalone retrieval queries in the same
-LLM call. The original question remains unchanged for generation and
-persistence. Disabling transformation also disables this rewriting; failed or
-empty rewrites fall back to the original question.
-
-Expanded queries retain deterministic order. Multi-query result lists are fused
-with reciprocal rank fusion (RRF) using stable LanceDB chunk IDs, while the
-final context remains capped at `2 * TOP_K`. Existing per-query FlashRank
-reranking is unchanged.
-
-## Migrating from Elasticsearch
-
-Old Elasticsearch indices are not converted automatically. Reprocess original
-uploads to build LanceDB tables. The Elasticsearch service and its Python
-packages are no longer required.
-
-## Implementation conventions
-
-These rules keep the frontend/backend contract, local storage, and model
-behavior consistent when changing the application.
-
-### Frontend/backend boundary
-
-- Browser code must use relative `/api` URLs, never `localhost` or `127.0.0.1`.
-  Only the Vite server-side proxy may target the backend loopback address.
-- Keep request contracts in `backend/schemas.py` aligned with frontend types in
-  `frontend/src/types.ts`. OpenAPI is available at `/openapi.json` and `/docs`.
-- Do not expose LanceDB, SQLite, model files, or llama.cpp directly to the SPA.
-- Production SPA files come from `FRONTEND_DIST`; API routes take precedence
-  over the SPA fallback.
-- Backend and LLM status are independent. `/api/health` checks FastAPI, while
-  `/api/health/llm` checks llama.cpp with a two-second timeout. LLM failure
-  returns `{"connected": false}` without changing Backend health; never infer
-  one status from the other. The sidebar has no footer status or `Local first`
-  row.
-- Vite `allowedHosts` supports remote previews. Do not add a production host
-  allowlist that rejects the preview hostname.
-
-### API and streaming
-
-- Chat uses SSE, not WebSocket. Events are `meta`, `reasoning`, `answer`,
-  `metrics`, `final`, and `error`; each data payload is JSON. Optional live
-  metrics are additive and throttled to 250 ms. Keep the existing `final`
-  metrics contract unchanged.
-- Query transformation and expansion are request-scoped arguments. Never
-  mutate `os.environ` to change one user's options.
-- Persist chat through the backend, not a browser-controlled history payload.
-- Upload returns `202` and a transient job ID. Poll `/api/jobs/{id}` for status.
-- Keep model imports lazy so health, static files, and collection CRUD can run
-  without downloading models.
-- Use one Uvicorn worker with the process-local engine cache and job manager.
-
-### LLM access
-
-- Create every chat model through `backend.llm_config.create_llm()`.
-- The only LLM backend is llama.cpp's OpenAI-compatible API.
-  `langchain-openai` is a client, not hosted OpenAI inference.
-- The default base URL is `http://localhost:8080/v1` and the default alias is
-  `local-model`.
-- Do not reintroduce provider-specific branches or hosted model names.
-- Never expose `LLAMA_CPP_API_KEY` through `/api/config` or frontend code.
-
-### Collections and storage
-
-- Collection `example` uses LanceDB table `rag_example`. Embedded tables live
-  below `LANCEDB_PATH`, uploads below `DOCUMENTS_DIRECTORY`, tabular databases
-  in `<documents>/<collection>/tabular/`, and application records at
-  `APP_DB_PATH`.
-- Document deletion uses exact `source` metadata with SQL-literal escaping.
-- Collection rename moves vectors, uploads, SQLite records, tabular paths, and
-  collection-summary metadata.
-- Generate collection descriptions only through `services/summaries.py` after
-  a successful upload batch or vector/tabular deletion. Read bounded document
-  excerpts and tabular schemas through `ContentMetadataProvider`, persist the
-  result in `collection_summaries`, and preserve the last good summary on LLM
-  failure without rolling back source data. Empty collections and collection
-  deletion clear it. The summary GET endpoint must never invoke an LLM.
-- SQLite enables foreign keys on every connection and uses
-  `check_same_thread=False` for FastAPI threadpool compatibility.
-
-### LanceDB implementation
-
-- Tables store text, source, fixed-size vector, JSON metadata, and timestamps.
-  Empty collections use an explicit PyArrow schema.
-- Searches call `bypass_vector_index()` for exact cosine kNN. Do not silently
-  enable approximate retrieval.
-- LangChain retrieval uses the custom `BaseRetriever` adapter.
-- FlashRank retrieves `2 * TOP_K` candidates when enabled.
-- Source listing and deletion must work without initializing embeddings.
-- Rename streams Arrow batches to a new table, verifies row counts, then drops
-  the old table without recomputing embeddings.
-- Embedded storage is single-node; do not share local tables across replicas.
-
-### Uploads and tabular data
-
-- Allow only documented extensions and reject path separators, empty files,
-  duplicate upload names, and files above `MAX_UPLOAD_SIZE_MB`. Write uploads
-  to temporary files before replacing existing documents.
-- Classify saved files as `vector` or `tabular` in `services/ingestion.py`, not
-  inside RAGEngine. Vector documents use `add_vector_document()`; tabular files
-  use TabularDataHandler to create SQLite data and metadata.
-- Never add duplicate CSV/Excel vector indexing. Preserve SQLite Text-to-SQL
-  for precise aggregation, and keep RAGEngine's vector ingestion guarded
-  against tabular files falling through to a text loader.
-- Construct vector engines and tabular handlers through lazy per-upload
-  factories. A tabular-only batch must not initialize RAGEngine or
-  EmbeddingGemma; automatic descriptions use the shared llama.cpp client.
-- Job results retain `processed_files`, `total_chunks`, and `errors`, and also
-  expose `vector_files`, `tabular_files`, `total_rows`, and per-file
-  `file_results` (`name`, `kind`, status, chunks or rows/columns, and error).
-  Keep vector chunks and tabular rows distinct in API consumers and UI text.
-- Direct SQL is read-only, limited to `MAX_SQL_ROWS`, and constrained to the
-  selected collection's tabular directory. Natural-language SQL must receive
-  the selected `file_id`.
-
-### Models, prompts, and memory
-
-- Construct embeddings through `backend.embeddings.create_embeddings()` and
-  keep Sentence Transformers and PyTorch imports lazy. See
-  [EmbeddingGemma 2](#embeddinggemma-2) for task prompts, precision, MRL sizes,
-  normalization, and old-vector incompatibility rules.
-- `collection_guard` is always active and cannot be disabled or deleted.
-  Enabled custom prompts are appended to it.
-- Smalltalk uses full-message allowlisting plus a real `SystemMessage`; it is
-  not an unguarded bypass of `collection_guard`. The responder revalidates its
-  input and receives no history, documents, SQL, retrieval, or other tools.
-- Smalltalk obtains llama.cpp through `EngineManager.get_llm()` without creating
-  a RAG engine or loading embeddings. Persist thread messages only, not Q&A
-  runs, ratings, or long-term-memory embeddings.
-- Do not replace the smalltalk allowlist with substring matching. Uncertain
-  input and appended instructions must fall back to RAG.
-- Short-term memory is bounded by `CHAT_HISTORY_MAX_MESSAGES`.
-- Query transformation uses the same bounded history and per-message character
-  limit without an extra LLM call. It runs only when enabled; errors and empty
-  rewrites fall back to the original question. Generation and persistence keep
-  the original user question.
-- Query deduplication preserves order. Multi-query retrieval uses stable
-  `chunk_id` metadata and RRF (`K=60`), deterministic tie-breaking, and a final
-  `2 * TOP_K` limit. Do not collapse identical text from different sources or
-  replace exact vector search with hybrid/ANN retrieval.
-- Keep the existing per-query FlashRank path unchanged unless a separately
-  evaluated change explicitly moves to global reranking.
-
-## Development and validation
-
-```bash
-python -m unittest discover -s tests -v
-python -m compileall -q backend tests
-
-cd frontend
-npm test
-npm run build
-cd ..
-
-git diff --check
+```sh
+GEO_DATA=tools/data node --max-old-space-size=8192 tools/build-geodata.mjs
 ```
 
-Backend tests use temporary LanceDB/SQLite directories and deterministic fake
-model clients. They cover collection/document CRUD, SSE chat, persistence,
-ratings, prompts, upload validation, explicit vector/tabular jobs, lazy
-vector-engine dispatch, real CSV-to-SQLite ingestion, read-only SQL, SPA
-fallback, Gemma task prompts, safe precision, MRL validation, old-collection
-dimension protection, RRF ordering, history-aware follow-up retrieval, and
-smalltalk injection fallback. No model download, Docker, or llama.cpp server is
-needed for these tests.
+Hong Kong's geometry is generated from OpenStreetMap data (Overpass API) and baked into `js/hk-geodata.js`:
 
-Frontend tests cover SSE chunk parsing, formatting, and distinct
-vector/tabular ingestion totals; the production build also checks TypeScript.
-When changing retrieval, test empty tables, persistence, source deletion,
-rename, and dimension mismatches. Multi-query tests must cover RRF agreement,
-query-order independence, source-aware deduplication, and both query paths.
-Follow-up tests must cover bounded history, disabled transformation, and
-fallbacks.
+```sh
+node --max-old-space-size=8192 tools/build-city.mjs hongkong
+```
 
-When changing the API, test browser-facing behavior through `TestClient`,
-including error status codes and SSE events. For LLM changes, verify all
-construction still goes through `create_llm()`. Smalltalk tests must cover
-whole-message matching, prompt-injection fallback, system-message isolation,
-and Q&A-memory exclusion. Ingestion tests must cover explicit dispatch,
-per-file failures, real CSV-to-SQLite queries, and the guarantee that
-tabular-only uploads do not construct a vector engine.
+Cached Overpass extracts are reused from `tools/data/hongkong/`; set `GEO_REFRESH=1` to download them again.
 
-## License
+## Make it your own
 
-Licensed under the Apache License 2.0. See [LICENSE](LICENSE).
+Fork it, remix it, improve it, break it. Make games, animations, films, experiments, or something completely different. Use it as a starting point and take it wherever you want. Have fun!
+
+Explore other cities and community remixes in [Slop Cities](https://github.com/zz85/slop-cities).
+
+## License and data
+
+The project code is available under the [MIT License](LICENSE).
+
+Geographic data: NYC Open Data, [MTA subway entrances](https://data.ny.gov/Transportation/MTA-Subway-Entrances-and-Exits-2024/i9wp-a4ja), and © [OpenStreetMap contributors](https://www.openstreetmap.org/copyright) (ODbL). Third-party data and dependencies retain their respective licenses.
