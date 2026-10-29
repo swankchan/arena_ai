@@ -417,8 +417,65 @@ export function buildTrafficAidPaint(aids) {
   return { ...buffer, stats };
 }
 
+// Esri's drawing rotation is clockwise from +X in the x-east / z-south frame. Against the core road approaches,
+// this maps 77/82 surveyed heads within 15 degrees and 80/82 within 30 degrees of an approach axis.
+export function surveySignalHeading(angle) {
+  return Number.isFinite(angle) ? Math.PI / 2 - angle * Math.PI / 180 : null;
+}
+
+// Crossing furniture is deliberately derived from the surveyed stripe extents, not presented as extra surveyed
+// points. The longest stripe edge follows traffic; pedestrians cross perpendicular to it. A pole just beyond each
+// end faces back across the crossing. Signal crossings receive red/green-man heads; evidence-backed zebras receive
+// Belisha beacons instead. The current Statue Square core has only the former.
+export function buildCrossingLayouts(aids) {
+  const zigzags = aids.marks.filter((mark) => ZIGZAG_TYPES.has(mark.type));
+  const layouts = [];
+  for (const crossing of aids.crossings) {
+    if (!CROSSING_TYPES.has(crossing.type)) continue;
+    const faces = crossingFaces(crossing.parts).faces.filter((face) =>
+      minimumRectSides(face)[0] <= 1.4 && isConvex(face));
+    if (!faces.length) continue;
+    let longest = null;
+    const centres = [];
+    for (const face of faces) {
+      centres.push(face.reduce((sum, p) => [sum[0] + p[0] / face.length, sum[1] + p[1] / face.length], [0, 0]));
+      for (let i = 0; i < face.length; i++) {
+        const a = face[i], b = face[(i + 1) % face.length];
+        const dx = b[0] - a[0], dz = b[1] - a[1], length = Math.hypot(dx, dz);
+        if (!longest || length > longest.length) longest = { dx, dz, length };
+      }
+    }
+    if (!longest || longest.length < EPS) continue;
+    const traffic = [longest.dx / longest.length, longest.dz / longest.length];
+    const walking = [-traffic[1], traffic[0]];
+    const x = centres.reduce((sum, p) => sum + p[0] / centres.length, 0);
+    const z = centres.reduce((sum, p) => sum + p[1] / centres.length, 0);
+    let min = Infinity, max = -Infinity;
+    for (const face of faces) for (const p of face) {
+      const projection = (p[0] - x) * walking[0] + (p[1] - z) * walking[1];
+      min = Math.min(min, projection); max = Math.max(max, projection);
+    }
+    const endpoints = [];
+    for (const sign of [-1, 1]) {
+      const offset = sign * (Math.max(Math.abs(min), Math.abs(max)) + 0.75);
+      const dx = walking[0] * offset, dz = walking[1] * offset;
+      endpoints.push({
+        x: x + dx, z: z + dz,
+        heading: Math.atan2(-dx, -dz)
+      });
+    }
+    layouts.push({
+      id: crossing.id, x, z, traffic, walking,
+      roadWidth: max - min,
+      zebra: crossingIsZebra(crossing, zigzags),
+      endpoints
+    });
+  }
+  return layouts;
+}
+
 // REFNAME is only used as a head/not-head gate: P or S + digits + optional L/R. Coincident features become one
-// assembly, not an invented vertical stack of different aspects. Original IDs/codes/angles stay on each assembly.
+// pole assembly carrying every surveyed head; original IDs/codes/angles and per-head positions stay available.
 export function clusterSignalPoints(signals, mergeM = 0.75) {
   const admitted = signals.filter((signal) => signal.elevation == null && /^[PS]\d+(?:[LR])?$/.test(signal.code));
   const unseen = new Set(admitted.map((_, index) => index));
@@ -444,6 +501,9 @@ export function clusterSignalPoints(signals, mergeM = 0.75) {
       ids: points.map((point) => point.id),
       codes: points.map((point) => point.code),
       angles: points.map((point) => point.angle),
+      heads: points.map((point) => ({
+        id: point.id, code: point.code, angle: point.angle, x: point.x, z: point.z
+      })),
       sourceCount: points.length
     });
   }

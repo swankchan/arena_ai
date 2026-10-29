@@ -522,7 +522,7 @@ test('crossing faces include only enclosed stripes, including four loose edges, 
   assert.equal(zebra.stats.zebraCrossings, 1, 'nearby surveyed zigzags are the white-zebra evidence');
 });
 
-test('coincident signal points collapse to assemblies without losing source IDs, codes or angles', () => {
+test('coincident signal poles keep all 82 independently angled source heads', () => {
   const { assemblies, stats } = aidGeometry.clusterSignalPoints(geo.trafficAids.signals);
   assert.equal(stats.sourceSignalPoints, 82);
   assert.equal(stats.admittedSignalPoints, 82);
@@ -533,6 +533,87 @@ test('coincident signal points collapse to assemblies without losing source IDs,
   assert.equal(new Set(assemblies.flatMap((assembly) => assembly.ids)).size, 82);
   assert.equal(assemblies.flatMap((assembly) => assembly.codes).length, 82);
   assert.equal(assemblies.flatMap((assembly) => assembly.angles).length, 82);
+  const heads = assemblies.flatMap((assembly) => assembly.heads);
+  assert.equal(heads.length, 82, 'every official point gets its own housing, not one per pole');
+  const sources = new Map(geo.trafficAids.signals.map((signal) => [signal.id, signal]));
+  for (const head of heads) {
+    const source = sources.get(head.id);
+    assert.ok(source);
+    assert.equal(head.code, source.code);
+    assert.equal(head.angle, source.angle);
+    assert.equal(head.x, source.x);
+    assert.equal(head.z, source.z);
+    assert.ok(Number.isFinite(aidGeometry.surveySignalHeading(head.angle)));
+  }
+  for (const [angle, expected] of [[0, 90], [90, 0], [180, -90], [270, -180]]) {
+    assert.ok(Math.abs(aidGeometry.surveySignalHeading(angle) * 180 / Math.PI - expected) < 1e-9);
+  }
+  assert.equal(aidGeometry.surveySignalHeading(null), null);
+});
+
+test('crossing furniture follows stripe axes, faces back across the road and requires zebra evidence', () => {
+  const rings = [
+    [0, 0, 0.5, 0, 0.5, 2, 0, 2, 0, 0],
+    [1.5, 0, 2, 0, 2, 2, 1.5, 2, 1.5, 0]
+  ];
+  const aids = {
+    marks: [], crossings: [{ id: 1, type: 'SOLID', parts: rings }],
+    yellowBoxes: [], yellowBoxPolygons: [], signals: []
+  };
+  const [layout] = aidGeometry.buildCrossingLayouts(aids);
+  assert.ok(layout);
+  assert.equal(layout.zebra, false);
+  assert.ok(Math.abs(layout.roadWidth - 2) < 1e-8);
+  assert.ok(Math.abs(layout.traffic[0] * layout.walking[0] + layout.traffic[1] * layout.walking[1]) < 1e-8);
+  assert.equal(layout.endpoints.length, 2);
+  for (const end of layout.endpoints) {
+    const dx = layout.x - end.x, dz = layout.z - end.z;
+    const length = Math.hypot(dx, dz);
+    const facingDot = Math.sin(end.heading) * dx / length + Math.cos(end.heading) * dz / length;
+    assert.ok(facingDot > 0.9999, 'the pedestrian head looks across the crossing, not away from it');
+  }
+  const zebra = aidGeometry.buildCrossingLayouts({
+    ...aids, marks: [{ id: 2, type: 'ZIGZAGR', parts: [[0, 0, 0, 2]] }]
+  });
+  assert.equal(zebra[0].zebra, true);
+
+  const core = aidGeometry.buildCrossingLayouts(geo.trafficAids);
+  assert.equal(core.length, 10);
+  assert.equal(core.filter((entry) => entry.zebra).length, 0);
+  assert.equal(core.reduce((sum, entry) => sum + entry.endpoints.length, 0), 20);
+});
+
+test('Victoria Harbour combines displaced long swell with FFT chop and keeps the mean water level', () => {
+  const water = read('js/cities/hongkong/harbour-water.js');
+  const world = read('js/cities/hongkong/world.js');
+  const shared = read('js/tsl-materials.js');
+  assert.match(shared, /export function getWaterWaveTexture\(\)/);
+  assert.match(water, /material\.positionNode/);
+  assert.match(water, /longSwell\(worldXZ\)/);
+  assert.match(water, /const slope = windWaves\.xy\.add\(swell\.yz\)/);
+  assert.match(water, /omega = Math\.sqrt\(9\.81 \* k\)/);
+  assert.match(water, /maximumLongSwellDisplacement/);
+  assert.match(water, /meanDisplacement: 0/);
+  assert.match(water, /segments = 384/);
+  assert.match(world, /createHongKongHarbourWaterGeometry\(\)/);
+  assert.match(world, /water\.position\.set\(waterCentre\[0\], WATER_LEVEL, waterCentre\[1\]\)/);
+  assert.match(world, /const WATER_LEVEL = -2\.2/);
+  assert.doesNotMatch(world, /waterNormal\.offset|createHarbourWaterMaterial/);
+});
+
+test('Hong Kong signal hardware keeps rounded housings, visors, pedestrian aspects and compatible merges', () => {
+  const models = read('js/cities/hongkong/traffic-signal-models.js');
+  const aids = read('js/cities/hongkong/traffic-aids.js');
+  assert.match(models, /RoundedBoxGeometry/);
+  assert.match(models, /Deep open half-round hood/);
+  assert.match(models, /Unlit red standing man/);
+  assert.match(models, /Unlit green walking man/);
+  assert.match(models, /part\.index \? part\.toNonIndexed\(\) : part/);
+  assert.match(models, /createBeaconPoleGeometry/);
+  assert.match(aids, /for \(const head of assembly\.heads\)/);
+  assert.match(aids, /signalHeads: headMatrices\.length/);
+  assert.match(aids, /if \(layout\.zebra\)/);
+  assert.doesNotMatch(aids, /PDSPO1|PedestrianSignPole/);
 });
 
 test('Hong Kong replaces procedural lane dashes with surveyed aids and never invents signal phases', () => {

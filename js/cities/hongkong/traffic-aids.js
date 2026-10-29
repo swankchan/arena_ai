@@ -1,12 +1,23 @@
 import * as THREE from 'three/webgpu';
-import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 import { GEO } from '../../hk-geodata.js';
 import { createRoadPaintMaterial } from '../../tsl-materials.js';
-import { buildTrafficAidPaint, clusterSignalPoints } from './traffic-aid-geometry.js';
+import {
+  buildTrafficAidPaint,
+  buildCrossingLayouts,
+  clusterSignalPoints,
+  surveySignalHeading
+} from './traffic-aid-geometry.js';
+import {
+  VEHICLE_HEAD,
+  PEDESTRIAN_HEAD,
+  createVehicleHeadGeometry,
+  createPedestrianHeadGeometry,
+  createBeaconPoleGeometry
+} from './traffic-signal-models.js';
 
-// Surveyed Transport Department traffic aids. The old OSM-width lane-dash generator is intentionally not used: where
-// this slice has no surveyed marking, this module draws none. Signal positions are official; head dimensions, the
-// coincident-point assemblies and road-relative facing are derived. Lenses stay unlit because TIS_16 has no phase plan.
+// Surveyed Transport Department traffic aids. Vehicle-head positions and ANGLEs come from TIS_16; pole clustering,
+// brackets, hardware dimensions and crossing furniture are derived. Every lens remains unlit: the slice has no phase
+// plan. No pedestrian-sign pole is misused as a pedestrian traffic signal.
 
 function linkPoints(link) {
   const nodes = GEO.roadGraph.nodes;
@@ -43,8 +54,6 @@ function deriveFacing(x, z, segments) {
   }
   if (!best) return { heading: 0, distance: Infinity };
   const { segment, cx, cz } = best;
-  // Positive on the nearside (left of travel in Hong Kong). One-way streets serve the same flow from both kerbs;
-  // two-way streets use the side to choose which approach the head addresses. This is derived, not TD's ANGLE field.
   const side = (x - cx) * segment.dz + (z - cz) * -segment.dx;
   const facesBack = segment.oneWay || side > 0;
   const fx = facesBack ? -segment.dx : segment.dx;
@@ -65,63 +74,120 @@ function addInstanced(group, geometry, material, matrices, name, shadows = true)
   return mesh;
 }
 
+function matrixAt(x, y, z, heading = 0, scale = [1, 1, 1]) {
+  return new THREE.Matrix4().compose(
+    new THREE.Vector3(x, y, z),
+    new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 1, 0), heading),
+    new THREE.Vector3(...scale)
+  );
+}
+
 function createSignals(group, aids, getGroundHeight) {
   const { assemblies, stats } = clusterSignalPoints(aids.signals);
   if (!assemblies.length) return { stats, assemblies };
   const segments = roadSegments();
-  const poleMatrices = [], headMatrices = [];
-  const mountHeight = 2.40, headHeight = 1.10, headroom = 0.15;
-  let facingFallbacks = 0;
+  const poleMatrices = [], bracketMatrices = [], headMatrices = [];
+  const poleHeight = VEHICLE_HEAD.mount + VEHICLE_HEAD.height + VEHICLE_HEAD.headroom;
+  let facingFallbacks = 0, officialAngleHeads = 0;
 
   for (const assembly of assemblies) {
     const ground = getGroundHeight ? getGroundHeight(assembly.x, assembly.z) : 0;
-    const { heading, distance } = deriveFacing(assembly.x, assembly.z, segments);
-    if (!Number.isFinite(distance)) facingFallbacks++;
-    const quaternion = new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 1, 0), heading);
-    headMatrices.push(new THREE.Matrix4().compose(
-      new THREE.Vector3(assembly.x, ground + mountHeight + headHeight * 0.5, assembly.z),
-      quaternion,
-      new THREE.Vector3(1, 1, 1)
-    ));
-    poleMatrices.push(new THREE.Matrix4().compose(
-      new THREE.Vector3(assembly.x, ground + (mountHeight + headHeight + headroom) * 0.5, assembly.z),
-      new THREE.Quaternion(),
-      new THREE.Vector3(1, mountHeight + headHeight + headroom, 1)
-    ));
-    assembly.heading = heading;
-    assembly.hostDistance = distance;
+    poleMatrices.push(matrixAt(assembly.x, ground + poleHeight * 0.5, assembly.z, 0, [1, poleHeight, 1]));
+    for (const head of assembly.heads) {
+      const surveyedHeading = surveySignalHeading(head.angle);
+      const fallback = surveyedHeading == null ? deriveFacing(head.x, head.z, segments).heading : 0;
+      if (surveyedHeading == null) facingFallbacks++;
+      else officialAngleHeads++;
+      const heading = surveyedHeading ?? fallback;
+      const fx = Math.sin(heading), fz = Math.cos(heading);
+      // Back-to-back heads need a short bracket; without it, coincident source points occupy the same housing.
+      const offset = 0.22;
+      headMatrices.push(matrixAt(
+        assembly.x + fx * offset, ground + VEHICLE_HEAD.mount + VEHICLE_HEAD.height * 0.5,
+        assembly.z + fz * offset, heading
+      ));
+      bracketMatrices.push(matrixAt(
+        assembly.x + fx * 0.10, ground + VEHICLE_HEAD.mount + 0.16, assembly.z + fz * 0.10,
+        heading, [1, 1, 0.34]
+      ));
+    }
   }
 
-  const bodyMaterial = new THREE.MeshStandardMaterial({ color: 0x252a2d, roughness: 0.48, metalness: 0.48 });
-  const poleGeometry = new THREE.CylinderGeometry(0.055, 0.07, 1, 8);
-  const lensY = [0.34, 0, -0.34];
-  const housingParts = [new THREE.BoxGeometry(0.42, headHeight, 0.30)];
-  for (const y of lensY) {
-    const visor = new THREE.CylinderGeometry(0.16, 0.16, 0.20, 12, 1, true, Math.PI / 2, Math.PI);
-    visor.rotateX(Math.PI / 2);
-    visor.translate(0, y, 0.22);
-    housingParts.push(visor);
-  }
-  const housingGeometry = mergeGeometries(housingParts, false);
-  addInstanced(group, poleGeometry, bodyMaterial, poleMatrices, 'HongKongSignalPoles');
-  addInstanced(group, housingGeometry, bodyMaterial, headMatrices, 'HongKongSignalHeads');
+  const bodyMaterial = new THREE.MeshStandardMaterial({ color: 0x171c1f, roughness: 0.50, metalness: 0.28 });
+  const rimMaterial = new THREE.MeshStandardMaterial({ color: 0x080b0c, roughness: 0.40, metalness: 0.38 });
+  const poleMaterial = new THREE.MeshStandardMaterial({ color: 0x778184, roughness: 0.40, metalness: 0.66 });
+  const parts = createVehicleHeadGeometry();
+  addInstanced(group, new THREE.CylinderGeometry(0.052, 0.068, 1, 10), poleMaterial, poleMatrices, 'HongKongSignalPoles');
+  addInstanced(group, new THREE.BoxGeometry(0.055, 0.065, 1), poleMaterial, bracketMatrices, 'HongKongSignalBrackets');
+  addInstanced(group, parts.housing, bodyMaterial, headMatrices, 'HongKongSignalHeads');
+  addInstanced(group, parts.rims, rimMaterial, headMatrices, 'HongKongSignalLensRims');
 
-  const lensColours = [0x48171a, 0x4b3511, 0x123a26];
+  const lensColours = [0x561c21, 0x574016, 0x17452e];
   const lensNames = ['Red', 'Amber', 'Green'];
   for (let i = 0; i < 3; i++) {
-    const geometry = new THREE.CircleGeometry(0.125, 16);
-    geometry.translate(0, lensY[i], 0.156);
-    const material = new THREE.MeshStandardMaterial({ color: lensColours[i], roughness: 0.28, metalness: 0.12 });
-    addInstanced(group, geometry, material, headMatrices, `HongKongSignalLens${lensNames[i]}`, false);
+    const material = new THREE.MeshStandardMaterial({ color: lensColours[i], roughness: 0.24, metalness: 0.16 });
+    addInstanced(group, parts.lenses[i], material, headMatrices, `HongKongSignalLens${lensNames[i]}`, false);
   }
 
   return {
     assemblies,
     stats: {
       ...stats,
-      signalFacingDerived: assemblies.length - facingFallbacks,
+      signalHeads: headMatrices.length,
+      signalOfficialAngleHeads: officialAngleHeads,
       signalFacingFallbacks: facingFallbacks,
       signalState: 'inert-no-official-phase-data'
+    }
+  };
+}
+
+function createCrossingFurniture(group, aids, getGroundHeight) {
+  const layouts = buildCrossingLayouts(aids);
+  const poleMatrices = [], headMatrices = [], unitMatrices = [];
+  const beaconPoleMatrices = [], beaconGlobeMatrices = [], beaconCapMatrices = [];
+  const poleHeight = 2.55;
+
+  for (const layout of layouts) {
+    for (const end of layout.endpoints) {
+      const ground = getGroundHeight ? getGroundHeight(end.x, end.z) : 0;
+      if (layout.zebra) {
+        beaconPoleMatrices.push(matrixAt(end.x, ground + 1.125, end.z));
+        beaconCapMatrices.push(matrixAt(end.x, ground + 2.28, end.z));
+        beaconGlobeMatrices.push(matrixAt(end.x, ground + 2.48, end.z));
+      } else {
+        poleMatrices.push(matrixAt(end.x, ground + poleHeight * 0.5, end.z, 0, [1, poleHeight, 1]));
+        headMatrices.push(matrixAt(end.x, ground + PEDESTRIAN_HEAD.centre, end.z, end.heading));
+        unitMatrices.push(matrixAt(end.x, ground + 1.05, end.z, end.heading));
+      }
+    }
+  }
+
+  const silver = new THREE.MeshStandardMaterial({ color: 0x7a8384, roughness: 0.43, metalness: 0.62 });
+  const black = new THREE.MeshStandardMaterial({ color: 0x151a1c, roughness: 0.52, metalness: 0.24 });
+  const yellow = new THREE.MeshStandardMaterial({ color: 0xd4a928, roughness: 0.48, metalness: 0.12 });
+  const parts = createPedestrianHeadGeometry();
+  addInstanced(group, new THREE.CylinderGeometry(0.045, 0.058, 1, 10), silver, poleMatrices, 'HongKongPedestrianSignalPoles');
+  addInstanced(group, parts.housing, black, headMatrices, 'HongKongPedestrianSignalHeads');
+  addInstanced(group, parts.face, parts.faceMaterial, headMatrices, 'HongKongPedestrianRedGreenMan', false);
+  // The exact push-button/tactile variant is not in TIS_16; this is a generic yellow eATS-style control unit.
+  addInstanced(group, parts.unit, yellow, unitMatrices, 'HongKongPedestrianControlUnits');
+  addInstanced(group, parts.unitDetails, black, unitMatrices, 'HongKongPedestrianControlUnitDetails', false);
+
+  const beaconPoleMaterial = new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.48, metalness: 0.32 });
+  const globeMaterial = new THREE.MeshStandardMaterial({
+    color: 0xdca72c, roughness: 0.30, metalness: 0.05, emissive: 0x4d2b05, emissiveIntensity: 0.18
+  });
+  addInstanced(group, createBeaconPoleGeometry(), beaconPoleMaterial, beaconPoleMatrices, 'HongKongBelishaStripedPoles');
+  addInstanced(group, new THREE.CylinderGeometry(0.07, 0.07, 0.08, 12), black, beaconCapMatrices, 'HongKongBelishaCaps');
+  addInstanced(group, new THREE.SphereGeometry(0.19, 18, 12), globeMaterial, beaconGlobeMatrices, 'HongKongBelishaAmberGlobes', false);
+
+  return {
+    layouts,
+    stats: {
+      pedestrianSignalHeads: headMatrices.length,
+      pedestrianControlUnits: unitMatrices.length,
+      belishaBeacons: beaconGlobeMatrices.length,
+      crossingFurniture: 'derived-from-surveyed-stripe-extents'
     }
   };
 }
@@ -145,19 +211,24 @@ export function createHongKongTrafficAids(root, { getGroundHeight } = {}) {
   const paintMesh = new THREE.Mesh(geometry, createRoadPaintMaterial());
   paintMesh.name = 'HongKongSurveyedRoadPaint';
   paintMesh.receiveShadow = true;
-  paintMesh.renderOrder = -1; // under other see-through ground effects, matching the existing road-paint pass
+  paintMesh.renderOrder = -1;
   group.add(paintMesh);
 
   const signals = createSignals(group, aids, getGroundHeight);
-  const stats = { ...data.stats, ...signals.stats };
+  const crossing = createCrossingFurniture(group, aids, getGroundHeight);
+  const stats = { ...data.stats, ...signals.stats, ...crossing.stats };
   group.userData.trafficAids = {
     source: aids.source,
     bbox: aids.bbox,
-    official: 'Feature positions and source line/ring extents',
-    derived: 'TPDM paint cross-sections/modules, stripe triangulation, signal assemblies, head dimensions and facing',
-    notDerived: 'No OSM-centreline markings, no filled crossing ladders, no invented signal phases',
+    official: 'Feature positions, line/ring extents, vehicle-head IDs/codes/ANGLEs',
+    derived: 'Paint sections/modules, stripe triangulation, pole assemblies/brackets, hardware and crossing furniture',
+    notDerived: 'No OSM-centreline markings, pedestrian-sign poles reused as signals, filled ladders or invented phases',
     stats
   };
   console.info('[hongkong] surveyed traffic aids', stats);
-  return { group, stats, paintMesh, signalAssemblies: signals.assemblies };
+  return {
+    group, stats, paintMesh,
+    signalAssemblies: signals.assemblies,
+    crossingLayouts: crossing.layouts
+  };
 }

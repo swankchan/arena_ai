@@ -2345,7 +2345,7 @@ function fft2DInverse(re, im, n) {
   }
 }
 
-function getWaterWaveTexture() {
+export function getWaterWaveTexture() {
   if (_waterWaveTexture) return _waterWaveTexture;
   const N = 256;
   const size = N * N;

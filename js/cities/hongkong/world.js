@@ -14,6 +14,10 @@ import { createTreeField } from '../../trees.js';
 import { segmentWall, lotObb } from './colliders.js';
 import { AREA_LABELS } from './meta.js';
 import { createHongKongTrafficAids } from './traffic-aids.js';
+import {
+  createHongKongHarbourWaterMaterial,
+  createHongKongHarbourWaterGeometry
+} from './harbour-water.js';
 
 // The Hong Kong static world: real land, blocks, lots, parks and landmark sites from OpenStreetMap, with every
 // building generated procedurally inside its real lot. No OSM building footprint is used for ordinary buildings.
@@ -134,47 +138,6 @@ function createSeawallGeometry() {
   return geometry;
 }
 
-
-function createHarbourWaterMaterial() {
-  const canvas = document.createElement('canvas');
-  canvas.width = canvas.height = 256;
-  const ctx = canvas.getContext('2d');
-  const image = ctx.createImageData(256, 256);
-  // Seamless wave trains: whole numbers of cycles per tile, so the repeat never draws a grid across the harbour.
-  const TAU = (Math.PI * 2) / 256;
-  const height = (x, y) =>
-    Math.sin((x * 3 + y * 1) * TAU + 0.4) * 0.5 +
-    Math.sin((x * 1 - y * 4) * TAU + 1.7) * 0.32 +
-    Math.sin((x * 7 + y * 5) * TAU + 2.2) * 0.12 +
-    Math.sin((x * 11 - y * 9) * TAU + 0.9) * 0.06;
-  for (let y = 0; y < 256; y++) {
-    for (let x = 0; x < 256; x++) {
-      const dx = height(x + 1, y) - height(x - 1, y);
-      const dy = height(x, y + 1) - height(x, y - 1);
-      const nx = -dx * 1.9, ny = -dy * 1.9, nz = 1;
-      const length = Math.hypot(nx, ny, nz);
-      const o = (y * 256 + x) * 4;
-      image.data[o] = Math.round((nx / length * 0.5 + 0.5) * 255);
-      image.data[o + 1] = Math.round((ny / length * 0.5 + 0.5) * 255);
-      image.data[o + 2] = Math.round((nz / length * 0.5 + 0.5) * 255);
-      image.data[o + 3] = 255;
-    }
-  }
-  ctx.putImageData(image, 0, 0);
-  const normalMap = new THREE.CanvasTexture(canvas);
-  normalMap.wrapS = normalMap.wrapT = THREE.RepeatWrapping;
-  normalMap.repeat.set(56, 56);
-  normalMap.anisotropy = 4;
-  const material = new THREE.MeshStandardMaterial({
-    color: 0x10444f,
-    roughness: 0.46,
-    metalness: 0.02,
-    normalMap,
-    normalScale: new THREE.Vector2(0.32, 0.32)
-  });
-  material.userData.waterNormal = normalMap;
-  return material;
-}
 
 function makeFacadeStyles() {
   return [
@@ -360,14 +323,15 @@ export function buildHongKongWorld(scene, { setStatus = () => {} } = {}) {
   // -------------------------------------------------------------------------------------------------------------------
   // 1. Land, water, seawalls
   // -------------------------------------------------------------------------------------------------------------------
-  const waterMaterial = createHarbourWaterMaterial();
-  const water = new THREE.Mesh(new THREE.PlaneGeometry(16000, 16000), waterMaterial);
-  water.rotation.x = -Math.PI / 2;
-  water.position.set(
+  const waterCentre = [
     (GEO.bounds.minX + GEO.bounds.maxX) / 2,
-    WATER_LEVEL,
     (GEO.bounds.minZ + GEO.bounds.maxZ) / 2
-  );
+  ];
+  const waterMaterial = createHongKongHarbourWaterMaterial({ centre: waterCentre });
+  const water = new THREE.Mesh(createHongKongHarbourWaterGeometry(), waterMaterial);
+  water.rotation.x = -Math.PI / 2;
+  water.position.set(waterCentre[0], WATER_LEVEL, waterCentre[1]);
+  water.userData.meanWaterLevel = WATER_LEVEL;
   water.receiveShadow = true;
   water.name = 'VictoriaHarbourWater';
   root.add(water);
@@ -839,7 +803,6 @@ export function buildHongKongWorld(scene, { setStatus = () => {} } = {}) {
   console.info('[hongkong] static world', stats);
 
   function update(dt, elapsed, { cameraSystem }) {
-    waterMaterial.userData.waterNormal.offset.set(elapsed * 0.0045, elapsed * 0.0026);
     treeField.update(cameraSystem.currentPos);
   }
 
