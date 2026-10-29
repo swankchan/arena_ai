@@ -1064,14 +1064,66 @@ function hkTaxiSideTexture() {
 
   function lettering(x) {
     ctx.fillStyle = '#f7f7f2';
-    ctx.font = '700 132px "Noto Sans TC", "PingFang TC", "Microsoft JhengHei", sans-serif';
-    ctx.fillText('的士', x, 180, 220);
-    ctx.font = '800 76px Inter, Arial, sans-serif';
-    ctx.fillText('TAXI', x, 320, 220);
+    ctx.font = '700 100px "Noto Sans TC", "PingFang TC", "Microsoft JhengHei", sans-serif';
+    ctx.fillText('的', x, 100);
+    ctx.fillText('士', x, 205);
+    ctx.font = '800 68px Inter, Arial, sans-serif';
+    ctx.fillText('TAXI', x, 325, 170);
+  }
+
+  function flower(x, y, scale = 1) {
+    ctx.fillStyle = '#e85c83';
+    for (let i = 0; i < 5; i++) {
+      const angle = (i * Math.PI * 2) / 5;
+      ctx.beginPath();
+      ctx.arc(x + Math.cos(angle) * 10 * scale, y + Math.sin(angle) * 10 * scale, 7 * scale, 0, Math.PI * 2);
+      ctx.fill();
+    }
+    ctx.fillStyle = '#f4d54b';
+    ctx.beginPath();
+    ctx.arc(x, y, 5 * scale, 0, Math.PI * 2);
+    ctx.fill();
+  }
+
+  function lpgAdvertisement(x) {
+    roundedCanvasRect(ctx, x - 140, 135, 280, 195, 58);
+    ctx.fillStyle = '#83c341';
+    ctx.fill();
+    ctx.strokeStyle = '#f4f5e9';
+    ctx.lineWidth = 6;
+    ctx.stroke();
+    ctx.fillStyle = '#dce9bd';
+    const heights = [35, 55, 42, 76, 48, 65, 38, 58, 44, 70];
+    for (let i = 0; i < heights.length; i++) ctx.fillRect(x - 122 + i * 25, 242 - heights[i], 19, heights[i]);
+    flower(x - 98, 188, 1.1);
+    ctx.fillStyle = '#f7f7f2';
+    ctx.font = '800 40px "Noto Sans TC", "PingFang TC", "Microsoft JhengHei", sans-serif';
+    ctx.fillText('石油氣的士', x + 10, 278, 238);
+  }
+
+  function lpgFender(x) {
+    roundedCanvasRect(ctx, x - 38, 150, 76, 180, 9);
+    ctx.fillStyle = '#f0d54a';
+    ctx.fill();
+    ctx.strokeStyle = '#f7f7f2';
+    ctx.lineWidth = 4;
+    ctx.stroke();
+    flower(x, 181, 0.62);
+    ctx.fillStyle = '#246a4a';
+    ctx.font = '700 23px "Noto Sans TC", "PingFang TC", "Microsoft JhengHei", sans-serif';
+    ctx.fillText('石油氣', x, 222, 68);
+    ctx.fillText('的士', x, 252, 68);
+    ctx.fillStyle = '#b52f36';
+    ctx.font = '900 27px Inter, Arial, sans-serif';
+    ctx.fillText('LPG', x, 298);
   }
 
   lettering(715);
   lettering(1333);
+  lpgAdvertisement(434);
+  lpgAdvertisement(1614);
+  lpgFender(232);
+  lpgFender(1816);
   _hkTaxiSideTexture = new THREE.CanvasTexture(c);
   _hkTaxiSideTexture.colorSpace = THREE.SRGBColorSpace;
   return _hkTaxiSideTexture;
@@ -1121,10 +1173,12 @@ function hkTaxiSignTexture() {
   ctx.lineWidth = 10;
   ctx.strokeRect(5, 5, c.width - 10, c.height - 10);
   ctx.fillStyle = '#c6202b';
-  ctx.font = '900 76px Inter, Arial, sans-serif';
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
-  ctx.fillText('TAXI', c.width / 2, c.height / 2 + 3);
+  ctx.font = '700 34px "Noto Sans TC", "PingFang TC", "Microsoft JhengHei", sans-serif';
+  ctx.fillText('的士', 80, c.height / 2 + 3);
+  ctx.font = '900 68px Inter, Arial, sans-serif';
+  ctx.fillText('TAXI', 326, c.height / 2 + 3);
   _hkTaxiSignTexture = new THREE.CanvasTexture(c);
   _hkTaxiSignTexture.colorSpace = THREE.SRGBColorSpace;
   return _hkTaxiSignTexture;
@@ -1228,6 +1282,13 @@ function createLoftedCarMaterial(spec, fixedColorHex = null, options = {}) {
   const hkRoof = livery === 'hk'
     ? isWindow.mul(smoothstep(belt.add(0.01), belt.add(0.035), p.y)).mul(one.sub(max(glass, seal, chromeBelt)))
     : float(0);
+  let hkPillars = float(0);
+  if (livery === 'hk') {
+    for (const zp of cab.pillars) {
+      hkPillars = max(hkPillars, smoothstep(0.052, 0.038, abs(p.z.sub(zp))));
+    }
+    hkPillars = hkPillars.mul(isWindow).mul(isSide).mul(seal).mul(smoothstep(belt.add(0.01), belt.add(0.035), p.y));
+  }
 
   // Wheel arches: distance from the nearest axle in side view (or from the hub of a centred, spinning wheel)
   const isCenteredWheel = step(abs(p.z), wheelR.add(0.05)).mul(max(isTyre, isAlloy));
@@ -1245,6 +1306,18 @@ function createLoftedCarMaterial(spec, fixedColorHex = null, options = {}) {
       .mul(smoothstep(float(spec.zRear + 0.32), float(spec.zRear + 0.4), p.z))
       .mul(smoothstep(float(spec.zFront - 0.3), float(spec.zFront - 0.38), p.z))
     : float(0);
+
+  const hkStripInsert = livery === 'hk'
+    ? hkStrip.mul(smoothstep(0.024, 0.017, abs(p.y.sub(0.52))))
+    : float(0);
+  const hkBumperInsert = livery === 'hk'
+    ? max(
+      smoothstep(0.12, 0.38, n.z).mul(step(frontZone, p.z)),
+      smoothstep(0.12, 0.38, n.z.negate()).mul(step(p.z, rearZone))
+    ).mul(max(isBody, isTrim))
+      .mul(smoothstep(0.024, 0.017, abs(p.y.sub(0.52))))
+    : float(0);
+  const hkMetalTrim = max(hkStripInsert, hkBumperInsert);
 
   // Object-space atlas coordinates keep both sides' lettering on the same physical doors.
   const decalZ0 = spec.zRear + 0.55;
@@ -1285,13 +1358,19 @@ function createLoftedCarMaterial(spec, fixedColorHex = null, options = {}) {
   // Lamps, grilles & plates on the nose and tail (projected along z, so the lamps wrap around the corners)
   const hlUV = vec2(ax.sub(hlX), p.y.sub(hlY));
   const headlight = roundedRect(hlUV, vec2(hlW, hlH), 0.01).mul(smoothstep(0.02, 0.25, n.z)).mul(step(frontZone, p.z)).mul(isBody);
-  const turnFront = smoothstep(hlX + hlW * 0.65, hlX + hlW * 0.72, ax).mul(headlight);
+  const turnFront = livery === 'hk'
+    ? roundedRect(vec2(ax.sub(hlX + hlW * 0.72), p.y.sub(hlY - hlH * 0.55)), vec2(0.035, 0.025), 0.01).mul(headlight)
+    : smoothstep(hlX + hlW * 0.65, hlX + hlW * 0.72, ax).mul(headlight);
+
   const divider = smoothstep(max(fwidth(ax), 0.007), 0.002, abs(hlUV.x.add(hlW * 0.1)));
   const headlightLens = roundedRect(hlUV, vec2(hlW - 0.012, hlH - 0.012), 0.006)
     .mul(headlight).mul(one.sub(max(divider, turnFront)));
   const drlDist = abs(hlUV.y.add(hlH * 0.6));
   const drlEdge = max(fwidth(drlDist), 0.006);
-  const drl = smoothstep(drlEdge, 0.0, drlDist).mul(headlight).mul(one.sub(turnFront));
+  const drl = livery === 'hk'
+    ? float(0)
+    : smoothstep(drlEdge, 0.0, drlDist).mul(headlight).mul(one.sub(turnFront));
+
   const grille = roundedRect(vec2(p.x, p.y.sub(grY)), vec2(grW, grH), 0.015).mul(front);
   const intake = livery === 'hk'
     ? max(
@@ -1379,22 +1458,30 @@ function createLoftedCarMaterial(spec, fixedColorHex = null, options = {}) {
         .mul(one.sub(plates))
       : float(0.0);
 
-  // 5-spoke alloys (branchless 5-ray star SDF) with rim ring & hub, lug ribs on the tyre tread
+  // Five-spoke alloys; the Hong Kong taxi uses broader, gently swept steel-wheel spokes and five visible lug nuts.
   const wDir = wheelVec.div(max(wheelDist, 0.0001));
   let spokes = float(0.0);
+  let hkLugNuts = float(0.0);
   for (let k = 0; k < 5; k++) {
     const ang = (k * Math.PI * 2) / 5;
     const cs = Math.cos(ang);
     const sn = Math.sin(ang);
     const alongSpoke = wDir.x.mul(cs).add(wDir.y.mul(sn));
-    const perp = abs(wDir.x.mul(sn).sub(wDir.y.mul(cs))).mul(wheelDist);
-    spokes = max(spokes, smoothstep(0.034, 0.018, perp).mul(step(0.0, alongSpoke)));
+    const signedPerp = wDir.x.mul(sn).sub(wDir.y.mul(cs)).mul(wheelDist);
+    const sweep = livery === 'hk' ? alongSpoke.mul(wheelDist).mul(0.16) : float(0);
+    const perp = abs(signedPerp.sub(sweep));
+    const spokeWidth = livery === 'hk' ? 0.072 : 0.034;
+    spokes = max(spokes, smoothstep(spokeWidth, spokeWidth - 0.016, perp).mul(step(0.0, alongSpoke)));
+    if (livery === 'hk') {
+      const lug = length(wheelVec.sub(vec2(cs * 0.045, sn * 0.045)));
+      hkLugNuts = max(hkLugNuts, smoothstep(0.009, 0.005, lug));
+    }
   }
   const rimRing = smoothstep(wheelR.mul(0.56), wheelR.mul(0.6), wheelDist);
   const centerHub = smoothstep(0.068, 0.042, wheelDist);
   const centerCap = smoothstep(0.03, 0.018, wheelDist);
   const valveDot = smoothstep(0.028, 0.014, length(wheelVec.sub(vec2(0.0, wheelR.mul(-0.48)))));
-  const alloyMetal = clamp(max(max(spokes, valveDot), max(rimRing, centerHub)).sub(centerCap.mul(0.85)), 0.0, 1.0);
+  const alloyMetal = clamp(max(max(spokes, valveDot), max(rimRing, centerHub)).sub(centerCap.mul(0.85)).sub(hkLugNuts.mul(0.75)), 0.0, 1.0);
 
   // Black plastic & rubber (grilles, seals, trims, tyres, cladding) is matte; lamps, glass & chrome are glossy
   const matte = max(
@@ -1465,7 +1552,8 @@ function createLoftedCarMaterial(spec, fixedColorHex = null, options = {}) {
     body = mix(body, color(0xc78023), hkFog);
   }
   const lensShade = smoothstep(0.0, hlH, abs(hlUV.y)).mul(0.35).add(0.65);
-  const lampColor = mix(mix(color(0x30383e), color(0xc2ccd2).mul(lensShade), headlightLens), color(0xe4e9eb), drl);
+  const lensRibs = livery === 'hk' ? step(0.5, fract(p.x.mul(72.0))).mul(0.12).add(0.88) : float(1.0);
+  const lampColor = mix(mix(color(0x30383e), color(0xc2ccd2).mul(lensShade).mul(lensRibs), headlightLens), color(0xe4e9eb), drl);
   body = mix(body, mix(lampColor, color(0xc5802b), turnFront), headlight);
   // Tail: thin rubber seals around divided red, amber and clear lenses.
   const tailShade = smoothstep(0.0, tlH, abs(tlUV.y)).mul(-0.3).add(1.0);
@@ -1490,11 +1578,16 @@ function createLoftedCarMaterial(spec, fixedColorHex = null, options = {}) {
   // Glasshouse: tinted glass, black seals & B / C pillars, painted roof & A pillars, chrome sill strip, CHMSL
   const glassCol = mix(color(0x0a1016), color(0x1a2632), smoothstep(0.2, 0.9, n.y));
   let windowCol = mix(mix(mix(mix(paint, color(0x111315), seal), glassCol, glass), color(0xc9ced3), chromeBelt), color(0x6a0a0e), chmsl);
+  if (livery === 'hk') windowCol = mix(windowCol, color(0xc9c9c3), hkPillars);
+
   windowCol = mix(windowCol, color(0x15181b), rearWiper);
   if (livery === 'hk') windowCol = mix(windowCol, color(0xd8dad7), hkRoof);
 
   // Mirror caps (paint, glass facing back), taxi roof light, trims, alloys & tyres
-  const mirrorCol = mix(paint, color(0x7c8a94), mirrorGlass);
+  const mirrorCol = livery === 'hk'
+    ? mix(color(0xc0c4c5), color(0x52616a), mirrorGlass)
+    : mix(paint, color(0x7c8a94), mirrorGlass);
+
   const signBase = signY - 0.075;
   const signU = p.x.div(0.6).add(0.5);
   const signV = p.y.sub(signBase).div(0.15);
@@ -1504,7 +1597,7 @@ function createLoftedCarMaterial(spec, fixedColorHex = null, options = {}) {
     : null;
   let signCol = mix(color(0xf3efe2), mix(color(0xfff1b8), color(0x15181b), signGlyph), signFace);
   if (livery === 'hk') signCol = mix(signCol, signTex.rgb, signFace);
-  const alloyCol = mix(color(0x0b0e12), color(0xd8e0e8), alloyMetal);
+  const alloyCol = mix(color(0x0b0e12), livery === 'hk' ? color(0xd0d0c8) : color(0xd8e0e8), alloyMetal);
   const treadZone = smoothstep(wheelR.mul(0.74), wheelR.mul(0.83), wheelDist);
   const tyreBase = smoothstep(wheelR.mul(0.85), wheelR.mul(0.94), wheelDist).mul(0.22).add(0.78);
   const tyreCol = color(0x16181b).mul(tyreBase.add(spokes.mul(treadZone).mul(0.24)));
@@ -1514,6 +1607,7 @@ function createLoftedCarMaterial(spec, fixedColorHex = null, options = {}) {
   col = mix(col, signCol, isSign);
   col = mix(col, color(0x1b1e21), isTrim);
   if (livery === 'hk') {
+    col = mix(col, color(0xa8adb0), hkMetalTrim);
     col = mix(col, color(0xf2f4f5), hkPlateFront);
     col = mix(col, frontStickerTex.rgb, hkFrontDecal);
   }
@@ -1539,8 +1633,14 @@ function createLoftedCarMaterial(spec, fixedColorHex = null, options = {}) {
     metal = mix(metal, float(0.9), max(hkGrille, hkGrilleSurround));
     rough = mix(rough, float(0.22), hkCrown);
     metal = mix(metal, float(0.55), hkCrown);
-    rough = mix(rough, float(0.3), hkRoof);
-    metal = mix(metal, float(0.22), hkRoof);
+    rough = mix(rough, float(0.3), max(hkRoof, hkPillars));
+    metal = mix(metal, float(0.22), max(hkRoof, hkPillars));
+    rough = mix(rough, float(0.28), hkMetalTrim);
+    metal = mix(metal, float(0.5), hkMetalTrim);
+    rough = mix(rough, float(0.24), isMirror.mul(one.sub(mirrorGlass)));
+    metal = mix(metal, float(0.45), isMirror.mul(one.sub(mirrorGlass)));
+    rough = mix(rough, float(0.38), alloyMetal.mul(isAlloy));
+    metal = mix(metal, float(0.42), isAlloy);
   }
 
   // ---- Emissive: running, brake, reverse & turn lights, CHMSL, taxi roof light -----------------------------------

@@ -313,7 +313,7 @@ test('the Hong Kong theme selects the Crown Comfort taxi style', () => {
 
 test('Hong Kong livery paints a silver roof, black trim and chrome nose', () => {
   const source = read('js/actor-models.js');
-  for (const token of ['hkRoof', 'hkLower', 'hkStrip', 'hkGrille', 'hkGrilleSurround', 'hkHeadlightBezel', 'hkCrown', 'hkFog', 'hkFogBezel', 'hkPlateFront']) {
+  for (const token of ['hkRoof', 'hkLower', 'hkStrip', 'hkGrille', 'hkGrilleSurround', 'hkHeadlightBezel', 'hkCrown', 'hkFog', 'hkFogBezel', 'hkPlateFront', 'hkStripInsert', 'hkBumperInsert']) {
     assert.match(source, new RegExp(`const ${token} = livery === 'hk'`), `${token} is livery-gated`);
   }
   assert.match(source, /hkRoof/);
@@ -322,7 +322,7 @@ test('Hong Kong livery paints a silver roof, black trim and chrome nose', () => 
   assert.match(source, /one\.sub\(max\(glass, seal, chromeBelt\)\)/);
 });
 
-test('Hong Kong livery adds door lettering, a front seat sticker and a red roof sign', () => {
+test('Hong Kong livery follows the vertical door lettering and LPG reference decals', () => {
   const source = read('js/actor-models.js');
   assert.match(source, /function hkTaxiSideTexture\(\)/);
   assert.match(source, /function hkTaxiFrontTexture\(\)/);
@@ -332,6 +332,17 @@ test('Hong Kong livery adds door lettering, a front seat sticker and a red roof 
   assert.doesNotMatch(source, /TAXI 4 SEATS/);
   assert.doesNotMatch(source, /seatSticker\(655\)/);
   assert.match(source, /的士/);
+  assert.match(source, /fillText\('的', x, 100\)/);
+  assert.match(source, /fillText\('士', x, 205\)/);
+  assert.match(source, /石油氣的士/);
+  assert.match(source, /LPG/);
+  assert.match(source, /lpgAdvertisement\(434\)/);
+  assert.match(source, /lpgFender\(232\)/);
+  assert.match(source, /const turnFront = livery === 'hk'/);
+  assert.match(source, /hkLugNuts/);
+  assert.match(source, /hkPillars/);
+  assert.match(source, /windowCol = mix\(windowCol, color\(0xc9c9c3\), hkPillars\)/);
+  assert.match(source, /color\(0xc0c4c5\)/);
   assert.match(source, /lettering\(715\)/);
   assert.match(source, /lettering\(1333\)/);
   assert.match(source, /hkHandleOuter/);
@@ -379,6 +390,9 @@ test('Hong Kong traffic renders taxis with the catalog body and livery', () => {
   assert.match(traffic, /buildCarGeometry\(taxiSpec, false\)/);
   assert.match(traffic, /createLoftedCarMaterial\(taxiSpec, null, \{ livery: style\.livery \}\)/);
   assert.match(traffic, /'HongKongTaxis'/);
+  assert.match(traffic, /buildSteerableWheelGeo\(taxiSpec, -1\)/);
+  assert.match(traffic, /buildSteerableWheelGeo\(taxiSpec, 1\)/);
+  assert.match(traffic, /HongKongTaxiWheelLeft/);
   assert.match(traffic, /taxiSlot/);
   assert.match(traffic, /privateSlot/);
   assert.match(traffic, /vehicle\.taxi/);

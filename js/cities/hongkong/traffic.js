@@ -5,6 +5,7 @@ import {
   BODY_SPECS,
   HK_BUS_SPEC,
   buildCarGeometry,
+  buildSteerableWheelGeo,
   createLoftedCarMaterial,
   buildHongKongBusBodyGeometry,
   buildHongKongBusSignGeometry,
@@ -253,11 +254,25 @@ export function createHongKongTraffic(scene, { getFocus, taxiStyle }) {
   const wheelMesh = new THREE.InstancedMesh(
     new THREE.CylinderGeometry(0.34, 0.34, 0.24, 8).rotateZ(Math.PI / 2),
     new THREE.MeshStandardMaterial({ color: 0x111316, roughness: 0.86, metalness: 0.04 }),
-    CAR_COUNT * 4
+    Math.max(1, privateCount * 4)
   );
+  wheelMesh.count = privateCount * 4;
   wheelMesh.castShadow = true;
   wheelMesh.frustumCulled = false;
   wheelMesh.name = 'HongKongWheels';
+
+  // Taxis use the same five-opening silver wheels as the player, but only two instanced draws for the whole fleet.
+  const taxiWheelMat = createLoftedCarMaterial(taxiSpec, style.paint, { livery: style.livery });
+  const taxiWheelLeft = new THREE.InstancedMesh(buildSteerableWheelGeo(taxiSpec, -1), taxiWheelMat, Math.max(1, taxiCount * 2));
+  const taxiWheelRight = new THREE.InstancedMesh(buildSteerableWheelGeo(taxiSpec, 1), taxiWheelMat, Math.max(1, taxiCount * 2));
+  taxiWheelLeft.count = taxiWheelRight.count = taxiCount * 2;
+  taxiWheelLeft.name = 'HongKongTaxiWheelLeft';
+  taxiWheelRight.name = 'HongKongTaxiWheelRight';
+  for (const mesh of [taxiWheelLeft, taxiWheelRight]) {
+    mesh.castShadow = true;
+    mesh.frustumCulled = false;
+    group.add(mesh);
+  }
 
   const busBodyGeo = buildHongKongBusBodyGeometry();
   const busPaint = new THREE.InstancedBufferAttribute(new Float32Array(BUS_COUNT * 3), 3);
@@ -411,16 +426,32 @@ export function createHongKongTraffic(scene, { getFocus, taxiStyle }) {
         paint[vehicle.privateSlot * 3 + 1] = vehicle.paint.g;
         paint[vehicle.privateSlot * 3 + 2] = vehicle.paint.b;
       }
-      // Wheels are children of the body in spirit: local left/right ±0.79 m, axles ±1.38 m, centre 0.34 m up.
+      // Wheels are children of the body in spirit. Private cars keep the cheap shared cylinder; taxis use the Crown Comfort rims.
       wheelQuat.setFromAxisAngle(up, vehicle.heading);
-      for (let k = 0; k < 4; k++) {
-        const side = k < 2 ? 1 : -1;
-        const axle = k % 2 === 0 ? 1.38 : -1.38;
-        const lx = side * 0.79, lz = axle;
-        const wx = vehicle.x + c * lx + s * lz;
-        const wz = vehicle.z - s * lx + c * lz;
-        wheelMatrix.compose(pos.set(wx, 0.34, wz), wheelQuat, scaleOne);
-        wheelMesh.setMatrixAt(slot * 4 + k, wheelMatrix);
+      if (vehicle.taxi) {
+        spinQuat.setFromAxisAngle(xAxis, vehicle.wheelSpin);
+        wheelQuat.multiply(spinQuat);
+        for (const side of [-1, 1]) {
+          const wheels = side < 0 ? taxiWheelLeft : taxiWheelRight;
+          for (let axleIndex = 0; axleIndex < 2; axleIndex++) {
+            const lx = side * taxiSpec.wheelX;
+            const lz = axleIndex === 0 ? taxiSpec.wheelZ : -taxiSpec.wheelZ;
+            const wx = vehicle.x + c * lx + s * lz;
+            const wz = vehicle.z - s * lx + c * lz;
+            wheelMatrix.compose(pos.set(wx, taxiSpec.wheelRadius, wz), wheelQuat, scaleOne);
+            wheels.setMatrixAt(vehicle.taxiSlot * 2 + axleIndex, wheelMatrix);
+          }
+        }
+      } else {
+        for (let k = 0; k < 4; k++) {
+          const side = k < 2 ? 1 : -1;
+          const axle = k % 2 === 0 ? 1.38 : -1.38;
+          const lx = side * 0.79, lz = axle;
+          const wx = vehicle.x + c * lx + s * lz;
+          const wz = vehicle.z - s * lx + c * lz;
+          wheelMatrix.compose(pos.set(wx, 0.34, wz), wheelQuat, scaleOne);
+          wheelMesh.setMatrixAt(vehicle.privateSlot * 4 + k, wheelMatrix);
+        }
       }
     }
   }
@@ -445,6 +476,8 @@ export function createHongKongTraffic(scene, { getFocus, taxiStyle }) {
     carMesh.instanceMatrix.needsUpdate = true;
     taxiMesh.instanceMatrix.needsUpdate = true;
     wheelMesh.instanceMatrix.needsUpdate = true;
+    taxiWheelLeft.instanceMatrix.needsUpdate = true;
+    taxiWheelRight.instanceMatrix.needsUpdate = true;
     busBody.instanceMatrix.needsUpdate = true;
     busSign.instanceMatrix.needsUpdate = true;
     busWheelLeft.instanceMatrix.needsUpdate = true;
