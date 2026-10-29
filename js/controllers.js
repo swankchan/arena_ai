@@ -549,7 +549,7 @@ class ThirdPersonControllerManager {
       rearPlate.position.set(0, spec.plates[1], spec.zRear - 0.006);
       chassisPivot.add(rearPlate);
       const frontPlate = new THREE.Mesh(new THREE.BoxGeometry(0.32, 0.14, 0.02), frontPlateMat);
-      frontPlate.position.set(0, spec.plates[0], spec.zFront + 0.006);
+      frontPlate.position.set(0, spec.plates[0], spec.zFront + 0.04);
       chassisPivot.add(frontPlate);
     } else {
       const nyPlateTex = createNYLicensePlateTexture();
