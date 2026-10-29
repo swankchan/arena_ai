@@ -344,6 +344,34 @@ test('Hong Kong livery adds door lettering, a front seat sticker and a red roof 
   assert.match(source, /signTex\.g/);
 });
 
+test('Hong Kong buses use a detailed two-deck model with instanced wheels and destination signs', () => {
+  const actor = read('js/actor-models.js');
+  assert.match(actor, /const HK_BUS_SPEC = /);
+  assert.match(actor, /lowerWindow: \[1\.18, 2\.18\]/);
+  assert.match(actor, /upperWindow: \[2\.72, 3\.68\]/);
+  assert.match(actor, /function buildHongKongBusBodyGeometry\(\)/);
+  assert.match(actor, /buildBodyLoft\(HK_BUS_SPEC, 1\)/);
+  assert.match(actor, /function buildHongKongBusSignGeometry\(\)/);
+  assert.match(actor, /function createHongKongBusMaterial\(\)/);
+  assert.match(actor, /frontLowerGlass/);
+  assert.match(actor, /frontUpperGlass/);
+  assert.match(actor, /attribute\('busPaint', 'vec3'\)/);
+
+  const traffic = read('js/cities/hongkong/traffic.js');
+  assert.match(traffic, /buildHongKongBusBodyGeometry/);
+  assert.match(traffic, /buildHongKongBusSignGeometry/);
+  assert.match(traffic, /createHongKongBusMaterial/);
+  assert.match(traffic, /buildBusWheelGeo\(-1\)/);
+  assert.match(traffic, /buildBusWheelGeo\(1\)/);
+  assert.match(traffic, /createBusWheelMaterial/);
+  assert.match(traffic, /busPaint/);
+  assert.match(traffic, /HongKongBusBody/);
+  assert.match(traffic, /HongKongBusSigns/);
+  assert.match(traffic, /STAR FERRY/);
+  assert.doesNotMatch(traffic, /new THREE\.BoxGeometry\(2\.52, 4\.0, 11\.2\)/);
+  assert.doesNotMatch(traffic, /busGlass|busRoof/);
+});
+
 test('Hong Kong traffic renders taxis with the catalog body and livery', () => {
   const traffic = read('js/cities/hongkong/traffic.js');
   assert.match(traffic, /from '\.\.\/\.\.\/taxi-styles\.js'/);

@@ -3,14 +3,20 @@ import { GEO } from '../../hk-geodata.js';
 import { updateFollowCaps, collideTraffic, collidePlayer } from './collision.js';
 import {
   BODY_SPECS,
+  HK_BUS_SPEC,
   buildCarGeometry,
-  createLoftedCarMaterial
+  createLoftedCarMaterial,
+  buildHongKongBusBodyGeometry,
+  buildHongKongBusSignGeometry,
+  createHongKongBusMaterial,
+  buildBusWheelGeo,
+  createBusWheelMaterial
 } from '../../actor-models.js';
 import { DEFAULT_TAXI_STYLE, getTaxiStyle } from '../../taxi-styles.js';
 
 // Hong Kong road traffic. Cars follow the generated drivable graph, keep left, and are restaged around the player when
 // they drift beyond the visible halo. Private cars and taxis each have an instanced body mesh with shared wheels;
-// the double-decker buses use three more meshes.
+// the double-decker buses add a lofted body, destination signs and two instanced wheel meshes.
 
 const LANE_CLEARANCE = 0.42;
 
@@ -18,6 +24,31 @@ const hash = (n) => {
   const v = Math.sin(n * 12.9898 + 4.1414) * 43758.5453;
   return v - Math.floor(v);
 };
+
+function createHongKongBusDestinationTexture() {
+  const canvas = document.createElement('canvas');
+  canvas.width = 512;
+  canvas.height = 128;
+  const ctx = canvas.getContext('2d');
+  ctx.fillStyle = '#101518';
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+  ctx.fillStyle = '#f2a31a';
+  ctx.fillRect(10, 12, 104, 104);
+  ctx.fillStyle = '#111518';
+  ctx.font = '900 54px Inter, Arial, sans-serif';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText('1A', 62, 65);
+  ctx.fillStyle = '#ffb629';
+  ctx.textAlign = 'center';
+  ctx.font = '800 31px "Noto Sans TC", "PingFang TC", "Microsoft JhengHei", sans-serif';
+  ctx.fillText('尖沙咀', 322, 45);
+  ctx.font = '800 25px Inter, Arial, sans-serif';
+  ctx.fillText('STAR FERRY', 322, 88);
+  const texture = new THREE.CanvasTexture(canvas);
+  texture.colorSpace = THREE.SRGBColorSpace;
+  return texture;
+}
 
 function wrapAngle(a) {
   return a - Math.round(a / (Math.PI * 2)) * Math.PI * 2;
@@ -228,30 +259,38 @@ export function createHongKongTraffic(scene, { getFocus, taxiStyle }) {
   wheelMesh.frustumCulled = false;
   wheelMesh.name = 'HongKongWheels';
 
-  const busBody = new THREE.InstancedMesh(
-    new THREE.BoxGeometry(2.52, 4.0, 11.2),
-    new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.48, metalness: 0.08, vertexColors: false }),
+  const busBodyGeo = buildHongKongBusBodyGeometry();
+  const busPaint = new THREE.InstancedBufferAttribute(new Float32Array(BUS_COUNT * 3), 3);
+  busBodyGeo.setAttribute('busPaint', busPaint);
+  const busBody = new THREE.InstancedMesh(busBodyGeo, createHongKongBusMaterial(), BUS_COUNT);
+  const busSign = new THREE.InstancedMesh(
+    buildHongKongBusSignGeometry(),
+    new THREE.MeshBasicNodeMaterial({ map: createHongKongBusDestinationTexture() }),
     BUS_COUNT
   );
-  const busGlass = new THREE.InstancedMesh(
-    new THREE.BoxGeometry(2.56, 1.05, 8.6),
-    new THREE.MeshStandardMaterial({ color: 0x0d1a20, roughness: 0.18, metalness: 0.4 }),
-    BUS_COUNT
-  );
-  const busRoof = new THREE.InstancedMesh(
-    new THREE.BoxGeometry(2.44, 0.18, 10.5),
-    new THREE.MeshStandardMaterial({ color: 0xd8d8d2, roughness: 0.7 }),
-    BUS_COUNT
-  );
-  for (const mesh of [busBody, busGlass, busRoof]) {
-    mesh.castShadow = true;
-    mesh.receiveShadow = true;
+  const busWheelMat = createBusWheelMaterial();
+  const busWheelLeft = new THREE.InstancedMesh(buildBusWheelGeo(-1), busWheelMat, BUS_COUNT * 2);
+  const busWheelRight = new THREE.InstancedMesh(buildBusWheelGeo(1), busWheelMat, BUS_COUNT * 2);
+  busBody.name = 'HongKongBusBody';
+  busSign.name = 'HongKongBusSigns';
+  busWheelLeft.name = 'HongKongBusWheelLeft';
+  busWheelRight.name = 'HongKongBusWheelRight';
+  for (const mesh of [busBody, busSign, busWheelLeft, busWheelRight]) {
     mesh.frustumCulled = false;
     group.add(mesh);
   }
+  busBody.castShadow = busBody.receiveShadow = true;
+  busWheelLeft.castShadow = busWheelLeft.receiveShadow = true;
+  busWheelRight.castShadow = busWheelRight.receiveShadow = true;
+
   const busColors = [new THREE.Color(0xc22d2d), new THREE.Color(0xe9e5da), new THREE.Color(0xd46a23), new THREE.Color(0xd8b42e)];
-  for (let i = 0; i < BUS_COUNT; i++) busBody.setColorAt(i, busColors[i % busColors.length]);
-  busBody.instanceColor.needsUpdate = true;
+  for (let i = 0; i < BUS_COUNT; i++) {
+    const color = busColors[i % busColors.length];
+    busPaint.array[i * 3] = color.r;
+    busPaint.array[i * 3 + 1] = color.g;
+    busPaint.array[i * 3 + 2] = color.b;
+  }
+  busPaint.needsUpdate = true;
 
   group.add(carMesh, taxiMesh, wheelMesh);
 
@@ -260,6 +299,8 @@ export function createHongKongTraffic(scene, { getFocus, taxiStyle }) {
   const up = new THREE.Vector3(0, 1, 0);
   const scaleOne = new THREE.Vector3(1, 1, 1);
   const wheelQuat = new THREE.Quaternion();
+  const spinQuat = new THREE.Quaternion();
+  const xAxis = new THREE.Vector3(1, 0, 0);
   const wheelMatrix = new THREE.Matrix4();
   const pos = new THREE.Vector3();
 
@@ -318,7 +359,7 @@ export function createHongKongTraffic(scene, { getFocus, taxiStyle }) {
     }
     const targetHeading = Math.atan2(p.dx * vehicle.dir, p.dz * vehicle.dir);
     vehicle.heading += wrapAngle(targetHeading - vehicle.heading) * (1 - Math.exp(-dt * 7));
-    vehicle.wheelSpin = (vehicle.wheelSpin + step / 0.34) % (Math.PI * 2);
+    vehicle.wheelSpin = (vehicle.wheelSpin + step / (isBus ? HK_BUS_SPEC.wheelRadius : 0.34)) % (Math.PI * 2);
 
     // Restage vehicles that are far behind the player onto a nearby street. Off-screen here means "beyond the halo";
     // the game camera rarely sees a full 600 m radius in street canyons anyway.
@@ -346,10 +387,20 @@ export function createHongKongTraffic(scene, { getFocus, taxiStyle }) {
     matrix.compose(pos.set(vehicle.x, 0, vehicle.z), quat, scaleOne);
     if (isBus) {
       busBody.setMatrixAt(slot, matrix);
-      matrix.compose(pos.set(vehicle.x, 2.45, vehicle.z), quat, scaleOne);
-      busGlass.setMatrixAt(slot, matrix);
-      matrix.compose(pos.set(vehicle.x, 4.13, vehicle.z), quat, scaleOne);
-      busRoof.setMatrixAt(slot, matrix);
+      busSign.setMatrixAt(slot, matrix);
+      spinQuat.setFromAxisAngle(xAxis, vehicle.wheelSpin);
+      wheelQuat.copy(quat).multiply(spinQuat);
+      for (const side of [-1, 1]) {
+        const wheels = side < 0 ? busWheelLeft : busWheelRight;
+        for (let axleIndex = 0; axleIndex < 2; axleIndex++) {
+          const lx = side * HK_BUS_SPEC.wheelX;
+          const lz = axleIndex === 0 ? HK_BUS_SPEC.wheelZ : -HK_BUS_SPEC.wheelZ;
+          const wx = vehicle.x + c * lx + s * lz;
+          const wz = vehicle.z - s * lx + c * lz;
+          wheelMatrix.compose(pos.set(wx, HK_BUS_SPEC.wheelRadius, wz), wheelQuat, scaleOne);
+          wheels.setMatrixAt(slot * 2 + axleIndex, wheelMatrix);
+        }
+      }
     } else {
       if (vehicle.taxi) {
         taxiMesh.setMatrixAt(vehicle.taxiSlot, matrix);
@@ -395,8 +446,9 @@ export function createHongKongTraffic(scene, { getFocus, taxiStyle }) {
     taxiMesh.instanceMatrix.needsUpdate = true;
     wheelMesh.instanceMatrix.needsUpdate = true;
     busBody.instanceMatrix.needsUpdate = true;
-    busGlass.instanceMatrix.needsUpdate = true;
-    busRoof.instanceMatrix.needsUpdate = true;
+    busSign.instanceMatrix.needsUpdate = true;
+    busWheelLeft.instanceMatrix.needsUpdate = true;
+    busWheelRight.instanceMatrix.needsUpdate = true;
     carMesh.geometry.attributes.paintColor.needsUpdate = true;
   }
 
