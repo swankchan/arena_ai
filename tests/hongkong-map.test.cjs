@@ -4,20 +4,30 @@ const { join } = require('node:path');
 const test = require('node:test');
 
 let GEO;
+let HK_FULL_MAP;
 let meta;
+let cfg;
+let makeFrame;
+let pointInRing;
 let hongKongFitZoom;
+let isHongKongCorePoint;
+let HKGMapSystem;
 test.before(async () => {
   ({ GEO } = await import('../js/hk-geodata.js'));
+  ({ HK_FULL_MAP } = await import('../js/hk-full-map-data.js'));
   meta = await import('../js/cities/hongkong/meta.js');
-  ({ hongKongFitZoom } = await import('../js/cities/hongkong/map.js'));
+  ({ default: cfg } = await import('../tools/cities/hongkong/config.mjs'));
+  ({ makeFrame } = await import('../tools/geo/frame.mjs'));
+  ({ pointInRing } = await import('../tools/geo/geom.mjs'));
+  ({ hongKongFitZoom, isHongKongCorePoint, HKGMapSystem } = await import('../js/cities/hongkong/map.js'));
 });
 
 test('Hong Kong full-map fit uses the available wide and portrait viewports', () => {
-  const depth = GEO.bounds.maxZ - GEO.bounds.minZ;
-  const width = GEO.bounds.maxX - GEO.bounds.minX;
-  const wideZoom = hongKongFitZoom(GEO.bounds, 1568, 756);
+  const depth = HK_FULL_MAP.bounds.maxZ - HK_FULL_MAP.bounds.minZ;
+  const width = HK_FULL_MAP.bounds.maxX - HK_FULL_MAP.bounds.minX;
+  const wideZoom = hongKongFitZoom(HK_FULL_MAP.bounds, 1568, 756);
   assert.ok(wideZoom * depth / 756 > 0.96, 'the wide-screen fit uses over 96% of the canvas height');
-  const portraitZoom = hongKongFitZoom(GEO.bounds, 390, 844);
+  const portraitZoom = hongKongFitZoom(HK_FULL_MAP.bounds, 390, 844);
   assert.ok(portraitZoom * width / 390 > 0.97, 'the portrait fit uses over 97% of the canvas width');
   assert.ok(wideZoom > Math.min(
     1568 / (width * 1.08),
@@ -29,9 +39,45 @@ test('Hong Kong opens on the fitted atlas and prevents tiny manual zoom-outs', (
   const source = readFileSync(join(__dirname, '../js/cities/hongkong/map.js'), 'utf8');
   assert.match(source, /this\.resizeFullCanvas\(\);\s*this\.fitAll\(\);\s*this\.renderFullMap\(\)/);
   assert.match(source, /minimumFullZoom\(\)/);
-  assert.match(source, /this\.fitZoom\(\) \* 0\.85/);
+  assert.match(source, /return Math\.max\(MIN_FULL_ZOOM, this\.fitZoom\(\)\);/);
+  assert.match(source, /hongKongFitZoom\(HK_FULL_MAP\.bounds, w, h\)/);
   assert.match(source, /Math\.max\(this\.minimumFullZoom\(\), this\.viewZoom \/ 1\.45\)/);
   assert.match(source, /Math\.max\(this\.minimumFullZoom\(\), Math\.min\(MAX_FULL_ZOOM, this\.viewZoom \* factor\)\)/);
+});
+
+test('Hong Kong OSM atlas contains territory-wide land, roads, parks and place labels', () => {
+  assert.ok(HK_FULL_MAP.land.length >= 200);
+  assert.ok(HK_FULL_MAP.roads.length >= 45000);
+  assert.ok(HK_FULL_MAP.parks.length >= 1300);
+  assert.ok(HK_FULL_MAP.places.length >= 1900);
+  for (const name of ['大嶼山', '香港島', '青衣', '屯門', '元朗', '沙田', '西貢', '東涌', '大澳', '長洲', '南丫島']) {
+    assert.ok(HK_FULL_MAP.places.some((place) => place[0] === name), `${name} has an OSM place label`);
+  }
+  const frame = makeFrame(cfg.frame);
+  const rings = HK_FULL_MAP.land.map((flat) => {
+    const points = [];
+    for (let i = 0; i + 1 < flat.length; i += 2) points.push([flat[i], flat[i + 1]]);
+    return points;
+  });
+  for (const check of cfg.fullMapLandChecks) {
+    const [x, z] = frame.toWorld(check.lon, check.lat);
+    assert.ok(rings.some((ring) => pointInRing(ring, x, z)), `${check.name} is on baked atlas land`);
+  }
+  for (const check of cfg.fullMapWaterChecks) {
+    const [x, z] = frame.toWorld(check.lon, check.lat);
+    assert.equal(rings.some((ring) => pointInRing(ring, x, z)), false, `${check.name} remains water`);
+  }
+});
+
+test('Hong Kong atlas clicks outside the detailed core never teleport', () => {
+  const core = { x: (GEO.bounds.minX + GEO.bounds.maxX) / 2, z: (GEO.bounds.minZ + GEO.bounds.maxZ) / 2 };
+  assert.equal(isHongKongCorePoint(core.x, core.z), true);
+  const tuenMun = HK_FULL_MAP.places.find((place) => place[0] === '屯門');
+  assert.equal(isHongKongCorePoint(tuenMun[1], tuenMun[2]), false);
+  let teleports = 0;
+  const fake = { elHoverInfo: null, onTeleport: () => teleports++ };
+  assert.equal(HKGMapSystem.prototype.teleportAt.call(fake, tuenMun[1], tuenMun[2]), false);
+  assert.equal(teleports, 0);
 });
 
 test('Hong Kong road teleports reject water nodes and keep generated spawns on land', () => {

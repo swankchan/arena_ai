@@ -17,9 +17,10 @@ import osmium
 
 MAJOR = re.compile(r"^(motorway|trunk|primary|secondary|tertiary|motorway_link|trunk_link|primary_link|secondary_link|tertiary_link)$")
 MINOR = re.compile(r"^(unclassified|residential|living_street|service|pedestrian)$")
-PARK_LEISURE = {"park", "garden", "playground", "pitch", "recreation_ground"}
+PARK_LEISURE = {"park", "garden", "playground", "pitch", "recreation_ground", "nature_reserve"}
 PARK_LANDUSE = {"grass", "forest", "recreation_ground"}
 PARK_NATURAL = {"wood", "scrub"}
+PLACE_TYPES = {"city", "town", "suburb", "quarter", "neighbourhood", "village", "hamlet", "island", "islet", "archipelago"}
 DOWNLOAD_URL = "https://download.geofabrik.de/asia/china/hong-kong-latest.osm.pbf"
 
 
@@ -36,7 +37,7 @@ def is_landmark_way(tags):
 
 
 def is_park_relation(tags):
-    return tags.get("leisure") in {"park", "garden"}
+    return tags.get("leisure") in {"park", "garden", "nature_reserve"}
 
 
 def is_landmark_relation(tags):
@@ -44,34 +45,40 @@ def is_landmark_relation(tags):
 
 
 class RelationCollector(osmium.SimpleHandler):
-    def __init__(self):
+    def __init__(self, include_places=False):
         super().__init__()
         self.relations = []
         self.member_refs = set()
+        self.include_places = include_places
 
     def relation(self, relation):
         tags = tag_dict(relation.tags)
         park = is_park_relation(tags)
         landmark = is_landmark_relation(tags)
-        if not park and not landmark:
+        place = self.include_places and tags.get("place") in {"island", "archipelago"} and bool(tags.get("name"))
+        if not park and not landmark and not place:
             return
         members = [(member.ref, member.role) for member in relation.members if member.type == "w"]
-        self.relations.append({"id": relation.id, "tags": tags, "members": members, "park": park, "landmark": landmark})
+        self.relations.append({"id": relation.id, "tags": tags, "members": members, "park": park, "landmark": landmark, "place": place})
         self.member_refs.update(ref for ref, _ in members)
 
 
 class CacheExtractor(osmium.SimpleHandler):
-    def __init__(self, bounds, relations, member_refs, source):
+    def __init__(self, bounds, relations, member_refs, source, include_places=False):
         super().__init__()
         self.bounds = bounds
         self.relations = relations
         self.member_refs = member_refs
         self.source = source
-        self.caches = {name: [] for name in [
+        self.include_places = include_places
+        filenames = [
             "roads_major.json", "roads_minor_sw.json", "roads_minor_se.json",
             "roads_minor_nw.json", "roads_minor_ne.json", "coastline.json",
             "parks.json", "landmarks.json"
-        ]}
+        ]
+        if include_places:
+            filenames.append("places.json")
+        self.caches = {name: [] for name in filenames}
         self.member_geometry = {}
         south, west, north, east = bounds
         mid_lat = (south + north) / 2
@@ -96,6 +103,21 @@ class CacheExtractor(osmium.SimpleHandler):
                 return None
             geometry.append({"lat": node.lat, "lon": node.lon})
         return geometry
+
+    def node(self, node):
+        if not self.include_places or not node.location.valid():
+            return
+        tags = tag_dict(node.tags)
+        if tags.get("place") not in PLACE_TYPES:
+            return
+        if not (tags.get("name:zh") or tags.get("name:zh-Hant") or tags.get("name")):
+            return
+        south, west, north, east = self.bounds
+        if not (south <= node.lat <= north and west <= node.lon <= east):
+            return
+        self.caches["places.json"].append({
+            "type": "node", "id": node.id, "lat": node.lat, "lon": node.lon, "tags": tags
+        })
 
     def way(self, way):
         tags = tag_dict(way.tags)
@@ -146,6 +168,8 @@ class CacheExtractor(osmium.SimpleHandler):
                 self.caches["parks.json"].append(element)
             if relation["landmark"]:
                 self.caches["landmarks.json"].append(element)
+            if relation.get("place") and self.include_places:
+                self.caches["places.json"].append(element)
 
     def write(self, out_dir):
         self.finish_relations()
@@ -164,6 +188,7 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--input", required=True, type=Path)
     parser.add_argument("--out-dir", required=True, type=Path)
+    parser.add_argument("--places", action="store_true", help="also extract named place nodes and island relations for the full-Hong-Kong atlas")
     for name in ("south", "west", "north", "east"):
         parser.add_argument(f"--{name}", required=True, type=float)
     args = parser.parse_args()
@@ -183,9 +208,9 @@ def main():
         "license": "ODbL 1.0",
     }
 
-    collector = RelationCollector()
+    collector = RelationCollector(include_places=args.places)
     collector.apply_file(str(args.input))
-    extractor = CacheExtractor(bounds, collector.relations, collector.member_refs, source)
+    extractor = CacheExtractor(bounds, collector.relations, collector.member_refs, source, include_places=args.places)
     extractor.apply_file(str(args.input), locations=True)
     args.out_dir.mkdir(parents=True, exist_ok=True)
     counts = extractor.write(args.out_dir)

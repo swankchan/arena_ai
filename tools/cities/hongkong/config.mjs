@@ -20,6 +20,28 @@ export default {
   dataBounds: { south: 22.2655, west: 114.1315, north: 22.3370, east: 114.2120 },
   coreBounds: { south: 22.2655, west: 114.1315, north: 22.3370, east: 114.2120 },
 
+  // Overview-only OSM layer for the M atlas: all Hong Kong districts and islands, plus a small amount of
+  // surrounding coastline for context. It does not enlarge the detailed 3D playable core.
+  fullMapBounds: { south: 22.13, west: 113.81, north: 22.58, east: 114.46 },
+  fullMapLandChecks: [
+    { lat: 22.2819, lon: 114.1585, name: '中環' },
+    { lat: 22.3908, lon: 113.9770, name: '屯門' },
+    { lat: 22.3822, lon: 114.2728, name: '西貢' },
+    { lat: 22.2871, lon: 113.9404, name: '東涌' },
+    { lat: 22.2542, lon: 113.8636, name: '大澳' },
+    { lat: 22.2645, lon: 114.0013, name: '梅窩' },
+    { lat: 22.2050, lon: 114.0290, name: '長洲' },
+    { lat: 22.2200, lon: 114.1100, name: '南丫島' },
+    { lat: 22.5455, lon: 114.2216, name: '沙頭角' }
+  ],
+  fullMapWaterChecks: [
+    { lat: 22.2910, lon: 114.1690, name: '維多利亞港' },
+    { lat: 22.3200, lon: 114.3400, name: '牛尾海' },
+    { lat: 22.4800, lon: 114.4000, name: '大鵬灣' },
+    { lat: 22.1500, lon: 114.1000, name: '南丫島以南' },
+    { lat: 22.4700, lon: 113.9800, name: '后海灣' }
+  ],
+
   // No hand-placed sea seeds: the OSM coastline closes both shores inside the download box, and the land extractor
   // seeds water from the seaward side of the coastline itself. Hand-picked seeds are easy to put on a pier or a
   // reclamation edge, which floods the land instead of the harbour.

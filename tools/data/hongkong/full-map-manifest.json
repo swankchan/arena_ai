@@ -1,0 +1,27 @@
+{
+  "dataset": "Geofabrik Hong Kong OSM extract",
+  "downloadUrl": "https://download.geofabrik.de/asia/china/hong-kong-latest.osm.pbf",
+  "sha256": "c6fd49e15358616f46e3f00efb041ef2dfe6df470274b6074bc6492f3e406224",
+  "sourceTimestamp": "2026-10-29T21:21:26Z",
+  "attribution": "© OpenStreetMap contributors",
+  "license": "ODbL 1.0",
+  "bounds": {
+    "south": 22.13,
+    "west": 113.81,
+    "north": 22.58,
+    "east": 114.46
+  },
+  "output": "js/hk-full-map-data.js",
+  "bytes": 3714205,
+  "counts": {
+    "landRings": 217,
+    "roads": 46717,
+    "namedRoads": 39152,
+    "parks": 1344,
+    "places": 1917
+  },
+  "validation": {
+    "landChecks": 9,
+    "waterChecks": 5
+  }
+}

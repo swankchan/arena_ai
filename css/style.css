@@ -34,7 +34,7 @@
   --shadow: 0 18px 40px -18px rgba(0, 0, 0, 0.7), 0 2px 8px rgba(0, 0, 0, 0.2);
   --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
 
-  --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Helvetica Neue', Arial, sans-serif;
+  --font-sans: 'Inter', 'Noto Sans TC', 'Noto Sans CJK TC', 'PingFang TC', 'Microsoft JhengHei', -apple-system, BlinkMacSystemFont, 'Helvetica Neue', Arial, sans-serif;
   --font-sign: 'Overpass', 'Inter', 'Helvetica Neue', Arial, sans-serif;
 }
 
@@ -1186,6 +1186,23 @@ body[data-mode='helicopter'] .gauge-alt {
   overflow: hidden;
   text-overflow: ellipsis;
 }
+
+.fullmap-attribution {
+  position: absolute;
+  left: var(--edge);
+  bottom: var(--edge);
+  max-width: min(430px, calc(100% - 2 * var(--edge)));
+  padding: 8px 12px;
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--text-3);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  pointer-events: none;
+}
+
+.fullmap-attribution:empty { display: none; }
 
 .fullmap-legend {
   position: absolute;

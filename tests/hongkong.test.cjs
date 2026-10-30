@@ -161,7 +161,8 @@ test('the map draws Chinese labels with a CJK-capable font stack', () => {
   assert.match(source, /Noto Sans TC|PingFang TC|Microsoft JhengHei|Noto Sans CJK/);
   assert.match(source, /AREA_LABELS|PLACE_NAMES/);
   assert.match(source, /landmark/i);
-  assert.match(source, /詳細市區全圖/);
+  assert.match(source, /全港總圖/);
+  assert.match(source, /© OpenStreetMap contributors/);
   assert.doesNotMatch(source, /全香港 · 中環至旺角/);
 });
 
