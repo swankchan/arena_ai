@@ -1,6 +1,6 @@
-// Hong Kong: Victoria Harbour both shores. The detailed core covers the island from Shek Tong Tsui through Central,
-// Wan Chai and North Point to Tai Hang/Happy Valley, and Kowloon from Tsim Sha Tsui through Mong Kok and Ho Man Tin
-// to Sham Shui Po/Kowloon City. This is a flat street-level world; terrain elevation is not imported.
+// Hong Kong: Victoria Harbour both shores. The detailed core covers the island from Kennedy Town through Central,
+// Wan Chai and North Point to Quarry Bay/Happy Valley, and Kowloon from Tsim Sha Tsui through Mong Kok and Ho Man Tin
+// to Cheung Sha Wan/Shek Kip Mei/Kowloon Tong. This is a flat street-level world; terrain elevation is not imported.
 export default {
   id: 'hongkong',
   name: '香港',
@@ -32,7 +32,12 @@ export default {
     { lat: 22.2800, lon: 114.1840, name: '銅鑼灣' },
     { lat: 22.2895, lon: 114.1930, name: '北角' },
     { lat: 22.2870, lon: 114.1420, name: '西營盤' },
-    { lat: 22.3030, lon: 114.1830, name: '紅磡' }
+    { lat: 22.3030, lon: 114.1830, name: '紅磡' },
+    { lat: 22.2825, lon: 114.1319, name: '堅尼地城' },
+    { lat: 22.2860, lon: 114.2090, name: '鰂魚涌' },
+    { lat: 22.3350, lon: 114.1560, name: '長沙灣' },
+    { lat: 22.3320, lon: 114.1680, name: '石硤尾' },
+    { lat: 22.3350, lon: 114.1760, name: '九龍塘' }
   ],
 
   // Block cutter

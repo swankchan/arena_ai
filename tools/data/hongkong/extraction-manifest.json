@@ -1,0 +1,26 @@
+{
+  "dataset": "Geofabrik Hong Kong OSM extract",
+  "downloadUrl": "https://download.geofabrik.de/asia/china/hong-kong-latest.osm.pbf",
+  "sha256": "c6fd49e15358616f46e3f00efb041ef2dfe6df470274b6074bc6492f3e406224",
+  "sourceTimestamp": "2026-10-29T21:21:26Z",
+  "attribution": "© OpenStreetMap contributors",
+  "license": "ODbL 1.0",
+  "extractedAt": "2026-10-30T15:01:15.990267+00:00",
+  "bounds": {
+    "south": 22.2655,
+    "west": 114.1315,
+    "north": 22.337,
+    "east": 114.212
+  },
+  "relationCandidates": 138,
+  "counts": {
+    "roads_major.json": 9256,
+    "roads_minor_sw.json": 2208,
+    "roads_minor_se.json": 1921,
+    "roads_minor_nw.json": 2342,
+    "roads_minor_ne.json": 2869,
+    "coastline.json": 98,
+    "parks.json": 2971,
+    "landmarks.json": 4696
+  }
+}

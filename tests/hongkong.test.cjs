@@ -38,14 +38,14 @@ test('Hong Kong is a full-detail city pack in the registry', () => {
 test('the emitted geodata covers both shores of Victoria Harbour at street level', () => {
   assert.equal(geo.city, 'hongkong');
   assert.ok(geo.land.length >= 2, 'island and Kowloon are separate land masses');
-  assert.ok(geo.blocks.length >= 2000, `${geo.blocks.length} real blocks in the expanded core`);
-  assert.ok(geo.roads.length >= 8000, `${geo.roads.length} street polylines in the expanded core`);
+  assert.ok(geo.blocks.length >= 2500, `${geo.blocks.length} real blocks in the expanded core`);
+  assert.ok(geo.roads.length >= 10000, `${geo.roads.length} street polylines in the expanded core`);
   assert.ok(Object.keys(geo.landmarks).length >= 150, 'named tall buildings');
-  assert.ok(geo.parks.length >= 500, 'parks and gardens');
+  assert.ok(geo.parks.length >= 700, 'parks and gardens');
 
   const width = geo.bounds.maxX - geo.bounds.minX;
   const depth = geo.bounds.maxZ - geo.bounds.minZ;
-  assert.ok(width >= 6800 && depth >= 6800, `expanded detailed core is ${Math.round(width)} x ${Math.round(depth)} m`);
+  assert.ok(width >= 8200 && depth >= 7900, `expanded detailed core is ${Math.round(width)} x ${Math.round(depth)} m`);
 
   // The drivable graph must reach Central, Tsim Sha Tsui and Mong Kok. Keeping only the largest connected component
   // used to leave the whole island without a graph.
@@ -58,7 +58,37 @@ test('the emitted geodata covers both shores of Victoria Harbour at street level
   assert.ok(nearest(0, 0) < 120, 'a road node near Statue Square');
   assert.ok(nearest(1298, -1417) < 120, 'a road node at Tsim Sha Tsui');
   assert.ok(nearest(1010, -4141) < 120, 'a road node at Mong Kok');
-  assert.ok(geo.roadGraph.links.length >= 13000, `${geo.roadGraph.links.length} drivable links in the expanded core`);
+  assert.ok(nearest(-2760, -519) < 120, 'a road node at Kennedy Town');
+  assert.ok(nearest(5139, -843) < 120, 'a road node at Quarry Bay');
+  assert.ok(nearest(-346, -5676) < 120, 'a road node at Cheung Sha Wan');
+  assert.ok(nearest(1843, -5670) < 120, 'a road node at Kowloon Tong');
+  assert.ok(geo.roadGraph.links.length >= 18000, `${geo.roadGraph.links.length} drivable links in the expanded core`);
+});
+
+test('Geofabrik extraction preserves provenance and complete nonempty cache layers', () => {
+  const manifest = JSON.parse(read('tools/data/hongkong/extraction-manifest.json'));
+  const source = JSON.parse(read('tools/data/hongkong/source-manifest.json'));
+  assert.equal(manifest.sha256, source.sha256);
+  assert.match(manifest.sha256, /^[a-f0-9]{64}$/);
+  assert.match(manifest.sourceTimestamp, /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z$/);
+  assert.ok(source.bytes > 1000000, 'the provenance describes a real PBF, not an empty placeholder');
+  assert.deepEqual(manifest.bounds, { south: 22.2655, west: 114.1315, north: 22.337, east: 114.212 });
+
+  for (const [filename, count] of Object.entries(manifest.counts)) {
+    const cache = JSON.parse(read(`tools/data/hongkong/${filename}`));
+    assert.ok(count > 0, `${filename} is nonempty`);
+    assert.equal(cache.elements.length, count, `${filename} count matches its manifest`);
+    assert.equal(cache.source.sha256, manifest.sha256, `${filename} comes from the recorded PBF`);
+    const ids = new Set();
+    for (const element of cache.elements) {
+      assert.ok(Number.isFinite(element.id), `${filename} has real OSM ids`);
+      assert.ok(element.type === 'way' || element.type === 'relation');
+      if (element.type === 'way') assert.ok(element.geometry.length >= 2, `${filename} retains way geometry`);
+      else assert.ok(element.members.length > 0, `${filename} retains relation members`);
+      ids.add(`${element.type}:${element.id}`);
+    }
+    assert.equal(ids.size, cache.elements.length, `${filename} has no duplicate elements`);
+  }
 });
 
 test('street, park and place names are Chinese', () => {
@@ -74,7 +104,7 @@ test('street, park and place names are Chinese', () => {
   assert.ok(meta.PLACE_NAMES.has('尖沙咀'));
   assert.ok(meta.PLACE_NAMES.has('旺角'));
   assert.ok(meta.PLACE_NAMES.has('維多利亞港'));
-  for (const place of ['石塘咀', '天后', '大坑', '跑馬地', '大角咀', '何文田', '土瓜灣', '深水埗', '九龍塘']) {
+  for (const place of ['石塘咀', '堅尼地城', '天后', '鰂魚涌', '大坑', '跑馬地', '大角咀', '何文田', '土瓜灣', '深水埗', '長沙灣', '石硤尾', '九龍塘']) {
     assert.ok(meta.PLACE_NAMES.has(place), `${place} is labelled in the expanded core`);
   }
 });
@@ -109,10 +139,10 @@ test('location labels resolve Chinese street corners, landmarks and districts', 
 
 test('teleports cover both shores with Chinese names', () => {
   const names = meta.TELEPORTS.map((point) => point.name).join(' ');
-  for (const place of ['中環', '尖沙咀', '旺角', '銅鑼灣', '石塘咀', '跑馬地', '深水埗']) {
+  for (const place of ['中環', '尖沙咀', '旺角', '銅鑼灣', '石塘咀', '堅尼地城', '跑馬地', '鰂魚涌', '深水埗', '九龍塘']) {
     assert.match(names, new RegExp(place));
   }
-  assert.ok(meta.TELEPORTS.length >= 10);
+  assert.ok(meta.TELEPORTS.length >= 13);
   for (const point of meta.TELEPORTS) {
     assert.match(point.name, CJK);
     assert.ok(Number.isFinite(point.x) && Number.isFinite(point.z));
@@ -120,7 +150,7 @@ test('teleports cover both shores with Chinese names', () => {
     assert.ok(point.z >= geo.bounds.minZ && point.z <= geo.bounds.maxZ);
     assert.ok(Number.isFinite(point.heading));
   }
-  for (const id of ['shektongtsui', 'happyvalley', 'shamshuipo']) {
+  for (const id of ['kennedytown', 'shektongtsui', 'happyvalley', 'quarrybay', 'shamshuipo', 'kowloontong']) {
     const point = meta.TELEPORTS.find((candidate) => candidate.id === id);
     assert.ok(meta.nearestRoads(point.x, point.z, 35).length > 0, `${point.name} snaps to a real road`);
   }
@@ -246,6 +276,10 @@ test('Hong Kong traffic routes collisions through the shared solver', () => {
 test('Hong Kong colliders leave the drivable graph clear', () => {
   const list = hongKongColliders();
   const blockedAt = indexColliders(list);
+  for (const id of ['kennedytown', 'shektongtsui', 'happyvalley', 'quarrybay', 'shamshuipo', 'kowloontong']) {
+    const point = meta.TELEPORTS.find((candidate) => candidate.id === id);
+    assert.equal(blockedAt(point.x, point.z), null, `${point.name} spawn is clear of solid geometry`);
+  }
   const nodes = geo.roadGraph.nodes;
   const links = geo.roadGraph.links;
   let total = 0, blocked = 0;

@@ -18,7 +18,7 @@ export const CITIES = [
     short: 'HK',
     badge: 'Full detail',
     tagline: '維多利亞港兩岸，港島北岸至九龍腹地',
-    description: '由真實街道與街區建成的香港：石塘咀、中環、灣仔、銅鑼灣、跑馬地、尖沙咀、旺角、何文田、深水埗與九龍城，全部街道以中文命名。',
+    description: '由真實街道與街區建成的香港：堅尼地城、中環、灣仔、銅鑼灣、鰂魚涌、跑馬地、尖沙咀、旺角、長沙灣、石硤尾、九龍塘與九龍城，全部街道以中文命名。',
     load: () => import('./hongkong/index.js')
   },
   {

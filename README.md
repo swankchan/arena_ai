@@ -7,7 +7,7 @@ A city simulation built with [three.js](https://threejs.org/), WebGPURenderer, a
 ## Cities
 
 - **New York** — the full-detail world: every Manhattan block from 125th St to the Battery, real landmarks, subway entrances, avenue traffic signals, environmental audio synthesis, street map and minimap, and 11 camera presets (including the scenic and aerial rigs).
-- **Hong Kong** — the full-detail harbour city: Shek Tong Tsui, Central, Admiralty, Wan Chai, Causeway Bay, Tai Hang, Happy Valley, Tsim Sha Tsui, Jordan, Yau Ma Tei, Mong Kok, Tai Kok Tsui, Ho Man Tin, To Kwa Wan, Sham Shui Po and Kowloon City, built from OpenStreetMap blocks and streets with Chinese names, neon blade signs, red urban taxis, trams, the Star Ferry, harbour water, street map and minimap, and nine camera presets.
+- **Hong Kong** — the full-detail harbour city: Kennedy Town, Shek Tong Tsui, Central, Admiralty, Wan Chai, Causeway Bay, North Point, Quarry Bay, Tai Hang, Happy Valley, Tsim Sha Tsui, Jordan, Yau Ma Tei, Mong Kok, Tai Kok Tsui, Ho Man Tin, To Kwa Wan, Sham Shui Po, Cheung Sha Wan, Shek Kip Mei, Kowloon Tong and Kowloon City, built from OpenStreetMap blocks and streets with Chinese names, neon blade signs, red urban taxis, trams, the Star Ferry, harbour water, street map and minimap, and nine camera presets.
 - **Grid City** — a procedural 7×7 downtown generated in code at load: sidewalks, glass and stone towers, a central plaza with fountain, trees, street lamps and four teleport destinations. It has no external map data, map overlay or audio, and offers the three follow cameras.
 
 Add `?city=hongkong` (or `?city=grid`, `?city=newyork`) to the URL to skip the picker.
@@ -112,13 +112,20 @@ To rebuild it (requires the source extracts in `tools/data`, see `tools/build-ge
 GEO_DATA=tools/data node --max-old-space-size=8192 tools/build-geodata.mjs
 ```
 
-Hong Kong's geometry is generated from OpenStreetMap data (Overpass API) and baked into `js/hk-geodata.js`:
+Hong Kong's geometry is generated from OpenStreetMap data and baked into `js/hk-geodata.js`:
 
 ```sh
 node --max-old-space-size=8192 tools/build-city.mjs hongkong
 ```
 
-Cached Overpass extracts are reused from `tools/data/hongkong/`; set `GEO_REFRESH=1` to download them again.
+Cached extracts are reused from `tools/data/hongkong/`; set `GEO_REFRESH=1` to download them again through Overpass. The current caches were extracted from a [Geofabrik Hong Kong PBF](https://download.geofabrik.de/asia/china/hong-kong-latest.osm.pbf), with the source checksum, OSM timestamp, bounds and layer counts recorded in `source-manifest.json` and `extraction-manifest.json`. The raw PBF is not required for normal builds. To regenerate the caches from a local PBF, install Python's `osmium` package and run:
+
+```sh
+python3 tools/cities/hongkong/extract_pbf.py \
+  --input /path/to/hong-kong-latest.osm.pbf \
+  --out-dir tools/data/hongkong \
+  --south 22.2655 --west 114.1315 --north 22.3370 --east 114.2120
+```
 
 ## Make it your own
 

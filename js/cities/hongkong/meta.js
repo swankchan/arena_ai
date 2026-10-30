@@ -19,22 +19,26 @@ export const AREA_LABELS = [
   ['灣仔', 1381, 443, 0],
   ['銅鑼灣', 2515, 210, 0],
   ['北角', 3442, -842, 0],
+  ['鰂魚涌', 5139, -843, 0],
   ['天后', 3900, -650, 0],
   ['大坑', 3444, 400, 0],
   ['跑馬地', 2590, 1100, 0],
   ['上環', -989, -454, 0],
   ['西營盤', -1500, -565, 0],
   ['石塘咀', -1900, -630, 0],
+  ['堅尼地城', -2760, -519, 0],
   ['尖沙咀', 1278, -1672, 0],
   ['佐敦', 1175, -2558, 0],
   ['油麻地', 1072, -3333, 0],
   ['旺角', 1010, -4141, 0],
   ['大角咀', 247, -4448, 0],
   ['深水埗', 451, -5103, 0],
+  ['長沙灣', -346, -5676, 0],
+  ['石硤尾', 595, -5574, 0],
   ['何文田', 1721, -3705, 0],
   ['紅磡', 2412, -2336, 0],
   ['土瓜灣', 3249, -3989, 0],
-  ['九龍塘', 2306, -5113, 0],
+  ['九龍塘', 1843, -5670, 0],
   ['九龍城', 3133, -4880, 0],
   ['維多利亞港', 557, -1451, 1],
   ['香港公園', 144, 432, 2],
@@ -249,15 +253,18 @@ export function roadPointForTeleport(x, z) {
 
 export const TELEPORTS = [
   { id: 'central', name: '中環 皇后像廣場', sub: '干諾道中 · 天星碼頭', x: 20, z: -29, heading: 2.4 },
+  { id: 'kennedytown', name: '堅尼地城 卑路乍街', sub: '皇后大道西 · 堅彌地城海旁', ...spawnOnRoad(-2700, -500, { minWidth: 10 }) },
   { id: 'shektongtsui', name: '石塘咀 德輔道西', sub: '西邊街 · 山道', ...spawnOnRoad(-1900, -650, { minWidth: 10 }) },
   { id: 'admiralty', name: '金鐘 添馬公園', sub: '金鐘道 · 政府總部', x: 343, z: 283, heading: 2.6 },
   { id: 'wanchai', name: '灣仔 軒尼詩道', sub: '修頓球場 · 灣仔站', x: 1419, z: 467, heading: -1.57 },
   { id: 'causeway', name: '銅鑼灣 軒尼詩道', sub: '時代廣場 · 崇光百貨', x: 2446, z: 193, heading: -1.57 },
   { id: 'happyvalley', name: '跑馬地 黃泥涌道', sub: '雲地利道 · 跑馬地馬場', ...spawnOnRoad(2590, 1100, { minWidth: 8 }) },
+  { id: 'quarrybay', name: '鰂魚涌 英皇道', sub: '柏架山道 · 糖廠街', ...spawnOnRoad(5000, -800, { minWidth: 10 }) },
   { id: 'tst', name: '尖沙咀 鐘樓', sub: '梳士巴利道 · 天星碼頭', x: 1316, z: -1517, heading: -2.4 },
   { id: 'jordan', name: '佐敦 佐敦道', sub: '廟街 · 玉器市場', x: 1187, z: -2580, heading: Math.PI },
   { id: 'mongkok', name: '旺角 彌敦道', sub: '亞皆老街 · 女人街', x: 1013, z: -4143, heading: Math.PI },
-  { id: 'shamshuipo', name: '深水埗 汝州街', sub: '石硤尾街 · 鴨寮街', ...spawnOnRoad(451, -5103, { minWidth: 10 }) }
+  { id: 'shamshuipo', name: '深水埗 汝州街', sub: '石硤尾街 · 鴨寮街', ...spawnOnRoad(451, -5103, { minWidth: 10 }) },
+  { id: 'kowloontong', name: '九龍塘 律倫街', sub: '金巴倫道 · 達之路', ...spawnOnRoad(1800, -5670, { minWidth: 10 }) }
 ];
 
 // Spawns away from the busiest junction, each in its own lane/sidewalk.

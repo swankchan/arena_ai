@@ -135,7 +135,7 @@ export async function buildHongKong({ outFile = DEFAULT_OUT } = {}) {
 
   emitGeo(GEO, outFile, {
     title: 'Hong Kong — Victoria Harbour, northern Hong Kong Island, Happy Valley and central Kowloon.',
-    sources: 'OpenStreetMap © OpenStreetMap contributors (ODbL); coastline, roads, parks and landmark footprints via Overpass. Hong Kong Transport Department TIS_16 Traffic Aids Drawings (24 April 2026 mirror).',
+    sources: 'OpenStreetMap © OpenStreetMap contributors (ODbL); coastline, roads, parks and landmark footprints via Geofabrik Hong Kong extract or Overpass. Hong Kong Transport Department TIS_16 Traffic Aids Drawings (24 April 2026 mirror).',
     note: 'Flat street-level world: OSM geometry is real, but terrain elevation is not imported.'
   });
   return GEO;

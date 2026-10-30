@@ -12,8 +12,8 @@ import {
   getLocationLabel
 } from './meta.js';
 
-// Hong Kong pack: both shores of Victoria Harbour, from Shek Tong Tsui and Happy Valley to Sham Shui Po and
-// Kowloon City, built from real OpenStreetMap blocks, streets and landmark sites. The engine in js/main.js only
+// Hong Kong pack: both shores of Victoria Harbour, from Kennedy Town and Happy Valley to Quarry Bay, Cheung Sha Wan,
+// Kowloon Tong and Kowloon City, built from real OpenStreetMap blocks, streets and landmark sites. js/main.js only
 // sees the world object returned by build().
 
 const TAXI_STYLE = 'hk-urban';
