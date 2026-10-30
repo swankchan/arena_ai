@@ -366,6 +366,13 @@ test('Hong Kong buses use a detailed two-deck model with instanced wheels and de
   assert.match(actor, /const HK_BUS_SPEC = /);
   assert.match(actor, /lowerWindow: \[1\.18, 2\.18\]/);
   assert.match(actor, /upperWindow: \[2\.72, 3\.68\]/);
+  assert.match(actor, /axleZ: \[3\.55, -2\.25, -3\.55\]/);
+  assert.match(actor, /const yF = 2\.43/);
+  assert.match(actor, /hkBusSideDecalTexture/);
+  assert.match(actor, /hkBusFrontDecalTexture/);
+  assert.match(actor, /const isCitybus/);
+  assert.match(actor, /cityRed/);
+  assert.match(actor, /cityBlue/);
   assert.match(actor, /function buildHongKongBusBodyGeometry\(\)/);
   assert.match(actor, /buildBodyLoft\(HK_BUS_SPEC, 1\)/);
   assert.match(actor, /function buildHongKongBusSignGeometry\(\)/);
@@ -384,7 +391,10 @@ test('Hong Kong buses use a detailed two-deck model with instanced wheels and de
   assert.match(traffic, /busPaint/);
   assert.match(traffic, /HongKongBusBody/);
   assert.match(traffic, /HongKongBusSigns/);
-  assert.match(traffic, /STAR FERRY/);
+  assert.match(traffic, /BUS_COUNT \* HK_BUS_SPEC\.axleZ\.length/);
+  assert.match(traffic, /HK_BUS_SPEC\.axleZ\.entries\(\)/);
+  assert.match(traffic, /SHAU KEI WAN/);
+  assert.match(traffic, /筲箕灣/);
   assert.doesNotMatch(traffic, /new THREE\.BoxGeometry\(2\.52, 4\.0, 11\.2\)/);
   assert.doesNotMatch(traffic, /busGlass|busRoof/);
 });
@@ -403,7 +413,7 @@ test('Hong Kong bus doors and side destination sign face the left-hand-traffic k
   const signs = actor.slice(signStart, actor.indexOf('let _hkBusLoftedMat', signStart));
   assert.ok(signStart > 0);
   assert.match(signs, /rotateY\(Math\.PI \/ 2\)/);
-  assert.match(signs, /side\.translate\(carBodyHalfWidthAt\(s, 4\.15, 2\.43\) \+ 0\.008, 2\.43, 4\.15\)/);
+  assert.match(signs, /side\.translate\(carBodyHalfWidthAt\(s, 3\.55, 1\.67\) \+ 0\.008, 1\.67, 3\.55\)/);
 });
 
 test('Hong Kong traffic renders taxis with the catalog body and livery', () => {

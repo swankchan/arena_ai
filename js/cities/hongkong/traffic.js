@@ -33,19 +33,17 @@ function createHongKongBusDestinationTexture() {
   const ctx = canvas.getContext('2d');
   ctx.fillStyle = '#101518';
   ctx.fillRect(0, 0, canvas.width, canvas.height);
-  ctx.fillStyle = '#f2a31a';
-  ctx.fillRect(10, 12, 104, 104);
-  ctx.fillStyle = '#111518';
-  ctx.font = '900 54px Inter, Arial, sans-serif';
-  ctx.textAlign = 'center';
+  // White LED destination text and a large right-aligned route number, as on the supplied modern KMB references.
+  ctx.fillStyle = '#f4f1df';
+  ctx.textAlign = 'left';
   ctx.textBaseline = 'middle';
-  ctx.fillText('1A', 62, 65);
-  ctx.fillStyle = '#ffb629';
-  ctx.textAlign = 'center';
-  ctx.font = '800 31px "Noto Sans TC", "PingFang TC", "Microsoft JhengHei", sans-serif';
-  ctx.fillText('尖沙咀', 322, 45);
-  ctx.font = '800 25px Inter, Arial, sans-serif';
-  ctx.fillText('STAR FERRY', 322, 88);
+  ctx.font = '800 34px "Noto Sans TC", "PingFang TC", "Microsoft JhengHei", sans-serif';
+  ctx.fillText('筲箕灣', 22, 47);
+  ctx.font = '700 21px Inter, Arial, sans-serif';
+  ctx.fillText('SHAU KEI WAN', 22, 88);
+  ctx.textAlign = 'right';
+  ctx.font = '800 61px Inter, Arial, sans-serif';
+  ctx.fillText('102', 492, 67);
   const texture = new THREE.CanvasTexture(canvas);
   texture.colorSpace = THREE.SRGBColorSpace;
   return texture;
@@ -284,8 +282,8 @@ export function createHongKongTraffic(scene, { getFocus, taxiStyle }) {
     BUS_COUNT
   );
   const busWheelMat = createBusWheelMaterial();
-  const busWheelLeft = new THREE.InstancedMesh(buildBusWheelGeo(-1), busWheelMat, BUS_COUNT * 2);
-  const busWheelRight = new THREE.InstancedMesh(buildBusWheelGeo(1), busWheelMat, BUS_COUNT * 2);
+  const busWheelLeft = new THREE.InstancedMesh(buildBusWheelGeo(-1), busWheelMat, BUS_COUNT * HK_BUS_SPEC.axleZ.length);
+  const busWheelRight = new THREE.InstancedMesh(buildBusWheelGeo(1), busWheelMat, BUS_COUNT * HK_BUS_SPEC.axleZ.length);
   busBody.name = 'HongKongBusBody';
   busSign.name = 'HongKongBusSigns';
   busWheelLeft.name = 'HongKongBusWheelLeft';
@@ -298,7 +296,7 @@ export function createHongKongTraffic(scene, { getFocus, taxiStyle }) {
   busWheelLeft.castShadow = busWheelLeft.receiveShadow = true;
   busWheelRight.castShadow = busWheelRight.receiveShadow = true;
 
-  const busColors = [new THREE.Color(0xc22d2d), new THREE.Color(0xe9e5da), new THREE.Color(0xd46a23), new THREE.Color(0xd8b42e)];
+  const busColors = [new THREE.Color(0xd3262e), new THREE.Color(0xe9e5da), new THREE.Color(0xd46a23), new THREE.Color(0xd8b42e)];
   for (let i = 0; i < BUS_COUNT; i++) {
     const color = busColors[i % busColors.length];
     busPaint.array[i * 3] = color.r;
@@ -407,13 +405,12 @@ export function createHongKongTraffic(scene, { getFocus, taxiStyle }) {
       wheelQuat.copy(quat).multiply(spinQuat);
       for (const side of [-1, 1]) {
         const wheels = side < 0 ? busWheelLeft : busWheelRight;
-        for (let axleIndex = 0; axleIndex < 2; axleIndex++) {
+        for (const [axleIndex, lz] of HK_BUS_SPEC.axleZ.entries()) {
           const lx = side * HK_BUS_SPEC.wheelX;
-          const lz = axleIndex === 0 ? HK_BUS_SPEC.wheelZ : -HK_BUS_SPEC.wheelZ;
           const wx = vehicle.x + c * lx + s * lz;
           const wz = vehicle.z - s * lx + c * lz;
           wheelMatrix.compose(pos.set(wx, HK_BUS_SPEC.wheelRadius, wz), wheelQuat, scaleOne);
-          wheels.setMatrixAt(slot * 2 + axleIndex, wheelMatrix);
+          wheels.setMatrixAt(slot * HK_BUS_SPEC.axleZ.length + axleIndex, wheelMatrix);
         }
       }
     } else {
