@@ -35,6 +35,17 @@ const MAP = {
 };
 
 const RADAR_SCALE = 0.58;
+const MIN_FULL_ZOOM = 0.02;
+const MAX_FULL_ZOOM = 2.2;
+
+export function hongKongFitZoom(bounds, w, h) {
+  const width = Math.max(1, bounds.maxX - bounds.minX);
+  const depth = Math.max(1, bounds.maxZ - bounds.minZ);
+  return Math.max(MIN_FULL_ZOOM, Math.min(
+    Math.max(1, w) / (width * 1.03),
+    Math.max(1, h) / (depth * 1.04)
+  ));
+}
 
 function addRing(path, flat) {
   if (!flat || flat.length < 4) return;
@@ -264,11 +275,11 @@ export class HKGMapSystem {
     miniCard?.addEventListener('click', () => this.toggleFullMap(true));
     closeBtn?.addEventListener('click', () => this.toggleFullMap(false));
     zoomInBtn?.addEventListener('click', () => {
-      this.viewZoom = Math.min(2.2, this.viewZoom * 1.45);
+      this.viewZoom = Math.min(MAX_FULL_ZOOM, this.viewZoom * 1.45);
       this.renderFullMap();
     });
     zoomOutBtn?.addEventListener('click', () => {
-      this.viewZoom = Math.max(0.055, this.viewZoom / 1.45);
+      this.viewZoom = Math.max(this.minimumFullZoom(), this.viewZoom / 1.45);
       this.renderFullMap();
     });
     centerPlayerBtn?.addEventListener('click', () => {
@@ -344,7 +355,7 @@ export class HKGMapSystem {
       const sx = e.clientX - rect.left, sy = e.clientY - rect.top;
       const before = this.screenToWorld(sx, sy, rect.width, rect.height);
       const factor = Math.exp(-e.deltaY * 0.0014);
-      this.viewZoom = Math.max(0.055, Math.min(2.2, this.viewZoom * factor));
+      this.viewZoom = Math.max(this.minimumFullZoom(), Math.min(MAX_FULL_ZOOM, this.viewZoom * factor));
       const after = this.screenToWorld(sx, sy, rect.width, rect.height);
       this.viewCenterX += before.x - after.x;
       this.viewCenterZ += before.z - after.z;
@@ -353,12 +364,21 @@ export class HKGMapSystem {
     }, { passive: false });
   }
 
+  fitZoom() {
+    const { w, h } = this.fullSize();
+    return hongKongFitZoom(GEO.bounds, w, h);
+  }
+
+  minimumFullZoom() {
+    // Keep the whole detailed core useful on screen instead of allowing a tiny island in a sea of empty canvas.
+    return Math.max(MIN_FULL_ZOOM, this.fitZoom() * 0.85);
+  }
+
   fitAll() {
     const b = GEO.bounds;
-    const { w, h } = this.fullSize();
     this.viewCenterX = (b.minX + b.maxX) * 0.5;
     this.viewCenterZ = (b.minZ + b.maxZ) * 0.5;
-    this.viewZoom = Math.max(0.055, Math.min(w / ((b.maxX - b.minX) * 1.08), h / ((b.maxZ - b.minZ) * 1.1)));
+    this.viewZoom = this.fitZoom();
   }
 
   clampView() {
@@ -435,12 +455,8 @@ export class HKGMapSystem {
       for (const pop of document.querySelectorAll('.popover[popover]')) {
         if (typeof pop.hidePopover === 'function' && pop.matches(':popover-open')) pop.hidePopover();
       }
-      const entity = this.controllerManager.getActiveEntity();
-      this.viewCenterX = entity.position.x;
-      this.viewCenterZ = entity.position.z;
-      this.viewZoom = 0.8;
       this.resizeFullCanvas();
-      this.clampView();
+      this.fitAll();
       this.renderFullMap();
     } else {
       this.fullStatic = null;
