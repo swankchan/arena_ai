@@ -12,12 +12,12 @@ permissions:
 
 concurrency:
   group: hk-osm-fetch-arena-25d85531-rag-es
-  cancel-in-progress: false
+  cancel-in-progress: true
 
 jobs:
   fetch:
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
         with:
@@ -25,45 +25,35 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 22
-      - name: Download the public OSM layers
-        env:
-          GEO_REFRESH: 1
+      - name: Download the Geofabrik Hong Kong extract
         run: |
-          node --input-type=module <<'NODE'
-          import path from 'node:path';
-          import { overpass } from './tools/geo/osm.mjs';
-          import { coastlineQuery, landmarksQuery, parksQuery, roadQueries } from './tools/cities/hongkong/queries.mjs';
-          const { default: cfg } = await import('./tools/cities/hongkong/config.mjs');
-          const dataDir = path.resolve('tools/data/hongkong');
-          for (const request of roadQueries(cfg.dataBounds)) {
-            await overpass(request.query, path.join(dataDir, request.file));
-          }
-          for (const [query, file] of [
-            [coastlineQuery(cfg.dataBounds), 'coastline.json'],
-            [parksQuery(cfg.dataBounds), 'parks.json'],
-            [landmarksQuery(cfg.dataBounds), 'landmarks.json']
-          ]) {
-            await overpass(query, path.join(dataDir, file));
-          }
-          NODE
-      - name: Verify downloaded caches
+          curl --fail --location --retry 3 --retry-delay 5 --max-time 600 \
+            --output tools/data/hongkong/hong-kong-latest.osm.pbf \
+            https://download.geofabrik.de/asia/china/hong-kong-latest.osm.pbf
+      - name: Record source provenance and checksum
         run: |
           node --input-type=module <<'NODE'
           import fs from 'node:fs';
-          for (const file of fs.readdirSync('tools/data/hongkong').filter((file) => file.endsWith('.json'))) {
-            const data = JSON.parse(fs.readFileSync(`tools/data/hongkong/${file}`, 'utf8'));
-            if (!Array.isArray(data.elements) || !data.elements.length) throw new Error(`${file} is empty`);
-            console.log(file, data.elements.length, data.osm3s?.timestamp_osm_base || 'no timestamp');
-          }
+          import crypto from 'node:crypto';
+          const file = 'tools/data/hongkong/hong-kong-latest.osm.pbf';
+          const bytes = fs.readFileSync(file);
+          if (bytes.length < 1000000) throw new Error('Hong Kong PBF is unexpectedly small');
+          const manifest = {
+            dataset: 'Geofabrik Hong Kong OSM extract',
+            downloadUrl: 'https://download.geofabrik.de/asia/china/hong-kong-latest.osm.pbf',
+            attribution: '© OpenStreetMap contributors',
+            license: 'ODbL 1.0',
+            retrievedAt: new Date().toISOString(),
+            bytes: bytes.length,
+            sha256: crypto.createHash('sha256').update(bytes).digest('hex')
+          };
+          fs.writeFileSync('tools/data/hongkong/source-manifest.json', `${JSON.stringify(manifest, null, 2)}\n`);
+          console.log(manifest);
           NODE
-      - name: Commit the refreshed source cache
+      - name: Commit the source extract
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add tools/data/hongkong
-          if git diff --cached --quiet; then
-            echo "OSM cache is unchanged"
-            exit 0
-          fi
-          git commit -m "chore: refresh expanded Hong Kong OSM data"
+          git add -f tools/data/hongkong/hong-kong-latest.osm.pbf tools/data/hongkong/source-manifest.json
+          git commit -m "chore: add Hong Kong OSM source extract"
           git push origin HEAD:arena/25d85531-rag-es
