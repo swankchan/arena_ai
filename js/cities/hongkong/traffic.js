@@ -1,6 +1,7 @@
 import * as THREE from 'three/webgpu';
 import { GEO } from '../../hk-geodata.js';
 import { updateFollowCaps, collideTraffic, collidePlayer } from './collision.js';
+import { isTrafficPathOnLand } from './meta.js';
 import {
   BODY_SPECS,
   HK_BUS_SPEC,
@@ -101,10 +102,13 @@ export function createHongKongTraffic(scene, { getFocus, taxiStyle }) {
   const paths = graph.map(linkPoints);
   const lengths = paths.map(cumulative);
   const total = paths.map((points, i) => lengths[i][lengths[i].length - 1]);
+  const onLand = paths.map((points, i) => isTrafficPathOnLand(points, graph[i][3]));
 
   // Outgoing links: dir 1 is a->b, dir -1 is b->a, dir 0 is two-way. One-way is 74% of Hong Kong's graph.
+  // Exclude routes beyond the rendered land at every transition, not only when a vehicle is first placed.
   const outgoing = Array.from({ length: nodes.length / 2 }, () => []);
   for (let i = 0; i < graph.length; i++) {
+    if (!onLand[i]) continue;
     const link = graph[i];
     if (link[5] !== -1) outgoing[link[0]].push({ link: i, from: link[0], to: link[1], dir: 1 });
     if (link[5] !== 1) outgoing[link[1]].push({ link: i, from: link[1], to: link[0], dir: -1 });
@@ -112,7 +116,7 @@ export function createHongKongTraffic(scene, { getFocus, taxiStyle }) {
 
   const drivable = [];
   for (let i = 0; i < graph.length; i++) {
-    if (graph[i][3] >= 7.4 && total[i] >= 100) drivable.push(i);
+    if (onLand[i] && graph[i][3] >= 7.4 && total[i] >= 100) drivable.push(i);
   }
 
   // Spatial index over link midpoints so a restaged car can appear on a street near the player.

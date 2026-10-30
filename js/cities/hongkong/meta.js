@@ -130,6 +130,24 @@ function pointInRing(flat, x, z) {
   return inside;
 }
 
+const landBounds = GEO.land.map((ring) => {
+  let minX = Infinity, maxX = -Infinity, minZ = Infinity, maxZ = -Infinity;
+  for (let i = 0; i + 1 < ring.length; i += 2) {
+    minX = Math.min(minX, ring[i]); maxX = Math.max(maxX, ring[i]);
+    minZ = Math.min(minZ, ring[i + 1]); maxZ = Math.max(maxZ, ring[i + 1]);
+  }
+  return { ring, minX, maxX, minZ, maxZ };
+});
+
+// Rendered land, rather than the larger OSM road extract. Actors must not follow a road beyond this surface.
+export function isLand(x, z) {
+  for (const entry of landBounds) {
+    if (x < entry.minX || x > entry.maxX || z < entry.minZ || z > entry.maxZ) continue;
+    if (pointInRing(entry.ring, x, z)) return true;
+  }
+  return false;
+}
+
 const parkBounds = GEO.parks.map((park) => {
   let minX = Infinity, maxX = -Infinity, minZ = Infinity, maxZ = -Infinity;
   for (const ring of park.rings) {
@@ -196,11 +214,13 @@ const linkLines = GRAPH.links.map(([a, b, name, width, lanes, dir, inner]) => {
   return { a, b, name, width, lanes, dir, points, nameText: GRAPH.names[name] || '' };
 });
 
-export function nearestRoadNode(x, z) {
+export function nearestRoadNode(x, z, { landOnly = false } = {}) {
   let best = Infinity, id = -1;
   for (let i = 0; i + 1 < GRAPH.nodes.length; i += 2) {
-    const d = Math.hypot(GRAPH.nodes[i] - x, GRAPH.nodes[i + 1] - z);
-    if (d < best) { best = d; id = i / 2; }
+    const nx = GRAPH.nodes[i], nz = GRAPH.nodes[i + 1];
+    const d = Math.hypot(nx - x, nz - z);
+    if (d >= best || (landOnly && !isLand(nx, nz))) continue;
+    best = d; id = i / 2;
   }
   return id < 0 ? null : { x: GRAPH.nodes[id * 2], z: GRAPH.nodes[id * 2 + 1], distance: best, id };
 }
@@ -218,35 +238,60 @@ export function spawnOnRoad(x, z, { minWidth = 8, laneOffset = 2.6 } = {}) {
       const t = lengthSq > 0 ? Math.max(0, Math.min(1, ((x - ax) * dx + (z - az) * dz) / lengthSq)) : 0;
       const px = ax + dx * t, pz = az + dz * t;
       const distance = Math.hypot(x - px, z - pz);
+      const length = Math.hypot(dx, dz) || 1;
+      // A one-way link only runs b -> a; face that way so the spawn is in the legal left-hand lane.
+      const dirX = link.dir === -1 ? -dx : dx;
+      const dirZ = link.dir === -1 ? -dz : dz;
+      // Hong Kong drives on the left: left of travel is (dz, -dx) in a frame where +x is east and +z is south.
+      const leftX = dirZ / length, leftZ = -dirX / length;
+      const offset = Math.min(laneOffset, Math.max(1.2, link.width * 0.22));
+      const spawnX = ax + dx * t + leftX * offset;
+      const spawnZ = az + dz * t + leftZ * offset;
+      if (!isLand(spawnX, spawnZ)) continue;
       // Prefer close, wide roads; a very narrow street should not win over a major road 15 m away.
       const score = distance - Math.min(8, link.width) * 1.5;
       if (score < bestScore) {
         bestScore = score;
-        best = { ax, az, bx, bz, t, distance, link };
+        best = { spawnX, spawnZ, heading: Math.atan2(dirX, dirZ), link };
       }
     }
   }
-  if (!best) return { x, z, heading: Math.PI, width: 8 };
-  const { ax, az, bx, bz, t, link } = best;
-  const dx = bx - ax, dz = bz - az;
-  const length = Math.hypot(dx, dz) || 1;
-  // A one-way link only runs b -> a; face that way so the spawn is in the legal left-hand lane.
-  const dirX = link.dir === -1 ? -dx : dx;
-  const dirZ = link.dir === -1 ? -dz : dz;
-  const heading = Math.atan2(dirX, dirZ);
-  // Hong Kong drives on the left: left of travel is (dz, -dx) in a frame where +x is east and +z is south.
-  const leftX = dirZ / length, leftZ = -dirX / length;
-  const offset = Math.min(laneOffset, Math.max(1.2, link.width * 0.22));
-  return {
-    x: ax + dx * t + leftX * offset,
-    z: az + dz * t + leftZ * offset,
-    heading,
-    width: link.width
-  };
+  if (!best) {
+    if (isLand(x, z)) return { x, z, heading: Math.PI, width: 8 };
+    const node = nearestRoadNode(x, z, { landOnly: true });
+    if (node) return { x: node.x, z: node.z, heading: Math.PI, width: 8 };
+    return { x, z, heading: Math.PI, width: 8 };
+  }
+  return { x: best.spawnX, z: best.spawnZ, heading: best.heading, width: best.link.width };
+}
+
+// Check the centreline and both possible left-hand travel lanes, including the outside of a bus body. Sampling long
+// segments prevents a road from crossing a clipped coast or dock basin between two otherwise valid vertices.
+export function isTrafficPathOnLand(points, width) {
+  if (!points || points.length < 2) return false;
+  const laneOffset = Math.min(4.2, Math.max(1.7, width * 0.23)) * 1.12 + 1.35;
+  let hasSegment = false;
+  for (let i = 1; i < points.length; i++) {
+    const [ax, az] = points[i - 1], [bx, bz] = points[i];
+    const dx = bx - ax, dz = bz - az;
+    const length = Math.hypot(dx, dz);
+    if (length < 1e-6) continue;
+    hasSegment = true;
+    const leftX = dz / length, leftZ = -dx / length;
+    const steps = Math.max(1, Math.ceil(length / 25));
+    for (let step = 0; step <= steps; step++) {
+      const t = step / steps;
+      const x = ax + dx * t, z = az + dz * t;
+      if (!isLand(x, z)
+        || !isLand(x + leftX * laneOffset, z + leftZ * laneOffset)
+        || !isLand(x - leftX * laneOffset, z - leftZ * laneOffset)) return false;
+    }
+  }
+  return hasSegment;
 }
 
 export function roadPointForTeleport(x, z) {
-  const node = nearestRoadNode(x, z);
+  const node = nearestRoadNode(x, z, { landOnly: true });
   if (!node) return { x: Math.max(BOUNDS.minX, Math.min(BOUNDS.maxX, x)), z: Math.max(BOUNDS.minZ + 20, Math.min(BOUNDS.maxZ - 20, z)) };
   return { x: node.x, z: node.z };
 }

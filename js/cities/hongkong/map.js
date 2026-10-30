@@ -1,5 +1,5 @@
 import { GEO } from '../../hk-geodata.js';
-import { AREA_LABELS, PLACE_NAMES, ROAD_NAMES, locationLabel, nearestRoadNode } from './meta.js';
+import { AREA_LABELS, PLACE_NAMES, ROAD_NAMES, isLand, locationLabel, nearestRoadNode } from './meta.js';
 
 // Hong Kong minimap and full-screen street atlas. The same Path2D world layers feed both maps; the labels use a
 // CJK-capable font stack so Chinese street and district names render correctly on every platform.
@@ -166,19 +166,6 @@ function drawDashedRoute(ctx, x0, y0, x1, y1) {
   ctx.setLineDash([7, 7]);
   ctx.beginPath(); ctx.moveTo(x0, y0); ctx.lineTo(x1, y1); ctx.stroke();
   ctx.restore();
-}
-
-function pointInRing(flat, x, z) {
-  let inside = false;
-  for (let i = 0, j = flat.length - 2; i < flat.length; j = i, i += 2) {
-    const xi = flat[i], zi = flat[i + 1], xj = flat[j], zj = flat[j + 1];
-    if ((zi > z) !== (zj > z) && x < ((xj - xi) * (z - zi)) / (zj - zi) + xi) inside = !inside;
-  }
-  return inside;
-}
-
-function isLand(x, z) {
-  return GEO.land.some((ring) => pointInRing(ring, x, z));
 }
 
 export class HKGMapSystem {
@@ -390,11 +377,19 @@ export class HKGMapSystem {
   }
 
   teleportAt(x, z) {
-    const node = nearestRoadNode(x, z);
-    const targetX = node ? node.x : x;
-    const targetZ = node ? node.z : z;
-    if (!isLand(targetX, targetZ) && isLand(x, z)) {
-      // Land clicks without a nearby graph node still land on the clicked land.
+    const clickedOnLand = isLand(x, z);
+    let node = nearestRoadNode(x, z);
+    if (node && !isLand(node.x, node.z)) {
+      // A water click still snaps to the nearest safe road; a land click keeps the clicked land instead of jumping
+      // across a dock or along the coast to a much more distant node.
+      node = clickedOnLand ? null : nearestRoadNode(x, z, { landOnly: true });
+    }
+    let targetX = node ? node.x : x;
+    let targetZ = node ? node.z : z;
+    if (!isLand(targetX, targetZ)) {
+      if (!clickedOnLand) return;
+      targetX = x;
+      targetZ = z;
     }
     const heading = this.controllerManager.getActiveEntity().heading;
     this.waypoint = { x: targetX, z: targetZ, name: locationLabel(targetX, targetZ) };
