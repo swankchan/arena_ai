@@ -12,8 +12,9 @@ import {
   getLocationLabel
 } from './meta.js';
 
-// Hong Kong pack: both shores of Victoria Harbour, from Central to Mong Kok, built from real OpenStreetMap blocks,
-// streets and landmark sites. The engine in js/main.js only sees the world object returned by build().
+// Hong Kong pack: both shores of Victoria Harbour, from Shek Tong Tsui and Happy Valley to Sham Shui Po and
+// Kowloon City, built from real OpenStreetMap blocks, streets and landmark sites. The engine in js/main.js only
+// sees the world object returned by build().
 
 const TAXI_STYLE = 'hk-urban';
 
@@ -33,7 +34,7 @@ export const city = {
   defaultMode: 'car',
 
   build({ scene, markInit, setStatus }) {
-    setStatus('Building Victoria Harbour, Central & Kowloon...');
+    setStatus('Building Hong Kong’s expanded street core...');
 
     const world = buildHongKongWorld(scene, { setStatus });
     markInit?.('world');

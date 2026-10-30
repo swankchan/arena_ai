@@ -4,6 +4,20 @@
 // bounds, while `obb` is the exact footprint. Rotated Hong Kong lots and diagonal seawalls must use OBBs — an
 // axis-aligned box around a rotated rectangle bulges into the street and becomes an invisible wall.
 
+// The land extractor closes its raster at the download rectangle. Those straight frame edges are not coastline:
+// treating them as seawalls creates invisible barriers across every road that reaches the edge of the detailed city.
+export function isDataBoundarySegment(x1, z1, x2, z2, bounds, tolerance = 3) {
+  if (!bounds) return false;
+  const near = (a, b) => Math.abs(a - b) <= tolerance;
+  const horizontal = Math.abs(z2 - z1) < 0.05
+    && ((near(z1, bounds.minZ) && near(z2, bounds.minZ))
+      || (near(z1, bounds.maxZ) && near(z2, bounds.maxZ)));
+  const vertical = Math.abs(x2 - x1) < 0.05
+    && ((near(x1, bounds.minX) && near(x2, bounds.minX))
+      || (near(x1, bounds.maxX) && near(x2, bounds.maxX)));
+  return horizontal || vertical;
+}
+
 // Thin wall along a coastline segment. `thickness` is half the wall width; `obb.hx` covers the segment plus caps.
 export function segmentWall(x1, z1, x2, z2, { thickness = 0.8, base = -1, top = 3.4 } = {}) {
   const dx = x2 - x1, dz = z2 - z1;

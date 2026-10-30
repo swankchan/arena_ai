@@ -244,7 +244,7 @@ export class HKGMapSystem {
     const openMap = document.getElementById('btn-open-map');
     if (openMap) openMap.title = '香港街道圖 [M]';
     const viewAll = document.getElementById('map-view-all');
-    if (viewAll) viewAll.title = '全香港 · 中環至旺角';
+    if (viewAll) viewAll.title = '詳細市區全圖 · 港島北岸至九龍腹地';
     const compass = document.querySelector('.map-compass');
     if (compass) compass.title = '正北';
     if (this.elHoverInfo) this.elHoverInfo.textContent = '點擊傳送 · 拖曳平移 · 滾輪縮放';

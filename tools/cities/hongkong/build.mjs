@@ -134,9 +134,9 @@ export async function buildHongKong({ outFile = DEFAULT_OUT } = {}) {
   };
 
   emitGeo(GEO, outFile, {
-    title: 'Hong Kong — Victoria Harbour, Central to Causeway Bay and Tsim Sha Tsui to Mong Kok.',
+    title: 'Hong Kong — Victoria Harbour, northern Hong Kong Island, Happy Valley and central Kowloon.',
     sources: 'OpenStreetMap © OpenStreetMap contributors (ODbL); coastline, roads, parks and landmark footprints via Overpass. Hong Kong Transport Department TIS_16 Traffic Aids Drawings (24 April 2026 mirror).',
-    note: 'Flat world: the Mid-Levels and the Peak are outside the detailed core.'
+    note: 'Flat street-level world: OSM geometry is real, but terrain elevation is not imported.'
   });
   return GEO;
 }

@@ -38,14 +38,14 @@ test('Hong Kong is a full-detail city pack in the registry', () => {
 test('the emitted geodata covers both shores of Victoria Harbour at street level', () => {
   assert.equal(geo.city, 'hongkong');
   assert.ok(geo.land.length >= 2, 'island and Kowloon are separate land masses');
-  assert.ok(geo.blocks.length >= 1500, `${geo.blocks.length} real blocks`);
-  assert.ok(geo.roads.length >= 5000, `${geo.roads.length} street polylines`);
-  assert.ok(Object.keys(geo.landmarks).length >= 100, 'named tall buildings');
-  assert.ok(geo.parks.length >= 300, 'parks and gardens');
+  assert.ok(geo.blocks.length >= 2000, `${geo.blocks.length} real blocks in the expanded core`);
+  assert.ok(geo.roads.length >= 8000, `${geo.roads.length} street polylines in the expanded core`);
+  assert.ok(Object.keys(geo.landmarks).length >= 150, 'named tall buildings');
+  assert.ok(geo.parks.length >= 500, 'parks and gardens');
 
   const width = geo.bounds.maxX - geo.bounds.minX;
   const depth = geo.bounds.maxZ - geo.bounds.minZ;
-  assert.ok(width >= 5000 && depth >= 5000, `detailed core is ${Math.round(width)} x ${Math.round(depth)} m`);
+  assert.ok(width >= 6800 && depth >= 6800, `expanded detailed core is ${Math.round(width)} x ${Math.round(depth)} m`);
 
   // The drivable graph must reach Central, Tsim Sha Tsui and Mong Kok. Keeping only the largest connected component
   // used to leave the whole island without a graph.
@@ -58,7 +58,7 @@ test('the emitted geodata covers both shores of Victoria Harbour at street level
   assert.ok(nearest(0, 0) < 120, 'a road node near Statue Square');
   assert.ok(nearest(1298, -1417) < 120, 'a road node at Tsim Sha Tsui');
   assert.ok(nearest(1010, -4141) < 120, 'a road node at Mong Kok');
-  assert.ok(geo.roadGraph.links.length >= 9000, `${geo.roadGraph.links.length} drivable links`);
+  assert.ok(geo.roadGraph.links.length >= 13000, `${geo.roadGraph.links.length} drivable links in the expanded core`);
 });
 
 test('street, park and place names are Chinese', () => {
@@ -74,6 +74,9 @@ test('street, park and place names are Chinese', () => {
   assert.ok(meta.PLACE_NAMES.has('尖沙咀'));
   assert.ok(meta.PLACE_NAMES.has('旺角'));
   assert.ok(meta.PLACE_NAMES.has('維多利亞港'));
+  for (const place of ['石塘咀', '天后', '大坑', '跑馬地', '大角咀', '何文田', '土瓜灣', '深水埗', '九龍塘']) {
+    assert.ok(meta.PLACE_NAMES.has(place), `${place} is labelled in the expanded core`);
+  }
 });
 
 test('the lot layout fills the real blocks without using real building footprints', () => {
@@ -106,14 +109,20 @@ test('location labels resolve Chinese street corners, landmarks and districts', 
 
 test('teleports cover both shores with Chinese names', () => {
   const names = meta.TELEPORTS.map((point) => point.name).join(' ');
-  for (const place of ['中環', '尖沙咀', '旺角', '銅鑼灣']) assert.match(names, new RegExp(place));
-  assert.ok(meta.TELEPORTS.length >= 5);
+  for (const place of ['中環', '尖沙咀', '旺角', '銅鑼灣', '石塘咀', '跑馬地', '深水埗']) {
+    assert.match(names, new RegExp(place));
+  }
+  assert.ok(meta.TELEPORTS.length >= 10);
   for (const point of meta.TELEPORTS) {
     assert.match(point.name, CJK);
     assert.ok(Number.isFinite(point.x) && Number.isFinite(point.z));
     assert.ok(point.x >= geo.bounds.minX && point.x <= geo.bounds.maxX);
     assert.ok(point.z >= geo.bounds.minZ && point.z <= geo.bounds.maxZ);
     assert.ok(Number.isFinite(point.heading));
+  }
+  for (const id of ['shektongtsui', 'happyvalley', 'shamshuipo']) {
+    const point = meta.TELEPORTS.find((candidate) => candidate.id === id);
+    assert.ok(meta.nearestRoads(point.x, point.z, 35).length > 0, `${point.name} snaps to a real road`);
   }
 });
 
@@ -122,6 +131,8 @@ test('the map draws Chinese labels with a CJK-capable font stack', () => {
   assert.match(source, /Noto Sans TC|PingFang TC|Microsoft JhengHei|Noto Sans CJK/);
   assert.match(source, /AREA_LABELS|PLACE_NAMES/);
   assert.match(source, /landmark/i);
+  assert.match(source, /詳細市區全圖/);
+  assert.doesNotMatch(source, /全香港 · 中環至旺角/);
 });
 
 // Colliders handed to the player: rotated lots and diagonal seawalls must use their true footprint. An axis-aligned
@@ -134,6 +145,11 @@ test('oriented colliders keep diagonal seawalls and rotated lots off the streets
 
   const wall = colliders.segmentWall(0, 0, 80, 80);
   assert.ok(wall?.obb, 'a coastline segment produces an oriented wall');
+  const bounds = { minX: -100, maxX: 100, minZ: -100, maxZ: 100 };
+  assert.equal(colliders.isDataBoundarySegment(-100, -100, 80, -100, bounds), true,
+    'the artificial download frame is not a seawall');
+  assert.equal(colliders.isDataBoundarySegment(-100, -90, 80, -90, bounds), false,
+    'an inland coast segment remains protected');
   assert.equal(colliders.colliderContains(wall, 40, 40, 0), true, 'the seawall itself is solid');
   assert.equal(colliders.colliderContains(wall, 10, 70, 0), false, 'inland point stays outside the wall');
   assert.equal(colliders.colliderContains({ ...wall, obb: undefined }, 10, 70, 0), true,
@@ -152,7 +168,9 @@ function hongKongColliders() {
   const list = [];
   for (const ring of geo.land) {
     for (let i = 0; i + 3 < ring.length; i += 2) {
-      const wall = colliders.segmentWall(ring[i], ring[i + 1], ring[i + 2], ring[i + 3]);
+      const x1 = ring[i], z1 = ring[i + 1], x2 = ring[i + 2], z2 = ring[i + 3];
+      if (colliders.isDataBoundarySegment(x1, z1, x2, z2, geo.bounds)) continue;
+      const wall = colliders.segmentWall(x1, z1, x2, z2);
       if (wall) list.push({ ...wall, kind: 'coast' });
     }
   }

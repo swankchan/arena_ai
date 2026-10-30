@@ -1,6 +1,6 @@
-// Hong Kong: Victoria Harbour both shores. Detailed core = Central/Admiralty/Wan Chai/Causeway Bay/North Point on the
-// island, Tsim Sha Tsui/Jordan/Yau Ma Tei/Mong Kok/Hung Hom/Kowloon City on the Kowloon side. Flat (NYC-style) world:
-// the steep Mid-Levels and the Peak are intentionally outside the block generator.
+// Hong Kong: Victoria Harbour both shores. The detailed core covers the island from Shek Tong Tsui through Central,
+// Wan Chai and North Point to Tai Hang/Happy Valley, and Kowloon from Tsim Sha Tsui through Mong Kok and Ho Man Tin
+// to Sham Shui Po/Kowloon City. This is a flat street-level world; terrain elevation is not imported.
 export default {
   id: 'hongkong',
   name: '香港',
@@ -17,8 +17,9 @@ export default {
 
   // Data download bounds (must contain the coastline that closes both shores).
   dataBounds: { south: 22.2685, west: 114.1385, north: 22.3300, east: 114.2050 },
-  // Playable core: blocks whose centre falls outside this are dropped.
-  coreBounds: { south: 22.2725, west: 114.1450, north: 22.3260, east: 114.1995 },
+  // Playable core: use the full cached download extent (about 40% more bounding-box area than the original core).
+  // Keep future core expansions inside dataBounds, or refresh every OSM layer so the new edges remain real geography.
+  coreBounds: { south: 22.2685, west: 114.1385, north: 22.3300, east: 114.2050 },
 
   // No hand-placed sea seeds: the OSM coastline closes both shores inside the download box, and the land extractor
   // seeds water from the seaward side of the coastline itself. Hand-picked seeds are easy to put on a pier or a

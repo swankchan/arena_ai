@@ -11,7 +11,7 @@ import {
   WALL_KINDS
 } from '../../tsl-materials.js';
 import { createTreeField } from '../../trees.js';
-import { segmentWall, lotObb } from './colliders.js';
+import { segmentWall, lotObb, isDataBoundarySegment } from './colliders.js';
 import { AREA_LABELS } from './meta.js';
 import { createHongKongTrafficAids } from './traffic-aids.js';
 import {
@@ -35,14 +35,16 @@ const hash = (x, z, seed = 0) => {
 const clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
 
 const DISTRICT_HEIGHT = new Map([
-  ['中環', 210], ['金鐘', 190], ['灣仔', 165], ['銅鑼灣', 150], ['北角', 145], ['上環', 115],
-  ['西營盤', 110], ['尖沙咀', 140], ['佐敦', 115], ['油麻地', 105], ['旺角', 100], ['紅磡', 105],
-  ['九龍城', 85]
+  ['中環', 210], ['金鐘', 190], ['灣仔', 165], ['銅鑼灣', 150], ['北角', 145], ['天后', 125],
+  ['大坑', 80], ['跑馬地', 105], ['上環', 115], ['西營盤', 110], ['石塘咀', 95],
+  ['尖沙咀', 140], ['佐敦', 115], ['油麻地', 105], ['旺角', 100], ['大角咀', 85],
+  ['深水埗', 75], ['何文田', 90], ['紅磡', 105], ['土瓜灣', 85], ['九龍塘', 65], ['九龍城', 85]
 ]);
 const DISTRICT_GLASS = new Map([
-  ['中環', 0.82], ['金鐘', 0.8], ['灣仔', 0.68], ['銅鑼灣', 0.6], ['北角', 0.5], ['上環', 0.52],
-  ['西營盤', 0.42], ['尖沙咀', 0.62], ['佐敦', 0.4], ['油麻地', 0.34], ['旺角', 0.36], ['紅磡', 0.45],
-  ['九龍城', 0.32]
+  ['中環', 0.82], ['金鐘', 0.8], ['灣仔', 0.68], ['銅鑼灣', 0.6], ['北角', 0.5], ['天后', 0.45],
+  ['大坑', 0.3], ['跑馬地', 0.42], ['上環', 0.52], ['西營盤', 0.42], ['石塘咀', 0.38],
+  ['尖沙咀', 0.62], ['佐敦', 0.4], ['油麻地', 0.34], ['旺角', 0.36], ['大角咀', 0.3],
+  ['深水埗', 0.26], ['何文田', 0.34], ['紅磡', 0.45], ['土瓜灣', 0.28], ['九龍塘', 0.25], ['九龍城', 0.32]
 ]);
 
 function districtFor(x, z) {
@@ -126,6 +128,7 @@ function createSeawallGeometry() {
   for (const ring of GEO.land) {
     for (let i = 0; i + 3 < ring.length; i += 2) {
       const x1 = ring[i], z1 = ring[i + 1], x2 = ring[i + 2], z2 = ring[i + 3];
+      if (isDataBoundarySegment(x1, z1, x2, z2, GEO.bounds)) continue;
       positions.push(
         x1, 0, z1, x2, 0, z2, x2, WATER_LEVEL - 1.2, z2,
         x1, 0, z1, x2, WATER_LEVEL - 1.2, z2, x1, WATER_LEVEL - 1.2, z1
@@ -311,7 +314,7 @@ function createNeonSigns(root, signs) {
 }
 
 export function buildHongKongWorld(scene, { setStatus = () => {} } = {}) {
-  setStatus('Building Victoria Harbour, Central & Kowloon...');
+  setStatus('Building Hong Kong’s expanded street core...');
   const root = new THREE.Group();
   root.name = 'HongKongWorld';
   scene.add(root);
@@ -355,7 +358,9 @@ export function buildHongKongWorld(scene, { setStatus = () => {} } = {}) {
   // would cover the inland rectangle behind it and block roads far from the water.
   for (const ring of GEO.land) {
     for (let i = 0; i + 3 < ring.length; i += 2) {
-      const wall = segmentWall(ring[i], ring[i + 1], ring[i + 2], ring[i + 3]);
+      const x1 = ring[i], z1 = ring[i + 1], x2 = ring[i + 2], z2 = ring[i + 3];
+      if (isDataBoundarySegment(x1, z1, x2, z2, GEO.bounds)) continue;
+      const wall = segmentWall(x1, z1, x2, z2);
       if (wall) colliders.push(wall);
     }
   }
@@ -363,7 +368,7 @@ export function buildHongKongWorld(scene, { setStatus = () => {} } = {}) {
   // -------------------------------------------------------------------------------------------------------------------
   // 2. Blocks: raised sidewalks and the block spatial index used by the player's ground.
   // -------------------------------------------------------------------------------------------------------------------
-  setStatus('Paving 1,647 real Hong Kong blocks...');
+  setStatus(`Paving ${GEO.blocks.length.toLocaleString('en-US')} real Hong Kong blocks...`);
   for (let b = 0; b < GEO.blocks.length; b++) {
     const outline = GEO.blocks[b][0];
     if (!outline || outline.length < 6) continue;
@@ -421,7 +426,7 @@ export function buildHongKongWorld(scene, { setStatus = () => {} } = {}) {
   // 4. Buildings: every ordinary building is generated inside a real lot. Landmark sites reserve their real place and
   //    height, but their massing is still a procedural box rather than an imported footprint.
   // -------------------------------------------------------------------------------------------------------------------
-  setStatus('Raising Central, Tsim Sha Tsui & Mong Kok...');
+  setStatus('Raising Hong Kong Island & Kowloon...');
   const styleList = makeFacadeStyles();
   const landmarks = [];
   for (const [name, landmark] of Object.entries(GEO.landmarks)) {

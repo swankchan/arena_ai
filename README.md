@@ -7,7 +7,7 @@ A city simulation built with [three.js](https://threejs.org/), WebGPURenderer, a
 ## Cities
 
 - **New York** — the full-detail world: every Manhattan block from 125th St to the Battery, real landmarks, subway entrances, avenue traffic signals, environmental audio synthesis, street map and minimap, and 11 camera presets (including the scenic and aerial rigs).
-- **Hong Kong** — the full-detail harbour city: Central, Admiralty, Wan Chai, Causeway Bay, Tsim Sha Tsui, Jordan, Yau Ma Tei and Mong Kok, built from OpenStreetMap blocks and streets with Chinese names, neon blade signs, red urban taxis, trams, the Star Ferry, harbour water, street map and minimap, and nine camera presets.
+- **Hong Kong** — the full-detail harbour city: Shek Tong Tsui, Central, Admiralty, Wan Chai, Causeway Bay, Tai Hang, Happy Valley, Tsim Sha Tsui, Jordan, Yau Ma Tei, Mong Kok, Tai Kok Tsui, Ho Man Tin, To Kwa Wan, Sham Shui Po and Kowloon City, built from OpenStreetMap blocks and streets with Chinese names, neon blade signs, red urban taxis, trams, the Star Ferry, harbour water, street map and minimap, and nine camera presets.
 - **Grid City** — a procedural 7×7 downtown generated in code at load: sidewalks, glass and stone towers, a central plaza with fountain, trees, street lamps and four teleport destinations. It has no external map data, map overlay or audio, and offers the three follow cameras.
 
 Add `?city=hongkong` (or `?city=grid`, `?city=newyork`) to the URL to skip the picker.
