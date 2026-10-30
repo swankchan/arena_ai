@@ -12,7 +12,7 @@ const dir = join(__dirname, '../js');
 // pass without touching the shadow material; `maskShadowNode` keeps cut-out shadows (see createTreeMaterial).
 test('materials alpha-test with alphaTestNode, never the alphaTest property', () => {
   const offenders = [];
-  for (const file of readdirSync(dir).filter((name) => name.endsWith('.js'))) {
+  for (const file of readdirSync(dir).filter((name) => name.endsWith('.js') && name !== 'app.runtime.js')) {
     readFileSync(join(dir, file), 'utf8').split('\n').forEach((line, i) => {
       if (/\balphaTest\s*:/.test(line) || /\.alphaTest\s*=(?!=)/.test(line)) offenders.push(`js/${file}:${i + 1}: ${line.trim()}`);
     });

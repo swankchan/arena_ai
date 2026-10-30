@@ -1,0 +1,12 @@
+{
+  "name": "slop-cities",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build:runtime": "node tools/build-runtime.mjs"
+  },
+  "devDependencies": {
+    "esbuild": "0.28.2"
+  }
+}

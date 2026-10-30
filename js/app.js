@@ -79,7 +79,8 @@ async function initApp(cityStub) {
   const renderer = new THREE.WebGPURenderer({
     antialias: true,
     powerPreference: 'high-performance',
-    reversedDepthBuffer: true
+    reversedDepthBuffer: true,
+    forceWebGL: new URLSearchParams(window.location.search).has('webgl')
   });
   renderer.setPixelRatio(1.0);
   renderer.setSize(window.innerWidth, window.innerHeight);
@@ -633,6 +634,9 @@ async function initApp(cityStub) {
   const reflections = ssrPass.mul(reflectionMask);
   const colorGrade = createPostProcessing(renderer, scenePassColor, reflections);
   const renderPipeline = new THREE.RenderPipeline(renderer, colorGrade.outputNode);
+  if (new URLSearchParams(window.location.search).has('debug')) {
+    globalThis.__slopTest = { renderPipeline, updateCulling, mapSystem };
+  }
 
   // Initialize the UI and chase camera around the restored player, or the city's spawn.
   selectMode(controllerManager.activeMode);

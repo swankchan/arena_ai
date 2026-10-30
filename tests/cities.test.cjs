@@ -57,5 +57,5 @@ test('the home screen exposes the city picker before the simulation starts', () 
   assert.match(main, /renderCityCards\(\);/);
   const staticImports = [...main.matchAll(/^import .* from ['"]([^'"]+)['"];/gm)].map((match) => match[1]);
   assert.deepEqual(staticImports, ['./cities/registry.js', './taxi-styles.js']);
-  assert.match(main, /import\('\.\/app\.js'\)/, 'the 3D application loads only after the lightweight entry');
+  assert.match(main, /import\('\.\/app\.runtime\.js'\)/, 'the self-contained 3D runtime loads after the lightweight entry');
 });

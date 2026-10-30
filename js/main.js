@@ -68,7 +68,7 @@ async function selectCity(cityId) {
   launching = true;
   setPickerStatus(`Loading ${city.name}…`);
   try {
-    appPromise ??= import('./app.js');
+    appPromise ??= import('./app.runtime.js');
     const app = await appPromise;
     await app.startCity(cityId);
   } catch (error) {

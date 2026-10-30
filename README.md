@@ -10,7 +10,7 @@ A city simulation built with [three.js](https://threejs.org/), WebGPURenderer, a
 - **Hong Kong** — the full-detail harbour city: Kennedy Town, Shek Tong Tsui, Central, Admiralty, Wan Chai, Causeway Bay, North Point, Quarry Bay, Tai Hang, Happy Valley, Tsim Sha Tsui, Jordan, Yau Ma Tei, Mong Kok, Tai Kok Tsui, Ho Man Tin, To Kwa Wan, Sham Shui Po, Cheung Sha Wan, Shek Kip Mei, Kowloon Tong and Kowloon City, built from OpenStreetMap blocks and streets with Chinese names, neon blade signs, red urban taxis, trams, the Star Ferry, harbour water, street map and minimap, and nine camera presets.
 - **Grid City** — a procedural 7×7 downtown generated in code at load: sidewalks, glass and stone towers, a central plaza with fountain, trees, street lamps and four teleport destinations. It has no external map data, map overlay or audio, and offers the three follow cameras.
 
-Add `?city=hongkong` (or `?city=grid`, `?city=newyork`) to the URL to skip the picker.
+Add `?city=hongkong` (or `?city=grid`, `?city=newyork`) to the URL to skip the picker. Add `webgl=1` to force the WebGL fallback, for example `?city=hongkong&webgl=1`.
 
 ## Controls
 
@@ -30,9 +30,11 @@ Touch controls and gamepads are supported. The teleport menu is generated from t
 
 ## Development
 
-No build step: the app is native ES modules. `js/main.js` is the lightweight registry-driven picker; choosing a city or following a direct city link dynamically imports the 3D runtime in `js/app.js`. The pinned Three.js runtime is vendored under `vendor/three/`, so all three cities work without a third-party module CDN. If runtime initialization fails, the picker remains visible and reports the error.
+Serve the directory over HTTP; no build step is needed for deployment. `js/main.js` is the lightweight registry-driven picker and loads the committed, self-contained `js/app.runtime.js` on demand. That runtime includes the application, all three city packs, and the pinned Three.js modules, so browser module-cache mismatches and third-party CDNs cannot break the city module graph. If runtime initialization fails, the picker remains visible and reports the error.
 
-Serve the directory over HTTP (the modules will not load from `file://`):
+The readable source remains in `js/app.js` and the other source modules. To rebuild the runtime after changing source or build settings, run `npm install` once, then `npm run build:runtime`. The generated manifest records source and bundle hashes so tests reject a stale runtime.
+
+Serve the directory (the modules will not load from `file://`):
 
 ```sh
 npx serve .
