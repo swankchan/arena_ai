@@ -13,6 +13,8 @@ import {
 import { createTreeField } from '../../trees.js';
 import { segmentWall, lotObb, isDataBoundarySegment } from './colliders.js';
 import { AREA_LABELS } from './meta.js';
+import { buildFullHongKongWorld, FULL_WORLD_HEIGHT } from './full-world.js';
+import { isDetailedCore, isTerritoryLand, isTerritoryRoad } from './full-meta.js';
 import { createHongKongTrafficAids } from './traffic-aids.js';
 import {
   createHongKongHarbourWaterMaterial,
@@ -366,6 +368,11 @@ export function buildHongKongWorld(scene, { setStatus = () => {} } = {}) {
       if (wall) colliders.push(wall);
     }
   }
+
+  // Territory-wide roads are a separate flat street-level layer. They do not pass through the detailed block cutter.
+  setStatus('Building territory-wide drivable roads...');
+  const fullWorld = buildFullHongKongWorld(root, { waterLevel: WATER_LEVEL });
+  colliders.push(...fullWorld.colliders);
 
   // -------------------------------------------------------------------------------------------------------------------
   // 2. Blocks: raised sidewalks and the block spatial index used by the player's ground.
@@ -748,6 +755,7 @@ export function buildHongKongWorld(scene, { setStatus = () => {} } = {}) {
   const isPointOnSidewalk = (x, z) => Boolean(blocksAt(x, z)) || Boolean(parkAt(x, z));
   const landBounds = GEO.land.map((ring) => ({ ring, bounds: ringBounds(ring) }));
   const isPointOnLand = (x, z) => {
+    if (!isDetailedCore(x, z)) return isTerritoryLand(x, z);
     for (const entry of landBounds) {
       const b = entry.bounds;
       if (x < b.minX || x > b.maxX || z < b.minZ || z > b.maxZ) continue;
@@ -758,6 +766,11 @@ export function buildHongKongWorld(scene, { setStatus = () => {} } = {}) {
 
   function getGroundHeight(x, z, mode) {
     if (mode === 'helicopter') return 0;
+    if (!isDetailedCore(x, z)) {
+      if (isTerritoryRoad(x, z, 0.35)) return FULL_WORLD_HEIGHT.road;
+      if (isTerritoryLand(x, z)) return FULL_WORLD_HEIGHT.land;
+      return WATER_LEVEL;
+    }
     if (isPointOnSidewalk(x, z)) return SIDEWALK_TOP;
     if (isPointOnLand(x, z)) return 0;
     return WATER_LEVEL;
@@ -795,6 +808,7 @@ export function buildHongKongWorld(scene, { setStatus = () => {} } = {}) {
   }
 
   const stats = {
+    ...fullWorld.stats,
     landMeshes: GEO.land.length,
     blocks: blockShapes.length,
     parks: parkBounds.length,
@@ -816,7 +830,7 @@ export function buildHongKongWorld(scene, { setStatus = () => {} } = {}) {
   return {
     root,
     colliders,
-    bounds: GEO.bounds,
+    bounds: fullWorld.bounds,
     stats,
     personSpawn,
     isPointOnLand,

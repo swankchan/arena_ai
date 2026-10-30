@@ -1,0 +1,85 @@
+{
+  "dataset": "Geofabrik Hong Kong OSM extract",
+  "downloadUrl": "https://download.geofabrik.de/asia/china/hong-kong-latest.osm.pbf",
+  "sha256": "c6fd49e15358616f46e3f00efb041ef2dfe6df470274b6074bc6492f3e406224",
+  "sourceTimestamp": "2026-10-29T21:21:26Z",
+  "attribution": "© OpenStreetMap contributors",
+  "license": "ODbL 1.0",
+  "bounds": {
+    "south": 22.13,
+    "west": 113.81,
+    "north": 22.58,
+    "east": 114.46
+  },
+  "output": "js/hk-full-roads-data.js",
+  "bytes": 6915640,
+  "counts": {
+    "roads": 77070,
+    "namedRoads": 38470,
+    "elevated": 5724,
+    "tunnels": 2062,
+    "classes": {
+      "trunk": 2338,
+      "primary": 5008,
+      "secondary": 9261,
+      "tertiary": 6189,
+      "trunk_link": 1358,
+      "secondary_link": 695,
+      "primary_link": 1218,
+      "motorway_link": 1863,
+      "motorway": 2243,
+      "tertiary_link": 210,
+      "residential": 6802,
+      "service": 34248,
+      "unclassified": 5586,
+      "living_street": 51
+    }
+  },
+  "checks": [
+    {
+      "name": "中環",
+      "distance": 7,
+      "road": "遮打道"
+    },
+    {
+      "name": "屯門",
+      "distance": 46,
+      "road": "service"
+    },
+    {
+      "name": "西貢",
+      "distance": 26,
+      "road": "福民路"
+    },
+    {
+      "name": "東涌",
+      "distance": 19,
+      "road": "順東路"
+    },
+    {
+      "name": "大澳",
+      "distance": 96,
+      "road": "service"
+    },
+    {
+      "name": "梅窩",
+      "distance": 9,
+      "road": "service"
+    },
+    {
+      "name": "長洲",
+      "distance": 8,
+      "road": "大菜園路"
+    },
+    {
+      "name": "南丫島",
+      "distance": 70,
+      "road": "排煤機道"
+    },
+    {
+      "name": "沙頭角",
+      "distance": 9,
+      "road": "沙頭角公路－石涌凹段"
+    }
+  ]
+}

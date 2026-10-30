@@ -1,6 +1,7 @@
 import { GEO } from '../../hk-geodata.js';
 import { HK_FULL_MAP } from '../../hk-full-map-data.js';
-import { AREA_LABELS, isLand, locationLabel, nearestRoadNode } from './meta.js';
+import { HK_FULL_ROADS } from '../../hk-full-roads-data.js';
+import { AREA_LABELS, isLand, locationLabel, nearestRoadNode, spawnOnRoad } from './meta.js';
 
 // Hong Kong minimap and full-screen street atlas. The same Path2D world layers feed both maps; the labels use a
 // CJK-capable font stack so Chinese street and district names render correctly on every platform.
@@ -137,8 +138,9 @@ function fullMapLayers() {
   const roadCasing = Array.from({ length: 5 }, () => new Path2D());
   const roadFill = Array.from({ length: 5 }, () => new Path2D());
   const labelRoads = [];
-  for (const [cls, name, flat] of HK_FULL_MAP.roads) {
+  for (const [name, width, , , flags, flat] of HK_FULL_ROADS.roads) {
     if (!flat || flat.length < 4) continue;
+    const cls = (flags & 1) ? (width >= 20 ? 0 : 1) : width >= 13 ? 2 : width >= 9 ? 3 : 4;
     const path = new Path2D();
     path.moveTo(flat[0], flat[1]);
     for (let i = 2; i + 1 < flat.length; i += 2) path.lineTo(flat[i], flat[i + 1]);
@@ -269,7 +271,7 @@ export class HKGMapSystem {
     const bullet = document.querySelector('.fullmap-title .mta-bullet');
     if (bullet) bullet.textContent = 'HK';
     if (this.elCounts) {
-      this.elCounts.textContent = `${HK_FULL_MAP.roads.length.toLocaleString('zh-HK')} 段 OSM 道路 · 全港及離島`;
+      this.elCounts.textContent = `${HK_FULL_ROADS.roads.length.toLocaleString('zh-HK')} 段可駕駛 OSM 道路 · 全港及離島`;
     }
     if (this.elSearchInput) {
       this.elSearchInput.placeholder = '搜尋全港街道、地區 — 彌敦道、屯門、西貢、東涌…';
@@ -277,7 +279,7 @@ export class HKGMapSystem {
     }
     if (this.modal) this.modal.setAttribute('aria-label', '香港全圖');
     const attribution = document.getElementById('fullmap-attribution');
-    if (attribution) attribution.textContent = '2D 全港總圖 · © OpenStreetMap contributors · ODbL 1.0';
+    if (attribution) attribution.textContent = '全港 3D 道路 + 2D 總圖 · © OpenStreetMap contributors · ODbL 1.0';
     const mini = document.getElementById('minimap-card');
     if (mini) {
       mini.setAttribute('aria-label', '即時香港街道雷達圖');
@@ -292,7 +294,7 @@ export class HKGMapSystem {
     }
     const compass = document.querySelector('.map-compass');
     if (compass) compass.title = '正北';
-    if (this.elHoverInfo) this.elHoverInfo.textContent = '全港 OSM 總圖 · 港九詳細街區內可點擊傳送';
+    if (this.elHoverInfo) this.elHoverInfo.textContent = '全港道路可點擊傳送 · 虛線框為港九詳細建築區';
     if (this.elPlayerInfo) this.elPlayerInfo.textContent = '你在此：中環';
     const compassNeedle = document.getElementById('map-compass-needle');
     if (compassNeedle) compassNeedle.setAttribute('transform', 'rotate(0 22 22)');
@@ -382,8 +384,11 @@ export class HKGMapSystem {
       }
       if (this.elHoverInfo) {
         if (!this.isCore(world)) {
-          const place = this.nearestPlace(world.x, world.z);
-          this.elHoverInfo.textContent = `${place ? `${place} · ` : ''}全港總圖 · 港九詳細街區以外僅供瀏覽`;
+          const road = nearestRoadNode(world.x, world.z, { fullRoad: true });
+          const place = road?.name || this.nearestPlace(world.x, world.z) || locationLabel(world.x, world.z);
+          this.elHoverInfo.textContent = road && road.distance <= 1500
+            ? `${place} · 點擊傳送至附近道路`
+            : `${place} · 附近沒有可駕駛道路`;
         } else {
           const land = isLand(world.x, world.z);
           const label = land ? locationLabel(world.x, world.z) : '維多利亞港';
@@ -448,8 +453,15 @@ export class HKGMapSystem {
 
   teleportAt(x, z) {
     if (!isHongKongCorePoint(x, z)) {
-      if (this.elHoverInfo) this.elHoverInfo.textContent = '此處只有全港 2D 總圖 · 請在港九詳細街區內選擇傳送點';
-      return false;
+      const spawn = spawnOnRoad(x, z, { minWidth: 5, laneOffset: 2.4 });
+      if (!Number.isFinite(spawn.roadId) || spawn.distance > 1500) {
+        if (this.elHoverInfo) this.elHoverInfo.textContent = '附近沒有可駕駛道路 · 請移近全港 OSM 道路再試';
+        return false;
+      }
+      this.waypoint = { x: spawn.x, z: spawn.z, name: locationLabel(spawn.x, spawn.z) };
+      this.onTeleport?.(spawn.x, spawn.z, spawn.heading);
+      this.renderFullMap();
+      return true;
     }
     const clickedOnLand = isLand(x, z);
     let node = nearestRoadNode(x, z);
@@ -913,9 +925,10 @@ export class HKGMapSystem {
     const target = Math.max(0.1, RADAR_SCALE / (1 + Math.max(0, entity.position.y - 25) / 180));
     this.miniScale += (target - this.miniScale) * 0.08;
     const zoom = this.miniScale;
+    const overview = !this.isCore({ x: px, z: pz });
 
     let cache = this.miniCache;
-    if (!cache || Math.abs(cache.s - zoom) > 0.025 ||
+    if (!cache || cache.overview !== overview || Math.abs(cache.s - zoom) > 0.025 ||
       Math.hypot(px - cache.cx, pz - cache.cz) > 55) {
       if (!cache) cache = this.miniCache = { canvas: document.createElement('canvas') };
       cache.canvas.width = bw;
@@ -924,12 +937,19 @@ export class HKGMapSystem {
       cache.cx = px;
       cache.cz = pz;
       cache.s = zoom;
+      cache.overview = overview;
       const view = new MapView(px, pz, zoom, w, h, dpr);
       cache.ctx.setTransform(1, 0, 0, 1, 0, 0);
       cache.ctx.clearRect(0, 0, bw, bh);
-      this.drawGround(cache.ctx, view, true);
-      this.drawAreaLabels(cache.ctx, view, true);
-      this.drawRoadLabels(cache.ctx, view, { fontPx: 9, maxLabels: 22, sameNameGap: 150 });
+      if (overview) {
+        this.drawOverviewGround(cache.ctx, view);
+        this.drawOverviewPlaceLabels(cache.ctx, view);
+        this.drawOverviewRoadLabels(cache.ctx, view);
+      } else {
+        this.drawGround(cache.ctx, view, true);
+        this.drawAreaLabels(cache.ctx, view, true);
+        this.drawRoadLabels(cache.ctx, view, { fontPx: 9, maxLabels: 22, sameNameGap: 150 });
+      }
     }
 
     const ctx = this.miniCtx;

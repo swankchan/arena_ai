@@ -8,6 +8,7 @@ const read = (path) => readFileSync(join(__dirname, '..', path), 'utf8');
 const CJK = /[\u3400-\u9fff]/;
 let geo;
 let meta;
+let fullMeta;
 let registry;
 let aidGeometry;
 let hkFrame;
@@ -15,6 +16,7 @@ let hkFrame;
 test.before(async () => {
   geo = (await import('../js/hk-geodata.js')).GEO;
   meta = await import('../js/cities/hongkong/meta.js');
+  fullMeta = await import('../js/cities/hongkong/full-meta.js');
   registry = await import('../js/cities/registry.js');
   aidGeometry = await import('../js/cities/hongkong/traffic-aid-geometry.js');
   const { default: config } = await import('../tools/cities/hongkong/config.mjs');
@@ -137,22 +139,28 @@ test('location labels resolve Chinese street corners, landmarks and districts', 
   assert.match(tst, CJK);
 });
 
-test('teleports cover both shores with Chinese names', () => {
+test('teleports cover the detailed core and territory-wide roads with Chinese names', () => {
   const names = meta.TELEPORTS.map((point) => point.name).join(' ');
-  for (const place of ['中環', '尖沙咀', '旺角', '銅鑼灣', '石塘咀', '堅尼地城', '跑馬地', '鰂魚涌', '深水埗', '九龍塘']) {
+  for (const place of ['中環', '尖沙咀', '旺角', '銅鑼灣', '石塘咀', '堅尼地城', '跑馬地', '鰂魚涌', '深水埗', '九龍塘', '屯門', '元朗', '沙田', '西貢', '東涌', '大澳', '長洲', '榕樹灣', '沙頭角']) {
     assert.match(names, new RegExp(place));
   }
-  assert.ok(meta.TELEPORTS.length >= 13);
+  assert.ok(meta.TELEPORTS.length >= 23);
   for (const point of meta.TELEPORTS) {
     assert.match(point.name, CJK);
     assert.ok(Number.isFinite(point.x) && Number.isFinite(point.z));
-    assert.ok(point.x >= geo.bounds.minX && point.x <= geo.bounds.maxX);
-    assert.ok(point.z >= geo.bounds.minZ && point.z <= geo.bounds.maxZ);
+    if (fullMeta.isDetailedCore(point.x, point.z)) {
+      assert.ok(point.x >= geo.bounds.minX && point.x <= geo.bounds.maxX);
+      assert.ok(point.z >= geo.bounds.minZ && point.z <= geo.bounds.maxZ);
+    } else {
+      assert.ok(point.x >= fullMeta.FULL_BOUNDS.minX && point.x <= fullMeta.FULL_BOUNDS.maxX);
+      assert.ok(point.z >= fullMeta.FULL_BOUNDS.minZ && point.z <= fullMeta.FULL_BOUNDS.maxZ);
+      assert.ok(fullMeta.isTerritoryRoad(point.x, point.z, 1), `${point.name} arrives on a real OSM road`);
+    }
     assert.ok(Number.isFinite(point.heading));
   }
-  for (const id of ['kennedytown', 'shektongtsui', 'happyvalley', 'quarrybay', 'shamshuipo', 'kowloontong']) {
+  for (const id of ['kennedytown', 'shektongtsui', 'happyvalley', 'quarrybay', 'shamshuipo', 'kowloontong', 'tuenmun', 'yuenlong', 'shatin', 'saikung', 'tungchung', 'taio', 'muiwo', 'cheungchau', 'lamma', 'shataukok']) {
     const point = meta.TELEPORTS.find((candidate) => candidate.id === id);
-    assert.ok(meta.nearestRoads(point.x, point.z, 35).length > 0, `${point.name} snaps to a real road`);
+    assert.ok(meta.nearestRoads(point.x, point.z, 45).length > 0, `${point.name} snaps to a real road`);
   }
 });
 

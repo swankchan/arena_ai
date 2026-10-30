@@ -6,6 +6,7 @@ const test = require('node:test');
 let GEO;
 let HK_FULL_MAP;
 let meta;
+let fullMeta;
 let cfg;
 let makeFrame;
 let pointInRing;
@@ -16,6 +17,7 @@ test.before(async () => {
   ({ GEO } = await import('../js/hk-geodata.js'));
   ({ HK_FULL_MAP } = await import('../js/hk-full-map-data.js'));
   meta = await import('../js/cities/hongkong/meta.js');
+  fullMeta = await import('../js/cities/hongkong/full-meta.js');
   ({ default: cfg } = await import('../tools/cities/hongkong/config.mjs'));
   ({ makeFrame } = await import('../tools/geo/frame.mjs'));
   ({ pointInRing } = await import('../tools/geo/geom.mjs'));
@@ -69,15 +71,34 @@ test('Hong Kong OSM atlas contains territory-wide land, roads, parks and place l
   }
 });
 
-test('Hong Kong atlas clicks outside the detailed core never teleport', () => {
+test('Hong Kong atlas clicks outside the core use real roads and reject roadless points', () => {
   const core = { x: (GEO.bounds.minX + GEO.bounds.maxX) / 2, z: (GEO.bounds.minZ + GEO.bounds.maxZ) / 2 };
   assert.equal(isHongKongCorePoint(core.x, core.z), true);
   const tuenMun = HK_FULL_MAP.places.find((place) => place[0] === '屯門');
   assert.equal(isHongKongCorePoint(tuenMun[1], tuenMun[2]), false);
-  let teleports = 0;
-  const fake = { elHoverInfo: null, onTeleport: () => teleports++ };
-  assert.equal(HKGMapSystem.prototype.teleportAt.call(fake, tuenMun[1], tuenMun[2]), false);
-  assert.equal(teleports, 0);
+  let destination = null;
+  const fake = {
+    elHoverInfo: null,
+    onTeleport: (x, z, heading) => { destination = { x, z, heading }; },
+    renderFullMap() {}
+  };
+  assert.equal(HKGMapSystem.prototype.teleportAt.call(fake, tuenMun[1], tuenMun[2]), true);
+  assert.ok(destination && fullMeta.isTerritoryRoad(destination.x, destination.z, 1), 'arrival is on a full-HK OSM road');
+  assert.ok(Number.isFinite(destination.heading));
+  assert.equal(HKGMapSystem.prototype.teleportAt.call(fake, 100000, 100000), false, 'roadless clicks are rejected');
+});
+
+test('territory-wide arrivals avoid tiny stubs and remain on roads after initial acceleration', () => {
+  for (const name of ['屯門', '元朗', '沙田', '西貢', '東涌', '大澳', '梅窩', '長洲', '榕樹灣', '沙頭角']) {
+    const place = fullMeta.territoryPlace(name);
+    const spawn = meta.spawnOnRoad(place.x, place.z, { minWidth: 5, laneOffset: 2.4 });
+    assert.ok(Number.isFinite(spawn.roadId), `${name} uses a real full-road way`);
+    assert.ok(fullMeta.isTerritoryRoad(spawn.x, spawn.z, 1), `${name} arrival is on the road`);
+    const x = spawn.x + Math.sin(spawn.heading) * 8.65;
+    const z = spawn.z + Math.cos(spawn.heading) * 8.65;
+    assert.ok(fullMeta.isTerritoryRoad(x, z, 1), `${name} remains on a road after initial acceleration`);
+    if (name === '大澳') assert.ok(spawn.segmentLength >= 20, 'Tai O no longer arrives at the end of a five-metre stub');
+  }
 });
 
 test('Hong Kong road teleports reject water nodes and keep generated spawns on land', () => {
@@ -91,7 +112,10 @@ test('Hong Kong road teleports reject water nodes and keep generated spawns on l
 
   const mountParker = meta.spawnOnRoad(5285, 27, { minWidth: 8 });
   assert.ok(meta.isLand(mountParker.x, mountParker.z), 'lane offset cannot move a spawn beyond the coast');
-  for (const point of meta.TELEPORTS) assert.ok(meta.isLand(point.x, point.z), `${point.id} is on land`);
+  for (const point of meta.TELEPORTS) {
+    if (isHongKongCorePoint(point.x, point.z)) assert.ok(meta.isLand(point.x, point.z), `${point.id} is on detailed-core land`);
+    else assert.ok(fullMeta.isTerritoryRoad(point.x, point.z, 1), `${point.id} is on a territory-wide road`);
+  }
   for (const [mode, point] of Object.entries(meta.SPAWN)) {
     if (mode !== 'helicopter') assert.ok(meta.isLand(point.x, point.z), `${mode} spawn is on land`);
   }

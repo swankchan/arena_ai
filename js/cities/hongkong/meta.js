@@ -1,4 +1,16 @@
 import { GEO } from '../../hk-geodata.js';
+import {
+  FULL_BOUNDS,
+  FULL_ROAD_NAMES,
+  FULL_PLACE_NAMES,
+  isDetailedCore,
+  territoryParkAt,
+  nearestFullRoad,
+  nearestFullRoads,
+  spawnOnFullRoad,
+  nearestTerritoryPlace,
+  territoryPlace
+} from './full-meta.js';
 
 // Hong Kong place names, teleports and the HUD locator. Everything here is plain ES module code with no three.js
 // dependency, so the map, the HUD and the node tests all read the same geography.
@@ -9,7 +21,8 @@ const BOUNDS = GEO.bounds;
 
 export const ROAD_NAMES = new Set([
   ...GEO.roadGraph.names,
-  ...GEO.roads.map((road) => road[0])
+  ...GEO.roads.map((road) => road[0]),
+  ...FULL_ROAD_NAMES
 ].filter(Boolean));
 
 // Districts, water and the big parks, at their real places. rank 0 = district, 1 = water, 2 = neighbourhood.
@@ -60,7 +73,8 @@ export const PLACE_NAMES = new Set([
   ...AREA_LABELS.map(([name]) => name),
   ...LANDMARKS.map((landmark) => landmark.name),
   ...GEO.parks.map((park) => park.name).filter(Boolean),
-  ...Object.values(GEO.pointNames || {})
+  ...Object.values(GEO.pointNames || {}),
+  ...FULL_PLACE_NAMES
 ]);
 
 // ---------------------------------------------------------------------------------------------------------------------
@@ -98,6 +112,7 @@ function pointSegmentDistance(x, z, segment) {
 
 // Nearest named street segments, one entry per street name, with the closest point on that street.
 export function nearestRoads(x, z, radius = 45) {
+  if (!isDetailedCore(x, z)) return nearestFullRoads(x, z, radius);
   const best = new Map();
   let ring = Math.ceil(radius / CELL);
   for (let tries = 0; tries < 3; tries++) {
@@ -160,6 +175,7 @@ const parkBounds = GEO.parks.map((park) => {
 });
 
 export function parkAt(x, z) {
+  if (!isDetailedCore(x, z)) return territoryParkAt(x, z);
   for (const { park, minX, maxX, minZ, maxZ } of parkBounds) {
     if (x < minX || x > maxX || z < minZ || z > maxZ) continue;
     if (park.rings.some((ring) => pointInRing(ring, x, z))) return park;
@@ -177,6 +193,7 @@ export function landmarkAt(x, z, radius = 85) {
 }
 
 export function districtOf(x, z) {
+  if (!isDetailedCore(x, z)) return nearestTerritoryPlace(x, z)?.name || '香港';
   let best = null, bestDist = Infinity;
   for (const [name, ax, az, rank] of AREA_LABELS) {
     if (rank === 1) continue; // water is not a building district
@@ -195,6 +212,7 @@ export function locationLabel(x, z) {
   const roads = nearestRoads(x, z, 42).filter((road) => road.name);
   if (roads.length >= 2) return `${roads[0].name} & ${roads[1].name}`;
   if (roads.length === 1) return roads[0].name;
+  if (!isDetailedCore(x, z)) return nearestTerritoryPlace(x, z, 9000)?.name || '香港';
   let best = '香港', bestDist = 650;
   for (const [name, ax, az] of AREA_LABELS) {
     const d = Math.hypot(ax - x, az - z);
@@ -214,7 +232,15 @@ const linkLines = GRAPH.links.map(([a, b, name, width, lanes, dir, inner]) => {
   return { a, b, name, width, lanes, dir, points, nameText: GRAPH.names[name] || '' };
 });
 
-export function nearestRoadNode(x, z, { landOnly = false } = {}) {
+export function nearestRoadNode(x, z, { landOnly = false, fullRoad = false } = {}) {
+  if (fullRoad && !isDetailedCore(x, z)) {
+    const hit = nearestFullRoad(x, z, { radius: 3000 });
+    if (!hit) return null;
+    return {
+      x: hit.x, z: hit.z, distance: hit.distance, id: `full-${hit.way.id}`,
+      width: hit.width, heading: hit.heading, name: hit.name, fullRoad: true
+    };
+  }
   let best = Infinity, id = -1;
   for (let i = 0; i + 1 < GRAPH.nodes.length; i += 2) {
     const nx = GRAPH.nodes[i], nz = GRAPH.nodes[i + 1];
@@ -227,6 +253,9 @@ export function nearestRoadNode(x, z, { landOnly = false } = {}) {
 
 // A point ~40% along the nearest wide enough link, offset into the left-hand lane (Hong Kong drives on the left).
 export function spawnOnRoad(x, z, { minWidth = 8, laneOffset = 2.6 } = {}) {
+  if (!isDetailedCore(x, z)) {
+    return spawnOnFullRoad(x, z, { minWidth, laneOffset }) || { x, z, heading: Math.PI, width: 8 };
+  }
   let best = null;
   let bestScore = Infinity;
   for (const link of linkLines) {
@@ -291,6 +320,14 @@ export function isTrafficPathOnLand(points, width) {
 }
 
 export function roadPointForTeleport(x, z) {
+  if (!isDetailedCore(x, z)) {
+    const hit = nearestFullRoad(x, z, { radius: 3500 });
+    if (hit) return { x: hit.x, z: hit.z };
+    return {
+      x: Math.max(FULL_BOUNDS.minX, Math.min(FULL_BOUNDS.maxX, x)),
+      z: Math.max(FULL_BOUNDS.minZ + 20, Math.min(FULL_BOUNDS.maxZ - 20, z))
+    };
+  }
   const node = nearestRoadNode(x, z, { landOnly: true });
   if (!node) return { x: Math.max(BOUNDS.minX, Math.min(BOUNDS.maxX, x)), z: Math.max(BOUNDS.minZ + 20, Math.min(BOUNDS.maxZ - 20, z)) };
   return { x: node.x, z: node.z };
@@ -311,6 +348,22 @@ export const TELEPORTS = [
   { id: 'shamshuipo', name: '深水埗 汝州街', sub: '石硤尾街 · 鴨寮街', ...spawnOnRoad(451, -5103, { minWidth: 10 }) },
   { id: 'kowloontong', name: '九龍塘 律倫街', sub: '金巴倫道 · 達之路', ...spawnOnRoad(1800, -5670, { minWidth: 10 }) }
 ];
+
+// Territory-wide destinations are projected onto real OSM drivable ways and offset into the left-hand traffic lane.
+for (const [id, placeName, label] of [
+  ['tuenmun', '屯門', '屯門'], ['yuenlong', '元朗', '元朗'], ['shatin', '沙田', '沙田'],
+  ['saikung', '西貢', '西貢'], ['tungchung', '東涌', '東涌'], ['taio', '大澳', '大澳'],
+  ['muiwo', '梅窩', '梅窩'], ['cheungchau', '長洲', '長洲'], ['lamma', '榕樹灣', '南丫島 榕樹灣'],
+  ['shataukok', '沙頭角', '沙頭角']
+]) {
+  const place = territoryPlace(placeName);
+  const spawn = place && spawnOnFullRoad(place.x, place.z, { minWidth: 6 });
+  if (!spawn) throw new Error(`No full-Hong-Kong road spawn for ${placeName}`);
+  TELEPORTS.push({
+    id, name: `${label} 道路`, sub: `${spawn.name || 'OSM 道路'} · 靠左行駛`,
+    x: spawn.x, z: spawn.z, heading: spawn.heading
+  });
+}
 
 // Spawns away from the busiest junction, each in its own lane/sidewalk.
 export const SPAWN = {
