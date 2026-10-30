@@ -2,7 +2,7 @@ import { CITIES, getCity } from './cities/registry.js';
 import { getTaxiStyle } from './taxi-styles.js';
 
 // Lightweight application entry. Keep the home screen independent of Three.js and city-pack
-// imports so the picker still renders when a CDN or graphics dependency is unavailable.
+// imports so the picker still renders when a runtime module or graphics dependency is unavailable.
 
 let appPromise = null;
 let launching = false;
@@ -74,7 +74,7 @@ async function selectCity(cityId) {
   } catch (error) {
     console.error('[boot]', error);
     appPromise = null;
-    setPickerStatus(`Could not load ${city.name}. Check your connection, then reload and try again.`, true);
+    setPickerStatus(`Could not load ${city.name}. Reload and try again; check the browser console if the problem continues.`, true);
   } finally {
     launching = false;
   }

@@ -30,7 +30,7 @@ Touch controls and gamepads are supported. The teleport menu is generated from t
 
 ## Development
 
-No build step: the app is native ES modules. `js/main.js` is the lightweight registry-driven picker; choosing a city or following a direct city link dynamically imports the 3D runtime in `js/app.js`. A Three.js/CDN failure therefore leaves the city cards visible and shows a load error instead of an empty home screen.
+No build step: the app is native ES modules. `js/main.js` is the lightweight registry-driven picker; choosing a city or following a direct city link dynamically imports the 3D runtime in `js/app.js`. The pinned Three.js runtime is vendored under `vendor/three/`, so all three cities work without a third-party module CDN. If runtime initialization fails, the picker remains visible and reports the error.
 
 Serve the directory over HTTP (the modules will not load from `file://`):
 
