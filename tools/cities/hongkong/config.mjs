@@ -15,11 +15,10 @@ export default {
     origin: { lat: 22.2819, lon: 114.1596 } // 中環 皇后像廣場
   },
 
-  // Data download bounds (must contain the coastline that closes both shores).
-  dataBounds: { south: 22.2685, west: 114.1385, north: 22.3300, east: 114.2050 },
-  // Playable core: use the full cached download extent (about 40% more bounding-box area than the original core).
-  // Keep future core expansions inside dataBounds, or refresh every OSM layer so the new edges remain real geography.
-  coreBounds: { south: 22.2685, west: 114.1385, north: 22.3300, east: 114.2050 },
+  // Second expansion: roughly another 40% bounding-box area, reaching Kennedy Town, Quarry Bay and Kowloon Tong.
+  // The download and playable extents stay identical so every playable edge has real data behind it.
+  dataBounds: { south: 22.2655, west: 114.1315, north: 22.3370, east: 114.2120 },
+  coreBounds: { south: 22.2655, west: 114.1315, north: 22.3370, east: 114.2120 },
 
   // No hand-placed sea seeds: the OSM coastline closes both shores inside the download box, and the land extractor
   // seeds water from the seaward side of the coastline itself. Hand-picked seeds are easy to put on a pier or a
