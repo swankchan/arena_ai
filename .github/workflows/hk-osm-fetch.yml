@@ -1,0 +1,21 @@
+name: Fetch Hong Kong OSM data
+
+on:
+  push:
+    branches:
+      - arena/25d85531-rag-es
+    paths:
+      - .github/workflows/hk-osm-fetch.yml
+
+permissions:
+  contents: write
+
+jobs:
+  fetch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: arena/25d85531-rag-es
+      - name: Check workflow availability
+        run: echo "Hong Kong OSM fetch workflow is available"
