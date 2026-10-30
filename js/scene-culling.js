@@ -3,7 +3,7 @@ import * as THREE from 'three/webgpu';
 // Spatial culling for the island-wide static geometry. Most of Manhattan's street furniture and building massing is
 // built as a handful of instanced meshes spanning the whole island (bounding spheres ~7 km across), which three.js can
 // never cull: every frame the GPU transformed every lamp post, signal and facade box of the island three times (the
-// view and both sun shadow cascades). This module, run once after the city is built (main.js):
+// view and both sun shadow cascades). This module, run once after the city is built (app.js):
 // 1. Splits the instanced meshes of small props into spatial chunks, each culled by the view frustum and hidden beyond
 //    the distance where its props shrink below a pixel or two (updateSceneCulling, every frame).
 // 2. Gives the big static shadow casters (facade boxes, piers, viaducts...) position-only stand-ins cut into cells, on
@@ -135,7 +135,7 @@ function replaceWithChunks(mesh, cell) {
   parent.remove(mesh);
   chunks.forEach((chunk, k) => {
     parent.add(chunk);
-    // Shader precompile: every chunk shares the first chunk's pipeline (main.js).
+    // Shader precompile: every chunk shares the first chunk's pipeline (app.js).
     if (k > 0) chunk.userData.sharesPipelineWith = chunks[0];
     chunk.updateMatrixWorld(true);
   });

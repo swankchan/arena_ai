@@ -37,9 +37,9 @@ test('every registry entry has a pack module exporting the same id and a build f
   }
 });
 
-test('the city packs are dynamically imported: main.js only imports the registry', () => {
-  const main = read('js/main.js');
-  const packImports = [...main.matchAll(/from\s+['"](\.\/cities\/[^'"]+)['"]/g)].map((match) => match[1]);
+test('the city packs are dynamically imported: app.js only imports the registry', () => {
+  const app = read('js/app.js');
+  const packImports = [...app.matchAll(/from\s+['"](\.\/cities\/[^'"]+)['"]/g)].map((match) => match[1]);
   assert.deepEqual(packImports, ['./cities/registry.js']);
   const source = read('js/cities/registry.js');
   const dynamic = [...source.matchAll(/load:\s*\(\)\s*=>\s*import\(\s*['"]([^'"]+)['"]\s*\)/g)].map((match) => match[1]);
@@ -51,6 +51,11 @@ test('the home screen exposes the city picker before the simulation starts', () 
   const html = read('index.html');
   assert.match(html, /id="start-overlay"/);
   assert.match(html, /id="city-cards"/);
+  assert.match(html, /id="city-picker-status"[^>]*aria-live="polite"[^>]*hidden/);
   assert.match(html, /id="loading-overlay" class="hidden"/);
-  assert.match(read('js/main.js'), /renderCityCards\(\);/);
+  const main = read('js/main.js');
+  assert.match(main, /renderCityCards\(\);/);
+  const staticImports = [...main.matchAll(/^import .* from ['"]([^'"]+)['"];/gm)].map((match) => match[1]);
+  assert.deepEqual(staticImports, ['./cities/registry.js', './taxi-styles.js']);
+  assert.match(main, /import\('\.\/app\.js'\)/, 'the 3D application loads only after the lightweight entry');
 });

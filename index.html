@@ -57,6 +57,7 @@
   <link rel="modulepreload" href="./js/audio-system.js" />
   <link rel="modulepreload" href="./js/teleport.js" />
   <link rel="modulepreload" href="./js/cities/registry.js" />
+  <link rel="modulepreload" href="./js/app.js" />
   <link rel="modulepreload" href="./js/main.js" />
   <script type="module" src="./js/main.js"></script>
   <!-- Inter (UI) & Overpass (street-name signs: modelled on Highway Gothic, the US road sign typeface) -->
@@ -103,6 +104,7 @@
       <h1 class="start-title">Choose a city</h1>
       <p class="start-lede">Three worlds, one engine. Manhattan and Hong Kong are built from real geodata; Grid City is generated in code at load.</p>
       <div id="city-cards" class="city-cards"></div>
+      <p id="city-picker-status" class="city-picker-status" role="status" aria-live="polite" hidden></p>
       <p class="start-footnote">Add more cities as packs in <code>js/cities/</code>.</p>
     </div>
   </div>

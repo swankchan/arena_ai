@@ -793,7 +793,7 @@ body.hud-minimized .icon-show {
   padding: 5px;
 }
 
-/* The taxi-yellow pill glides to the selected mode (positioned by main.js) */
+/* The taxi-yellow pill glides to the selected mode (positioned by app.js) */
 .mode-indicator {
   position: absolute;
   z-index: 0;
@@ -1576,6 +1576,23 @@ body.touch-enabled .pop-item { min-height: 44px; }
 .city-card:hover .city-card-cta,
 .city-card:focus-visible .city-card-cta {
   color: var(--taxi);
+}
+
+.city-picker-status {
+  margin: 4px 0 0;
+  padding: 10px 12px;
+  border: 1px solid var(--glass-border);
+  border-radius: 10px;
+  color: var(--text-2);
+  background: var(--glass);
+  font-size: 12.5px;
+  line-height: 1.5;
+}
+
+.city-picker-status[data-error='true'] {
+  color: #ffaaa3;
+  border-color: rgba(240, 90, 79, 0.4);
+  background: rgba(90, 24, 22, 0.32);
 }
 
 .start-footnote {

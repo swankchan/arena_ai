@@ -11,7 +11,7 @@ import { setupSceneCulling, updateSceneCulling } from '../../scene-culling.js';
 import { TELEPORTS, ROAD_NAMES, PLACE_NAMES, getLocationLabel } from './meta.js';
 
 // New York City pack: the real Manhattan world (city-grid, buildings, landmarks, traffic, map, audio).
-// The engine in js/main.js only sees the world object returned by build().
+// The engine in js/app.js only sees the world object returned by build().
 export const city = {
   id: 'newyork',
   name: 'New York',

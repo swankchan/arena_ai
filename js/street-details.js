@@ -111,7 +111,7 @@ function buildStreetDetails(scene, colliders = []) {
   const footprints = [];
   const addFootprint = (x, z, w, d, pedestrianOnly = false) => footprints.push({ minX: x - w / 2, maxX: x + w / 2, minZ: z - d / 2, maxZ: z + d / 2, pedestrianOnly });
 
-  // Signal clock (seconds), set every frame by main.js
+  // Signal clock (seconds), set every frame by app.js
   const signalClock = uniform(0);
 
   // Shared materials
