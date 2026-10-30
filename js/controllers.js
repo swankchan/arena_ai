@@ -185,18 +185,20 @@ function createNYLicensePlateTexture() {
 function createHKLicensePlateTexture(rear = false) {
   const c = document.createElement('canvas');
   c.width = 256;
-  c.height = 128;
+  c.height = 160;
   const ctx = c.getContext('2d');
   ctx.fillStyle = rear ? '#f0c32e' : '#f1f3f5';
-  ctx.fillRect(0, 0, 256, 128);
+  ctx.fillRect(0, 0, 256, 160);
   ctx.strokeStyle = '#15181b';
-  ctx.lineWidth = 8;
-  ctx.strokeRect(4, 4, 248, 120);
+  ctx.lineWidth = 7;
+  ctx.strokeRect(4, 4, 248, 152);
   ctx.fillStyle = '#111418';
-  ctx.font = '900 60px "JetBrains Mono", monospace';
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
-  ctx.fillText('HK 8823', 128, 66);
+  ctx.font = '900 62px Arial, sans-serif';
+  ctx.fillText('NC', 128, 48, 180);
+  ctx.font = '900 68px Arial, sans-serif';
+  ctx.fillText('2756', 128, 116, 210);
   const tex = new THREE.CanvasTexture(c);
   tex.colorSpace = THREE.SRGBColorSpace;
   return tex;
@@ -545,10 +547,17 @@ class ThirdPersonControllerManager {
     if (plateMode === 'hk') {
       const frontPlateMat = new THREE.MeshStandardNodeMaterial({ map: createHKLicensePlateTexture(false), roughness: 0.34 });
       const rearPlateMat = new THREE.MeshStandardNodeMaterial({ map: createHKLicensePlateTexture(true), roughness: 0.34 });
-      const rearPlate = new THREE.Mesh(new THREE.BoxGeometry(0.32, 0.14, 0.02), rearPlateMat);
+      const plateFrameMat = new THREE.MeshStandardNodeMaterial({ color: 0xc9ced3, roughness: 0.24, metalness: 0.75 });
+      const rearPlateFrame = new THREE.Mesh(new THREE.BoxGeometry(0.4, 0.24, 0.016), plateFrameMat);
+      rearPlateFrame.position.set(0, spec.plates[1], spec.zRear - 0.002);
+      chassisPivot.add(rearPlateFrame);
+      const rearPlate = new THREE.Mesh(new THREE.BoxGeometry(0.36, 0.2, 0.02), rearPlateMat);
       rearPlate.position.set(0, spec.plates[1], spec.zRear - 0.006);
       chassisPivot.add(rearPlate);
-      const frontPlate = new THREE.Mesh(new THREE.BoxGeometry(0.32, 0.14, 0.02), frontPlateMat);
+      const frontPlateFrame = new THREE.Mesh(new THREE.BoxGeometry(0.4, 0.24, 0.016), plateFrameMat);
+      frontPlateFrame.position.set(0, spec.plates[0], spec.zFront + 0.028);
+      chassisPivot.add(frontPlateFrame);
+      const frontPlate = new THREE.Mesh(new THREE.BoxGeometry(0.36, 0.2, 0.02), frontPlateMat);
       frontPlate.position.set(0, spec.plates[0], spec.zFront + 0.04);
       chassisPivot.add(frontPlate);
     } else {

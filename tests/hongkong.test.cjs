@@ -413,6 +413,37 @@ test('Hong Kong livery follows the vertical door lettering and LPG reference dec
   assert.match(source, /signTex\.g/);
 });
 
+test('Hong Kong taxi follows the supplied roof-sign, rear-detail and plate references', () => {
+  const source = read('js/actor-models.js');
+  assert.match(source, /taillight: \[0\.57, 0\.69, 0\.29, 0\.115\]/);
+  assert.match(source, /function hkTaxiRearTexture\(\)/);
+  assert.match(source, /TOYOTA LPG20/);
+  assert.match(source, /CROWN COMFORT/);
+  assert.match(source, /function buildHKTaxiHardware\(spec\)/);
+  assert.match(source, /CAR_PARTS\.CHROME/);
+  assert.match(source, /hkRearDecal/);
+  assert.match(source, /hkWipers/);
+  assert.match(source, /hkWindscreenDecal/);
+  assert.match(source, /hkCarPlateTexture/);
+  assert.match(source, /hkCarPlateTexture\(false\)/);
+  assert.match(source, /hkFrontPlateColor, hkPlateFront/);
+  assert.match(source, /TAXI 5 SEATS/);
+  assert.doesNotMatch(source, /TAXI 4 SEATS/);
+
+  const signStart = source.indexOf('function hkTaxiSignTexture()');
+  const signEnd = source.indexOf('function createLoftedCarMaterial', signStart);
+  const sign = source.slice(signStart, signEnd);
+  assert.match(sign, /ctx\.scale\(420 \/ labelWidth, 1\)/);
+  assert.match(sign, /ctx\.fillText\('TAXI', 0, 0\)/);
+  assert.doesNotMatch(sign, /的士/, 'the roof face uses the large English TAXI lettering from the front photograph');
+
+  const controllers = read('js/controllers.js');
+  assert.match(controllers, /fillText\('NC', 128, 48/);
+  assert.match(controllers, /fillText\('2756', 128, 116/);
+  assert.match(controllers, /rearPlateFrame/);
+  assert.match(controllers, /frontPlateFrame/);
+});
+
 test('Hong Kong buses use a detailed two-deck model with instanced wheels and destination signs', () => {
   const actor = read('js/actor-models.js');
   assert.match(actor, /const HK_BUS_SPEC = /);

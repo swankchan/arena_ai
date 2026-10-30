@@ -205,7 +205,8 @@ const CAR_PARTS = {
   MIRROR: 5,
   SIGN: 6,
   FRONT: 7,
-  REAR: 8
+  REAR: 8,
+  CHROME: 9
 };
 
 // Design tables. Curves are [z, value] control points (z = +front); nose / tail entries are [length, tip value,
@@ -346,7 +347,7 @@ BODY_SPECS.hkTaxi = Object.assign({}, BODY_SPECS.sedan, {
   doors: [0.86, -0.18, -1.08],
   handles: [-0.05, -0.86],
   headlight: [0.62, 0.68, 0.22, 0.105],
-  taillight: [0.65, 0.72, 0.15, 0.17],
+  taillight: [0.57, 0.69, 0.29, 0.115],
   grille: [0.65, 0.36, 0.145],
   intake: [0.3, 0.55, 0.04],
   plates: [0.42, 0.7],
@@ -832,7 +833,7 @@ function buildRoofRails(spec) {
 function taxiSignPlacement(spec) {
   const L = carLayout(spec);
   const cab = spec.cabin;
-  const z = lerp(cab.roofFront, cab.roofRear, 0.45);
+  const z = lerp(cab.roofFront, cab.roofRear, spec.name === 'hkTaxi' ? 0.22 : 0.45);
   const c = L.cabin(z);
   return { z, y: c.railY + c.h };
 }
@@ -842,7 +843,7 @@ function buildTaxiSign(spec) {
   const shape = new THREE.Shape();
   const hw0 = 0.3;
   const hw1 = 0.27;
-  const h = 0.15;
+  const h = spec.name === 'hkTaxi' ? 0.18 : 0.15;
   const r = 0.035;
   shape.moveTo(-hw0, 0);
   shape.lineTo(hw0, 0);
@@ -861,6 +862,23 @@ function buildTaxiSign(spec) {
   }).translate(0, y + 0.03, z - 0.06);
   const mount = new THREE.BoxGeometry(0.46, 0.04, 0.12).translate(0, y + 0.012, z);
   return [part(sign, CAR_PARTS.SIGN), part(mount, CAR_PARTS.TRIM)];
+}
+
+function buildHKTaxiHardware(spec) {
+  const parts = [];
+  const antennaZ = spec.cabin.deck - 0.12;
+  const antennaBase = carLayout(spec).body(antennaZ).yT + 0.006;
+  const antenna = new THREE.CylinderGeometry(0.005, 0.009, 0.16, 6)
+    .translate(0, antennaBase + 0.08, antennaZ);
+  parts.push(part(antenna, CAR_PARTS.TRIM));
+
+  // One polished round tailpipe sits below the rear corner, with a dark hollow centre.
+  const exhaust = new THREE.CylinderGeometry(0.045, 0.045, 0.12, 14, 1, true)
+    .rotateX(Math.PI / 2).translate(0.52, 0.22, spec.zRear - 0.055);
+  const exhaustCore = new THREE.CylinderGeometry(0.032, 0.032, 0.012, 14)
+    .rotateX(Math.PI / 2).translate(0.52, 0.22, spec.zRear - 0.119);
+  parts.push(part(exhaust, CAR_PARTS.CHROME), part(exhaustCore, CAR_PARTS.TRIM));
+  return parts;
 }
 
 // Wrap the bumper strips around the nose and tail. Six rectangular sections cost just 44 triangles each;
@@ -900,6 +918,7 @@ function buildCarGeometry(spec, includeWheels = true) {
   }
   if (spec.rails) parts.push(...buildRoofRails(spec));
   if (spec.sign) parts.push(...buildTaxiSign(spec));
+  if (spec.name === 'hkTaxi') parts.push(...buildHKTaxiHardware(spec));
   return mergeGeometries(parts);
 }
 
@@ -1036,6 +1055,35 @@ function carPlateTexture() {
   return _carPlateTexture;
 }
 
+function hkCarPlateTexture(rear = true) {
+  const cached = rear ? _hkCarPlateTexture : _hkCarFrontPlateTexture;
+  if (cached) return cached;
+  const canvas = document.createElement('canvas');
+  canvas.width = 128;
+  canvas.height = 256;
+  const ctx = canvas.getContext('2d');
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  [['NC', '2756'], ['JW', '1088'], ['TK', '6203'], ['LM', '9316']].forEach(([letters, digits], row) => {
+    const y = row * 64;
+    ctx.fillStyle = rear ? '#f0c32e' : '#f1f3f5';
+    ctx.fillRect(0, y, 128, 64);
+    ctx.strokeStyle = '#17191b';
+    ctx.lineWidth = 3;
+    ctx.strokeRect(2, y + 2, 124, 60);
+    ctx.fillStyle = '#111418';
+    ctx.font = '900 23px Arial, sans-serif';
+    ctx.fillText(letters, 64, y + 19);
+    ctx.font = '900 27px Arial, sans-serif';
+    ctx.fillText(digits, 64, y + 46);
+  });
+  const tex = new THREE.CanvasTexture(canvas);
+  tex.colorSpace = THREE.SRGBColorSpace;
+  if (rear) _hkCarPlateTexture = tex;
+  else _hkCarFrontPlateTexture = tex;
+  return tex;
+}
+
 function roundedCanvasRect(ctx, x, y, w, h, r) {
   ctx.beginPath();
   ctx.moveTo(x + r, y);
@@ -1048,7 +1096,11 @@ function roundedCanvasRect(ctx, x, y, w, h, r) {
 
 let _hkTaxiSideTexture;
 let _hkTaxiFrontTexture;
+let _hkTaxiRearTexture;
+let _hkTaxiWindscreenTexture;
 let _hkTaxiSignTexture;
+let _hkCarPlateTexture;
+let _hkCarFrontPlateTexture;
 
 // Two object-space door decals in one atlas. The +x side occupies pixels 0-1023 with
 // its front at the left; the -x side occupies pixels 1024-2047 with its rear at the left.
@@ -1161,6 +1213,90 @@ function hkTaxiFrontTexture() {
   return _hkTaxiFrontTexture;
 }
 
+// Silver trunk badges and the green rear-bumper seat sticker from the supplied Crown Comfort rear photograph.
+function hkTaxiRearTexture() {
+  if (_hkTaxiRearTexture) return _hkTaxiRearTexture;
+  const c = document.createElement('canvas');
+  c.width = 1024;
+  c.height = 512;
+  const ctx = c.getContext('2d');
+  ctx.clearRect(0, 0, c.width, c.height);
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+
+  ctx.save();
+  ctx.translate(512, 94);
+  ctx.strokeStyle = '#eef1ef';
+  ctx.lineWidth = 5;
+  ctx.shadowColor = 'rgba(0,0,0,0.65)';
+  ctx.shadowBlur = 3;
+  for (const [x, y, rx, ry] of [[0, 0, 42, 29], [0, -4, 12, 21], [0, 8, 28, 11]]) {
+    ctx.beginPath();
+    ctx.ellipse(x, y, rx, ry, 0, 0, Math.PI * 2);
+    ctx.stroke();
+  }
+  ctx.restore();
+
+  ctx.fillStyle = '#eef1ef';
+  ctx.shadowColor = 'rgba(0,0,0,0.7)';
+  ctx.shadowBlur = 3;
+  ctx.font = '700 25px Arial, sans-serif';
+  ctx.fillText('TOYOTA LPG20', 190, 154, 235);
+  ctx.font = '700 27px Arial, sans-serif';
+  ctx.fillText('CROWN COMFORT', 820, 154, 255);
+  ctx.shadowBlur = 0;
+
+  ctx.save();
+  ctx.translate(403, 315);
+  ctx.scale(0.85, 0.85);
+  ctx.beginPath();
+  ctx.moveTo(18, 140);
+  ctx.arc(128, 140, 110, Math.PI, 0);
+  ctx.closePath();
+  ctx.fillStyle = '#128a50';
+  ctx.fill();
+  ctx.strokeStyle = 'rgba(255,255,255,0.92)';
+  ctx.lineWidth = 5;
+  ctx.stroke();
+  ctx.fillStyle = '#ffffff';
+  const lines = 'TAXI 5 SEATS'.split(' ');
+  ctx.font = '800 20px Inter, Arial, sans-serif';
+  ctx.fillText(lines[0], 128, 50);
+  ctx.font = '900 54px Inter, Arial, sans-serif';
+  ctx.fillText(lines[1], 128, 88);
+  ctx.font = '800 20px Inter, Arial, sans-serif';
+  ctx.fillText(lines[2], 128, 130);
+  ctx.restore();
+
+  _hkTaxiRearTexture = new THREE.CanvasTexture(c);
+  _hkTaxiRearTexture.colorSpace = THREE.SRGBColorSpace;
+  return _hkTaxiRearTexture;
+}
+
+function hkTaxiWindscreenTexture() {
+  if (_hkTaxiWindscreenTexture) return _hkTaxiWindscreenTexture;
+  const c = document.createElement('canvas');
+  c.width = 128;
+  c.height = 128;
+  const ctx = c.getContext('2d');
+  ctx.clearRect(0, 0, 128, 128);
+  ctx.beginPath();
+  ctx.arc(64, 64, 51, 0, Math.PI * 2);
+  ctx.fillStyle = '#b84f5d';
+  ctx.fill();
+  ctx.strokeStyle = 'rgba(255,255,255,0.65)';
+  ctx.lineWidth = 3;
+  ctx.stroke();
+  ctx.fillStyle = '#fff4ee';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.font = '800 29px Arial, sans-serif';
+  ctx.fillText('TAXI', 64, 66);
+  _hkTaxiWindscreenTexture = new THREE.CanvasTexture(c);
+  _hkTaxiWindscreenTexture.colorSpace = THREE.SRGBColorSpace;
+  return _hkTaxiWindscreenTexture;
+}
+
 function hkTaxiSignTexture() {
   if (_hkTaxiSignTexture) return _hkTaxiSignTexture;
   const c = document.createElement('canvas');
@@ -1175,10 +1311,13 @@ function hkTaxiSignTexture() {
   ctx.fillStyle = '#c6202b';
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
-  ctx.font = '700 34px "Noto Sans TC", "PingFang TC", "Microsoft JhengHei", sans-serif';
-  ctx.fillText('的士', 80, c.height / 2 + 3);
-  ctx.font = '900 68px Inter, Arial, sans-serif';
-  ctx.fillText('TAXI', 326, c.height / 2 + 3);
+  ctx.font = '900 104px Arial, sans-serif';
+  const labelWidth = ctx.measureText('TAXI').width;
+  ctx.save();
+  ctx.translate(256, 66);
+  ctx.scale(420 / labelWidth, 1);
+  ctx.fillText('TAXI', 0, 0);
+  ctx.restore();
   _hkTaxiSignTexture = new THREE.CanvasTexture(c);
   _hkTaxiSignTexture.colorSpace = THREE.SRGBColorSpace;
   return _hkTaxiSignTexture;
@@ -1235,7 +1374,8 @@ function createLoftedCarMaterial(spec, fixedColorHex = null, options = {}) {
   const rearZone = spec.zRear + 0.55;
   const sillY = spec.sill[1][1];
   const rearSill = spec.tail.sill[1];
-  const signY = taxiSignPlacement(spec).y + 0.105;
+  const signHeight = spec.name === 'hkTaxi' ? 0.18 : 0.15;
+  const signY = taxiSignPlacement(spec).y + 0.03 + signHeight * 0.5;
   const one = float(1.0);
 
   const p = attribute('position', 'vec3');
@@ -1249,6 +1389,7 @@ function createLoftedCarMaterial(spec, fixedColorHex = null, options = {}) {
   const isTrim = isPart(CAR_PARTS.TRIM);
   const isMirror = isPart(CAR_PARTS.MIRROR);
   const isSign = isPart(CAR_PARTS.SIGN);
+  const isChrome = isPart(CAR_PARTS.CHROME);
   const ax = abs(p.x);
   const isSide = smoothstep(0.45, 0.7, abs(n.x));
   const front = smoothstep(0.12, 0.38, n.z).mul(step(frontZone, p.z)).mul(isBody);
@@ -1260,9 +1401,9 @@ function createLoftedCarMaterial(spec, fixedColorHex = null, options = {}) {
   let sideG = polygonDistance(p.z, p.y, sideGlassPlanes, 0.07);
   for (const zp of cab.pillars) sideG = max(sideG, float(0.036).sub(abs(p.z.sub(zp))));
   const rearGlass = coverage(polygonDistance(ax, p.z, rearGlassPlanes, 0.09));
+  const frontGlass = coverage(polygonDistance(ax, p.z, frontGlassPlanes, 0.09));
   const backlight = rearGlass.mul(isWindow);
-  const glass = max(max(coverage(sideG), coverage(polygonDistance(ax, p.z, frontGlassPlanes, 0.09))), rearGlass)
-    .mul(isWindow);
+  const glass = max(max(coverage(sideG), frontGlass), rearGlass).mul(isWindow);
   const seal = max(
     coverage(polygonDistance(p.z, p.y, sideSealPlanes, 0.07)),
     max(coverage(polygonDistance(ax, p.z, frontSealPlanes, 0.09)), coverage(polygonDistance(ax, p.z, rearSealPlanes, 0.09)))
@@ -1279,6 +1420,23 @@ function createLoftedCarMaterial(spec, fixedColorHex = null, options = {}) {
   const rearWiper = spec.rearWiper
     ? roundedRect(vec2(p.x.add(0.15), p.z.sub(cab.deck + 0.075)), vec2(0.22, 0.006), 0.003).mul(backlight)
     : float(0.0);
+  const hkWiperLine = abs(p.z.sub(cab.cowl - 0.045).add(ax.mul(0.11)));
+  const hkWipers = livery === 'hk'
+    ? max(
+      smoothstep(0.02, 0.008, hkWiperLine)
+        .mul(smoothstep(0.07, 0.11, ax)).mul(smoothstep(0.68, 0.6, ax)),
+      roundedRect(vec2(ax.sub(0.08), p.z.sub(cab.cowl - 0.055)), vec2(0.026, 0.016), 0.005)
+    ).mul(frontGlass).mul(isWindow)
+    : float(0);
+  const windStickerTex = livery === 'hk'
+    ? texture(hkTaxiWindscreenTexture(), vec2(
+      p.x.div(0.18).add(0.5),
+      p.z.sub(cab.cowl - 0.26).div(-0.18).add(0.5)
+    ))
+    : null;
+  const hkWindscreenDecal = windStickerTex
+    ? windStickerTex.a.mul(frontGlass).mul(isWindow).mul(smoothstep(0.12, 0.38, n.z))
+    : float(0);
   const hkRoof = livery === 'hk'
     ? isWindow.mul(smoothstep(belt.add(0.01), belt.add(0.035), p.y)).mul(one.sub(max(glass, seal, chromeBelt)))
     : float(0);
@@ -1343,6 +1501,12 @@ function createLoftedCarMaterial(spec, fixedColorHex = null, options = {}) {
     .mul(step(frontZone, p.z))
     .mul(max(isBody, isTrim));
   const hkFrontDecal = frontStickerTex ? frontStickerTex.a.mul(frontStickerFace) : float(0);
+  const rearStickerTex = livery === 'hk'
+    ? texture(hkTaxiRearTexture(), vec2(p.x.div(-1.72).add(0.5), p.y.sub(0.36).div(0.72)))
+    : null;
+  const rearStickerFace = smoothstep(0.12, 0.38, n.z.negate())
+    .mul(step(p.z, rearZone)).mul(max(isBody, isTrim));
+  const hkRearDecal = rearStickerTex ? rearStickerTex.a.mul(rearStickerFace) : float(0);
   let hkHandleOuter = float(0);
   let hkHandleInner = float(0);
   if (livery === 'hk') {
@@ -1405,9 +1569,9 @@ function createLoftedCarMaterial(spec, fixedColorHex = null, options = {}) {
   const hkFogBezel = livery === 'hk'
     ? roundedRect(hkFogUV, vec2(0.118, 0.052), 0.016).mul(front).mul(one.sub(hkFog))
     : float(0);
-  const plateFront = roundedRect(vec2(p.x, p.y.sub(plateF)), vec2(0.155, 0.055), 0.008).mul(front);
+  const plateFront = roundedRect(vec2(p.x, p.y.sub(plateF)), vec2(livery === 'hk' ? 0.17 : 0.155, livery === 'hk' ? 0.095 : 0.055), 0.008).mul(front);
   const hkPlateFront = livery === 'hk'
-    ? roundedRect(vec2(p.x, p.y.sub(plateF)), vec2(0.155, 0.055), 0.008)
+    ? roundedRect(vec2(p.x, p.y.sub(plateF)), vec2(0.17, 0.095), 0.008)
       .mul(smoothstep(0.12, 0.38, n.z))
       .mul(step(frontZone, p.z))
       .mul(max(isBody, isTrim))
@@ -1417,21 +1581,28 @@ function createLoftedCarMaterial(spec, fixedColorHex = null, options = {}) {
     .mul(smoothstep(0.02, 0.25, n.z.negate()))
     .mul(step(p.z, rearZone))
     .mul(isBody);
-  // Sedans use horizontal lenses; taller SUV lamps stack their three sections vertically.
-  const tailAxis = tlH > tlW ? tlUV.y.div(tlH) : tlUV.x.div(tlW);
-  const tailDivider = coverage(min(abs(tailAxis.sub(0.52)), abs(tailAxis.add(0.55))).sub(0.025));
+  // Crown Comfort lenses are broad red clusters with a slim inboard amber strip and a clear lower strip.
+  const tailAxis = livery === 'hk' ? tlUV.y.div(tlH) : (tlH > tlW ? tlUV.y.div(tlH) : tlUV.x.div(tlW));
+  const tailDivider = livery === 'hk'
+    ? coverage(abs(tailAxis.add(0.55)).sub(0.025))
+    : coverage(min(abs(tailAxis.sub(0.52)), abs(tailAxis.add(0.55))).sub(0.025));
   const tailLens = roundedRect(tlUV, vec2(tlW - 0.006, tlH - 0.006), 0.017)
     .mul(taillight).mul(one.sub(tailDivider));
-  const turnRearSection = smoothstep(0.50, 0.54, tailAxis);
-  const reverseRearSection = smoothstep(-0.53, -0.57, tailAxis);
+  const turnRearSection = livery === 'hk'
+    ? smoothstep(-0.45, -0.62, tlUV.x.div(tlW))
+      .mul(smoothstep(0.02, 0.16, tailAxis)).mul(smoothstep(0.52, 0.38, tailAxis))
+    : smoothstep(0.50, 0.54, tailAxis);
+  const reverseRearSection = livery === 'hk'
+    ? smoothstep(-0.48, -0.62, tailAxis)
+    : smoothstep(-0.53, -0.57, tailAxis);
   const turnRear = turnRearSection.mul(tailLens);
   const redLens = tailLens.mul(one.sub(max(turnRearSection, reverseRearSection)));
-  const plateRear = roundedRect(vec2(p.x, p.y.sub(plateR)), vec2(0.155, 0.06), 0.008).mul(rear);
-  const platePocket = roundedRect(vec2(p.x, p.y.sub(plateR + 0.01)), vec2(0.235, 0.105), 0.03).mul(rear);
+  const plateRear = roundedRect(vec2(p.x, p.y.sub(plateR)), vec2(livery === 'hk' ? 0.17 : 0.155, livery === 'hk' ? 0.095 : 0.06), 0.008).mul(rear);
+  const platePocket = roundedRect(vec2(p.x, p.y.sub(plateR + 0.01)), vec2(livery === 'hk' ? 0.245 : 0.235, livery === 'hk' ? 0.135 : 0.105), 0.03).mul(rear);
   const trunkHandle = roundedRect(vec2(p.x, p.y.sub(plateR + 0.125)), vec2(0.18, 0.012), 0.008).mul(rear);
   const plateRecess = max(
-    roundedRect(vec2(p.x, p.y.sub(plateF)), vec2(0.175, 0.072), 0.012).mul(front),
-    roundedRect(vec2(p.x, p.y.sub(plateR)), vec2(0.185, 0.082), 0.02).mul(rear)
+    roundedRect(vec2(p.x, p.y.sub(plateF)), vec2(livery === 'hk' ? 0.19 : 0.175, livery === 'hk' ? 0.115 : 0.072), 0.012).mul(front),
+    roundedRect(vec2(p.x, p.y.sub(plateR)), vec2(livery === 'hk' ? 0.19 : 0.185, livery === 'hk' ? 0.115 : 0.082), 0.02).mul(rear)
   );
   const rearValance = livery === 'hk' ? float(0) : smoothstep(rearSill + 0.07, rearSill + 0.015, p.y).mul(rear);
   const reflector = roundedRect(vec2(ax.sub(0.64), p.y.sub(spec.bumpers[1][0] + 0.065)), vec2(0.065, 0.012), 0.006).mul(rear);
@@ -1488,7 +1659,7 @@ function createLoftedCarMaterial(spec, fixedColorHex = null, options = {}) {
     max(hkLower, hkStrip),
     max(
       max(max(isTyre, isTrim), max(intake, grille)),
-      max(max(rearValance, under), max(max(cowlPanel, cladding), max(rearWiper, seal.mul(one.sub(max(glass, chromeBelt))))))
+      max(max(rearValance, under), max(max(cowlPanel, cladding), max(max(rearWiper, hkWipers), seal.mul(one.sub(max(glass, chromeBelt))))))
     )
   );
 
@@ -1566,12 +1737,23 @@ function createLoftedCarMaterial(spec, fixedColorHex = null, options = {}) {
   const pocketShade = smoothstep(plateR - 0.09, plateR + 0.115, p.y).mul(-0.25).add(0.9);
   body = mix(body, body.mul(pocketShade), platePocket);
   body = mix(body, color(0x303438), trunkHandle);
-  body = mix(body, color(0x24292d), plateRecess);
+  body = mix(body, color(livery === 'hk' ? 0xc9ced3 : 0x24292d), plateRecess);
   body = mix(body, color(0xf2b718), plates);
   if (livery === 'hk') body = mix(body, color(0xf2f4f5), plateFront);
   const plateVariant = floor(fract(paint.r.mul(7).add(paint.g.mul(13)).add(paint.b.mul(17))).mul(4));
-  const plateUV = vec2(p.x.div(-0.31).add(0.5), p.y.sub(plateR).div(0.12).add(0.5));
-  const plateColor = texture(carPlateTexture(), vec2(plateUV.x, plateUV.y.add(plateVariant).div(4))).rgb;
+  const plateUV = vec2(
+    p.x.div(livery === 'hk' ? -0.34 : -0.31).add(0.5),
+    p.y.sub(plateR).div(livery === 'hk' ? 0.19 : 0.12).add(0.5)
+  );
+  const plateColor = livery === 'hk'
+    ? texture(hkCarPlateTexture(), vec2(plateUV.x, plateUV.y.add(plateVariant).div(4))).rgb
+    : texture(carPlateTexture(), vec2(plateUV.x, plateUV.y.add(plateVariant).div(4))).rgb;
+  const hkFrontPlateColor = livery === 'hk'
+    ? texture(hkCarPlateTexture(false), vec2(
+      p.x.div(0.34).add(0.5),
+      p.y.sub(plateF).div(0.19).add(0.5).add(plateVariant).div(4)
+    )).rgb
+    : null;
   body = mix(body, plateColor, plateRear);
   body = mix(body, color(0x0e1013), under);
 
@@ -1581,16 +1763,20 @@ function createLoftedCarMaterial(spec, fixedColorHex = null, options = {}) {
   if (livery === 'hk') windowCol = mix(windowCol, color(0xc9c9c3), hkPillars);
 
   windowCol = mix(windowCol, color(0x15181b), rearWiper);
-  if (livery === 'hk') windowCol = mix(windowCol, color(0xd8dad7), hkRoof);
+  if (livery === 'hk') {
+    windowCol = mix(windowCol, color(0x343a3e), hkWipers);
+    windowCol = mix(windowCol, windStickerTex.rgb, hkWindscreenDecal);
+    windowCol = mix(windowCol, color(0xd8dad7), hkRoof);
+  }
 
   // Mirror caps (paint, glass facing back), taxi roof light, trims, alloys & tyres
   const mirrorCol = livery === 'hk'
     ? mix(color(0xc0c4c5), color(0x52616a), mirrorGlass)
     : mix(paint, color(0x7c8a94), mirrorGlass);
 
-  const signBase = signY - 0.075;
+  const signBase = signY - signHeight * 0.5;
   const signU = p.x.div(0.6).add(0.5);
-  const signV = p.y.sub(signBase).div(0.15);
+  const signV = p.y.sub(signBase).div(signHeight);
   const signBackU = one.sub(signU);
   const signTex = livery === 'hk'
     ? texture(hkTaxiSignTexture(), vec2(mix(signU, signBackU, step(n.z, 0.0)), signV))
@@ -1606,10 +1792,12 @@ function createLoftedCarMaterial(spec, fixedColorHex = null, options = {}) {
   col = mix(col, mirrorCol, isMirror);
   col = mix(col, signCol, isSign);
   col = mix(col, color(0x1b1e21), isTrim);
+  col = mix(col, color(0xcbd1d3), isChrome);
   if (livery === 'hk') {
     col = mix(col, color(0xa8adb0), hkMetalTrim);
-    col = mix(col, color(0xf2f4f5), hkPlateFront);
+    col = mix(col, hkFrontPlateColor, hkPlateFront);
     col = mix(col, frontStickerTex.rgb, hkFrontDecal);
+    col = mix(col, rearStickerTex.rgb, hkRearDecal);
   }
   col = mix(col, alloyCol, isAlloy);
   col = mix(col, tyreCol, isTyre);
@@ -1620,6 +1808,7 @@ function createLoftedCarMaterial(spec, fixedColorHex = null, options = {}) {
   let rough = mix(float(0.26), float(0.15), glossy);
   rough = mix(rough, float(0.4), plates);
   rough = mix(rough, float(0.35), isSign);
+  rough = mix(rough, float(0.2), isChrome);
   rough = mix(rough, float(0.82), max(matte, isAlloy.sub(alloySpokes)));
 
   let metal = mix(float(0.34), float(0.14), glass);
@@ -1628,6 +1817,7 @@ function createLoftedCarMaterial(spec, fixedColorHex = null, options = {}) {
   metal = mix(metal, float(0.86), alloySpokes);
   metal = mix(metal, float(0.08), plates);
   metal = mix(metal, float(0.04), max(matte, isSign));
+  metal = mix(metal, float(0.9), isChrome);
   if (livery === 'hk') {
     rough = mix(rough, float(0.18), max(hkCrown, max(hkGrille, hkGrilleSurround)));
     metal = mix(metal, float(0.9), max(hkGrille, hkGrilleSurround));
