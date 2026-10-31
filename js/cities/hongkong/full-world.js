@@ -6,7 +6,8 @@ import { GEO } from '../../hk-geodata.js';
 import { createRoadSurfaceMaterial } from '../../tsl-materials.js';
 import { createHongKongHarbourWaterMaterial } from './harbour-water.js';
 import { buildTerritoryCoastColliders } from './coast-colliders.js';
-import { CROSSING_FLAT_EXCLUSION_IDS } from './crossings.js';
+import { CROSSING_FLAT_EXCLUSION_IDS, CROSSING_ROUTES } from './crossings.js';
+import { buildTunnelOpeningRects, subtractTunnelOpenings } from './tunnel-openings.js';
 import { FULL_BOUNDS, isDetailedCore } from './full-meta.js';
 
 // Territory-wide, flat street-level presentation over real coastline and park shapes. Unified mode includes the
@@ -15,6 +16,7 @@ const ROAD_TOP = 0.025;
 const LAND_TOP = -0.08;
 const PARK_TOP = -0.045;
 const CHUNK = 2000;
+const TUNNEL_OPENING_RECTS = buildTunnelOpeningRects();
 
 function shapeForRing(flat) {
   const shape = new THREE.Shape();
@@ -36,6 +38,32 @@ function mergedRings(rings, y) {
   const merged = geometries.length ? mergeGeometries(geometries, false) : null;
   for (const geometry of geometries) geometry.dispose();
   return merged;
+}
+
+function cutTunnelOpenings(geometry, y, rects = TUNNEL_OPENING_RECTS) {
+  if (!geometry) return null;
+  const source = geometry.index ? geometry.toNonIndexed() : geometry;
+  const attribute = source.getAttribute('position'), positions = [];
+  for (let i = 0; i + 2 < attribute.count; i += 3) {
+    const triangle = [
+      [attribute.getX(i), attribute.getZ(i)],
+      [attribute.getX(i + 1), attribute.getZ(i + 1)],
+      [attribute.getX(i + 2), attribute.getZ(i + 2)]
+    ];
+    for (const polygon of subtractTunnelOpenings(triangle, rects)) {
+      for (let j = 1; j + 1 < polygon.length; j++) {
+        for (const point of [polygon[0], polygon[j], polygon[j + 1]]) positions.push(point[0], y, point[1]);
+      }
+    }
+  }
+  if (source !== geometry) source.dispose();
+  geometry.dispose();
+  const cut = new THREE.BufferGeometry();
+  cut.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
+  cut.computeVertexNormals();
+  cut.computeBoundingBox();
+  cut.computeBoundingSphere();
+  return cut;
 }
 
 function addRoadQuad(positions, normals, x1, z1, x2, z2, width) {
@@ -163,17 +191,20 @@ export function buildFullHongKongWorld(root, { waterLevel = -2.2, includeCore = 
     (FULL_BOUNDS.minX + FULL_BOUNDS.maxX) * 0.5,
     (FULL_BOUNDS.minZ + FULL_BOUNDS.maxZ) * 0.5
   ];
+  const waterY = waterLevel - 0.06;
+  const waterOpeningRects = buildTunnelOpeningRects(CROSSING_ROUTES, waterY);
+  const waterGeometry = new THREE.PlaneGeometry(90000, 90000, 96, 96);
+  waterGeometry.rotateX(-Math.PI / 2);
+  waterGeometry.translate(waterCentre[0], waterY, waterCentre[1]);
   const water = new THREE.Mesh(
-    new THREE.PlaneGeometry(90000, 90000, 96, 96),
-    createHongKongHarbourWaterMaterial({ centre: waterCentre })
+    cutTunnelOpenings(waterGeometry, waterY, waterOpeningRects),
+    createHongKongHarbourWaterMaterial({ centre: waterCentre, bakedWorld: true })
   );
-  water.rotation.x = -Math.PI / 2;
-  water.position.set(waterCentre[0], waterLevel - 0.06, waterCentre[1]);
-  water.userData.meanWaterLevel = waterLevel - 0.06;
+  water.userData.meanWaterLevel = waterY;
   water.name = 'HongKongTerritorialWater';
   root.add(water);
 
-  const landGeometry = mergedRings(HK_FULL_MAP.land, LAND_TOP);
+  const landGeometry = cutTunnelOpenings(mergedRings(HK_FULL_MAP.land, LAND_TOP), LAND_TOP);
   if (landGeometry) {
     const land = new THREE.Mesh(landGeometry, new THREE.MeshStandardMaterial({ color: 0x4b5145, roughness: 1, metalness: 0 }));
     land.name = 'HongKongTerritoryLand';
@@ -183,7 +214,7 @@ export function buildFullHongKongWorld(root, { waterLevel = -2.2, includeCore = 
 
   for (const cat of [0, 1]) {
     const rings = HK_FULL_MAP.parks.filter((park) => park[0] === cat).map((park) => park[2]);
-    const geometry = mergedRings(rings, PARK_TOP);
+    const geometry = cutTunnelOpenings(mergedRings(rings, PARK_TOP), PARK_TOP);
     if (!geometry) continue;
     const parks = new THREE.Mesh(geometry, new THREE.MeshStandardMaterial({
       color: cat === 1 ? 0x294c32 : 0x3c633d, roughness: 1, metalness: 0
@@ -208,6 +239,8 @@ export function buildFullHongKongWorld(root, { waterLevel = -2.2, includeCore = 
       fullParks: HK_FULL_MAP.parks.length,
       fullSeawallColliders: colliders.length,
       fullRoadCoastOpenings: seawalls.openings,
+      fullTunnelOpeningRects: TUNNEL_OPENING_RECTS.length,
+      fullWaterTunnelOpeningRects: waterOpeningRects.length,
       fullIncludesDetailedCore: includeCore
     }
   };

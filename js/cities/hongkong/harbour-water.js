@@ -49,13 +49,15 @@ const longSwell = Fn(([p]) => {
   return vec3(height, slopeX, slopeZ);
 });
 
-export function createHongKongHarbourWaterMaterial({ centre = [0, 0] } = {}) {
+export function createHongKongHarbourWaterMaterial({ centre = [0, 0], bakedWorld = false } = {}) {
   const material = new THREE.MeshStandardNodeMaterial({ metalness: 0, roughness: 0.28 });
   const waveTexture = getWaterWaveTexture();
 
-  // PlaneGeometry's local +Z becomes world +Y after rotation.x=-PI/2; local +Y becomes world -Z.
+  // Ordinary water uses PlaneGeometry's local XY. Portal-cut water is baked into world XZ instead, because the
+  // opening rectangles are world-space; both forms displace the mean surface by the same long swell.
   material.positionNode = Fn(() => {
     const p = positionGeometry;
+    if (bakedWorld) return vec3(p.x, p.y.add(longSwell(p.xz).x), p.z);
     const worldXZ = vec2(p.x, p.y.negate()).add(vec2(centre[0], centre[1]));
     return vec3(p.x, p.y, longSwell(worldXZ).x);
   })();
