@@ -47,10 +47,12 @@ export function buildTsingMaArchitecture(root) {
   const group = new THREE.Group();
   group.name = 'HongKongTsingMaArchitecture';
   group.userData.tsingMaArchitecture = true;
-  // Neutral concrete and steel match the daylight photographs; only the separate light fittings emit colour.
+  // Neutral concrete and steel match the daylight photographs; all colour/emissive terms remain night-gated.
   const concrete = new THREE.MeshStandardMaterial({ color: 0xa8aaa6, roughness: 0.82, metalness: 0.02 });
   const cableMaterial = new THREE.MeshStandardMaterial({ color: 0x4b5154, roughness: 0.56, metalness: 0.34 });
   const suspenderMaterial = new THREE.MeshStandardMaterial({ color: 0xabb0ad, roughness: 0.58, metalness: 0.24 });
+  const mainCableMaterial = luminous(0xffc66d, 0.55, 0x4b5154);
+  const suspenderLightMaterial = luminous(0xffd88f, 0.32, 0xabb0ad);
   const warmLight = luminous(0xffc66d, 2.4, 0x4b5154);
   const cyanLight = luminous(0x20c9ff, 2.2, 0xa8aaa6);
   const magentaLight = luminous(0xff4fbd, 2.2, 0xa8aaa6);
@@ -137,7 +139,7 @@ export function buildTsingMaArchitecture(root) {
       }
     }
     const curve = new THREE.CatmullRomCurve3(points, false, 'centripetal');
-    const cable = new THREE.Mesh(new THREE.TubeGeometry(curve, 480, 0.28, 5, false), cableMaterial);
+    const cable = new THREE.Mesh(new THREE.TubeGeometry(curve, 480, 0.28, 5, false), mainCableMaterial);
     cable.name = 'TsingMaMainCable';
     cable.castShadow = true;
     group.add(cable);
@@ -159,7 +161,7 @@ export function buildTsingMaArchitecture(root) {
     }
   }
 
-  addInstances(group, new THREE.CylinderGeometry(0.09, 0.09, 1, 4), suspenderMaterial, suspenders, 'TsingMaSuspenders');
+  addInstances(group, new THREE.CylinderGeometry(0.09, 0.09, 1, 4), suspenderLightMaterial, suspenders, 'TsingMaSuspenders');
   addInstances(group, new THREE.CylinderGeometry(0.12, 0.16, 1, 6), suspenderMaterial, lampPosts, 'TsingMaLampPosts');
   addInstances(group, new THREE.CylinderGeometry(0.26, 0.26, 0.18, 8), cableMaterial, lampBases, 'TsingMaLampBases');
   addInstances(group, new THREE.BoxGeometry(1.4, 0.12, 0.12), suspenderMaterial, lampArms, 'TsingMaLampArms');

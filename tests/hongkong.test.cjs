@@ -437,6 +437,9 @@ test('Hong Kong taxi follows the supplied roof-sign, rear-detail and plate refer
   assert.match(source, /CAR_PARTS\.CHROME/);
   assert.match(source, /hkRearDecal/);
   assert.match(source, /hkCarPlateTexture/);
+  assert.match(source, /\[\['FS', '615'\]/);
+  assert.match(source, /ctx\.font = '900 26px Arial, sans-serif'/);
+  assert.match(source, /ctx\.font = '900 30px Arial, sans-serif'/);
   assert.match(source, /hkCarPlateTexture\(false\)/);
   assert.match(source, /hkFrontPlateColor, hkPlateFront/);
   assert.match(source, /TAXI 5 SEATS/);
@@ -450,8 +453,10 @@ test('Hong Kong taxi follows the supplied roof-sign, rear-detail and plate refer
   assert.doesNotMatch(sign, /的士/, 'the roof face uses the large English TAXI lettering from the front photograph');
 
   const controllers = read('js/controllers.js');
-  assert.match(controllers, /fillText\('NC', 128, 48/);
-  assert.match(controllers, /fillText\('2756', 128, 116/);
+  assert.match(controllers, /ctx\.font = '900 68px Arial, sans-serif'/);
+  assert.match(controllers, /fillText\('FS', 128, 48/);
+  assert.match(controllers, /ctx\.font = '900 74px Arial, sans-serif'/);
+  assert.match(controllers, /fillText\('615', 128, 116/);
   assert.match(controllers, /rearPlateFrame/);
   assert.match(controllers, /frontPlateFrame/);
 });

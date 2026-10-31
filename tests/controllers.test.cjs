@@ -231,8 +231,8 @@ test('car accelerates gradually to full speed and preserves coasting and braking
   assert.ok(Math.abs(acceleration.car.speed * 3.6 - 60) < 1, 'reach city speeds gradually');
   acceleration.advance(5);
   assert.ok(acceleration.car.speed > 26 && acceleration.car.speed < 28, 'acceleration tapers at higher speeds');
-  acceleration.advance(25);
-  assert.equal(acceleration.car.speed, 36, 'holding the accelerator reaches the full top speed');
+  acceleration.advance(150);
+  assert.ok(Math.abs(acceleration.car.speed - 200 / 3.6) < 1e-9, 'holding the accelerator reaches 200 km/h');
 
   const coasting = carDynamicsHarness({ speed: 50 / 3.6 });
   coasting.advance(5);
@@ -243,6 +243,19 @@ test('car accelerates gradually to full speed and preserves coasting and braking
   braking.advance(1.5);
   assert.ok(braking.car.speed >= 0 && braking.car.speed < 0.2, 'braking reaches a stop without reversing early');
   assert.ok(braking.car.position.z > 9.8 && braking.car.position.z < 10.6, 'preserve the roughly ten-metre stopping distance');
+});
+
+test('car body pitch follows uphill and downhill road grades at the axles', () => {
+  for (const grade of [0.18, -0.14]) {
+    const sim = carDynamicsHarness();
+    sim.controller.getGroundHeight = (x, z) => 0.025 + z * grade;
+    sim.advance(3);
+    const expected = -Math.atan(grade);
+    assert.ok(Math.abs(sim.car.chassisPivot.rotation.x - expected) < 0.002,
+      `body settles to road pitch ${expected}`);
+    assert.ok(Math.abs(sim.car.pitchVel) < 0.01, 'the matched slope has no residual spring oscillation');
+    assert.ok(Math.abs(sim.car.position.y - 0.025) < 1e-9, 'the centre axle remains on the road');
+  }
 });
 
 test('car steering follows speed and reverses direction when backing up', () => {

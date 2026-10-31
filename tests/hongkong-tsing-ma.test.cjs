@@ -75,6 +75,10 @@ test('neutral bridge materials stay unlit by day and coloured fittings turn on a
   assert.match(source, /color: 0x4b5154/);
   assert.match(source, /smoothstep\(0\.7, 1\.45, cityUniforms\.uInteriorGlow\)/);
   assert.match(source, /material\.emissiveNode = color\(lightColor\)\.mul\(night\.mul\(intensity\)\)/);
+  assert.match(source, /const mainCableMaterial = luminous\(0xffc66d, 0\.55, 0x4b5154\)/);
+  assert.match(source, /const suspenderLightMaterial = luminous\(0xffd88f, 0\.32, 0xabb0ad\)/);
+  assert.match(source, /TubeGeometry\(curve, 480, 0\.28, 5, false\), mainCableMaterial/);
+  assert.match(source, /suspenderLightMaterial, suspenders, 'TsingMaSuspenders'/);
   assert.match(source, /new THREE\.PointLight\([^\n]+, 0, 190, 1\.6\)/);
   assert.match(source, /light\.intensity = light\.userData\.nightIntensity \* night/);
   assert.match(source, /TsingMaCableSaddle/);

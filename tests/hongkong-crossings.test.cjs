@@ -11,12 +11,12 @@ test.before(async () => {
   fullMeta = await import('../js/cities/hongkong/full-meta.js');
 });
 
-test('six named sea crossings provide twelve directional OSM routes', () => {
+test('seven named sea crossings provide fourteen directional OSM routes', () => {
   const { CROSSING_ROUTES, CROSSING_DEFINITIONS, CROSSING_WAY_IDS, CROSSING_FLAT_EXCLUSION_IDS } = crossings;
-  assert.equal(CROSSING_DEFINITIONS.length, 6);
-  assert.equal(CROSSING_ROUTES.length, 12);
-  assert.equal(CROSSING_WAY_IDS.size, 23);
-  assert.equal(CROSSING_FLAT_EXCLUSION_IDS.size, 27);
+  assert.equal(CROSSING_DEFINITIONS.length, 7);
+  assert.equal(CROSSING_ROUTES.length, 14);
+  assert.equal(CROSSING_WAY_IDS.size, 58);
+  assert.equal(CROSSING_FLAT_EXCLUSION_IDS.size, 62);
   for (const definition of CROSSING_DEFINITIONS) {
     const routes = CROSSING_ROUTES.filter((route) => route.crossingId === definition.id);
     assert.equal(routes.length, 2, `${definition.name} has both directions`);
@@ -30,6 +30,8 @@ test('six named sea crossings provide twelve directional OSM routes', () => {
     CROSSING_ROUTES.find((route) => route.id === 'ting-kau:1').wayIds,
     [23976, 23982, 23978, 23977, 9534, 24022, 24027, 24026]
   );
+  assert.equal(CROSSING_ROUTES.find((route) => route.id === 'cross-bay-link:0').wayIds.includes(22545), true);
+  assert.equal(CROSSING_ROUTES.find((route) => route.id === 'cross-bay-link:1').wayIds.includes(22546), true);
 });
 
 test('every crossing profile is continuous, finely sampled and connected at both ends', () => {

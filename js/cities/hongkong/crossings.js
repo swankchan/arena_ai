@@ -9,7 +9,14 @@ export const CROSSING_DEFINITIONS = Object.freeze([
   { id: 'western-harbour', name: '西區海底隧道', kind: 'tunnel', level: -22, ramp: 280, curveAmplitude: 42, routes: [[24471], [24472]] },
   { id: 'ting-kau', name: '汀九橋', kind: 'bridge', level: 28, ramp: 300, routes: [[23987, 5996, 23979, 23981, 23980], [23976, 23982, 23978, 23977, 9534, 24022, 24027, 24026]] },
   { id: 'tsing-ma', name: '青馬大橋', kind: 'bridge', level: 32, ramp: 340, routes: [[23961], [11841]] },
-  { id: 'kap-shui-mun', name: '汲水門大橋', kind: 'bridge', level: 28, ramp: 300, routes: [[17446], [17447]] }
+  { id: 'kap-shui-mun', name: '汲水門大橋', kind: 'bridge', level: 28, ramp: 300, routes: [[17446], [17447]] },
+  {
+    id: 'cross-bay-link', name: '將藍公路（跨灣大橋）', kind: 'bridge', level: 20, ramp: 220,
+    routes: [
+      [22715, 22712, 12470, 22809, 22810, 22807, 22811, 22813, 22812, 12485, 12492, 12493, 22548, 22821, 22545, 12495, 12508, 22562],
+      [22561, 12471, 12509, 22546, 22822, 22547, 22820, 12496, 22819, 12491, 12490, 22806, 22805, 17039, 12484, 22713, 22714]
+    ]
+  }
 ]);
 
 function profileHeight(s, length, definition) {

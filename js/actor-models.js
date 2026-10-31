@@ -1065,7 +1065,7 @@ function hkCarPlateTexture(rear = true) {
   const ctx = canvas.getContext('2d');
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
-  [['NC', '2756'], ['JW', '1088'], ['TK', '6203'], ['LM', '9316']].forEach(([letters, digits], row) => {
+  [['FS', '615'], ['JW', '1088'], ['TK', '6203'], ['LM', '9316']].forEach(([letters, digits], row) => {
     const y = row * 64;
     ctx.fillStyle = rear ? '#f0c32e' : '#f1f3f5';
     ctx.fillRect(0, y, 128, 64);
@@ -1073,9 +1073,9 @@ function hkCarPlateTexture(rear = true) {
     ctx.lineWidth = 3;
     ctx.strokeRect(2, y + 2, 124, 60);
     ctx.fillStyle = '#111418';
-    ctx.font = '900 23px Arial, sans-serif';
+    ctx.font = '900 26px Arial, sans-serif';
     ctx.fillText(letters, 64, y + 19);
-    ctx.font = '900 27px Arial, sans-serif';
+    ctx.font = '900 30px Arial, sans-serif';
     ctx.fillText(digits, 64, y + 46);
   });
   const tex = new THREE.CanvasTexture(canvas);

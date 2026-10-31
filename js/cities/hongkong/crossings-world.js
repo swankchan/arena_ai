@@ -7,6 +7,8 @@ import { TSING_MA_TOWER_FRACTIONS } from './tsing-ma-architecture.js';
 import { buildHongKongTunnelLighting } from './tunnel-lighting.js';
 import { buildCableStayedArchitecture } from './cable-stayed-world.js';
 import { isCableStayedMainSpan } from './cable-stayed-architecture.js';
+import { buildCrossBayArchitecture } from './cross-bay-world.js';
+import { CROSS_BAY_ID } from './cross-bay-architecture.js';
 import { segmentWall } from './colliders.js';
 
 const WATER_LEVEL = -2.2;
@@ -102,6 +104,7 @@ export function buildHongKongCrossings(root) {
   const deckMaterial = new THREE.MeshStandardMaterial({ color: 0x60666a, roughness: 0.9, side: THREE.DoubleSide });
   const railMaterial = new THREE.MeshStandardMaterial({ color: 0x9aa1a4, roughness: 0.72, metalness: 0.15, side: THREE.DoubleSide });
   const tingKauRailMaterial = new THREE.MeshStandardMaterial({ color: 0x34769b, roughness: 0.68, metalness: 0.2, side: THREE.DoubleSide });
+  const crossBayRailMaterial = new THREE.MeshStandardMaterial({ color: 0x4f8177, roughness: 0.72, metalness: 0.18, side: THREE.DoubleSide });
   const tunnelMaterial = new THREE.MeshStandardMaterial({ color: 0x41403b, roughness: 0.9, side: THREE.DoubleSide });
   const pierMaterial = new THREE.MeshStandardMaterial({ color: 0x707578, roughness: 0.94 });
   let segments = 0, bridgePiers = 0, tunnelSegments = 0, portals = 0;
@@ -140,10 +143,12 @@ export function buildHongKongCrossings(root) {
       }
     }
 
+    const routeRailMaterial = route.crossingId === CROSS_BAY_ID ? crossBayRailMaterial
+      : route.crossingId === 'ting-kau' ? tingKauRailMaterial : railMaterial;
     addMesh(group, road, roadMaterial, `${group.name}:road`);
     addMesh(group, tunnelRoad, tunnelRoadMaterial, `${group.name}:dry-tunnel-road`);
     addMesh(group, deck, deckMaterial, `${group.name}:deck`);
-    addMesh(group, rails, route.crossingId === 'ting-kau' ? tingKauRailMaterial : railMaterial, `${group.name}:rails`);
+    addMesh(group, rails, routeRailMaterial, `${group.name}:rails`);
     addMesh(group, tunnel, tunnelMaterial, `${group.name}:tunnel`);
 
     if (route.kind === 'bridge') {
@@ -152,7 +157,7 @@ export function buildHongKongCrossings(root) {
         if (point.s < nextPier || point.y < 8) continue;
         const routeFraction = point.s / route.length;
         // The shared suspension towers carry Tsing Ma's central span; generic approach piers must not fill that opening.
-        if ((route.crossingId === 'tsing-ma' && routeFraction >= TSING_MA_TOWER_FRACTIONS[0]
+        if (route.crossingId === CROSS_BAY_ID || (route.crossingId === 'tsing-ma' && routeFraction >= TSING_MA_TOWER_FRACTIONS[0]
           && routeFraction <= TSING_MA_TOWER_FRACTIONS[1]) || isCableStayedMainSpan(route.crossingId, routeFraction)) continue;
         const previous = route.points[i - 1];
         const bottom = isTerritoryLand(point.x, point.z) ? LAND_TOP : WATER_LEVEL - 1;
@@ -175,6 +180,7 @@ export function buildHongKongCrossings(root) {
 
   const tsingMa = buildTsingMaArchitecture(root);
   const cableStayed = buildCableStayedArchitecture(root);
+  const crossBay = buildCrossBayArchitecture(root);
   const tunnelLighting = buildHongKongTunnelLighting(root, CROSSING_ROUTES);
   function update({ cameraSystem } = {}) {
     tsingMa.update();
@@ -193,7 +199,8 @@ export function buildHongKongCrossings(root) {
       crossingColliders: colliders.length,
       ...tunnelLighting.stats,
       ...tsingMa.stats,
-      ...cableStayed.stats
+      ...cableStayed.stats,
+      ...crossBay.stats
     }
   };
 }

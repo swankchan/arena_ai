@@ -31,8 +31,9 @@ const SPAWN_Z = streetZ(37);
 const groundCollider = { type: 'ground' };
 
 const CAR_DRIVE = {
-  speed: 36, reverseSpeed: 10.5, acceleration: 4.5,
-  powerSpeed: 14.5, // Above 52 km/h, engine power limits acceleration.
+  speed: 200 / 3.6, reverseSpeed: 10.5, acceleration: 4.5,
+  powerSpeed: 14.5, // Below 130 km/h the original power band and acceleration remain unchanged.
+  highSpeedPowerSpeed: 52, // Blended in above 130 km/h so the 200 km/h limit is genuinely reachable.
   rolling: 0.18, drag: 0.0012, coast: 0.6, brake: 9,
   wheelbase: 2.76, grip: 9.5, cornering: 10.5 // Wheelbase (m), tire and steering acceleration limits (m/s²).
 };
@@ -55,7 +56,14 @@ function driveSpeed(speed, throttle, dt, drive) {
 
   const limit = throttle < 0 ? drive.reverseSpeed : drive.speed;
   let acceleration = drive.acceleration;
-  if (drive.powerSpeed) acceleration *= drive.powerSpeed / Math.max(drive.powerSpeed, magnitude);
+  if (drive.powerSpeed) {
+    let powerSpeed = drive.powerSpeed;
+    if (drive.highSpeedPowerSpeed && magnitude > 36) {
+      const blend = Math.min(1, (magnitude - 36) / 10);
+      powerSpeed += (drive.highSpeedPowerSpeed - powerSpeed) * blend;
+    }
+    acceleration *= powerSpeed / Math.max(powerSpeed, magnitude);
+  }
   // Collision momentum above the powered limit decays naturally instead of being clamped.
   return Math.sign(throttle) * Math.min(Math.max(limit, coasting), coasting + Math.abs(throttle) * acceleration * dt);
 }
@@ -195,10 +203,10 @@ function createHKLicensePlateTexture(rear = false) {
   ctx.fillStyle = '#111418';
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
-  ctx.font = '900 62px Arial, sans-serif';
-  ctx.fillText('NC', 128, 48, 180);
   ctx.font = '900 68px Arial, sans-serif';
-  ctx.fillText('2756', 128, 116, 210);
+  ctx.fillText('FS', 128, 48, 180);
+  ctx.font = '900 74px Arial, sans-serif';
+  ctx.fillText('615', 128, 116, 210);
   const tex = new THREE.CanvasTexture(c);
   tex.colorSpace = THREE.SRGBColorSpace;
   return tex;
@@ -1184,6 +1192,15 @@ class ThirdPersonControllerManager {
     const prevZ = c.position.z;
     c.prevX = prevX;
     c.prevZ = prevZ;
+    // Match the body to the actual road grade at the two axles. referenceY keeps the samples on the same
+    // bridge/tunnel level; the spring below smooths ramp joins without discarding acceleration pitch.
+    const axleOffset = CAR_DRIVE.wheelbase * 0.5;
+    const gradeSin = Math.sin(c.heading), gradeCos = Math.cos(c.heading);
+    const frontGround = this.getGroundHeight(c.position.x + gradeSin * axleOffset,
+      c.position.z + gradeCos * axleOffset, 'car', c.position.y);
+    const rearGround = this.getGroundHeight(c.position.x - gradeSin * axleOffset,
+      c.position.z - gradeCos * axleOffset, 'car', c.position.y);
+    const slopePitch = -Math.max(-0.55, Math.min(0.55, Math.atan2(frontGround - rearGround, axleOffset * 2)));
     // Short steps keep grip, impacts and suspension consistent at different display rates.
     const steps = Math.ceil(dt * 120);
     const step = dt / steps;
@@ -1230,7 +1247,7 @@ class ThirdPersonControllerManager {
       c.position.z += (nextCos * c.speed + c.vz) * step;
       this.resolveHorizontalCollision(c.position, 1.35, c);
 
-      const targetPitch = -Math.max(-1, Math.min(1, acceleration / CAR_DRIVE.acceleration)) * 0.026;
+      const targetPitch = slopePitch - Math.max(-1, Math.min(1, acceleration / CAR_DRIVE.acceleration)) * 0.026;
       const targetRoll = Math.max(-0.09, Math.min(0.09, correction / step * 0.012));
       c.pitchVel += ((targetPitch - c.chassisPivot.rotation.x) * 68 - c.pitchVel * 11.2) * step;
       c.rollVel += ((targetRoll - c.chassisPivot.rotation.z) * 68 - c.rollVel * 11.2) * step;
