@@ -4,6 +4,8 @@ import { cityUniforms, facadeCell, filteredPulse, createFacadeBoxes } from '../.
 import { drawStandardCharteredDevice } from './standard-chartered-logo.js';
 import {
   SCB_SITE,
+  SCB_BUILDING_HEADING,
+  SCB_MODEL_ORIGIN,
   SCB_HEIGHT,
   SCB_BASE_Y,
   SCB_ENTRANCE_BASE_Y,
@@ -29,6 +31,8 @@ import {
   SCB_STAIR_TOP_WIDTH,
   SCB_STAIR_ROAD_HEADING,
   SCB_STAIR_TOP_LANDING_DEPTH,
+  SCB_STAIR_CONNECTOR_BASE_V,
+  SCB_STAIR_CONNECTOR_RISE,
   SCB_ENTRANCE_LANDING,
   scbStairEdgesAt,
   scbStairRoadToLocal,
@@ -205,8 +209,8 @@ function texturedSignMaterial(map, glow = 0.25) {
 export function buildStandardCharteredBankBuilding(root) {
   const group = new THREE.Group();
   group.name = 'StandardCharteredBankBuilding';
-  group.position.set(SCB_SITE.x, 0, SCB_SITE.z);
-  group.rotation.y = SCB_SITE.ry;
+  group.position.set(SCB_MODEL_ORIGIN.x, 0, SCB_MODEL_ORIGIN.z);
+  group.rotation.y = SCB_BUILDING_HEADING;
   group.userData.landmark = 'standard-chartered-bank-building';
   group.userData.osm = { type: SCB_SITE.osmType, id: SCB_SITE.osmId };
   root.add(group);
@@ -359,6 +363,29 @@ export function buildStandardCharteredBankBuilding(root) {
   ];
   addInstances(group, unitBox, stairMaterial, landings, 'SCBEntranceRaisedLandings');
 
+  // The road-aligned top landing meets the 35-degree facade through a real triangular stone platform. Its diagonal
+  // edge is exactly the outer edge of SCB_ENTRANCE_LANDING, so neither platform covers the thirty treads or leaves a gap.
+  const connectorCorners = [
+    scbStairRoadToLocal(SCB_STAIR_RIGHT_U, SCB_STAIR_CONNECTOR_BASE_V),
+    scbStairRoadToLocal(SCB_STAIR_LEFT_TOP_U, SCB_STAIR_CONNECTOR_BASE_V),
+    scbStairRoadToLocal(SCB_STAIR_LEFT_TOP_U, SCB_STAIR_CONNECTOR_BASE_V + SCB_STAIR_CONNECTOR_RISE)
+  ];
+  const connectorShape = new THREE.Shape();
+  connectorShape.moveTo(connectorCorners[0].x, connectorCorners[0].z);
+  connectorShape.lineTo(connectorCorners[1].x, connectorCorners[1].z);
+  connectorShape.lineTo(connectorCorners[2].x, connectorCorners[2].z);
+  connectorShape.closePath();
+  const connectorGeometry = new THREE.ExtrudeGeometry(connectorShape, {
+    depth: SCB_ENTRANCE_BASE_Y, bevelEnabled: false, curveSegments: 1
+  });
+  connectorGeometry.rotateX(Math.PI / 2);
+  const connector = new THREE.Mesh(connectorGeometry, stairMaterial);
+  connector.name = 'SCBEntranceTriangularConnector';
+  connector.position.y = SCB_ENTRANCE_BASE_Y;
+  connector.castShadow = true;
+  connector.receiveShadow = true;
+  group.add(connector);
+
   const railPosts = [];
   for (const side of [-1, 1]) {
     addBeamBetween(
@@ -407,7 +434,7 @@ export function buildStandardCharteredBankBuilding(root) {
   const landmark = {
     name: SCB_SITE.name,
     englishName: SCB_SITE.englishName,
-    x: SCB_SITE.x, z: SCB_SITE.z, w: SCB_WIDTH, d: SCB_SITE.d, h: SCB_HEIGHT,
+    x: SCB_MODEL_ORIGIN.x, z: SCB_MODEL_ORIGIN.z, w: SCB_WIDTH, d: SCB_SITE.d, h: SCB_HEIGHT,
     bounds: { ...SCB_SITE.bounds }, ring: SCB_SITE.ring, osmId: SCB_SITE.osmId
   };
   const stats = {

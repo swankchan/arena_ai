@@ -1,5 +1,5 @@
 import { GEO } from '../../hk-geodata.js';
-import { SCB_SITE } from './standard-chartered-architecture.js';
+import { SCB_MAP_SITE } from './standard-chartered-architecture.js';
 import { HK_FULL_MAP } from '../../hk-full-map-data.js';
 import { HK_FULL_ROADS } from '../../hk-full-roads-data.js';
 import { AREA_LABELS, locationLabel, nearestRoadNode } from './meta.js';
@@ -112,7 +112,7 @@ function mapLayers() {
       }
     }
   }
-  const landmarks = [...Object.entries(GEO.landmarks), [SCB_SITE.name, SCB_SITE]]
+  const landmarks = [...Object.entries(GEO.landmarks), [SCB_MAP_SITE.name, SCB_MAP_SITE]]
     .filter(([, landmark]) => Number.isFinite(landmark.h) && landmark.h > 45)
     .map(([name, landmark]) => ({ name, ...landmark }))
     .sort((a, b) => b.h - a.h);

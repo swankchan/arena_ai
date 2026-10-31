@@ -120,8 +120,11 @@ test('unified simple mode adds only the authored landmarks and keeps generic bui
   assert.match(source, /landmarks: \[\.\.\.hsbc\.landmarks, \.\.\.standardChartered\.landmarks\]/);
 });
 
-test('Standard Chartered uses OSM way 85320719 immediately west of HSBC with a north-facing OBB', () => {
-  const { SCB_SITE, SCB_HEIGHT, SCB_FLOORS, scbWorldToLocal, scbLocalToWorld } = scb;
+test('Standard Chartered preserves its OSM site while the tower turns 35 degrees towards HSBC', () => {
+  const {
+    SCB_SITE, SCB_HEIGHT, SCB_FLOORS, SCB_BUILDING_HEADING, SCB_HSBC_FACING_ANGLE,
+    SCB_MODEL_ORIGIN, SCB_MAP_SITE, SCB_FRONT_CENTER, SCB_FRONT_Z, scbSiteWorldToLocal, scbLocalToWorld
+  } = scb;
   const { HSBC_SITE } = architecture;
   assert.equal(SCB_SITE.name, '渣打銀行大廈');
   assert.equal(SCB_SITE.osmId, 85320719);
@@ -130,15 +133,27 @@ test('Standard Chartered uses OSM way 85320719 immediately west of HSBC with a n
   assert.equal(SCB_FLOORS, 42);
   assert.ok(SCB_SITE.x < HSBC_SITE.x - 35, 'Standard Chartered is on the west side of HSBC');
   assert.ok(Math.abs(SCB_SITE.z - HSBC_SITE.z) < 20, 'both buildings occupy the same Central block frontage');
-  assert.ok(SCB_SITE.ry < 0 && SCB_SITE.ry > -0.4, 'the facade follows Des Voeux Road Central');
   assert.ok(SCB_SITE.d > SCB_SITE.w * 2, 'the real site is a narrow frontage with a long lot');
   for (let i = 0; i < SCB_SITE.ring.length; i += 2) {
-    const local = scbWorldToLocal(SCB_SITE.ring[i], SCB_SITE.ring[i + 1]);
+    const local = scbSiteWorldToLocal(SCB_SITE.ring[i], SCB_SITE.ring[i + 1]);
     assert.ok(Math.abs(local.x) <= SCB_SITE.w * 0.5 + 1e-6);
     assert.ok(Math.abs(local.z) <= SCB_SITE.d * 0.5 + 1e-6);
   }
-  const north = scbLocalToWorld(0, -10), south = scbLocalToWorld(0, 10);
-  assert.ok(north.z < south.z, 'local -z faces north / Des Voeux Road Central');
+  assert.ok(Math.abs(SCB_HSBC_FACING_ANGLE - 35 * Math.PI / 180) < 1e-12);
+  assert.ok(Math.abs(SCB_SITE.ry - SCB_BUILDING_HEADING - SCB_HSBC_FACING_ANGLE) < 1e-12,
+    'the architectural facade, rather than the source site OBB, turns exactly 35 degrees');
+  const front = scbLocalToWorld(0, SCB_FRONT_Z);
+  assert.ok(Math.hypot(front.x - SCB_FRONT_CENTER.x, front.z - SCB_FRONT_CENTER.z) < 1e-9,
+    'the model origin and exported entrance centre use the same rotated architectural frame');
+  assert.ok(SCB_MODEL_ORIGIN.x < SCB_SITE.x, 'the rotated massing swings west, away from HSBC');
+  assert.equal(SCB_MAP_SITE.x, SCB_MODEL_ORIGIN.x);
+  assert.equal(SCB_MAP_SITE.z, SCB_MODEL_ORIGIN.z);
+  assert.equal(SCB_MAP_SITE.ry, SCB_BUILDING_HEADING);
+  assert.equal(SCB_MAP_SITE.source, SCB_SITE.source);
+  const oldOutwardX = -Math.sin(SCB_SITE.ry);
+  const outwardPoint = scbLocalToWorld(0, SCB_FRONT_Z - 1);
+  const newOutwardX = outwardPoint.x - front.x;
+  assert.ok(newOutwardX > oldOutwardX, 'the entrance normal turns east towards HSBC, not along the old road normal');
 });
 
 test('Standard Chartered keeps three stepped tiers and road-parallel tapering entrance treads', () => {
@@ -148,6 +163,7 @@ test('Standard Chartered keeps three stepped tiers and road-parallel tapering en
     SCB_STAIR_COUNT, SCB_STAIR_RUN, SCB_STAIR_WIDTH, SCB_STAIR_TOP_WIDTH,
     SCB_STAIR_TREAD, SCB_STAIR_RISE, SCB_STAIR_RIGHT_U, SCB_STAIR_LEFT_BOTTOM_U,
     SCB_STAIR_LEFT_TOP_U, SCB_FRONT_Z, SCB_BASE_Y, SCB_ENTRANCE_BASE_Y,
+    SCB_STAIR_TOP_Z, SCB_STAIR_CONNECTOR_BASE_V, SCB_STAIR_CONNECTOR_RISE, SCB_FACADE_STAIR_ANGLE,
     scbStairEdgesAt, scbStairRoadToLocal, scbLocalToWorld, scbEntranceGroundHeight, scbLocalCollider
   } = scb;
   assert.equal(SCB_TIERS.length, 3);
@@ -197,6 +213,23 @@ test('Standard Chartered keeps three stepped tiers and road-parallel tapering en
     'the tapered triangle does not create an invisible rectangular walking surface');
   const landing = scbLocalToWorld(0, SCB_FRONT_Z - 0.2);
   assert.ok(Math.abs(scbEntranceGroundHeight(landing.x, landing.z, 0.025) - SCB_ENTRANCE_BASE_Y) < 1e-9);
+  const connectorRight = scbStairRoadToLocal(SCB_STAIR_RIGHT_U, SCB_STAIR_CONNECTOR_BASE_V);
+  const connectorLeft = scbStairRoadToLocal(
+    SCB_STAIR_LEFT_TOP_U, SCB_STAIR_CONNECTOR_BASE_V + SCB_STAIR_CONNECTOR_RISE
+  );
+  assert.ok(Math.abs(connectorRight.z - SCB_STAIR_TOP_Z) < 1e-9
+    && Math.abs(connectorLeft.z - SCB_STAIR_TOP_Z) < 1e-9,
+  'the triangular connector diagonal is exactly the rotated facade landing outer edge');
+  assert.ok(Math.abs(SCB_STAIR_CONNECTOR_RISE
+    - Math.tan(SCB_FACADE_STAIR_ANGLE) * (SCB_STAIR_LEFT_TOP_U - SCB_STAIR_RIGHT_U)) < 1e-9);
+  const connectorLocal = scbStairRoadToLocal(-3, SCB_STAIR_CONNECTOR_BASE_V + 2);
+  const connectorPoint = scbLocalToWorld(connectorLocal.x, connectorLocal.z);
+  assert.equal(scbEntranceGroundHeight(connectorPoint.x, connectorPoint.z, 0.025), SCB_ENTRANCE_BASE_Y,
+    'the rendered triangular platform has the same raised walking surface');
+  const besideConnectorLocal = scbStairRoadToLocal(4, SCB_STAIR_CONNECTOR_BASE_V + 1);
+  const besideConnector = scbLocalToWorld(besideConnectorLocal.x, besideConnectorLocal.z);
+  assert.equal(scbEntranceGroundHeight(besideConnector.x, besideConnector.z, 0.025), 0.025,
+    'the triangle does not create an invisible rectangular platform beside its diagonal');
   const collider = scbLocalCollider({ x: 0, z: 0, w: 20, d: 20, minY: SCB_BASE_Y, maxY: SCB_HEIGHT });
   assert.ok(collider.obb && collider.maxY === SCB_HEIGHT);
 });
@@ -212,6 +245,8 @@ test('the hand-built Standard Chartered model includes the photographed identifi
   assert.match(source, /SCBTallEntranceGlazing/);
   assert.match(source, /SCBDesVoeuxRoadEntranceSteps/);
   assert.match(source, /SCBEntranceRaisedLandings/);
+  assert.match(source, /SCBEntranceTriangularConnector/);
+  assert.match(source, /SCB_BUILDING_HEADING/);
   assert.match(source, /SCBEntranceStairHandrail/);
   assert.match(source, /SCBEntranceStairRailPosts/);
   assert.match(source, /SCBCrownLogo/);
