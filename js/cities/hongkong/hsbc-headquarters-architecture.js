@@ -95,7 +95,7 @@ export const HSBC_LION_SITES = Object.freeze([
 export const HSBC_ESCALATOR = Object.freeze({
   startX: -8.4, endX: 4.4,
   startY: 0.38, endY: HSBC_BANKING_HALL_BASE - 0.25,
-  startZ: -HSBC_BAY_DEPTH * 1.37, endZ: -HSBC_BAY_DEPTH * 0.51,
+  startZ: -HSBC_BAY_DEPTH * 1.24, endZ: -HSBC_BAY_DEPTH * 0.51,
   laneOffset: 0.78
 });
 export const HSBC_TRUSS_LEVELS = Object.freeze([34.2, 67.2, 100.2, 133.2, 166.2]);

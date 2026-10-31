@@ -55,7 +55,8 @@ test('three stepped bays and five suspension levels preserve the open public pla
   assert.ok(Math.abs(HSBC_LION_SITES[1].heading - HSBC_LION_SITES[0].heading - Math.PI) < 1e-9, 'lions face one another');
   assert.ok(HSBC_ESCALATOR.startX < 0 && HSBC_ESCALATOR.endX > HSBC_ESCALATOR.startX, 'from the harbour, escalators climb from screen-right to rear screen-left');
   const escalatorLion = HSBC_LION_SITES.reduce((nearest, site) => Math.abs(site.x - HSBC_ESCALATOR.startX) < Math.abs(nearest.x - HSBC_ESCALATOR.startX) ? site : nearest);
-  assert.ok(Math.abs(HSBC_ESCALATOR.startZ - escalatorLion.z) < 1, 'escalators begin beside the nearest lion');
+  assert.ok(HSBC_ESCALATOR.startZ > escalatorLion.z + 1.5, 'escalator entrance recesses behind the lion plinth line');
+  assert.ok(Math.hypot(HSBC_ESCALATOR.startX - escalatorLion.x, HSBC_ESCALATOR.startZ - escalatorLion.z) > 3.5, 'escalator entrance retains clearance from the lion');
   assert.ok(HSBC_PLAZA_TOP > 0);
   assert.ok(isHsbcPlazaPoint(HSBC_SITE.x, HSBC_SITE.z));
   const north = hsbcLocalToWorld(0, -10), south = hsbcLocalToWorld(0, 10);

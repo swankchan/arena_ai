@@ -628,7 +628,7 @@ export function buildHsbcHeadquarters(root) {
     }
   }
 
-  // From the entrance, the paired escalators begin beside the right lion and climb diagonally back towards the left.
+  // From the entrance, the paired escalators begin just behind the right lion's plinth and climb diagonally back towards the left.
   const escalatorDx = HSBC_ESCALATOR.endX - HSBC_ESCALATOR.startX;
   const escalatorDz = HSBC_ESCALATOR.endZ - HSBC_ESCALATOR.startZ;
   const escalatorPlanLength = Math.hypot(escalatorDx, escalatorDz);
