@@ -6,6 +6,8 @@ import { SPAWN } from './meta.js';
 import { createHongKongStreetLighting } from './street-lighting.js';
 import { buildHsbcHeadquarters } from './hsbc-headquarters-world.js';
 import { isHsbcPlazaPoint } from './hsbc-headquarters-architecture.js';
+import { buildStandardCharteredBankBuilding } from './standard-chartered-world.js';
+import { scbEntranceGroundHeight } from './standard-chartered-architecture.js';
 
 const WATER_LEVEL = -2.2;
 
@@ -16,6 +18,8 @@ export function buildSimpleHongKongWorld(scene, { setStatus = () => {} } = {}) {
   const full = buildFullHongKongWorld(scene, { waterLevel: WATER_LEVEL, includeCore: true });
   setStatus('Building the HSBC Main Building landmark...');
   const hsbc = buildHsbcHeadquarters(scene);
+  setStatus('Building the Standard Chartered Bank Building landmark...');
+  const standardChartered = buildStandardCharteredBankBuilding(scene);
   setStatus('Building drivable harbour bridges and tunnels...');
   const crossings = buildHongKongCrossings(scene);
   setStatus('Placing 144,995 lamp posts across Hong Kong...');
@@ -29,7 +33,8 @@ export function buildSimpleHongKongWorld(scene, { setStatus = () => {} } = {}) {
     if (isTerritoryLand(x, z)) base = FULL_WORLD_HEIGHT.land;
     if (territoryParkAt(x, z)) base = FULL_WORLD_HEIGHT.park;
     if (isFlatTerritoryRoad(x, z, 0.35)) base = FULL_WORLD_HEIGHT.road;
-    const ground = selectCrossingGround(base, crossingSurfaceAt(x, z), referenceY, WATER_LEVEL);
+    const crossingGround = selectCrossingGround(base, crossingSurfaceAt(x, z), referenceY, WATER_LEVEL);
+    const ground = scbEntranceGroundHeight(x, z, crossingGround);
     return isHsbcPlazaPoint(x, z) ? Math.max(ground, hsbc.plazaTop) : ground;
   }
 
@@ -38,11 +43,12 @@ export function buildSimpleHongKongWorld(scene, { setStatus = () => {} } = {}) {
     ...crossings.stats,
     ...streetLighting.stats,
     ...hsbc.stats,
+    ...standardChartered.stats,
     presentation: 'unified-simple',
     landMeshes: full.stats.fullLandRings,
     blocks: 0,
     parks: full.stats.fullParks,
-    landmarks: hsbc.landmarks.length,
+    landmarks: hsbc.landmarks.length + standardChartered.landmarks.length,
     lots: 0,
     buildings: 0,
     skippedLots: 0,
@@ -54,7 +60,7 @@ export function buildSimpleHongKongWorld(scene, { setStatus = () => {} } = {}) {
 
   return {
     root: scene,
-    colliders: [...full.colliders, ...crossings.colliders, ...hsbc.colliders],
+    colliders: [...full.colliders, ...crossings.colliders, ...hsbc.colliders, ...standardChartered.colliders],
     bounds: full.bounds,
     stats,
     personSpawn: { ...SPAWN.person },
@@ -67,8 +73,9 @@ export function buildSimpleHongKongWorld(scene, { setStatus = () => {} } = {}) {
     },
     streetLighting,
     hsbc,
+    standardChartered,
     treeField: null,
-    landmarks: hsbc.landmarks,
+    landmarks: [...hsbc.landmarks, ...standardChartered.landmarks],
     trafficAids: null
   };
 }

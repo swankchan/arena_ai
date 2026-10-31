@@ -64,6 +64,7 @@ export const city = {
       dynamicRoots: [traffic.group, harbour.group, crowd.group],
       streetLighting: world.streetLighting,
       hsbc: world.hsbc,
+      standardChartered: world.standardChartered,
       landmarks: world.landmarks,
       stats,
       teleports: TELEPORTS,

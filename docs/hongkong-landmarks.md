@@ -1,6 +1,6 @@
 # 香港手建 Landmarks
 
-香港仍採用 `unified-simple` 展示：全港道路及基本地面保留，**不生成普通建築群**。手建地標會逐個加入；目前只有滙豐總行大廈。
+香港仍採用 `unified-simple` 展示：全港道路及基本地面保留，**不生成普通建築群**。手建地標會逐個加入；目前有滙豐總行大廈及渣打銀行大廈。
 
 ## 滙豐總行大廈 HSBC Main Building
 
@@ -21,8 +21,21 @@
 
 參考照片只作建模依據，**沒有打包進應用程式，也不是官方 HSBC 3D 資產**。模型是程序化重建；OSM 提供實際地盤位置及外框，但個別樓層高度、柱距、桁架尺寸、銅獅及小型裝置屬視覺比例，並非測量圖則。最高主立面前置後，較低塔樓不會再遮住由地面延伸至冠頂的正面鋼架及玻璃。
 
+## 渣打銀行大廈 Standard Chartered Bank Building
+
+- 地點：德輔道中 4–4A 號、滙豐西側，採用 **OSM way 85320719** 的完整不規則外框及同一中環座標系；local −z 朝德輔道中。由於原 geodata 查詢只收集已有高度／層數標籤的建築，這個 authored site 的外框直接保存在純座標模組，沒有用附近 road block 或任意長方盒取代。
+- 高度：**191 m**，資料所述 **42 層**。模型以三段相連、向皇后大道中方向遞減的塔身呈現側面及背面梯級輪廓，頂部有藍綠渣打 device；這些是依照片整理的視覺樓層，不是測量圖則。
+- 北立面：三條粉灰花崗岩直柱及兩道玫瑰金反光玻璃長窗，玻璃每層有橫框及中央豎框。三個八邊形窗有深色玻璃、金屬外框、橫百頁及直棂；下方三組高金色玻璃入口有横豎窗框、中央渣打字牌、五級樓梯及平台，地面高度函數使用相同樓梯常數。
+- 側面／背面：花崗岩面板接縫及橫向長條窗，日間不亮隨機房燈；夜間只有少量辦公室窗、入口及頂部標誌有柔和燈光。石材本身不發光。
+- 碰撞及地圖：三段塔身和標誌柱使用跟隨地盤方向的 OBB colliders；樓梯不會變成整座地盤的隱形高台。全圖及 HUD 地名索引也加入同一 `SCB_SITE`，普通 `buildings` 仍為 0。
+- 參考：用戶提供的 `image-29.png`（相對滙豐位置）及 `image-30.png`（北面低角度立面）為主要依據；其他外觀照片只用於核對側面梯級及頂部標誌。照片沒有打包進應用程式。
+  - OSM：https://www.openstreetmap.org/way/85320719
+  - 建築資料：https://en.wikipedia.org/wiki/Standard_Chartered_Bank_Building
+
 ## 程式入口
 
-- `hsbc-headquarters-architecture.js`：純地理位置、OBB、樓層比例及 collider 座標換算，可在 Node 測試。
-- `hsbc-headquarters-world.js`：Three.js 幾何、材質、廣場、碰撞及 stats。
-- `simple-world.js`：只整合這一個 authored landmark；普通 `buildings` 仍為 0。
+- `hsbc-headquarters-architecture.js`：滙豐純地理位置、OBB、樓層比例及 collider 座標換算，可在 Node 測試。
+- `hsbc-headquarters-world.js`：滙豐 Three.js 幾何、材質、廣場、碰撞及 stats。
+- `standard-chartered-architecture.js`：渣打 OSM 外框、北向 OBB、三段比例、入口地面高度及 colliders。
+- `standard-chartered-world.js`：渣打 Three.js 梯級塔身、程序化石材／玻璃、八邊形窗、入口、標誌及 stats。
+- `simple-world.js`：只整合這兩個 authored landmarks；普通 `buildings` 仍為 0。

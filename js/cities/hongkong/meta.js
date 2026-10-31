@@ -1,4 +1,5 @@
 import { GEO } from '../../hk-geodata.js';
+import { SCB_SITE } from './standard-chartered-architecture.js';
 import {
   FULL_BOUNDS,
   FULL_ROAD_NAMES,
@@ -66,7 +67,8 @@ export const AREA_LABELS = [
   ['啟德', 3600, -4700, 2]
 ];
 
-const LANDMARKS = Object.entries(GEO.landmarks).map(([name, landmark]) => ({ name, ...landmark }));
+const LANDMARKS = [...Object.entries(GEO.landmarks), [SCB_SITE.name, SCB_SITE]]
+  .map(([name, landmark]) => ({ name, ...landmark }));
 
 export const PLACE_NAMES = new Set([
   '香港',

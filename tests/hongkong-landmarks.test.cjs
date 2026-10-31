@@ -5,10 +5,12 @@ const test = require('node:test');
 
 const root = path.join(__dirname, '..');
 let architecture;
+let scb;
 let geo;
 
 test.before(async () => {
   architecture = await import('../js/cities/hongkong/hsbc-headquarters-architecture.js');
+  scb = await import('../js/cities/hongkong/standard-chartered-architecture.js');
   geo = (await import('../js/hk-geodata.js')).GEO;
 });
 
@@ -101,13 +103,82 @@ test('the hand-built HSBC model includes its photographic identifying features w
   assert.doesNotMatch(source, /TextureLoader|image-search|https?:\/\//);
 });
 
-test('unified simple mode adds only the authored landmark and keeps generic buildings disabled', () => {
+test('unified simple mode adds only the authored landmarks and keeps generic buildings disabled', () => {
   const source = fs.readFileSync(path.join(root, 'js/cities/hongkong/simple-world.js'), 'utf8');
   assert.match(source, /buildHsbcHeadquarters\(scene\)/);
+  assert.match(source, /buildStandardCharteredBankBuilding\(scene\)/);
   assert.match(source, /isHsbcPlazaPoint\(x, z\)/);
+  assert.match(source, /scbEntranceGroundHeight\(x, z, crossingGround\)/);
   assert.match(source, /\.\.\.hsbc\.stats/);
+  assert.match(source, /\.\.\.standardChartered\.stats/);
   assert.match(source, /\.\.\.hsbc\.colliders/);
-  assert.match(source, /landmarks: hsbc\.landmarks\.length/);
+  assert.match(source, /\.\.\.standardChartered\.colliders/);
+  assert.match(source, /landmarks: hsbc\.landmarks\.length \+ standardChartered\.landmarks\.length/);
   assert.match(source, /buildings: 0/);
-  assert.match(source, /landmarks: hsbc\.landmarks/);
+  assert.match(source, /landmarks: \[\.\.\.hsbc\.landmarks, \.\.\.standardChartered\.landmarks\]/);
+});
+
+test('Standard Chartered uses OSM way 85320719 immediately west of HSBC with a north-facing OBB', () => {
+  const { SCB_SITE, SCB_HEIGHT, SCB_FLOORS, scbWorldToLocal, scbLocalToWorld } = scb;
+  const { HSBC_SITE } = architecture;
+  assert.equal(SCB_SITE.name, '渣打銀行大廈');
+  assert.equal(SCB_SITE.osmId, 85320719);
+  assert.equal(SCB_SITE.source.ring, SCB_SITE.ring);
+  assert.equal(SCB_HEIGHT, 191);
+  assert.equal(SCB_FLOORS, 42);
+  assert.ok(SCB_SITE.x < HSBC_SITE.x - 35, 'Standard Chartered is on the west side of HSBC');
+  assert.ok(Math.abs(SCB_SITE.z - HSBC_SITE.z) < 20, 'both buildings occupy the same Central block frontage');
+  assert.ok(SCB_SITE.ry < 0 && SCB_SITE.ry > -0.4, 'the facade follows Des Voeux Road Central');
+  assert.ok(SCB_SITE.d > SCB_SITE.w * 2, 'the real site is a narrow frontage with a long lot');
+  for (let i = 0; i < SCB_SITE.ring.length; i += 2) {
+    const local = scbWorldToLocal(SCB_SITE.ring[i], SCB_SITE.ring[i + 1]);
+    assert.ok(Math.abs(local.x) <= SCB_SITE.w * 0.5 + 1e-6);
+    assert.ok(Math.abs(local.z) <= SCB_SITE.d * 0.5 + 1e-6);
+  }
+  const north = scbLocalToWorld(0, -10), south = scbLocalToWorld(0, 10);
+  assert.ok(north.z < south.z, 'local -z faces north / Des Voeux Road Central');
+});
+
+test('Standard Chartered keeps three stepped tiers, three octagon bays and a walkable entrance stair', () => {
+  const {
+    SCB_TIERS, SCB_MAIN_ROOF_Y, SCB_HEIGHT, SCB_FRONT_PIER_X, SCB_FRONT_GLASS_X,
+    SCB_OCTAGON_Y, SCB_PODIUM_HEIGHT, SCB_ENTRANCE_HEIGHT, SCB_SIGN_FIN,
+    SCB_STAIR_COUNT, SCB_STAIR_FRONT_Z, SCB_FRONT_Z, SCB_BASE_Y,
+    scbLocalToWorld, scbEntranceGroundHeight, scbLocalCollider
+  } = scb;
+  assert.equal(SCB_TIERS.length, 3);
+  assert.deepEqual(SCB_TIERS.map((tier) => tier.id), ['north', 'central', 'south']);
+  assert.ok(SCB_TIERS[0].roofY > SCB_TIERS[1].roofY && SCB_TIERS[1].roofY > SCB_TIERS[2].roofY);
+  assert.equal(SCB_TIERS[0].roofY, SCB_MAIN_ROOF_Y);
+  assert.equal(SCB_SIGN_FIN.topY, SCB_HEIGHT);
+  assert.ok(SCB_SIGN_FIN.baseY < SCB_HEIGHT && SCB_SIGN_FIN.baseY >= SCB_MAIN_ROOF_Y);
+  assert.equal(SCB_FRONT_PIER_X.length, 3);
+  assert.equal(SCB_FRONT_GLASS_X.length, 2);
+  assert.ok(SCB_OCTAGON_Y > SCB_ENTRANCE_HEIGHT && SCB_OCTAGON_Y < SCB_PODIUM_HEIGHT);
+  assert.ok(SCB_ENTRANCE_HEIGHT > 12, 'the reference has unusually tall gold-framed entrance glazing');
+  assert.equal(SCB_STAIR_COUNT, 5);
+  const far = scbLocalToWorld(0, SCB_STAIR_FRONT_Z - 0.01);
+  const landing = scbLocalToWorld(0, SCB_FRONT_Z - 0.2);
+  assert.equal(scbEntranceGroundHeight(far.x, far.z, 0.025), 0.025);
+  assert.ok(Math.abs(scbEntranceGroundHeight(landing.x, landing.z, 0.025) - SCB_BASE_Y) < 1e-9);
+  const collider = scbLocalCollider({ x: 0, z: 0, w: 20, d: 20, minY: SCB_BASE_Y, maxY: SCB_HEIGHT });
+  assert.ok(collider.obb && collider.maxY === SCB_HEIGHT);
+});
+
+test('the hand-built Standard Chartered model includes the photographed identifiers without bundled photo assets', () => {
+  const source = fs.readFileSync(path.join(root, 'js/cities/hongkong/standard-chartered-world.js'), 'utf8');
+  assert.match(source, /SCBSteppedTowerTiers/);
+  assert.match(source, /SCBFrontStonePiers/);
+  assert.match(source, /SCBFrontRoseGlassChannels/);
+  assert.match(source, /SCBOctagonalWindowFrames/);
+  assert.match(source, /SCBOctagonalWindowLouvres/);
+  assert.match(source, /SCBGoldEntranceSurrounds/);
+  assert.match(source, /SCBTallEntranceGlazing/);
+  assert.match(source, /SCBDesVoeuxRoadEntranceSteps/);
+  assert.match(source, /SCBCrownLogo/);
+  assert.match(source, /SCBCrownLogoWest/);
+  assert.match(source, /createScbRibbonFacadeMaterial/);
+  assert.match(source, /createScbFrontGlassMaterial/);
+  assert.match(source, /cityUniforms\.uInteriorGlow/);
+  assert.doesNotMatch(source, /TextureLoader|image-search|https?:\/\//);
 });
