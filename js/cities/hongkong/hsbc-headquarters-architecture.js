@@ -87,6 +87,17 @@ export const HSBC_MAIN_ROOF_Y = HSBC_MAIN_BAY.roofY;
 export const HSBC_ENTRANCE = Object.freeze({
   z: -8.8, width: 36, doorWidth: 5.2, doorHeight: 3.4, height: HSBC_BANKING_HALL_BASE
 });
+export const HSBC_LION_SITES = Object.freeze([
+  Object.freeze({ id: 'left', x: -11.5, z: -HSBC_BAY_DEPTH * 1.35, heading: -Math.PI / 2 }),
+  Object.freeze({ id: 'right', x: 11.5, z: -HSBC_BAY_DEPTH * 1.35, heading: Math.PI / 2 })
+]);
+// Viewed from the harbour, screen-right is local -x. The escalators therefore climb from front-right (-x) to rear-left (+x).
+export const HSBC_ESCALATOR = Object.freeze({
+  startX: -8.4, endX: 4.4,
+  startY: 0.38, endY: HSBC_BANKING_HALL_BASE - 0.25,
+  startZ: -HSBC_BAY_DEPTH * 1.37, endZ: -HSBC_BAY_DEPTH * 0.51,
+  laneOffset: 0.78
+});
 export const HSBC_TRUSS_LEVELS = Object.freeze([34.2, 67.2, 100.2, 133.2, 166.2]);
 export function hsbcSuspensionLevelsForRoof(roofY) {
   // The top chord may project slightly above the office roof into the mast / crown zone; do not drop the fifth V.

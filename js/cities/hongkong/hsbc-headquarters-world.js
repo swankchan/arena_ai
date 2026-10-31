@@ -15,6 +15,8 @@ import {
   HSBC_MAIN_BAY,
   HSBC_MAIN_ROOF_Y,
   HSBC_ENTRANCE,
+  HSBC_LION_SITES,
+  HSBC_ESCALATOR,
   HSBC_MAST_X,
   hsbcSuspensionLevelsForRoof,
   hsbcWorldToLocal,
@@ -108,6 +110,28 @@ function createStairWindowGeometry() {
   return new THREE.ShapeGeometry(shape, 8);
 }
 
+function drawHsbcDevice(ctx, ox, oy, size, foreground, background = null) {
+  // Correct HSBC device: four outer triangles around a negative-space cross, not a six-slice fan.
+  const hexagon = [[0.25, 0], [0.75, 0], [1, 0.5], [0.75, 1], [0.25, 1], [0, 0.5]];
+  if (background) {
+    ctx.beginPath();
+    hexagon.forEach(([x, y], index) => index ? ctx.lineTo(ox + x * size, oy + y * size) : ctx.moveTo(ox + x * size, oy + y * size));
+    ctx.closePath(); ctx.fillStyle = background; ctx.fill();
+  }
+  const triangles = [
+    [[0.75, 0], [0.25, 0], [0.5, 0.5]],
+    [[1, 0.5], [0.75, 1], [0.75, 0]],
+    [[0.25, 1], [0.75, 1], [0.5, 0.5]],
+    [[0, 0.5], [0.25, 1], [0.25, 0]]
+  ];
+  ctx.fillStyle = foreground;
+  for (const triangle of triangles) {
+    ctx.beginPath();
+    triangle.forEach(([x, y], index) => index ? ctx.lineTo(ox + x * size, oy + y * size) : ctx.moveTo(ox + x * size, oy + y * size));
+    ctx.closePath(); ctx.fill();
+  }
+}
+
 function createHsbcSignTexture() {
   const canvas = document.createElement('canvas');
   canvas.width = 1024; canvas.height = 192;
@@ -117,19 +141,8 @@ function createHsbcSignTexture() {
   ctx.font = '700 126px Arial, Helvetica, sans-serif';
   ctx.textBaseline = 'middle';
   ctx.fillText('HSBC', 52, 101);
-  // The red-and-white hexagonal device is drawn, not downloaded or traced into a bundled image.
-  const ox = 772, oy = 22, s = 146;
-  const points = [[0.25, 0], [0.75, 0], [1, 0.5], [0.75, 1], [0.25, 1], [0, 0.5]];
-  const centre = [0.5, 0.5];
-  for (let i = 0; i < 6; i++) {
-    ctx.beginPath();
-    ctx.moveTo(ox + centre[0] * s, oy + centre[1] * s);
-    ctx.lineTo(ox + points[i][0] * s, oy + points[i][1] * s);
-    ctx.lineTo(ox + points[(i + 1) % 6][0] * s, oy + points[(i + 1) % 6][1] * s);
-    ctx.closePath();
-    ctx.fillStyle = i % 2 === 0 ? '#db0011' : '#ffffff';
-    ctx.fill();
-  }
+  // The red-and-white device is drawn from vector geometry, not bundled as an image.
+  drawHsbcDevice(ctx, 772, 22, 146, '#db0011', '#ffffff');
   const texture = new THREE.CanvasTexture(canvas);
   texture.colorSpace = THREE.SRGBColorSpace;
   texture.anisotropy = 4;
@@ -145,17 +158,7 @@ function createEntranceSignTexture() {
   ctx.textBaseline = 'middle';
   ctx.font = '600 116px Arial, Helvetica, sans-serif';
   ctx.fillText('HSBC', 54, 116);
-  const ox = 410, oy = 38, s = 148;
-  const points = [[0.25, 0], [0.75, 0], [1, 0.5], [0.75, 1], [0.25, 1], [0, 0.5]];
-  for (let i = 0; i < 6; i++) {
-    ctx.beginPath();
-    ctx.moveTo(ox + 0.5 * s, oy + 0.5 * s);
-    ctx.lineTo(ox + points[i][0] * s, oy + points[i][1] * s);
-    ctx.lineTo(ox + points[(i + 1) % 6][0] * s, oy + points[(i + 1) % 6][1] * s);
-    ctx.closePath();
-    ctx.fillStyle = i % 2 === 0 ? '#b9a262' : 'rgba(0,0,0,0)';
-    ctx.fill();
-  }
+  drawHsbcDevice(ctx, 410, 38, 148, '#b9a262');
   ctx.fillStyle = '#b9a262';
   ctx.font = '700 112px "Noto Sans TC", "Microsoft JhengHei", sans-serif';
   ctx.fillText('滙豐', 620, 116);
@@ -260,12 +263,24 @@ function createHsbcLionGeometry({ openMouth, reclining, tailSide }) {
   ellipsoid(bronzeParts, 0, headY - 0.03, headZ - 0.65, 0.17, 0.08, 0.1);
   for (const side of [-1, 1]) ellipsoid(detailParts, side * 0.07, headY - 0.04, headZ - 0.755, 0.022, 0.016, 0.012);
   if (openMouth) {
-    ellipsoid(detailParts, 0, headY - 0.28, headZ - 0.6, 0.21, 0.2, 0.07);
-    ellipsoid(bronzeParts, 0, headY - 0.48, headZ - 0.45, 0.24, 0.09, 0.22);
+    // A small recessed cavity is framed by connected bronze lips and jaw hinges, not an object held in the mouth.
+    const mouthCavity = new THREE.Shape();
+    mouthCavity.moveTo(-0.095, 0.055);
+    mouthCavity.lineTo(0.095, 0.055);
+    mouthCavity.lineTo(0.075, -0.055);
+    mouthCavity.lineTo(-0.075, -0.055);
+    mouthCavity.closePath();
+    put(detailParts, new THREE.ShapeGeometry(mouthCavity), [0, headY - 0.265, headZ - 0.612], [1, 1, 1],
+      new THREE.Quaternion().setFromEuler(new THREE.Euler(0, Math.PI, 0)));
+    ellipsoid(bronzeParts, 0, headY - 0.17, headZ - 0.54, 0.18, 0.05, 0.1);
+    ellipsoid(bronzeParts, 0, headY - 0.36, headZ - 0.52, 0.18, 0.055, 0.14);
     for (const side of [-1, 1]) {
-      put(bronzeParts, new THREE.ConeGeometry(0.035, 0.13, 5), [side * 0.12, headY - 0.14, headZ - 0.68], [1, 1, 1],
+      // These substantial side hinges touch both lips, so the open mouth cannot read as a detached lower jaw.
+      limb(bronzeParts, [side * 0.15, headY - 0.17, headZ - 0.5],
+        [side * 0.15, headY - 0.36, headZ - 0.5], 0.05);
+      put(bronzeParts, new THREE.ConeGeometry(0.018, 0.06, 5), [side * 0.075, headY - 0.205, headZ - 0.625], [1, 1, 1],
         new THREE.Quaternion().setFromEuler(new THREE.Euler(Math.PI, 0, 0)));
-      put(bronzeParts, new THREE.ConeGeometry(0.03, 0.1, 5), [side * 0.11, headY - 0.41, headZ - 0.66]);
+      put(bronzeParts, new THREE.ConeGeometry(0.016, 0.05, 5), [side * 0.07, headY - 0.325, headZ - 0.61]);
     }
   } else {
     limb(detailParts, [-0.16, headY - 0.28, headZ - 0.635], [0.16, headY - 0.28, headZ - 0.635], 0.012);
@@ -299,12 +314,16 @@ function createPlazaGeometry() {
   return geometry;
 }
 
-function addEscalatorGlass(group, material, x, start, end) {
+function addEscalatorGlass(group, material, start, end) {
   const positions = [];
+  const dx = end.x - start.x, dz = end.z - start.z, length = Math.hypot(dx, dz);
+  const nx = dz / length, nz = -dx / length;
   for (const side of [-1, 1]) {
-    const px = x + side * 0.68;
-    const a = [px, start.y + 0.25, start.z], b = [px, end.y + 0.25, end.z];
-    const c = [px, end.y + 1.25, end.z], d = [px, start.y + 1.25, start.z];
+    const ox = side * 0.68 * nx, oz = side * 0.68 * nz;
+    const a = [start.x + ox, start.y + 0.25, start.z + oz];
+    const b = [end.x + ox, end.y + 0.25, end.z + oz];
+    const c = [end.x + ox, end.y + 1.25, end.z + oz];
+    const d = [start.x + ox, start.y + 1.25, start.z + oz];
     positions.push(...a, ...b, ...c, ...a, ...c, ...d);
   }
   const geometry = new THREE.BufferGeometry();
@@ -481,37 +500,54 @@ export function buildHsbcHeadquarters(root) {
     }
   }
 
-  // Paired escalators rise through the glazed underbelly from the north public plaza.
-  for (const x of [-1.35, 1.35]) {
-    const start = { y: 0.38, z: -HSBC_BAY_DEPTH * 1.37 };
-    const end = { y: HSBC_BANKING_HALL_BASE - 0.25, z: -HSBC_BAY_DEPTH * 0.51 };
-    beam(darkBeams, [x, start.y, start.z], [x, end.y, end.z], 1.12);
+  // From the entrance, the paired escalators begin beside the right lion and climb diagonally back towards the left.
+  const escalatorDx = HSBC_ESCALATOR.endX - HSBC_ESCALATOR.startX;
+  const escalatorDz = HSBC_ESCALATOR.endZ - HSBC_ESCALATOR.startZ;
+  const escalatorPlanLength = Math.hypot(escalatorDx, escalatorDz);
+  const escalatorNx = escalatorDz / escalatorPlanLength, escalatorNz = -escalatorDx / escalatorPlanLength;
+  const escalatorHeading = Math.atan2(escalatorDx, escalatorDz);
+  for (const lane of [-1, 1]) {
+    const offset = lane * HSBC_ESCALATOR.laneOffset;
+    const start = {
+      x: HSBC_ESCALATOR.startX + escalatorNx * offset, y: HSBC_ESCALATOR.startY,
+      z: HSBC_ESCALATOR.startZ + escalatorNz * offset
+    };
+    const end = {
+      x: HSBC_ESCALATOR.endX + escalatorNx * offset, y: HSBC_ESCALATOR.endY,
+      z: HSBC_ESCALATOR.endZ + escalatorNz * offset
+    };
+    beam(darkBeams, [start.x, start.y, start.z], [end.x, end.y, end.z], 1.12);
     for (const side of [-1, 1]) {
-      beam(darkBeams, [x + side * 0.68, start.y + 1.18, start.z], [x + side * 0.68, end.y + 1.18, end.z], 0.1);
+      const ox = side * 0.68 * escalatorNx, oz = side * 0.68 * escalatorNz;
+      beam(darkBeams, [start.x + ox, start.y + 1.18, start.z + oz], [end.x + ox, end.y + 1.18, end.z + oz], 0.1);
     }
     for (let step = 0; step <= 26; step++) {
       const t = step / 26;
       escalatorSteps.push({
-        x, y: start.y + (end.y - start.y) * t + 0.25, z: start.z + (end.z - start.z) * t,
-        sx: 1.08, sy: 0.13, sz: 0.52
+        x: start.x + (end.x - start.x) * t,
+        y: start.y + (end.y - start.y) * t + 0.25,
+        z: start.z + (end.z - start.z) * t,
+        sx: 1.08, sy: 0.13, sz: 0.52, heading: escalatorHeading
       });
     }
-    addEscalatorGlass(group, escalatorGlass, x, start, end);
+    addEscalatorGlass(group, escalatorGlass, start, end);
   }
-  // The two supplied photographs show different poses: an upright open-mouth left lion and a reclining closed-mouth right lion.
+  // The lions sit farther apart on transverse plinths and face one another across the open entrance.
   const lionsGroup = new THREE.Group();
   lionsGroup.name = 'HSBCBronzeLions';
   group.add(lionsGroup);
-  for (const lion of [
-    { x: -7.2, openMouth: true, reclining: false, tailSide: -1, name: 'HSBCLeftBronzeLionOpenMouth' },
-    { x: 7.2, openMouth: false, reclining: true, tailSide: 1, name: 'HSBCRightBronzeLionReclining' }
-  ]) {
-    const z = -HSBC_BAY_DEPTH * 1.35;
-    stoneBoxes.push({ x: lion.x, y: 0.275, z, sx: 2.8, sy: 0.55, sz: 3.6 });
-    bronzeBoxes.push({ x: lion.x, y: 0.64, z, sx: 2.45, sy: 0.18, sz: 3.25 });
+  for (const site of HSBC_LION_SITES) {
+    const lion = {
+      ...site,
+      openMouth: site.id === 'left', reclining: site.id === 'right', tailSide: site.id === 'left' ? -1 : 1,
+      name: site.id === 'left' ? 'HSBCLeftBronzeLionOpenMouth' : 'HSBCRightBronzeLionReclining'
+    };
+    stoneBoxes.push({ x: site.x, y: 0.275, z: site.z, sx: 3.6, sy: 0.55, sz: 2.8 });
+    bronzeBoxes.push({ x: site.x, y: 0.64, z: site.z, sx: 3.25, sy: 0.18, sz: 2.45 });
     const geometry = createHsbcLionGeometry(lion);
     const lionGroup = new THREE.Group();
-    lionGroup.position.set(lion.x, 0, z);
+    lionGroup.position.set(site.x, 0, site.z);
+    lionGroup.rotation.y = site.heading;
     lionGroup.name = lion.name;
     for (const [part, material] of [['bronze', bronze], ['mane', bronzeMane], ['details', lionRecess]]) {
       const mesh = new THREE.Mesh(geometry[part], material);
@@ -607,8 +643,8 @@ export function buildHsbcHeadquarters(root) {
       colliders.push(hsbcLocalCollider({ x, z: boundary.z, w: 1.48, d: 1.48, minY: 0, maxY: boundary.roofY + 4.2 }));
     }
   }
-  for (const x of [-7.2, 7.2]) {
-    colliders.push(hsbcLocalCollider({ x, z: -HSBC_BAY_DEPTH * 1.35, w: 2.8, d: 3.6, minY: 0, maxY: 3.1 }));
+  for (const site of HSBC_LION_SITES) {
+    colliders.push(hsbcLocalCollider({ x: site.x, z: site.z, w: 3.6, d: 2.8, minY: 0, maxY: 3.1 }));
   }
 
   root.add(group);

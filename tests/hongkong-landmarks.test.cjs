@@ -30,7 +30,8 @@ test('HSBC uses its real OSM site, oriented footprint and 178.8 m landmark heigh
 
 test('three stepped bays and five suspension levels preserve the open public plaza', () => {
   const {
-    HSBC_BAYS, HSBC_MAIN_BAY, HSBC_MAIN_ROOF_Y, HSBC_ENTRANCE, HSBC_TRUSS_LEVELS, HSBC_HEIGHT, HSBC_BANKING_HALL_BASE,
+    HSBC_BAYS, HSBC_MAIN_BAY, HSBC_MAIN_ROOF_Y, HSBC_ENTRANCE, HSBC_LION_SITES, HSBC_ESCALATOR,
+    HSBC_TRUSS_LEVELS, HSBC_HEIGHT, HSBC_BANKING_HALL_BASE,
     HSBC_FRAME_WIDTH, HSBC_GLASS_WIDTH, HSBC_MAST_X,
     HSBC_PLAZA_TOP, HSBC_SITE, hsbcSuspensionLevelsForRoof,
     hsbcLocalToWorld, isHsbcPlazaPoint, hsbcLocalCollider
@@ -47,6 +48,12 @@ test('three stepped bays and five suspension levels preserve the open public pla
   assert.ok(HSBC_BANKING_HALL_BASE > 10, 'the banking hall is raised above people and vehicles');
   assert.equal(HSBC_ENTRANCE.height, HSBC_BANKING_HALL_BASE);
   assert.ok(HSBC_ENTRANCE.doorWidth >= 5 && HSBC_ENTRANCE.doorHeight > 2.3, 'the glazed entrance retains a real door opening');
+  assert.equal(HSBC_LION_SITES.length, 2);
+  assert.ok(HSBC_LION_SITES[1].x - HSBC_LION_SITES[0].x >= 22, 'lions occupy separated open side positions');
+  assert.ok(Math.abs(HSBC_LION_SITES[1].heading - HSBC_LION_SITES[0].heading - Math.PI) < 1e-9, 'lions face one another');
+  assert.ok(HSBC_ESCALATOR.startX < 0 && HSBC_ESCALATOR.endX > HSBC_ESCALATOR.startX, 'from the harbour, escalators climb from screen-right to rear screen-left');
+  const escalatorLion = HSBC_LION_SITES.reduce((nearest, site) => Math.abs(site.x - HSBC_ESCALATOR.startX) < Math.abs(nearest.x - HSBC_ESCALATOR.startX) ? site : nearest);
+  assert.ok(Math.abs(HSBC_ESCALATOR.startZ - escalatorLion.z) < 1, 'escalators begin beside the nearest lion');
   assert.ok(HSBC_PLAZA_TOP > 0);
   assert.ok(isHsbcPlazaPoint(HSBC_SITE.x, HSBC_SITE.z));
   const north = hsbcLocalToWorld(0, -10), south = hsbcLocalToWorld(0, 10);
@@ -73,6 +80,11 @@ test('the hand-built HSBC model includes its photographic identifying features w
   assert.match(source, /double-height reception band/);
   assert.match(source, /createHsbcCurtainWallMaterial/);
   assert.match(source, /createHsbcSignTexture/);
+  assert.match(source, /function drawHsbcDevice/);
+  assert.match(source, /four outer triangles/);
+  assert.match(source, /small recessed cavity/);
+  assert.match(source, /new THREE\.ShapeGeometry\(mouthCavity\)/);
+  assert.match(source, /connected bronze lips and jaw hinges/);
   assert.match(source, /cityUniforms\.uInteriorGlow/);
   assert.doesNotMatch(source, /TextureLoader|image-search|https?:\/\//);
 });
