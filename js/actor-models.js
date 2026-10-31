@@ -1098,7 +1098,6 @@ function roundedCanvasRect(ctx, x, y, w, h, r) {
 let _hkTaxiSideTexture;
 let _hkTaxiFrontTexture;
 let _hkTaxiRearTexture;
-let _hkTaxiWindscreenTexture;
 let _hkTaxiSignTexture;
 let _hkCarPlateTexture;
 let _hkCarFrontPlateTexture;
@@ -1271,30 +1270,6 @@ function hkTaxiRearTexture() {
   return _hkTaxiRearTexture;
 }
 
-function hkTaxiWindscreenTexture() {
-  if (_hkTaxiWindscreenTexture) return _hkTaxiWindscreenTexture;
-  const c = document.createElement('canvas');
-  c.width = 128;
-  c.height = 128;
-  const ctx = c.getContext('2d');
-  ctx.clearRect(0, 0, 128, 128);
-  ctx.beginPath();
-  ctx.arc(64, 64, 51, 0, Math.PI * 2);
-  ctx.fillStyle = '#b84f5d';
-  ctx.fill();
-  ctx.strokeStyle = 'rgba(255,255,255,0.65)';
-  ctx.lineWidth = 3;
-  ctx.stroke();
-  ctx.fillStyle = '#fff4ee';
-  ctx.textAlign = 'center';
-  ctx.textBaseline = 'middle';
-  ctx.font = '800 29px Arial, sans-serif';
-  ctx.fillText('TAXI', 64, 66);
-  _hkTaxiWindscreenTexture = new THREE.CanvasTexture(c);
-  _hkTaxiWindscreenTexture.colorSpace = THREE.SRGBColorSpace;
-  return _hkTaxiWindscreenTexture;
-}
-
 function hkTaxiSignTexture() {
   if (_hkTaxiSignTexture) return _hkTaxiSignTexture;
   const c = document.createElement('canvas');
@@ -1418,23 +1393,6 @@ function createLoftedCarMaterial(spec, fixedColorHex = null, options = {}) {
   const rearWiper = spec.rearWiper
     ? roundedRect(vec2(p.x.add(0.15), p.z.sub(cab.deck + 0.075)), vec2(0.22, 0.006), 0.003).mul(backlight)
     : float(0.0);
-  const hkWiperLine = abs(p.z.sub(cab.cowl - 0.045).add(ax.mul(0.11)));
-  const hkWipers = livery === 'hk'
-    ? max(
-      smoothstep(0.02, 0.008, hkWiperLine)
-        .mul(smoothstep(0.07, 0.11, ax)).mul(smoothstep(0.68, 0.6, ax)),
-      roundedRect(vec2(ax.sub(0.08), p.z.sub(cab.cowl - 0.055)), vec2(0.026, 0.016), 0.005)
-    ).mul(frontGlass).mul(isWindow)
-    : float(0);
-  const windStickerTex = livery === 'hk'
-    ? texture(hkTaxiWindscreenTexture(), vec2(
-      p.x.div(0.18).add(0.5),
-      p.z.sub(cab.cowl - 0.26).div(-0.18).add(0.5)
-    ))
-    : null;
-  const hkWindscreenDecal = windStickerTex
-    ? windStickerTex.a.mul(frontGlass).mul(isWindow).mul(smoothstep(0.12, 0.38, n.z))
-    : float(0);
   const hkRoof = livery === 'hk'
     ? isWindow.mul(smoothstep(belt.add(0.01), belt.add(0.035), p.y)).mul(one.sub(max(glass, seal, chromeBelt)))
     : float(0);
@@ -1550,14 +1508,15 @@ function createLoftedCarMaterial(spec, fixedColorHex = null, options = {}) {
     ? roundedRect(hlUV, vec2(hlW + 0.01, hlH + 0.01), 0.014)
       .mul(front).mul(one.sub(headlight))
     : float(0);
+  const crownUV = vec2(p.x, p.y.sub(grY)).div(0.8);
   const hkCrown = livery === 'hk'
     ? max(
-      roundedRect(vec2(p.x, p.y.sub(grY - 0.04)), vec2(0.065, 0.009), 0.003),
-      roundedRect(vec2(p.x, p.y.sub(grY - 0.018)), vec2(0.05, 0.008), 0.003),
-      roundedRect(vec2(abs(p.x).sub(0.045), p.y.sub(grY + 0.005)), vec2(0.009, 0.025), 0.003),
-      roundedRect(vec2(p.x, p.y.sub(grY + 0.02)), vec2(0.009, 0.038), 0.003),
-      roundedRect(vec2(abs(p.x).sub(0.045), p.y.sub(grY + 0.035)), vec2(0.013, 0.008), 0.005),
-      roundedRect(vec2(p.x, p.y.sub(grY + 0.062)), vec2(0.013, 0.008), 0.005)
+      roundedRect(vec2(crownUV.x, crownUV.y.add(0.04)), vec2(0.065, 0.009), 0.003),
+      roundedRect(vec2(crownUV.x, crownUV.y.add(0.018)), vec2(0.05, 0.008), 0.003),
+      roundedRect(vec2(abs(crownUV.x).sub(0.045), crownUV.y.sub(0.005)), vec2(0.009, 0.025), 0.003),
+      roundedRect(vec2(crownUV.x, crownUV.y.sub(0.02)), vec2(0.009, 0.038), 0.003),
+      roundedRect(vec2(abs(crownUV.x).sub(0.045), crownUV.y.sub(0.035)), vec2(0.013, 0.008), 0.005),
+      roundedRect(vec2(crownUV.x, crownUV.y.sub(0.062)), vec2(0.013, 0.008), 0.005)
     ).mul(grille)
     : float(0);
   const hkFogUV = vec2(ax.sub(0.62), p.y.sub(0.3));
@@ -1579,7 +1538,7 @@ function createLoftedCarMaterial(spec, fixedColorHex = null, options = {}) {
     .mul(smoothstep(0.02, 0.25, n.z.negate()))
     .mul(step(p.z, rearZone))
     .mul(isBody);
-  // Crown Comfort lenses are broad red clusters with a slim inboard amber strip and a clear lower strip.
+  // Crown Comfort lenses stay red with a clear lower strip; amber is emitted only by an active turn signal.
   const tailAxis = livery === 'hk' ? tlUV.y.div(tlH) : (tlH > tlW ? tlUV.y.div(tlH) : tlUV.x.div(tlW));
   const tailDivider = livery === 'hk'
     ? coverage(abs(tailAxis.add(0.55)).sub(0.025))
@@ -1657,7 +1616,7 @@ function createLoftedCarMaterial(spec, fixedColorHex = null, options = {}) {
     max(hkLower, hkStrip),
     max(
       max(max(isTyre, isTrim), max(intake, grille)),
-      max(max(rearValance, under), max(max(cowlPanel, cladding), max(max(rearWiper, hkWipers), seal.mul(one.sub(max(glass, chromeBelt))))))
+      max(max(rearValance, under), max(max(cowlPanel, cladding), max(rearWiper, seal.mul(one.sub(max(glass, chromeBelt))))))
     )
   );
 
@@ -1726,7 +1685,10 @@ function createLoftedCarMaterial(spec, fixedColorHex = null, options = {}) {
   body = mix(body, mix(lampColor, color(0xc5802b), turnFront), headlight);
   // Tail: thin rubber seals around divided red, amber and clear lenses.
   const tailShade = smoothstep(0.0, tlH, abs(tlUV.y)).mul(-0.3).add(1.0);
-  const tailColor = mix(mix(color(0xae1821).mul(tailShade), color(0xc56b18), turnRearSection), color(0xbac4c9), reverseRearSection);
+  const tailBase = color(0xae1821).mul(tailShade);
+  const tailColor = livery === 'hk'
+    ? mix(tailBase, color(0xbac4c9), reverseRearSection)
+    : mix(mix(tailBase, color(0xc56b18), turnRearSection), color(0xbac4c9), reverseRearSection);
   body = mix(body, color(0x15181b), rearValance);
   body = mix(body, color(0x7a0a10), reflector);
   body = mix(body, color(0x222326), taillight);
@@ -1762,8 +1724,6 @@ function createLoftedCarMaterial(spec, fixedColorHex = null, options = {}) {
 
   windowCol = mix(windowCol, color(0x15181b), rearWiper);
   if (livery === 'hk') {
-    windowCol = mix(windowCol, color(0x343a3e), hkWipers);
-    windowCol = mix(windowCol, windStickerTex.rgb, hkWindscreenDecal);
     windowCol = mix(windowCol, color(0xd8dad7), hkRoof);
   }
 

@@ -436,8 +436,6 @@ test('Hong Kong taxi follows the supplied roof-sign, rear-detail and plate refer
   assert.match(source, /function buildHKTaxiHardware\(spec\)/);
   assert.match(source, /CAR_PARTS\.CHROME/);
   assert.match(source, /hkRearDecal/);
-  assert.match(source, /hkWipers/);
-  assert.match(source, /hkWindscreenDecal/);
   assert.match(source, /hkCarPlateTexture/);
   assert.match(source, /hkCarPlateTexture\(false\)/);
   assert.match(source, /hkFrontPlateColor, hkPlateFront/);
@@ -456,6 +454,20 @@ test('Hong Kong taxi follows the supplied roof-sign, rear-detail and plate refer
   assert.match(controllers, /fillText\('2756', 128, 116/);
   assert.match(controllers, /rearPlateFrame/);
   assert.match(controllers, /frontPlateFrame/);
+});
+
+test('Hong Kong taxi has clean front glass, a smaller crown and red idle tail lenses', () => {
+  const source = read('js/actor-models.js');
+  assert.doesNotMatch(source, /hkTaxiWindscreenTexture|hkWindscreenDecal|hkWipers|windStickerTex/);
+  assert.match(source, /const crownUV = vec2\(p\.x, p\.y\.sub\(grY\)\)\.div\(0\.8\)/);
+
+  const tailStart = source.indexOf('const tailBase');
+  const tailEnd = source.indexOf('body = mix(body, tailColor', tailStart);
+  assert.ok(tailStart >= 0 && tailEnd > tailStart);
+  const tail = source.slice(tailStart, tailEnd);
+  assert.match(tail, /\? mix\(tailBase, color\(0xbac4c9\), reverseRearSection\)/);
+  assert.match(tail, /: mix\(mix\(tailBase, color\(0xc56b18\), turnRearSection\)/);
+  assert.match(source, /const turn = color\(0xff9a14\)/, 'amber remains available while indicating');
 });
 
 test('Hong Kong buses use a detailed two-deck model with instanced wheels and destination signs', () => {
