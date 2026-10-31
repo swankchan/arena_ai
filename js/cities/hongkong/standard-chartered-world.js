@@ -21,19 +21,17 @@ import {
   SCB_FRONT_GLASS_X,
   SCB_OCTAGON_Y,
   SCB_ENTRANCE_HEIGHT,
+  SCB_ENTRANCE_DOOR_WIDTH,
   SCB_SIGN_FIN,
   SCB_STAIR_COUNT,
   SCB_STAIR_RUN,
   SCB_STAIR_TREAD,
   SCB_STAIR_RISE,
-  SCB_STAIR_RIGHT_U,
-  SCB_STAIR_LEFT_TOP_U,
+  SCB_STAIR_TOP_RIGHT_U,
+  SCB_STAIR_TOP_LEFT_U,
   SCB_STAIR_TOP_WIDTH,
   SCB_STAIR_ROAD_HEADING,
   SCB_STAIR_TOP_LANDING_DEPTH,
-  SCB_STAIR_CONNECTOR_BASE_V,
-  SCB_STAIR_CONNECTOR_RISE,
-  SCB_ENTRANCE_LANDING,
   scbStairEdgesAt,
   scbStairRoadToLocal,
   scbLocalCollider
@@ -304,7 +302,7 @@ export function buildStandardCharteredBankBuilding(root) {
   entranceGlass.emissiveNode = color(0xffd5a0).mul(nightAmount().mul(0.12));
   addInstances(group, unitBox, gold, SCB_FRONT_PIER_X.map((x) => ({
     x, y: SCB_ENTRANCE_BASE_Y + SCB_ENTRANCE_HEIGHT * 0.5, z: SCB_FRONT_Z - 0.37,
-    sx: 4.5, sy: SCB_ENTRANCE_HEIGHT, sz: 0.1
+    sx: SCB_ENTRANCE_DOOR_WIDTH, sy: SCB_ENTRANCE_HEIGHT, sz: 0.1
   })), 'SCBGoldEntranceSurrounds');
   addInstances(group, unitBox, entranceGlass, SCB_FRONT_PIER_X.map((x) => ({
     x, y: SCB_ENTRANCE_BASE_Y + SCB_ENTRANCE_HEIGHT * 0.5, z: SCB_FRONT_Z - 0.445,
@@ -328,63 +326,63 @@ export function buildStandardCharteredBankBuilding(root) {
   entranceSign.rotation.y = Math.PI;
   group.add(entranceSign);
 
-  // Each riser is parallel to Des Voeux Road. The right edge runs squarely towards the lobby while the HSBC-side
-  // left edge tapers inwards, so the plan is a right-triangle-like flight rather than a rotated rectangular strip.
+  // Every riser is parallel to Des Voeux Road. Both straight side boundaries are evaluated independently at each
+  // height: the full road-facing base contracts to the left-hand door, making the flight itself triangular in plan.
   const stairMaterial = new THREE.MeshStandardMaterial({ color: 0xb7afa5, roughness: 0.82, metalness: 0.02 });
   const stairPoint = (u, v, y = 0) => ({ ...scbStairRoadToLocal(u, v), y });
   const stairVector = (u, v, y) => {
     const point = stairPoint(u, v, y);
     return new THREE.Vector3(point.x, point.y, point.z);
   };
-  const stairEdgeU = (side, t) => side === 1 ? scbStairEdgesAt(t).left : SCB_STAIR_RIGHT_U;
-  const stairs = [];
-  for (let i = 0; i < SCB_STAIR_COUNT; i++) {
-    const t = (i + 0.5) / SCB_STAIR_COUNT;
+  const stairEdgeU = (side, t) => {
     const edges = scbStairEdgesAt(t);
+    return side === 1 ? edges.left : edges.right;
+  };
+  // Each tread is a trapezoidal prism, not a shortened rectangular box sampled at its centre. Its near and far
+  // edges lie exactly on the two converging boundaries, so tread 1 is full-width and tread 30 ends at the door width.
+  const stairPositions = [];
+  const stairTriangles = [
+    4, 6, 5, 5, 6, 7, // top
+    0, 1, 2, 1, 3, 2, // bottom
+    0, 4, 1, 1, 4, 5, // near riser
+    2, 3, 6, 3, 7, 6, // far riser
+    0, 2, 4, 2, 6, 4, // right diagonal side
+    1, 5, 3, 3, 5, 7  // left diagonal side
+  ];
+  for (let i = 0; i < SCB_STAIR_COUNT; i++) {
+    const nearV = i * SCB_STAIR_TREAD, farV = (i + 1) * SCB_STAIR_TREAD;
+    const near = scbStairEdgesAt(i / SCB_STAIR_COUNT);
+    const far = scbStairEdgesAt((i + 1) / SCB_STAIR_COUNT);
     const top = (i + 1) * SCB_STAIR_RISE;
-    stairs.push({
-      ...stairPoint((edges.left + edges.right) * 0.5, (i + 0.5) * SCB_STAIR_TREAD, top * 0.5),
-      sx: edges.left - edges.right, sy: top, sz: SCB_STAIR_TREAD + 0.012,
-      heading: SCB_STAIR_ROAD_HEADING
-    });
-  }
-  addInstances(group, unitBox, stairMaterial, stairs, 'SCBDesVoeuxRoadEntranceSteps');
-  const landings = [
-    {
-      ...stairPoint((SCB_STAIR_LEFT_TOP_U + SCB_STAIR_RIGHT_U) * 0.5,
-        SCB_STAIR_RUN + SCB_STAIR_TOP_LANDING_DEPTH * 0.5, SCB_ENTRANCE_BASE_Y * 0.5),
-      sx: SCB_STAIR_TOP_WIDTH, sy: SCB_ENTRANCE_BASE_Y, sz: SCB_STAIR_TOP_LANDING_DEPTH + 0.02,
-      heading: SCB_STAIR_ROAD_HEADING
-    },
-    {
-      x: SCB_ENTRANCE_LANDING.x, y: SCB_ENTRANCE_BASE_Y * 0.5, z: SCB_ENTRANCE_LANDING.z,
-      sx: SCB_ENTRANCE_LANDING.w, sy: SCB_ENTRANCE_BASE_Y, sz: SCB_ENTRANCE_LANDING.d
+    const corners = [
+      stairPoint(near.right, nearV, 0), stairPoint(near.left, nearV, 0),
+      stairPoint(far.right, farV, 0), stairPoint(far.left, farV, 0),
+      stairPoint(near.right, nearV, top), stairPoint(near.left, nearV, top),
+      stairPoint(far.right, farV, top), stairPoint(far.left, farV, top)
+    ];
+    for (const corner of stairTriangles) {
+      const point = corners[corner];
+      stairPositions.push(point.x, point.y, point.z);
     }
-  ];
+  }
+  const stairGeometry = new THREE.BufferGeometry();
+  stairGeometry.setAttribute('position', new THREE.Float32BufferAttribute(stairPositions, 3));
+  stairGeometry.computeVertexNormals();
+  stairGeometry.computeBoundingBox();
+  stairGeometry.computeBoundingSphere();
+  const stairMesh = new THREE.Mesh(stairGeometry, stairMaterial);
+  stairMesh.name = 'SCBDesVoeuxRoadEntranceSteps';
+  stairMesh.castShadow = stairMesh.receiveShadow = true;
+  stairMesh.userData.stepCount = SCB_STAIR_COUNT;
+  group.add(stairMesh);
+  // Only the left-hand door receives a small raised landing. No full-facade platform or triangular filler is added.
+  const landings = [{
+    ...stairPoint((SCB_STAIR_TOP_LEFT_U + SCB_STAIR_TOP_RIGHT_U) * 0.5,
+      SCB_STAIR_RUN + SCB_STAIR_TOP_LANDING_DEPTH * 0.5, SCB_ENTRANCE_BASE_Y * 0.5),
+    sx: SCB_STAIR_TOP_WIDTH, sy: SCB_ENTRANCE_BASE_Y, sz: SCB_STAIR_TOP_LANDING_DEPTH,
+    heading: SCB_STAIR_ROAD_HEADING
+  }];
   addInstances(group, unitBox, stairMaterial, landings, 'SCBEntranceRaisedLandings');
-
-  // The road-aligned top landing meets the 35-degree facade through a real triangular stone platform. Its diagonal
-  // edge is exactly the outer edge of SCB_ENTRANCE_LANDING, so neither platform covers the thirty treads or leaves a gap.
-  const connectorCorners = [
-    scbStairRoadToLocal(SCB_STAIR_RIGHT_U, SCB_STAIR_CONNECTOR_BASE_V),
-    scbStairRoadToLocal(SCB_STAIR_LEFT_TOP_U, SCB_STAIR_CONNECTOR_BASE_V),
-    scbStairRoadToLocal(SCB_STAIR_LEFT_TOP_U, SCB_STAIR_CONNECTOR_BASE_V + SCB_STAIR_CONNECTOR_RISE)
-  ];
-  const connectorShape = new THREE.Shape();
-  connectorShape.moveTo(connectorCorners[0].x, connectorCorners[0].z);
-  connectorShape.lineTo(connectorCorners[1].x, connectorCorners[1].z);
-  connectorShape.lineTo(connectorCorners[2].x, connectorCorners[2].z);
-  connectorShape.closePath();
-  const connectorGeometry = new THREE.ExtrudeGeometry(connectorShape, {
-    depth: SCB_ENTRANCE_BASE_Y, bevelEnabled: false, curveSegments: 1
-  });
-  connectorGeometry.rotateX(Math.PI / 2);
-  const connector = new THREE.Mesh(connectorGeometry, stairMaterial);
-  connector.name = 'SCBEntranceTriangularConnector';
-  connector.position.y = SCB_ENTRANCE_BASE_Y;
-  connector.castShadow = true;
-  connector.receiveShadow = true;
-  group.add(connector);
 
   const railPosts = [];
   for (const side of [-1, 1]) {
@@ -416,7 +414,7 @@ export function buildStandardCharteredBankBuilding(root) {
     x: SCB_SIGN_FIN.x, z: SCB_SIGN_FIN.z, w: SCB_SIGN_FIN.w, d: SCB_SIGN_FIN.d,
     minY: SCB_SIGN_FIN.baseY, maxY: SCB_HEIGHT
   }));
-  // Five-tread side segments follow the square right edge and the tapering HSBC-side edge independently.
+  // Five-tread side segments follow both straight, independently converging stair edges without sealing the treads.
   for (let first = 0; first < SCB_STAIR_COUNT; first += 5) {
     const last = Math.min(SCB_STAIR_COUNT, first + 5);
     for (const side of [-1, 1]) {

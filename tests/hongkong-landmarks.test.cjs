@@ -156,15 +156,16 @@ test('Standard Chartered preserves its OSM site while the tower turns 35 degrees
   assert.ok(newOutwardX > oldOutwardX, 'the entrance normal turns east towards HSBC, not along the old road normal');
 });
 
-test('Standard Chartered keeps three stepped tiers and road-parallel tapering entrance treads', () => {
+test('Standard Chartered stairs contract from the road-facing base to the left-hand door', () => {
   const {
-    SCB_TIERS, SCB_MAIN_ROOF_Y, SCB_HEIGHT, SCB_FRONT_PIER_X, SCB_FRONT_GLASS_X,
-    SCB_OCTAGON_Y, SCB_PODIUM_HEIGHT, SCB_ENTRANCE_HEIGHT, SCB_SIGN_FIN,
-    SCB_STAIR_COUNT, SCB_STAIR_RUN, SCB_STAIR_WIDTH, SCB_STAIR_TOP_WIDTH,
-    SCB_STAIR_TREAD, SCB_STAIR_RISE, SCB_STAIR_RIGHT_U, SCB_STAIR_LEFT_BOTTOM_U,
-    SCB_STAIR_LEFT_TOP_U, SCB_FRONT_Z, SCB_BASE_Y, SCB_ENTRANCE_BASE_Y,
-    SCB_STAIR_TOP_Z, SCB_STAIR_CONNECTOR_BASE_V, SCB_STAIR_CONNECTOR_RISE, SCB_FACADE_STAIR_ANGLE,
-    scbStairEdgesAt, scbStairRoadToLocal, scbLocalToWorld, scbEntranceGroundHeight, scbLocalCollider
+    SCB_TIERS, SCB_MAIN_ROOF_Y, SCB_HEIGHT, SCB_WIDTH, SCB_FRONT_PIER_X, SCB_FRONT_GLASS_X,
+    SCB_OCTAGON_Y, SCB_PODIUM_HEIGHT, SCB_ENTRANCE_HEIGHT, SCB_ENTRANCE_DOOR_WIDTH,
+    SCB_LEFT_ENTRANCE_X, SCB_SIGN_FIN, SCB_STAIR_COUNT, SCB_STAIR_RUN, SCB_STAIR_WIDTH,
+    SCB_STAIR_TOP_WIDTH, SCB_STAIR_TOP_CENTER_U, SCB_STAIR_BOTTOM_RIGHT_U, SCB_STAIR_BOTTOM_LEFT_U,
+    SCB_STAIR_TOP_RIGHT_U, SCB_STAIR_TOP_LEFT_U, SCB_STAIR_TOP_LANDING_DEPTH,
+    SCB_STAIR_TREAD, SCB_STAIR_RISE, SCB_FRONT_Z, SCB_BASE_Y, SCB_ENTRANCE_BASE_Y, SCB_FACADE_STAIR_ANGLE,
+    scbStairEdgesAt, scbStairRoadToLocal, scbStairLocalToRoad, scbLocalToWorld,
+    scbEntranceGroundHeight, scbLocalCollider
   } = scb;
   assert.equal(SCB_TIERS.length, 3);
   assert.deepEqual(SCB_TIERS.map((tier) => tier.id), ['north', 'central', 'south']);
@@ -178,13 +179,17 @@ test('Standard Chartered keeps three stepped tiers and road-parallel tapering en
     'the raised entrance glazing still clears the octagonal windows');
   assert.ok(SCB_ENTRANCE_HEIGHT > 12, 'the reference has unusually tall gold-framed entrance glazing');
   assert.equal(SCB_STAIR_COUNT, 30);
-  assert.equal(SCB_STAIR_RUN, 6);
-  assert.equal(SCB_STAIR_WIDTH, 18);
-  assert.equal(SCB_STAIR_TOP_WIDTH, 12);
-  assert.ok(SCB_STAIR_LEFT_BOTTOM_U > SCB_STAIR_LEFT_TOP_U && SCB_STAIR_LEFT_TOP_U > SCB_STAIR_RIGHT_U,
-    'the HSBC-side edge tapers while the opposite edge stays square to the road');
-  assert.deepEqual(scbStairEdgesAt(0), { right: SCB_STAIR_RIGHT_U, left: SCB_STAIR_LEFT_BOTTOM_U });
-  assert.deepEqual(scbStairEdgesAt(1), { right: SCB_STAIR_RIGHT_U, left: SCB_STAIR_LEFT_TOP_U });
+  assert.equal(SCB_STAIR_RUN, 13.5);
+  assert.equal(SCB_STAIR_TREAD, 0.45);
+  const projected = (width) => width * Math.cos(SCB_FACADE_STAIR_ANGLE);
+  assert.ok(Math.abs(SCB_STAIR_WIDTH - projected(SCB_WIDTH)) < 1e-9,
+    'the bottom tread matches the full road-facing facade projection');
+  assert.ok(Math.abs(SCB_STAIR_TOP_WIDTH - projected(SCB_ENTRANCE_DOOR_WIDTH)) < 1e-9,
+    'the top tread matches the left-hand door projection');
+  assert.ok(Math.abs(SCB_STAIR_TOP_CENTER_U - SCB_LEFT_ENTRANCE_X * Math.cos(SCB_FACADE_STAIR_ANGLE)) < 1e-9,
+    'the top tread is centered on the left-hand door, not the central door');
+  assert.deepEqual(scbStairEdgesAt(0), { right: SCB_STAIR_BOTTOM_RIGHT_U, left: SCB_STAIR_BOTTOM_LEFT_U });
+  assert.deepEqual(scbStairEdgesAt(1), { right: SCB_STAIR_TOP_RIGHT_U, left: SCB_STAIR_TOP_LEFT_U });
   assert.ok(Math.abs(SCB_STAIR_RISE * SCB_STAIR_COUNT - SCB_ENTRANCE_BASE_Y) < 1e-9);
   const origin = scbStairRoadToLocal(0, 0);
   const alongRoad = scbStairRoadToLocal(1, 0), towardsLobby = scbStairRoadToLocal(0, 1);
@@ -201,35 +206,51 @@ test('Standard Chartered keeps three stepped tiers and road-parallel tapering en
   const far = scbLocalToWorld(farLocal.x, farLocal.z);
   assert.equal(scbEntranceGroundHeight(far.x, far.z, 0.025), 0.025);
   for (let i = 0; i < SCB_STAIR_COUNT; i++) {
-    const edges = scbStairEdgesAt((i + 0.5) / SCB_STAIR_COUNT);
+    const t = (i + 0.5) / SCB_STAIR_COUNT;
+    const edges = scbStairEdgesAt(t);
+    const expectedWidth = SCB_STAIR_WIDTH + (SCB_STAIR_TOP_WIDTH - SCB_STAIR_WIDTH) * t;
+    assert.ok(Math.abs(edges.left - edges.right - expectedWidth) < 1e-9,
+      `tread ${i + 1} is shorter than the preceding road-parallel tread`);
     const local = scbStairRoadToLocal((edges.left + edges.right) * 0.5, (i + 0.5) * SCB_STAIR_TREAD);
     const point = scbLocalToWorld(local.x, local.z);
     assert.ok(Math.abs(scbEntranceGroundHeight(point.x, point.z, 0.025) - (i + 1) * SCB_STAIR_RISE) < 1e-9,
       `road-parallel tread ${i + 1} has its own exact walking height`);
+    for (const u of [edges.right - 0.02, edges.left + 0.02]) {
+      const outsideLocal = scbStairRoadToLocal(u, (i + 0.5) * SCB_STAIR_TREAD);
+      const outside = scbLocalToWorld(outsideLocal.x, outsideLocal.z);
+      assert.equal(scbEntranceGroundHeight(outside.x, outside.z, 0.025), 0.025,
+        `tread ${i + 1} has no invisible walking surface beyond either diagonal side`);
+    }
   }
-  const outsideTopLocal = scbStairRoadToLocal(8, SCB_STAIR_RUN * 0.5);
+  for (let i = 0; i <= SCB_STAIR_COUNT; i++) {
+    const edges = scbStairEdgesAt(i / SCB_STAIR_COUNT);
+    for (const u of [edges.right, edges.left]) {
+      const local = scbStairRoadToLocal(u, i * SCB_STAIR_TREAD);
+      if (Math.abs(local.x) <= SCB_WIDTH * 0.5) {
+        assert.ok(SCB_FRONT_Z - local.z > 0.7,
+          `stair boundary ${i} clears the rotated facade and its projecting stone frames`);
+      }
+    }
+  }
+  const outsideTopLocal = scbStairRoadToLocal(0, SCB_STAIR_RUN - 0.01);
   const outsideTop = scbLocalToWorld(outsideTopLocal.x, outsideTopLocal.z);
   assert.equal(scbEntranceGroundHeight(outsideTop.x, outsideTop.z, 0.025), 0.025,
     'the tapered triangle does not create an invisible rectangular walking surface');
-  const landing = scbLocalToWorld(0, SCB_FRONT_Z - 0.2);
-  assert.ok(Math.abs(scbEntranceGroundHeight(landing.x, landing.z, 0.025) - SCB_ENTRANCE_BASE_Y) < 1e-9);
-  const connectorRight = scbStairRoadToLocal(SCB_STAIR_RIGHT_U, SCB_STAIR_CONNECTOR_BASE_V);
-  const connectorLeft = scbStairRoadToLocal(
-    SCB_STAIR_LEFT_TOP_U, SCB_STAIR_CONNECTOR_BASE_V + SCB_STAIR_CONNECTOR_RISE
-  );
-  assert.ok(Math.abs(connectorRight.z - SCB_STAIR_TOP_Z) < 1e-9
-    && Math.abs(connectorLeft.z - SCB_STAIR_TOP_Z) < 1e-9,
-  'the triangular connector diagonal is exactly the rotated facade landing outer edge');
-  assert.ok(Math.abs(SCB_STAIR_CONNECTOR_RISE
-    - Math.tan(SCB_FACADE_STAIR_ANGLE) * (SCB_STAIR_LEFT_TOP_U - SCB_STAIR_RIGHT_U)) < 1e-9);
-  const connectorLocal = scbStairRoadToLocal(-3, SCB_STAIR_CONNECTOR_BASE_V + 2);
-  const connectorPoint = scbLocalToWorld(connectorLocal.x, connectorLocal.z);
-  assert.equal(scbEntranceGroundHeight(connectorPoint.x, connectorPoint.z, 0.025), SCB_ENTRANCE_BASE_Y,
-    'the rendered triangular platform has the same raised walking surface');
-  const besideConnectorLocal = scbStairRoadToLocal(4, SCB_STAIR_CONNECTOR_BASE_V + 1);
-  const besideConnector = scbLocalToWorld(besideConnectorLocal.x, besideConnectorLocal.z);
-  assert.equal(scbEntranceGroundHeight(besideConnector.x, besideConnector.z, 0.025), 0.025,
-    'the triangle does not create an invisible rectangular platform beside its diagonal');
+  const landingLocal = scbStairRoadToLocal(SCB_STAIR_TOP_CENTER_U, SCB_STAIR_RUN + 0.5);
+  const landing = scbLocalToWorld(landingLocal.x, landingLocal.z);
+  assert.equal(scbEntranceGroundHeight(landing.x, landing.z, 0.025), SCB_ENTRANCE_BASE_Y,
+    'only the small left-door landing is raised');
+  for (const dx of [-SCB_ENTRANCE_DOOR_WIDTH * 0.5, 0, SCB_ENTRANCE_DOOR_WIDTH * 0.5]) {
+    const door = scbStairLocalToRoad(SCB_LEFT_ENTRANCE_X + dx, SCB_FRONT_Z);
+    assert.ok(door.u >= SCB_STAIR_TOP_RIGHT_U - 1e-9 && door.u <= SCB_STAIR_TOP_LEFT_U + 1e-9);
+    assert.ok(door.v >= SCB_STAIR_RUN && door.v <= SCB_STAIR_RUN + SCB_STAIR_TOP_LANDING_DEPTH,
+      'the complete angled left-door width meets the top landing');
+  }
+  const centralDoor = scbStairLocalToRoad(0, SCB_FRONT_Z);
+  const centralLandingLocal = scbStairRoadToLocal(centralDoor.u, SCB_STAIR_RUN + 0.5);
+  const centralLanding = scbLocalToWorld(centralLandingLocal.x, centralLandingLocal.z);
+  assert.equal(scbEntranceGroundHeight(centralLanding.x, centralLanding.z, 0.025), 0.025,
+    'there is no full-facade or triangular filler platform');
   const collider = scbLocalCollider({ x: 0, z: 0, w: 20, d: 20, minY: SCB_BASE_Y, maxY: SCB_HEIGHT });
   assert.ok(collider.obb && collider.maxY === SCB_HEIGHT);
 });
@@ -245,7 +266,7 @@ test('the hand-built Standard Chartered model includes the photographed identifi
   assert.match(source, /SCBTallEntranceGlazing/);
   assert.match(source, /SCBDesVoeuxRoadEntranceSteps/);
   assert.match(source, /SCBEntranceRaisedLandings/);
-  assert.match(source, /SCBEntranceTriangularConnector/);
+  assert.doesNotMatch(source, /SCBEntranceTriangularConnector/);
   assert.match(source, /SCB_BUILDING_HEADING/);
   assert.match(source, /SCBEntranceStairHandrail/);
   assert.match(source, /SCBEntranceStairRailPosts/);

@@ -74,48 +74,58 @@ export const SCB_FRONT_GLASS_X = Object.freeze([
 ]);
 export const SCB_OCTAGON_Y = 20.5;
 export const SCB_ENTRANCE_HEIGHT = 14.4;
+export const SCB_ENTRANCE_DOOR_WIDTH = 4.5;
+// With the camera outside local -z looking towards +z, the left-hand entrance is the positive-local-x door.
+export const SCB_LEFT_ENTRANCE_X = SCB_FRONT_PIER_X[SCB_FRONT_PIER_X.length - 1];
 export const SCB_SIGN_FIN = Object.freeze({
   x: 0, z: SCB_FRONT_Z + 3, w: 11.8, d: 5.4,
   baseY: SCB_MAIN_ROOF_Y, topY: SCB_HEIGHT
 });
 
-// The treads keep their own Des Voeux Road frame after the tower turns towards HSBC. These dimensions are deliberately
-// separate from the site OBB: the road and the photographed architectural facade are not parallel.
+// The flight itself, not a platform added afterwards, has the right-triangle-like plan requested by the user. Its road
+// frame stays independent of the 35-degree architectural frame. The bottom matches the facade's road-facing projected
+// width; every higher tread contracts linearly until its top matches the left-hand door's projected width.
 export const SCB_STAIR_COUNT = 30;
-export const SCB_STAIR_RUN = 6;
+export const SCB_STAIR_RUN = 13.5;
 export const SCB_STAIR_TREAD = SCB_STAIR_RUN / SCB_STAIR_COUNT;
 export const SCB_STAIR_RISE = SCB_ENTRANCE_BASE_Y / SCB_STAIR_COUNT;
-export const SCB_STAIR_RIGHT_U = -9;
-export const SCB_STAIR_LEFT_BOTTOM_U = 9;
-export const SCB_STAIR_LEFT_TOP_U = 3;
-export const SCB_STAIR_WIDTH = SCB_STAIR_LEFT_BOTTOM_U - SCB_STAIR_RIGHT_U;
-export const SCB_STAIR_TOP_WIDTH = SCB_STAIR_LEFT_TOP_U - SCB_STAIR_RIGHT_U;
-export const SCB_STAIR_TOP_LANDING_DEPTH = 1.2;
-export const SCB_STAIR_TOP_Z = SCB_FRONT_Z - SCB_STAIR_TOP_LANDING_DEPTH;
-
-// Turn the architectural frame exactly 35 degrees towards HSBC from the old site frame. The road and that old frame
-// differ by about 0.56 degrees, so all entrance joins below use the measured road vector rather than pretending they
-// are identical. The tower's square landing corner is anchored to the road landing; the rest of the facade swings west.
 export const SCB_HSBC_FACING_ANGLE = 35 * Math.PI / 180;
 export const SCB_BUILDING_HEADING = SCB_SITE.ry - SCB_HSBC_FACING_ANGLE;
 const siteFrameCs = Math.cos(SCB_SITE.ry), siteFrameSn = Math.sin(SCB_SITE.ry);
 const modelFrameCs = Math.cos(SCB_BUILDING_HEADING), modelFrameSn = Math.sin(SCB_BUILDING_HEADING);
 const roadTangentLength = Math.hypot(18, 5.2);
 const roadWorldX = 18 / roadTangentLength, roadWorldZ = 5.2 / roadTangentLength;
-const oldStairBottomZ = SCB_STAIR_TOP_Z - SCB_STAIR_RUN;
+const roadLocalX = roadWorldX * modelFrameCs - roadWorldZ * modelFrameSn;
+const roadLocalZ = roadWorldX * modelFrameSn + roadWorldZ * modelFrameCs;
+export const SCB_STAIR_ROAD_HEADING = Math.atan2(-roadLocalZ, roadLocalX);
+export const SCB_FACADE_STAIR_ANGLE = Math.abs(SCB_STAIR_ROAD_HEADING);
+const facingCos = Math.cos(SCB_FACADE_STAIR_ANGLE), facingSin = Math.sin(SCB_FACADE_STAIR_ANGLE);
+export const SCB_STAIR_WIDTH = SCB_WIDTH * facingCos;
+export const SCB_STAIR_TOP_WIDTH = SCB_ENTRANCE_DOOR_WIDTH * facingCos;
+export const SCB_STAIR_TOP_CENTER_U = SCB_LEFT_ENTRANCE_X * facingCos;
+export const SCB_STAIR_BOTTOM_RIGHT_U = -SCB_STAIR_WIDTH * 0.5;
+export const SCB_STAIR_BOTTOM_LEFT_U = SCB_STAIR_WIDTH * 0.5;
+export const SCB_STAIR_TOP_RIGHT_U = SCB_STAIR_TOP_CENTER_U - SCB_STAIR_TOP_WIDTH * 0.5;
+export const SCB_STAIR_TOP_LEFT_U = SCB_STAIR_TOP_CENTER_U + SCB_STAIR_TOP_WIDTH * 0.5;
+export const SCB_STAIR_DOOR_CLEARANCE = 1;
+export const SCB_STAIR_TOP_LANDING_DEPTH = SCB_ENTRANCE_DOOR_WIDTH * facingSin
+  + SCB_STAIR_DOOR_CLEARANCE + 0.25;
+
+// Keep the established kerbside origin, but position the tower from the required left-door / top-tread relationship.
+// This replaces the old connector-corner anchor, which produced a large flat triangle instead of triangular stairs.
+const oldStairBottomZ = SCB_FRONT_Z - 7.2;
 export const SCB_STAIR_BOTTOM_WORLD = Object.freeze({
   x: SCB_SITE.x + siteFrameSn * oldStairBottomZ,
   z: SCB_SITE.z + siteFrameCs * oldStairBottomZ
 });
-export const SCB_STAIR_CONNECTOR_BASE_V = SCB_STAIR_RUN + SCB_STAIR_TOP_LANDING_DEPTH;
-export const SCB_STAIR_CONNECTOR_CORNER_X = -SCB_WIDTH * 0.5 + 1.2;
-const connectorCornerWorld = {
-  x: SCB_STAIR_BOTTOM_WORLD.x + roadWorldX * SCB_STAIR_RIGHT_U - roadWorldZ * SCB_STAIR_CONNECTOR_BASE_V,
-  z: SCB_STAIR_BOTTOM_WORLD.z + roadWorldZ * SCB_STAIR_RIGHT_U + roadWorldX * SCB_STAIR_CONNECTOR_BASE_V
+const doorCenterV = SCB_STAIR_RUN + SCB_ENTRANCE_DOOR_WIDTH * facingSin * 0.5 + SCB_STAIR_DOOR_CLEARANCE;
+const leftDoorWorld = {
+  x: SCB_STAIR_BOTTOM_WORLD.x + roadWorldX * SCB_STAIR_TOP_CENTER_U - roadWorldZ * doorCenterV,
+  z: SCB_STAIR_BOTTOM_WORLD.z + roadWorldZ * SCB_STAIR_TOP_CENTER_U + roadWorldX * doorCenterV
 };
 export const SCB_MODEL_ORIGIN = Object.freeze({
-  x: connectorCornerWorld.x - modelFrameCs * SCB_STAIR_CONNECTOR_CORNER_X - modelFrameSn * SCB_STAIR_TOP_Z,
-  z: connectorCornerWorld.z + modelFrameSn * SCB_STAIR_CONNECTOR_CORNER_X - modelFrameCs * SCB_STAIR_TOP_Z
+  x: leftDoorWorld.x - modelFrameCs * SCB_LEFT_ENTRANCE_X - modelFrameSn * SCB_FRONT_Z,
+  z: leftDoorWorld.z + modelFrameSn * SCB_LEFT_ENTRANCE_X - modelFrameCs * SCB_FRONT_Z
 });
 export const SCB_FRONT_CENTER = Object.freeze({
   x: SCB_MODEL_ORIGIN.x + modelFrameSn * SCB_FRONT_Z,
@@ -127,32 +137,19 @@ export const SCB_MAP_SITE = Object.freeze({
   z: SCB_MODEL_ORIGIN.z,
   ry: SCB_BUILDING_HEADING
 });
-
-// Preserve the road-side stair origin in world space, then express it in the rotated building frame. The road tangent
-// is measured from adjoining OSM way 7786; rotating the architectural group cannot rotate the street flight with it.
-const roadLocalX = roadWorldX * modelFrameCs - roadWorldZ * modelFrameSn;
-const roadLocalZ = roadWorldX * modelFrameSn + roadWorldZ * modelFrameCs;
-export const SCB_STAIR_ROAD_HEADING = Math.atan2(-roadLocalZ, roadLocalX);
-export const SCB_FACADE_STAIR_ANGLE = Math.abs(SCB_STAIR_ROAD_HEADING);
-const facingTan = Math.tan(SCB_FACADE_STAIR_ANGLE);
 const stairBottomDX = SCB_STAIR_BOTTOM_WORLD.x - SCB_MODEL_ORIGIN.x;
 const stairBottomDZ = SCB_STAIR_BOTTOM_WORLD.z - SCB_MODEL_ORIGIN.z;
 export const SCB_STAIR_BOTTOM = Object.freeze({
   x: stairBottomDX * modelFrameCs - stairBottomDZ * modelFrameSn,
   z: stairBottomDX * modelFrameSn + stairBottomDZ * modelFrameCs
 });
-export const SCB_STAIR_CONNECTOR_RISE = facingTan * (SCB_STAIR_LEFT_TOP_U - SCB_STAIR_RIGHT_U);
-export const SCB_ENTRANCE_LANDING = Object.freeze({
-  x: 0,
-  z: (SCB_STAIR_TOP_Z + SCB_FRONT_Z + 0.05) * 0.5,
-  w: SCB_WIDTH + 1.1,
-  d: SCB_FRONT_Z + 0.05 - SCB_STAIR_TOP_Z
-});
 
 export function scbStairEdgesAt(t) {
+  if (t === 0) return { right: SCB_STAIR_BOTTOM_RIGHT_U, left: SCB_STAIR_BOTTOM_LEFT_U };
+  if (t === 1) return { right: SCB_STAIR_TOP_RIGHT_U, left: SCB_STAIR_TOP_LEFT_U };
   return {
-    right: SCB_STAIR_RIGHT_U,
-    left: SCB_STAIR_LEFT_BOTTOM_U + (SCB_STAIR_LEFT_TOP_U - SCB_STAIR_LEFT_BOTTOM_U) * t
+    right: SCB_STAIR_BOTTOM_RIGHT_U + (SCB_STAIR_TOP_RIGHT_U - SCB_STAIR_BOTTOM_RIGHT_U) * t,
+    left: SCB_STAIR_BOTTOM_LEFT_U + (SCB_STAIR_TOP_LEFT_U - SCB_STAIR_BOTTOM_LEFT_U) * t
   };
 }
 
@@ -188,28 +185,19 @@ export function scbSiteWorldToLocal(x, z) {
   return { x: dx * siteFrameCs - dz * siteFrameSn, z: dx * siteFrameSn + dz * siteFrameCs };
 }
 
-// Ground-height field for exactly the same road-aligned treads, road landing, triangular connector and facade landing
-// as the rendered meshes. Sampling each tread climbs thirty discrete risers; neither diagonal edge creates an
-// invisible rectangular walking surface.
+// Ground-height field for exactly the same tapering tread footprints and small left-door landing as the rendered
+// meshes. There is no rectangular or triangular filler platform hidden outside those footprints.
 export function scbEntranceGroundHeight(x, z, ground = 0) {
   const local = scbWorldToLocal(x, z);
   const road = scbStairLocalToRoad(local.x, local.z);
   let height = ground;
   if (road.v >= 0 && road.v < SCB_STAIR_RUN) {
     const step = Math.min(SCB_STAIR_COUNT - 1, Math.floor(road.v / SCB_STAIR_TREAD));
-    const edges = scbStairEdgesAt((step + 0.5) / SCB_STAIR_COUNT);
+    const edges = scbStairEdgesAt(road.v / SCB_STAIR_RUN);
     if (road.u >= edges.right && road.u <= edges.left) height = Math.max(height, (step + 1) * SCB_STAIR_RISE);
   }
-  if (road.v >= SCB_STAIR_RUN && road.v <= SCB_STAIR_CONNECTOR_BASE_V
-    && road.u >= SCB_STAIR_RIGHT_U && road.u <= SCB_STAIR_LEFT_TOP_U) {
-    height = Math.max(height, SCB_ENTRANCE_BASE_Y);
-  }
-  if (road.u >= SCB_STAIR_RIGHT_U && road.u <= SCB_STAIR_LEFT_TOP_U && road.v >= SCB_STAIR_CONNECTOR_BASE_V
-    && road.v <= SCB_STAIR_CONNECTOR_BASE_V + facingTan * (road.u - SCB_STAIR_RIGHT_U)) {
-    height = Math.max(height, SCB_ENTRANCE_BASE_Y);
-  }
-  if (Math.abs(local.x - SCB_ENTRANCE_LANDING.x) <= SCB_ENTRANCE_LANDING.w * 0.5
-    && Math.abs(local.z - SCB_ENTRANCE_LANDING.z) <= SCB_ENTRANCE_LANDING.d * 0.5) {
+  if (road.v >= SCB_STAIR_RUN && road.v <= SCB_STAIR_RUN + SCB_STAIR_TOP_LANDING_DEPTH
+    && road.u >= SCB_STAIR_TOP_RIGHT_U && road.u <= SCB_STAIR_TOP_LEFT_U) {
     height = Math.max(height, SCB_ENTRANCE_BASE_Y);
   }
   return height;
