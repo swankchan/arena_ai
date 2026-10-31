@@ -2,7 +2,7 @@ import * as THREE from 'three/webgpu';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 import { GEO } from '../../hk-geodata.js';
 import {
-  createRoadSurfaceMaterial,
+  createHongKongRoadSurfaceMaterial,
   createSidewalkMaterial,
   createParkLawnMaterial,
   createCurtainWallMaterial,
@@ -350,7 +350,7 @@ export function buildDetailedHongKongWorld(scene, { setStatus = () => {} } = {})
   root.add(water);
 
   const landGeometry = mergeGeometries(GEO.land.map((ring) => shapeGeometry(ring, 0)), false);
-  const land = new THREE.Mesh(landGeometry, createRoadSurfaceMaterial());
+  const land = new THREE.Mesh(landGeometry, createHongKongRoadSurfaceMaterial());
   land.receiveShadow = true;
   land.name = 'HongKongLand';
   root.add(land);

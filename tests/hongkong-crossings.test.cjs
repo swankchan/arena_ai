@@ -113,11 +113,15 @@ test('tunnel lighting combines continuous fixtures with a camera-following light
   const world = fs.readFileSync(path.join(__dirname, '../js/cities/hongkong/crossings-world.js'), 'utf8');
   assert.match(world, /buildHongKongTunnelLighting\(root, CROSSING_ROUTES\)/);
   assert.match(world, /tunnelLighting\.update\(cameraSystem\)/);
-  assert.match(world, /createRoadSurfaceMaterial\(\{ dry: true \}\)/);
+  assert.match(world, /createHongKongRoadSurfaceMaterial\(\{ dry: true, structure: 'tunnel' \}\)/);
+  assert.match(world, /createHongKongRoadSurfaceMaterial\(\{ structure: 'bridge' \}\)/);
   assert.match(world, /addTopQuad\(tube \? tunnelRoad : road, a, b, width\)/);
   assert.match(world, /dry-tunnel-road/);
   const materials = fs.readFileSync(path.join(__dirname, '../js/tsl-materials.js'), 'utf8');
   assert.match(materials, /function createRoadSurfaceMaterial\(\{ dry = false \} = \{\}\)/);
+  assert.match(materials, /function createHongKongRoadSurfaceMaterial/);
+  assert.match(materials, /roadPuddleField\(positionWorld\.x, positionWorld\.z, !hongKong\)/);
+  assert.match(materials, /structure === 'street'/);
   assert.match(materials, /const wet = dry \? vec3\(0\.0\) : roadWetMasks\(puddleField\)/);
 });
 

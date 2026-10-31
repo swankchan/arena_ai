@@ -126,6 +126,11 @@ test('unified simple mode adds only the authored landmarks and keeps generic bui
   assert.match(source, /landmarks: hsbc\.landmarks\.length \+ standardChartered\.landmarks\.length/);
   assert.match(source, /buildings: 0/);
   assert.match(source, /landmarks: \[\.\.\.hsbc\.landmarks, \.\.\.standardChartered\.landmarks\]/);
+  assert.match(source, /createHongKongTrafficAids\(scene, \{ getGroundHeight, surfaceY: FULL_WORLD_HEIGHT\.road \}\)/);
+  assert.match(source, /\.\.\.trafficAids\.stats/);
+  assert.doesNotMatch(source, /trafficAids: null/);
+  const pack = fs.readFileSync(path.join(root, 'js/cities/hongkong/index.js'), 'utf8');
+  assert.match(pack, /trafficAids: world\.trafficAids/);
 });
 
 test('Standard Chartered preserves its OSM site while the tower turns 35 degrees towards HSBC', () => {

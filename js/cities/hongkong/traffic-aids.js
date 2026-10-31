@@ -192,7 +192,7 @@ function createCrossingFurniture(group, aids, getGroundHeight) {
   };
 }
 
-export function createHongKongTrafficAids(root, { getGroundHeight } = {}) {
+export function createHongKongTrafficAids(root, { getGroundHeight, surfaceY = 0 } = {}) {
   const aids = GEO.trafficAids;
   const group = new THREE.Group();
   group.name = 'HongKongSurveyedTrafficAids';
@@ -210,13 +210,14 @@ export function createHongKongTrafficAids(root, { getGroundHeight } = {}) {
   geometry.computeBoundingSphere();
   const paintMesh = new THREE.Mesh(geometry, createRoadPaintMaterial());
   paintMesh.name = 'HongKongSurveyedRoadPaint';
+  paintMesh.position.y = surfaceY;
   paintMesh.receiveShadow = true;
   paintMesh.renderOrder = -1;
   group.add(paintMesh);
 
   const signals = createSignals(group, aids, getGroundHeight);
   const crossing = createCrossingFurniture(group, aids, getGroundHeight);
-  const stats = { ...data.stats, ...signals.stats, ...crossing.stats };
+  const stats = { ...data.stats, ...signals.stats, ...crossing.stats, paintBaseY: surfaceY };
   group.userData.trafficAids = {
     source: aids.source,
     bbox: aids.bbox,

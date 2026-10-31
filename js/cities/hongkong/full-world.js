@@ -3,7 +3,7 @@ import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 import { HK_FULL_MAP } from '../../hk-full-map-data.js';
 import { HK_FULL_ROADS } from '../../hk-full-roads-data.js';
 import { GEO } from '../../hk-geodata.js';
-import { createRoadSurfaceMaterial } from '../../tsl-materials.js';
+import { createHongKongRoadSurfaceMaterial } from '../../tsl-materials.js';
 import { createHongKongHarbourWaterMaterial } from './harbour-water.js';
 import { buildTerritoryCoastColliders } from './coast-colliders.js';
 import { CROSSING_FLAT_EXCLUSION_IDS, CROSSING_ROUTES } from './crossings.js';
@@ -144,7 +144,7 @@ function createRoadChunks(root, includeCore) {
       if (addRoadJoin(chunk.positions, chunk.normals, flat[i - 2], flat[i - 1], x, z, flat[i + 2], flat[i + 3], width)) joins++;
     }
   }
-  const material = createRoadSurfaceMaterial();
+  const material = createHongKongRoadSurfaceMaterial();
   let meshes = 0;
   for (const [key, chunk] of chunks) {
     if (!chunk.positions.length) continue;

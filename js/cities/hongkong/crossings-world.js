@@ -1,5 +1,5 @@
 import * as THREE from 'three/webgpu';
-import { createRoadSurfaceMaterial } from '../../tsl-materials.js';
+import { createHongKongRoadSurfaceMaterial } from '../../tsl-materials.js';
 import { CROSSING_ROUTES } from './crossings.js';
 import { isTerritoryLand } from './full-meta.js';
 import { buildTsingMaArchitecture } from './tsing-ma-world.js';
@@ -99,8 +99,8 @@ function addPortal(group, point, neighbour, material) {
 
 export function buildHongKongCrossings(root) {
   const colliders = [];
-  const roadMaterial = createRoadSurfaceMaterial();
-  const tunnelRoadMaterial = createRoadSurfaceMaterial({ dry: true });
+  const roadMaterial = createHongKongRoadSurfaceMaterial({ structure: 'bridge' });
+  const tunnelRoadMaterial = createHongKongRoadSurfaceMaterial({ dry: true, structure: 'tunnel' });
   const deckMaterial = new THREE.MeshStandardMaterial({ color: 0x60666a, roughness: 0.9, side: THREE.DoubleSide });
   const railMaterial = new THREE.MeshStandardMaterial({ color: 0x9aa1a4, roughness: 0.72, metalness: 0.15, side: THREE.DoubleSide });
   const tingKauRailMaterial = new THREE.MeshStandardMaterial({ color: 0x34769b, roughness: 0.68, metalness: 0.2, side: THREE.DoubleSide });

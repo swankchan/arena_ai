@@ -8,6 +8,7 @@ import { buildHsbcHeadquarters } from './hsbc-headquarters-world.js';
 import { isHsbcPlazaPoint } from './hsbc-headquarters-architecture.js';
 import { buildStandardCharteredBankBuilding } from './standard-chartered-world.js';
 import { scbEntranceGroundHeight } from './standard-chartered-architecture.js';
+import { createHongKongTrafficAids } from './traffic-aids.js';
 
 const WATER_LEVEL = -2.2;
 
@@ -24,6 +25,8 @@ export function buildSimpleHongKongWorld(scene, { setStatus = () => {} } = {}) {
   const crossings = buildHongKongCrossings(scene);
   setStatus('Placing 144,995 lamp posts across Hong Kong...');
   const streetLighting = createHongKongStreetLighting(scene);
+  setStatus('Restoring surveyed Hong Kong road markings and crossings...');
+  const trafficAids = createHongKongTrafficAids(scene, { getGroundHeight, surfaceY: FULL_WORLD_HEIGHT.road });
 
   const isPointOnLand = (x, z) => isTerritoryLand(x, z) || isTerritoryRoad(x, z, 0.35);
   const isPointOnSidewalk = () => false;
@@ -42,6 +45,7 @@ export function buildSimpleHongKongWorld(scene, { setStatus = () => {} } = {}) {
     ...full.stats,
     ...crossings.stats,
     ...streetLighting.stats,
+    ...trafficAids.stats,
     ...hsbc.stats,
     ...standardChartered.stats,
     presentation: 'unified-simple',
@@ -76,6 +80,6 @@ export function buildSimpleHongKongWorld(scene, { setStatus = () => {} } = {}) {
     standardChartered,
     treeField: null,
     landmarks: [...hsbc.landmarks, ...standardChartered.landmarks],
-    trafficAids: null
+    trafficAids
   };
 }

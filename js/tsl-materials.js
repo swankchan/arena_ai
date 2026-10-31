@@ -1643,11 +1643,14 @@ function createTreeGrateMaterial() {
 }
 
 // Post-rain puddle field (organic standing rainwater pools) shared by every road surface channel
-function roadPuddleField(wx, wz) {
+function roadPuddleField(wx, wz, includeSpawnPool = true) {
   const nMacro = noise2D(vec2(wx.mul(0.095), wz.mul(0.075)));
   const nMid = noise2D(vec2(wx.mul(0.25).add(19.4), wz.mul(0.22).add(11.8)));
   const nDetail = noise2D(vec2(wx.mul(0.68).sub(7.3), wz.mul(0.68).add(29.1)));
-  const spawnPool = smoothstep(4.2, 1.4, length(vec2(wx.sub(1.6), wz.sub(122.8)))).mul(0.10);
+  // This is a Manhattan spawn detail only; it must not follow the shared shader into Hong Kong.
+  const spawnPool = includeSpawnPool
+    ? smoothstep(4.2, 1.4, length(vec2(wx.sub(1.6), wz.sub(122.8)))).mul(0.10)
+    : float(0.0);
   return nMacro.mul(0.52).add(nMid.mul(0.34)).add(nDetail.mul(0.14)).add(spawnPool);
 }
 
@@ -1667,25 +1670,34 @@ function roadWetMasks(field, drainage = 0.0) {
 }
 
 /**
- * Unified Manhattan Roadway Asphalt, Footprint-Filtered Aggregate `bumpNormal`, Scattered Manholes
- * & Post-Rain Wetness (upgraded with techniques from CityGenerator.js `createRoadMaterial`).
+ * Shared Manhattan / Hong Kong roadway asphalt, footprint-filtered aggregate `bumpNormal`, utility covers
+ * & post-rain wetness. Each city has its own palette and placement profile; Manhattan remains the default.
  * cityUniforms.uRoadWetness drives damp stains, a glossy wet film & standing puddles (roadWetMasks): bone dry at
  * midday, a few small pools at golden hour, slick & mirroring the lights at night. Water's Fresnel rides on metalness
  * (as for the rivers), so puddles reflect the street through SSR at grazing angles yet only darken seen from above.
  * Lane markings are separate geometry built from the road network (js/road-paint.js).
  */
 function createRoadSurfaceMaterial({ dry = false } = {}) {
+  return createRoadSurfaceMaterialProfile({ dry });
+}
+
+// Hong Kong keeps the same aggregate/wetness technology without inheriting Manhattan-only placement or neon.
+function createHongKongRoadSurfaceMaterial({ dry = false, structure = 'street' } = {}) {
+  return createRoadSurfaceMaterialProfile({ dry, hongKong: true, structure });
+}
+
+function createRoadSurfaceMaterialProfile({ dry = false, hongKong = false, structure = 'street' } = {}) {
   const mat = new THREE.MeshStandardNodeMaterial({
     metalness: 0.24,
     roughness: 0.48
   });
 
-  const cAsphaltDark = color(0x2b2e33);
-  const cAsphaltLight = color(0x464a51);
-  const cManhole = color(0x4a433c);
+  const cAsphaltDark = color(hongKong ? 0x1d2630 : 0x2b2e33);
+  const cAsphaltLight = color(hongKong ? 0x35414c : 0x464a51);
+  const cManhole = color(hongKong ? 0x3d4142 : 0x4a433c);
 
   // Puddle field & wetness masks shared by every channel below (each node is generated once per fragment)
-  const puddleField = roadPuddleField(positionWorld.x, positionWorld.z);
+  const puddleField = roadPuddleField(positionWorld.x, positionWorld.z, !hongKong);
   // Enclosed carriageways use the same aggregate/asphalt detail without the city's rain/puddle response.
   const wet = dry ? vec3(0.0) : roadWetMasks(puddleField);
   const damp = wet.x;
@@ -1719,11 +1731,16 @@ function createRoadSurfaceMaterial({ dry = false } = {}) {
       .mul(float(1.0).sub(oilyStain.mul(0.32)))
       .mul(float(1.0).sub(tarSeam));
 
-    // Circular cast-iron ConEd / NYC Sewer manhole covers scattered over the roadway (one 14 m cell in three)
-    const mhCell = floor(vec2(wx, wz).div(14.0));
-    const mhCentre = mhCell.add(vec2(hash2D(mhCell.add(13.7)), hash2D(mhCell.add(29.1))).mul(0.6).add(0.2)).mul(14.0);
+    // Street utility covers only. Bridge decks and enclosed tunnels must not inherit random street furniture.
+    // Hong Kong uses a wider, less frequent grid; Manhattan keeps its original 14 m ConEd / sewer placement.
+    const mhSpacing = hongKong ? 22.0 : 14.0;
+    const mhCell = floor(vec2(wx, wz).div(mhSpacing));
+    const mhCentre = mhCell.add(vec2(hash2D(mhCell.add(13.7)), hash2D(mhCell.add(29.1))).mul(0.6).add(0.2)).mul(mhSpacing);
     const mhDist = length(vec2(wx, wz).sub(mhCentre));
-    const isManhole = float(1.0).sub(smoothstep(0.52, 0.60, mhDist)).mul(step(0.66, hash2D(mhCell))).mul(detail);
+    const isManhole = structure === 'street'
+      ? float(1.0).sub(smoothstep(hongKong ? 0.46 : 0.52, hongKong ? 0.54 : 0.60, mhDist))
+        .mul(step(hongKong ? 0.78 : 0.66, hash2D(mhCell))).mul(detail)
+      : float(0.0);
     const mhRings = sin(mhDist.mul(36.0)).mul(0.15).add(0.85);
 
     // Water filling the pores darkens the surface: damp stains & pools most, the overall wet film a little
@@ -1761,10 +1778,11 @@ function createRoadSurfaceMaterial({ dry = false } = {}) {
 
     const skyMirror = mix(cityUniforms.uSkyHorizonColor, cityUniforms.uSkyTopColor, 0.40).mul(0.10);
 
-    const tsDist = clamp(float(1.0).sub(length(vec2(wx.add(212.0), wz.add(45.0))).div(145.0)), 0.0, 1.0);
+    const tsDist = hongKong ? float(0.0)
+      : clamp(float(1.0).sub(length(vec2(wx.add(212.0), wz.add(45.0))).div(145.0)), 0.0, 1.0);
     const neonPatch = noise2D(vec2(wx.mul(0.15), wz.mul(0.15)));
     const neonCol = mix(color(0xff2a85), color(0x2ad4ff), neonPatch).mul(0.32);
-    const reflectCol = mix(skyMirror, neonCol, tsDist.mul(0.65));
+    const reflectCol = hongKong ? skyMirror : mix(skyMirror, neonCol, tsDist.mul(0.65));
 
     return reflectCol.mul(max(puddle, film.mul(0.35))).mul(roadFresnel).mul(cityUniforms.uInteriorGlow).mul(0.07);
   })();
@@ -3048,6 +3066,7 @@ export {
   createMarbleAshlarMaterial,
   createTreeGrateMaterial,
   createRoadSurfaceMaterial,
+  createHongKongRoadSurfaceMaterial,
   createRoadPaintMaterial,
   createSidewalkMaterial,
   createCurbMaterial,

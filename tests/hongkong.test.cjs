@@ -756,6 +756,8 @@ test('Hong Kong replaces procedural lane dashes with surveyed aids and never inv
   assert.doesNotMatch(world, /road\.width < 10/);
   assert.doesNotMatch(world, /BoxGeometry\(0\.22, 0\.018, 3\.1\)/);
   assert.match(aids, /HongKongSurveyedRoadPaint/);
+  assert.match(aids, /paintMesh\.position\.y = surfaceY/);
+  assert.match(aids, /paintBaseY: surfaceY/);
   assert.match(aids, /inert-no-official-phase-data/);
   assert.doesNotMatch(aids, /SIGNAL_TIMING|avenueAmber|streetAmber/);
 });
