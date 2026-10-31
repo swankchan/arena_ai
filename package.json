@@ -6,9 +6,11 @@
   "scripts": {
     "build:runtime": "node tools/build-runtime.mjs",
     "build:hk-viaduct-inventory": "node tools/cities/hongkong/build-viaduct-inventory.mjs",
-    "build:hk-street-lights": "node tools/cities/hongkong/build-street-lights.mjs"
+    "build:hk-street-lights": "node tools/cities/hongkong/build-street-lights.mjs",
+    "build:hk-terrain": "node tools/cities/hongkong/build-terrain.mjs"
   },
   "devDependencies": {
-    "esbuild": "0.28.2"
+    "esbuild": "0.28.2",
+    "proj4": "^2.19.10"
   }
 }

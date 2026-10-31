@@ -2,6 +2,7 @@ import { GEO } from '../../hk-geodata.js';
 import { HK_FULL_MAP } from '../../hk-full-map-data.js';
 import { HK_FULL_ROADS } from '../../hk-full-roads-data.js';
 import { CROSSING_FLAT_EXCLUSION_IDS, crossingSurfaceAt } from './crossings.js';
+import { roadHeightAtSegment } from './road-elevation.js';
 
 // Spatial queries for the territory-wide 3D road layer. The detailed core keeps its original graph; outside it, these
 // way/segment indexes provide safe road spawns, HUD labels and ground heights without scanning 77,000 ways per query.
@@ -32,9 +33,29 @@ function flatBounds(flat) {
   return b;
 }
 
+const REGION_CELL = 1000;
+const REGION_STRIDE = 100003;
+const NO_REGIONS = [];
+function indexRegions(entries) {
+  const cells = new Map();
+  for (const entry of entries) {
+    const b = entry.bounds;
+    for (let ix = Math.floor(b.minX / REGION_CELL); ix <= Math.floor(b.maxX / REGION_CELL); ix++) {
+      for (let iz = Math.floor(b.minZ / REGION_CELL); iz <= Math.floor(b.maxZ / REGION_CELL); iz++) {
+        const key = ix * REGION_STRIDE + iz;
+        if (!cells.has(key)) cells.set(key, []);
+        cells.get(key).push(entry);
+      }
+    }
+  }
+  return cells;
+}
+const regionAt = (cells, x, z) => cells.get(Math.floor(x / REGION_CELL) * REGION_STRIDE + Math.floor(z / REGION_CELL)) || NO_REGIONS;
+
 const land = HK_FULL_MAP.land.map((ring) => ({ ring, bounds: flatBounds(ring) }));
+const landCells = indexRegions(land);
 export function isTerritoryLand(x, z) {
-  for (const entry of land) {
+  for (const entry of regionAt(landCells, x, z)) {
     const b = entry.bounds;
     if (x < b.minX || x > b.maxX || z < b.minZ || z > b.maxZ) continue;
     if (pointInRing(entry.ring, x, z)) return true;
@@ -43,8 +64,9 @@ export function isTerritoryLand(x, z) {
 }
 
 const parks = HK_FULL_MAP.parks.map(([cat, name, ring]) => ({ cat, name, ring, bounds: flatBounds(ring) }));
+const parkCells = indexRegions(parks);
 export function territoryParkAt(x, z) {
-  for (const park of parks) {
+  for (const park of regionAt(parkCells, x, z)) {
     const b = park.bounds;
     if (x < b.minX || x > b.maxX || z < b.minZ || z > b.maxZ) continue;
     if (pointInRing(park.ring, x, z)) return { name: park.name, rings: [park.ring], cat: park.cat };
@@ -100,8 +122,10 @@ function segmentHit(x, z, way, i) {
   const length = Math.hypot(dx, dz) || 1;
   const sign = way.dir === -1 ? -1 : 1;
   const dirX = dx / length * sign, dirZ = dz / length * sign;
+  const segmentIndex = i / 2 - 1;
   return {
-    x: px, z: pz, distance: Math.hypot(x - px, z - pz), way, length, t,
+    x: px, z: pz, distance: Math.hypot(x - px, z - pz), way, length, t, segmentIndex,
+    height: roadHeightAtSegment(way.id, segmentIndex, t, px, pz),
     name: way.name, width: way.width, dir: way.dir, lanes: way.lanes, flags: way.flags,
     heading: Math.atan2(dirX, dirZ), leftX: dirZ, leftZ: -dirX
   };
@@ -115,6 +139,23 @@ export function nearestFullRoad(x, z, { radius = 1800, minWidth = 0, namedOnly =
       const hit = segmentHit(x, z, way, i);
       if (hit.distance > radius || (best && hit.distance >= best.distance)) continue;
       best = hit;
+    }
+  }
+  return best;
+}
+
+// Select the road layer closest to the entity's current height. Horizontal proximity alone is not sufficient where
+// a tunnel, surface street and elevated carriageway share the same plan position. Sea crossings have their own profiles.
+export function fullRoadSurfaceAt(x, z, margin = 0.35, referenceY = 0) {
+  let best = null, bestScore = Infinity;
+  const radius = 70 + Math.max(0, margin);
+  for (const way of candidates(x, z, radius)) {
+    if (CROSSING_FLAT_EXCLUSION_IDS.has(way.id)) continue;
+    for (let i = 2; i + 1 < way.flat.length; i += 2) {
+      const hit = segmentHit(x, z, way, i);
+      if (hit.distance > hit.width * 0.5 + margin) continue;
+      const score = Math.abs(hit.height - referenceY) * 20 + hit.distance;
+      if (score < bestScore) { best = hit; bestScore = score; }
     }
   }
   return best;
@@ -166,6 +207,7 @@ export function spawnOnFullRoad(x, z, { minWidth = 8, laneOffset = 2.6, radius =
   return {
     x: hit.x + hit.leftX * offset,
     z: hit.z + hit.leftZ * offset,
+    y: hit.height,
     heading: hit.heading,
     width: hit.width,
     name: hit.name,

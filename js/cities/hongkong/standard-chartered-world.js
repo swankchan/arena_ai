@@ -230,10 +230,10 @@ function createScbParapetMaterial() {
   return new THREE.MeshStandardMaterial({ map, roughness: 0.82, metalness: 0.02 });
 }
 
-export function buildStandardCharteredBankBuilding(root) {
+export function buildStandardCharteredBankBuilding(root, { groundOffset = 0 } = {}) {
   const group = new THREE.Group();
   group.name = 'StandardCharteredBankBuilding';
-  group.position.set(SCB_MODEL_ORIGIN.x, 0, SCB_MODEL_ORIGIN.z);
+  group.position.set(SCB_MODEL_ORIGIN.x, groundOffset, SCB_MODEL_ORIGIN.z);
   group.rotation.y = SCB_BUILDING_HEADING;
   group.userData.landmark = 'standard-chartered-bank-building';
   group.userData.osm = { type: SCB_SITE.osmType, id: SCB_SITE.osmId };
@@ -537,6 +537,7 @@ export function buildStandardCharteredBankBuilding(root) {
     }
   }
 
+  for (const collider of colliders) { collider.minY += groundOffset; collider.maxY += groundOffset; }
   const landmark = {
     name: SCB_SITE.name,
     englishName: SCB_SITE.englishName,
@@ -544,6 +545,7 @@ export function buildStandardCharteredBankBuilding(root) {
     bounds: { ...SCB_SITE.bounds }, ring: SCB_SITE.ring, osmId: SCB_SITE.osmId
   };
   const stats = {
+    scbGroundOffset: groundOffset,
     scbHeight: SCB_HEIGHT,
     scbSteppedTiers: SCB_TIERS.length,
     scbSandwichStepFaces: sandwichStepGlass.length / SCB_FRONT_GLASS_X.length,
@@ -557,5 +559,8 @@ export function buildStandardCharteredBankBuilding(root) {
     scbEntranceBaseY: SCB_ENTRANCE_BASE_Y,
     scbColliders: colliders.length
   };
-  return { group, colliders, landmarks: [landmark], stats, baseY: SCB_BASE_Y, entranceBaseY: SCB_ENTRANCE_BASE_Y };
+  return {
+    group, colliders, landmarks: [landmark], stats, groundOffset,
+    baseY: SCB_BASE_Y + groundOffset, entranceBaseY: SCB_ENTRANCE_BASE_Y + groundOffset
+  };
 }

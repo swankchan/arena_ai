@@ -81,7 +81,7 @@ test('all sixty-six supplied positions on the modelled bridge decks retain a dec
   }
   assert.equal(bridgeMatched, 66);
   const source = fs.readFileSync(path.join(root, 'js/cities/hongkong/street-lighting.js'), 'utf8');
-  assert.match(source, /crossing\?\.kind === 'bridge' \? crossing\.height : FLAT_BASE/);
+  assert.match(source, /crossing\?\.kind === 'bridge' \? crossing\.height : surfaceRoadHeight\(x, z\)/);
 });
 
 test('street-light rendering mixes curved single and double arms with chunked night LOD', () => {

@@ -192,7 +192,7 @@ function createCrossingFurniture(group, aids, getGroundHeight) {
   };
 }
 
-export function createHongKongTrafficAids(root, { getGroundHeight, surfaceY = 0 } = {}) {
+export function createHongKongTrafficAids(root, { getGroundHeight, getSurfaceHeight = null, surfaceY = 0 } = {}) {
   const aids = GEO.trafficAids;
   const group = new THREE.Group();
   group.name = 'HongKongSurveyedTrafficAids';
@@ -200,6 +200,11 @@ export function createHongKongTrafficAids(root, { getGroundHeight, surfaceY = 0 
   if (!aids) return { group, stats: { sourceRoadMarkFeatures: 0, sourceSignalPoints: 0 } };
 
   const data = buildTrafficAidPaint(aids);
+  if (getSurfaceHeight) {
+    for (let i = 0; i + 2 < data.position.length; i += 3) {
+      data.position[i + 1] += getSurfaceHeight(data.position[i], data.position[i + 2]) - surfaceY;
+    }
+  }
   const geometry = new THREE.BufferGeometry();
   geometry.setAttribute('position', new THREE.Float32BufferAttribute(data.position, 3));
   geometry.setAttribute('normal', new THREE.Float32BufferAttribute(data.normal, 3));
@@ -207,6 +212,7 @@ export function createHongKongTrafficAids(root, { getGroundHeight, surfaceY = 0 
   geometry.setAttribute('side', new THREE.Float32BufferAttribute(data.side, 2));
   geometry.setAttribute('paint', new THREE.Float32BufferAttribute(data.paint, 3));
   geometry.setIndex(data.index);
+  if (getSurfaceHeight) geometry.computeVertexNormals();
   geometry.computeBoundingSphere();
   const paintMesh = new THREE.Mesh(geometry, createRoadPaintMaterial());
   paintMesh.name = 'HongKongSurveyedRoadPaint';
@@ -217,7 +223,7 @@ export function createHongKongTrafficAids(root, { getGroundHeight, surfaceY = 0 
 
   const signals = createSignals(group, aids, getGroundHeight);
   const crossing = createCrossingFurniture(group, aids, getGroundHeight);
-  const stats = { ...data.stats, ...signals.stats, ...crossing.stats, paintBaseY: surfaceY };
+  const stats = { ...data.stats, ...signals.stats, ...crossing.stats, paintBaseY: surfaceY, paintTerrainDraped: Boolean(getSurfaceHeight) };
   group.userData.trafficAids = {
     source: aids.source,
     bbox: aids.bbox,

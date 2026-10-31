@@ -5,10 +5,12 @@ const test = require('node:test');
 
 let crossings;
 let fullMeta;
+let roadElevation;
 
 test.before(async () => {
   crossings = await import('../js/cities/hongkong/crossings.js');
   fullMeta = await import('../js/cities/hongkong/full-meta.js');
+  roadElevation = await import('../js/cities/hongkong/road-elevation.js');
 });
 
 test('seven named sea crossings provide fourteen directional OSM routes', () => {
@@ -35,12 +37,14 @@ test('seven named sea crossings provide fourteen directional OSM routes', () => 
 });
 
 test('every crossing profile is continuous, finely sampled and connected at both ends', () => {
-  const { CROSSING_ROUTES, CROSSING_BASE_HEIGHT } = crossings;
+  const { CROSSING_ROUTES } = crossings;
+  const { surfaceRoadHeight } = roadElevation;
   for (const route of CROSSING_ROUTES) {
     assert.ok(route.length > 700, `${route.id} is a complete crossing`);
     assert.ok(route.points.length >= 39, `${route.id} has an actual ramp profile`);
-    assert.equal(route.points[0].y, CROSSING_BASE_HEIGHT);
-    assert.equal(route.points.at(-1).y, CROSSING_BASE_HEIGHT);
+    const first = route.points[0], last = route.points.at(-1);
+    assert.ok(Math.abs(first.y - surfaceRoadHeight(first.x, first.z)) < 0.001, `${route.id} starts on the DTM road`);
+    assert.ok(Math.abs(last.y - surfaceRoadHeight(last.x, last.z)) < 0.001, `${route.id} ends on the DTM road`);
     assert.ok(Math.abs(route.points[Math.floor(route.points.length / 2)].y - route.level) < 0.001);
     for (let i = 1; i < route.points.length; i++) {
       const a = route.points[i - 1], b = route.points[i];

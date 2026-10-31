@@ -322,7 +322,7 @@ export function buildHongKongWorld(scene, options = {}) {
   return buildSimpleHongKongWorld(scene, options);
 }
 
-// Kept as the legacy detailed presentation; the default Hong Kong experience now uses the unified flat map above.
+// Kept as the legacy detailed presentation; the default Hong Kong experience now uses the unified terrain map above.
 export function buildDetailedHongKongWorld(scene, { setStatus = () => {} } = {}) {
   setStatus('Building Hong Kong’s expanded street core...');
   const root = new THREE.Group();

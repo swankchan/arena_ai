@@ -1,0 +1,65 @@
+{
+  "dataset": "Hong Kong Lands Department 5 m Digital Terrain Model (DTM)",
+  "officialDataset": "https://data.gov.hk/en-data/dataset/hk-landsd-openmap-5m-grid-dtm",
+  "officialDownload": "https://www.landsd.gov.hk/landsd_psi_data/SMO/data/Whole_HK_DTM_5m.zip",
+  "attribution": "Survey and Mapping Office, Lands Department, Government of the HKSAR; DATA.GOV.HK terms",
+  "accuracy": "5 m source raster, approximately +/-5 m; includes vegetation and some non-ground elevated structures",
+  "processedSnapshot": "https://github.com/wiiiimm/hongkong-sandbox/blob/5777bc98fb354c369ee6234d08c64a38279e3a27/3d-viewer/data/hk-dtm5m.json",
+  "processedSnapshotSha256": "68ed8af6e07ab9b6dbe9d9b242e96648f7812b743172cfce700ec7700b09ea93",
+  "sourceGrid": "HK1980 Grid / EPSG:2326, 70 m resampling of the official 5 m DTM",
+  "outputGrid": "Application local tangent plane, 70 m reprojection, triangle-matched sampling, 0.25 m quantisation",
+  "output": "js/hk-terrain-data.js",
+  "bytes": 3837599,
+  "grid": {
+    "w": 961,
+    "h": 716,
+    "cell": 70,
+    "minX": -36120,
+    "minZ": -33110,
+    "maxX": 31080,
+    "maxZ": 16940,
+    "scale": 4,
+    "minElevation": 0,
+    "maxElevation": 943.0564310208072
+  },
+  "stats": {
+    "tunnelWays": 2062,
+    "tunnelNodes": 5342,
+    "tunnelComponents": 955,
+    "tunnelPortals": 2048,
+    "tunnelOpeningRects": 7887,
+    "tunnelMinHeight": -3.975,
+    "tunnelMaxHeight": 408.79571428571415,
+    "tunnelProfile": "procedural portal-distance blend with 4 m minimum DTM-relative cover; not surveyed engineering depth"
+  },
+  "checks": [
+    {
+      "name": "大帽山 Tai Mo Shan",
+      "x": -3590.4995229273695,
+      "z": -14224.902006618913,
+      "elevation": 941.2299235226859
+    },
+    {
+      "name": "太平山 Victoria Peak",
+      "x": -1414.9701047581048,
+      "z": 614.574234288709,
+      "elevation": 528.5969427830778
+    },
+    {
+      "name": "鳳凰山 Lantau Peak",
+      "x": -24719.208253997378,
+      "z": 3646.4737901133744,
+      "elevation": 898.2869063408967
+    },
+    {
+      "name": "中環 Central",
+      "x": 0,
+      "z": 0,
+      "elevation": 5.25
+    }
+  ],
+  "sourceFiles": [
+    "tools/data/hongkong/terrain/hk-dtm5m.json",
+    "tools/data/hongkong/terrain/hk-georef.json"
+  ]
+}

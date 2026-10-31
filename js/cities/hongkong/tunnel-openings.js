@@ -1,4 +1,5 @@
 import { CROSSING_ROUTES } from './crossings.js';
+import { hongKongTerrainHeight } from './terrain.js';
 
 const LAND_TOP = -0.08;
 const TUBE_HEIGHT = 5.5;
@@ -7,11 +8,16 @@ const TUBE_HEIGHT = 5.5;
 // park surfaces stay intact above it. Rectangles follow each 20 m profile segment, including its curved approaches.
 export function buildTunnelOpeningRects(routes = CROSSING_ROUTES, surfaceY = LAND_TOP) {
   const rects = [];
+  // Land portals follow the same DTM as the terrain mesh. A numeric non-land surface (the harbour
+  // water plane) remains constant so submerged tube openings do not inherit a land elevation.
+  const terrainRelative = surfaceY === LAND_TOP;
+  const surfaceAt = (x, z) => terrainRelative ? hongKongTerrainHeight(x, z) + LAND_TOP : surfaceY;
   for (const route of routes) {
     if (route.kind !== 'tunnel') continue;
     for (let i = 1; i < route.points.length; i++) {
       const a = route.points[i - 1], b = route.points[i];
-      if (Math.min(a.y, b.y) >= 0.5 || Math.max(a.y, b.y) + TUBE_HEIGHT <= surfaceY + 0.05) continue;
+      const ay = a.y - surfaceAt(a.x, a.z), by = b.y - surfaceAt(b.x, b.z);
+      if (Math.min(ay, by) >= 0.5 || Math.max(ay, by) + TUBE_HEIGHT <= 0.05) continue;
       const dx = b.x - a.x, dz = b.z - a.z, length = Math.hypot(dx, dz);
       if (length < 0.01) continue;
       const ux = dx / length, uz = dz / length;

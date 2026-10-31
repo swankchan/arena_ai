@@ -1,4 +1,5 @@
 import { HK_FULL_ROADS } from '../../hk-full-roads-data.js';
+import { surfaceRoadHeight } from './road-elevation.js';
 
 // First-stage, drivable crossing profiles. Heights are deliberately procedural presentation levels, not surveyed
 // engineering elevations. Every route is resampled before profiling so long two-node OSM ways still form real ramps.
@@ -19,17 +20,18 @@ export const CROSSING_DEFINITIONS = Object.freeze([
   }
 ]);
 
-function profileHeight(s, length, definition) {
+function profileHeight(s, length, definition, startHeight, endHeight, ramp) {
   const edge = Math.min(s, length - s);
-  const t = Math.max(0, Math.min(1, edge / definition.ramp));
+  const t = Math.max(0, Math.min(1, edge / ramp));
   const smooth = t * t * (3 - 2 * t);
-  return CROSSING_BASE_HEIGHT + (definition.level - CROSSING_BASE_HEIGHT) * smooth;
+  const endpointHeight = s <= length * 0.5 ? startHeight : endHeight;
+  return endpointHeight + (definition.level - endpointHeight) * smooth;
 }
 
-function curveOffset(definition, s, length) {
+function curveOffset(definition, s, length, ramp) {
   if (!definition.curveAmplitude) return 0;
   // A smooth S lives wholly inside the deep submerged section. Portals and their road openings keep the OSM positions.
-  const start = definition.ramp, end = length - definition.ramp;
+  const start = ramp, end = length - ramp;
   if (s <= start || s >= end) return 0;
   const u = (s - start) / (end - start);
   return definition.curveAmplitude * Math.sin(Math.PI * 2 * u) * Math.sin(Math.PI * u);
@@ -64,6 +66,12 @@ function buildRoute(definition, wayIds, direction) {
   const raw = rawRoute(definition, wayIds);
   const length = raw[raw.length - 1]?.s || 0;
   if (length < 100) throw new Error(`Crossing route too short: ${definition.name}`);
+  const startHeight = surfaceRoadHeight(raw[0].x, raw[0].z);
+  const endHeight = surfaceRoadHeight(raw[raw.length - 1].x, raw[raw.length - 1].z);
+  // Smoothstep's greatest grade is 1.5 * height difference / ramp. Allow up to roughly
+  // 2.5 m per 20 m sample on high DTM approaches instead of introducing a sudden vertical jump.
+  const heightDifference = Math.max(Math.abs(definition.level - startHeight), Math.abs(definition.level - endHeight));
+  const ramp = Math.min(length * 0.45, Math.max(definition.ramp, heightDifference * 12));
   let curveFrame = null;
   if (definition.curveAmplitude) {
     // Both carriageways use one world-space reference axis. At a given station they receive exactly the same displacement,
@@ -82,11 +90,11 @@ function buildRoute(definition, wayIds, direction) {
       const t = step / steps, s = a.s + segmentLength * t;
       const rawX = a.x + (b.x - a.x) * t, rawZ = a.z + (b.z - a.z) * t;
       const station = curveFrame ? (rawX - curveFrame.x) * curveFrame.ux + (rawZ - curveFrame.z) * curveFrame.uz : 0;
-      const offset = curveFrame ? curveOffset(definition, station, curveFrame.length) : 0;
+      const offset = curveFrame ? curveOffset(definition, station, curveFrame.length, ramp) : 0;
       points.push({
         x: rawX + (curveFrame?.uz || 0) * offset,
         z: rawZ - (curveFrame?.ux || 0) * offset,
-        y: profileHeight(s, length, definition),
+        y: profileHeight(s, length, definition, startHeight, endHeight, ramp),
         width: a.width,
         wayId: a.wayId,
         s
@@ -94,7 +102,7 @@ function buildRoute(definition, wayIds, direction) {
     }
   }
   const last = raw[raw.length - 1];
-  points.push({ x: last.x, z: last.z, y: CROSSING_BASE_HEIGHT, width: last.width, wayId: last.wayId, s: length });
+  points.push({ x: last.x, z: last.z, y: endHeight, width: last.width, wayId: last.wayId, s: length });
   // Store true arc length after bending so following, lighting and end-of-route checks use the same geometry.
   let curvedLength = 0;
   for (let i = 1; i < points.length; i++) {
@@ -107,6 +115,10 @@ function buildRoute(definition, wayIds, direction) {
     name: definition.name,
     kind: definition.kind,
     level: definition.level,
+    ramp,
+    startHeight,
+    endHeight,
+    heightSource: 'DTM-connected portals; existing procedural main-span / submerged level retained',
     direction,
     wayIds: [...wayIds],
     length: curvedLength,

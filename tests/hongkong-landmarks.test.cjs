@@ -79,6 +79,7 @@ test('three stepped bays and five suspension levels preserve the open public pla
 
 test('the hand-built HSBC model includes its photographic identifying features without bundled photo assets', () => {
   const source = fs.readFileSync(path.join(root, 'js/cities/hongkong/hsbc-headquarters-world.js'), 'utf8');
+  assert.match(source, /group\.position\.set\(HSBC_SITE\.x, groundOffset, HSBC_SITE\.z\)/);
   assert.match(source, /HSBCInvertedVSuspensionTrusses/);
   assert.match(source, /HSBCExposedSteelMasts/);
   assert.match(source, /HSBCOvalSunscoopCrown/);
@@ -115,10 +116,10 @@ test('the hand-built HSBC model includes its photographic identifying features w
 
 test('unified simple mode adds only the authored landmarks and keeps generic buildings disabled', () => {
   const source = fs.readFileSync(path.join(root, 'js/cities/hongkong/simple-world.js'), 'utf8');
-  assert.match(source, /buildHsbcHeadquarters\(scene\)/);
-  assert.match(source, /buildStandardCharteredBankBuilding\(scene\)/);
+  assert.match(source, /buildHsbcHeadquarters\(scene, \{ groundOffset: HONG_KONG_TERRAIN_META\.hsbcPadHeight \}\)/);
+  assert.match(source, /buildStandardCharteredBankBuilding\(scene, \{ groundOffset: HONG_KONG_TERRAIN_META\.scbPadHeight \}\)/);
   assert.match(source, /isHsbcPlazaPoint\(x, z\)/);
-  assert.match(source, /scbEntranceGroundHeight\(x, z, crossingGround\)/);
+  assert.match(source, /scbEntranceGroundHeight\(x, z, crossingGround, standardChartered\.groundOffset\)/);
   assert.match(source, /\.\.\.hsbc\.stats/);
   assert.match(source, /\.\.\.standardChartered\.stats/);
   assert.match(source, /\.\.\.hsbc\.colliders/);
@@ -126,7 +127,8 @@ test('unified simple mode adds only the authored landmarks and keeps generic bui
   assert.match(source, /landmarks: hsbc\.landmarks\.length \+ standardChartered\.landmarks\.length/);
   assert.match(source, /buildings: 0/);
   assert.match(source, /landmarks: \[\.\.\.hsbc\.landmarks, \.\.\.standardChartered\.landmarks\]/);
-  assert.match(source, /createHongKongTrafficAids\(scene, \{ getGroundHeight, surfaceY: FULL_WORLD_HEIGHT\.road \}\)/);
+  assert.match(source, /createHongKongTrafficAids\(scene, \{/);
+  assert.match(source, /getGroundHeight, getSurfaceHeight: surfaceRoadHeight, surfaceY: FULL_WORLD_HEIGHT\.road/);
   assert.match(source, /\.\.\.trafficAids\.stats/);
   assert.doesNotMatch(source, /trafficAids: null/);
   const pack = fs.readFileSync(path.join(root, 'js/cities/hongkong/index.js'), 'utf8');
@@ -303,6 +305,7 @@ test('Standard Chartered has seven sandwich slabs and right-trapezoid facade-att
 
 test('the hand-built Standard Chartered model includes the photographed identifiers without bundled photo assets', () => {
   const source = fs.readFileSync(path.join(root, 'js/cities/hongkong/standard-chartered-world.js'), 'utf8');
+  assert.match(source, /group\.position\.set\(SCB_MODEL_ORIGIN\.x, groundOffset, SCB_MODEL_ORIGIN\.z\)/);
   assert.match(source, /SCBSteppedTowerTiers/);
   assert.match(source, /SCBSandwichStepStonePiers/);
   assert.match(source, /SCBSandwichStepRoseGlassChannels/);

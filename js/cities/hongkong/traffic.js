@@ -88,7 +88,7 @@ function samplePath(points, distances, s) {
   };
 }
 
-export function createHongKongTraffic(scene, { getFocus, taxiStyle }) {
+export function createHongKongTraffic(scene, { getFocus, taxiStyle, getGroundHeight = null }) {
   const group = new THREE.Group();
   group.name = 'HongKongTraffic';
   scene.add(group);
@@ -168,7 +168,7 @@ export function createHongKongTraffic(scene, { getFocus, taxiStyle }) {
     return {
       kind, index, link: startLink,
       point,
-      x: point.x, z: point.z, heading: point.heading, speed: 0,
+      x: point.x, y: 0, z: point.z, heading: point.heading, speed: 0,
       prevX: point.x, prevZ: point.z, prevHeading: point.heading,
       // Collision shove keeps a struck car visibly displaced from its lane until the offset decays.
       pushX: 0, pushZ: 0,
@@ -400,8 +400,9 @@ export function createHongKongTraffic(scene, { getFocus, taxiStyle }) {
 
   function renderVehicle(vehicle, slot, isBus) {
     const s = Math.sin(vehicle.heading), c = Math.cos(vehicle.heading);
+    vehicle.y = getGroundHeight ? getGroundHeight(vehicle.x, vehicle.z, 'car', vehicle.y) : 0;
     quat.setFromAxisAngle(up, vehicle.heading);
-    matrix.compose(pos.set(vehicle.x, 0, vehicle.z), quat, scaleOne);
+    matrix.compose(pos.set(vehicle.x, vehicle.y, vehicle.z), quat, scaleOne);
     if (isBus) {
       busBody.setMatrixAt(slot, matrix);
       busSign.setMatrixAt(slot, matrix);
@@ -413,7 +414,7 @@ export function createHongKongTraffic(scene, { getFocus, taxiStyle }) {
           const lx = side * HK_BUS_SPEC.wheelX;
           const wx = vehicle.x + c * lx + s * lz;
           const wz = vehicle.z - s * lx + c * lz;
-          wheelMatrix.compose(pos.set(wx, HK_BUS_SPEC.wheelRadius, wz), wheelQuat, scaleOne);
+          wheelMatrix.compose(pos.set(wx, vehicle.y + HK_BUS_SPEC.wheelRadius, wz), wheelQuat, scaleOne);
           wheels.setMatrixAt(slot * HK_BUS_SPEC.axleZ.length + axleIndex, wheelMatrix);
         }
       }
@@ -439,7 +440,7 @@ export function createHongKongTraffic(scene, { getFocus, taxiStyle }) {
             const lz = axleIndex === 0 ? taxiSpec.wheelZ : -taxiSpec.wheelZ;
             const wx = vehicle.x + c * lx + s * lz;
             const wz = vehicle.z - s * lx + c * lz;
-            wheelMatrix.compose(pos.set(wx, taxiSpec.wheelRadius, wz), wheelQuat, scaleOne);
+            wheelMatrix.compose(pos.set(wx, vehicle.y + taxiSpec.wheelRadius, wz), wheelQuat, scaleOne);
             wheels.setMatrixAt(vehicle.taxiSlot * 2 + axleIndex, wheelMatrix);
           }
         }
@@ -450,7 +451,7 @@ export function createHongKongTraffic(scene, { getFocus, taxiStyle }) {
           const lx = side * 0.79, lz = axle;
           const wx = vehicle.x + c * lx + s * lz;
           const wz = vehicle.z - s * lx + c * lz;
-          wheelMatrix.compose(pos.set(wx, 0.34, wz), wheelQuat, scaleOne);
+          wheelMatrix.compose(pos.set(wx, vehicle.y + 0.34, wz), wheelQuat, scaleOne);
           wheelMesh.setMatrixAt(vehicle.privateSlot * 4 + k, wheelMatrix);
         }
       }

@@ -11,12 +11,15 @@ test.before(async () => {
 
 test('shallow tunnel portals have ground openings while deep tubes and bridges do not', () => {
   const rects = openings.buildTunnelOpeningRects();
-  assert.equal(rects.length, 62);
-  assert.equal(openings.buildTunnelOpeningRects(undefined, -2.26).length, 75, 'water openings continue below the waterline');
-  assert.deepEqual(new Set(rects.map((rect) => rect.routeId)), new Set([
+  assert.ok(rects.length > 0);
+  const waterRects = openings.buildTunnelOpeningRects(undefined, -2.26);
+  assert.ok(waterRects.length > 0, 'water openings continue below the fixed waterline');
+  const tunnelRoutes = new Set([
     'cross-harbour:0', 'cross-harbour:1', 'eastern-harbour:0',
     'eastern-harbour:1', 'western-harbour:0', 'western-harbour:1'
-  ]));
+  ]);
+  assert.deepEqual(new Set(rects.map((rect) => rect.routeId)), tunnelRoutes);
+  assert.deepEqual(new Set(waterRects.map((rect) => rect.routeId)), tunnelRoutes);
   const deep = {
     id: 'deep', kind: 'tunnel', points: [
       { x: 0, z: 0, y: -22, width: 8 },
@@ -25,6 +28,18 @@ test('shallow tunnel portals have ground openings while deep tubes and bridges d
   };
   const bridge = { ...deep, id: 'bridge', kind: 'bridge' };
   assert.deepEqual(openings.buildTunnelOpeningRects([deep, bridge]), []);
+});
+
+test('land portals are detected relative to the DTM rather than the old zero datum', async () => {
+  const { hongKongTerrainHeight } = await import('../js/cities/hongkong/terrain.js');
+  const surface = hongKongTerrainHeight(0, 0) - 0.08;
+  const route = {
+    id: 'dtm-portal', kind: 'tunnel', points: [
+      { x: 0, z: 0, y: surface + 0.025, width: 8 },
+      { x: 0, z: 20, y: surface - 4, width: 8 }
+    ]
+  };
+  assert.equal(openings.buildTunnelOpeningRects([route]).length, 1);
 });
 
 test('subtracting a portal rectangle preserves exact triangle area outside the opening', () => {

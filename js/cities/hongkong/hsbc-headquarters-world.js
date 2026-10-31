@@ -352,11 +352,11 @@ function addEscalatorGlass(group, material, start, end) {
   group.add(mesh);
 }
 
-export function buildHsbcHeadquarters(root) {
+export function buildHsbcHeadquarters(root, { groundOffset = 0 } = {}) {
   const group = new THREE.Group();
   group.name = 'HongKongHSBCMainBuilding';
   group.userData.landmark = HSBC_SITE.name;
-  group.position.set(HSBC_SITE.x, 0, HSBC_SITE.z);
+  group.position.set(HSBC_SITE.x, groundOffset, HSBC_SITE.z);
   group.rotation.y = HSBC_SITE.ry;
 
   const steel = subtlyLitSteel();
@@ -815,8 +815,10 @@ export function buildHsbcHeadquarters(root) {
     colliders.push(hsbcLocalCollider({ x: site.x, z: site.z, w: 3.6, d: 2.8, minY: 0, maxY: 3.1 }));
   }
 
+  for (const collider of colliders) { collider.minY += groundOffset; collider.maxY += groundOffset; }
   root.add(group);
   const stats = {
+    hsbcGroundOffset: groundOffset,
     hsbcLandmarks: 1,
     hsbcSteppedBays: HSBC_BAYS.length,
     hsbcStoreys: HSBC_BAYS.reduce((sum, bay) => sum + bay.floors, 0),
@@ -843,5 +845,5 @@ export function buildHsbcHeadquarters(root) {
       minZ: siteBounds.minZ, maxZ: siteBounds.maxZ
     }
   };
-  return { group, colliders, landmarks: [landmark], stats, plazaTop: HSBC_PLAZA_TOP };
+  return { group, colliders, landmarks: [landmark], stats, groundOffset, plazaTop: HSBC_PLAZA_TOP + groundOffset };
 }

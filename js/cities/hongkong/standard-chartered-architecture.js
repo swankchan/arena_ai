@@ -196,18 +196,18 @@ export function scbSiteWorldToLocal(x, z) {
 
 // Ground-height field for exactly the same tapering tread footprints and small left-door landing as the rendered
 // meshes. There is no rectangular or triangular filler platform hidden outside those footprints.
-export function scbEntranceGroundHeight(x, z, ground = 0) {
+export function scbEntranceGroundHeight(x, z, ground = 0, baseY = 0) {
   const local = scbWorldToLocal(x, z);
   const road = scbStairLocalToRoad(local.x, local.z);
   let height = ground;
   if (road.v >= 0 && road.v < SCB_STAIR_RUN) {
     const step = Math.min(SCB_STAIR_COUNT - 1, Math.floor(road.v / SCB_STAIR_TREAD));
     const edges = scbStairEdgesAt(road.v / SCB_STAIR_RUN);
-    if (road.u >= edges.right && road.u <= edges.left) height = Math.max(height, (step + 1) * SCB_STAIR_RISE);
+    if (road.u >= edges.right && road.u <= edges.left) height = Math.max(height, baseY + (step + 1) * SCB_STAIR_RISE);
   }
   if (road.v >= SCB_STAIR_RUN && road.v <= SCB_STAIR_RUN + SCB_STAIR_TOP_LANDING_DEPTH) {
     const edges = scbStairEdgesAt(road.v / SCB_STAIR_RUN);
-    if (road.u >= edges.right && road.u <= edges.left) height = Math.max(height, SCB_ENTRANCE_BASE_Y);
+    if (road.u >= edges.right && road.u <= edges.left) height = Math.max(height, baseY + SCB_ENTRANCE_BASE_Y);
   }
   return height;
 }

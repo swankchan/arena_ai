@@ -4,6 +4,7 @@ import { clamp, color, float, length, pow, smoothstep, uv } from 'three/tsl';
 import { cityUniforms } from '../../tsl-materials.js';
 import { HK_STREET_LIGHTS } from '../../hk-street-light-data.js';
 import { crossingSurfaceAt } from './crossings.js';
+import { surfaceRoadHeight } from './road-elevation.js';
 
 export const HK_STREET_LIGHT_HEIGHT = 9.6;
 const ARM_REACH = 2.15;
@@ -11,7 +12,6 @@ const CHUNK_SIZE = 1000;
 const GEOMETRY_RANGE = 800;
 const POOL_RANGE = 260;
 const NIGHT_GLOW_RANGE = 1800;
-const FLAT_BASE = 0.025;
 
 function nightAmount() {
   const t = Math.max(0, Math.min(1, (cityUniforms.uInteriorGlow.value - 0.7) / 0.75));
@@ -106,7 +106,7 @@ export function createHongKongStreetLighting(root, { lamps = HK_STREET_LIGHTS.la
     let bucket = buckets.get(key);
     if (!bucket) buckets.set(key, (bucket = { key, lamps: [], minX: Infinity, maxX: -Infinity, minZ: Infinity, maxZ: -Infinity }));
     const crossing = crossingSurfaceAt(x, z, 1);
-    const baseY = crossing?.kind === 'bridge' ? crossing.height : FLAT_BASE;
+    const baseY = crossing?.kind === 'bridge' ? crossing.height : surfaceRoadHeight(x, z);
     if (crossing?.kind === 'bridge') bridgeMatched++;
     bucket.lamps.push([x, z, heading, arms, baseY]);
     bucket.minX = Math.min(bucket.minX, x - 2.6); bucket.maxX = Math.max(bucket.maxX, x + 2.6);
@@ -147,7 +147,8 @@ export function createHongKongStreetLighting(root, { lamps = HK_STREET_LIGHTS.la
         glows.setMatrixAt(headIndex, dummy.matrix);
         const hx = x + Math.sin(armHeading) * ARM_REACH, hz = z + Math.cos(armHeading) * ARM_REACH;
         const surface = crossingSurfaceAt(hx, hz, 1.5);
-        const poolY = (surface?.kind === 'bridge' ? surface.height : FLAT_BASE) + 0.045;
+        const poolGround = surface?.kind === 'bridge' ? surface.height : surfaceRoadHeight(hx, hz);
+        const poolY = poolGround + 0.045;
         dummy.position.set(hx, poolY, hz); dummy.rotation.set(0, 0, 0); dummy.updateMatrix();
         pools.setMatrixAt(headIndex, dummy.matrix);
         headIndex++;

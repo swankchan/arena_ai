@@ -12,7 +12,7 @@ import {
   getLocationLabel
 } from './meta.js';
 
-// Hong Kong pack: a unified flat OSM road map across Hong Kong Island, Kowloon, the New Territories and islands.
+// Hong Kong pack: unified DTM terrain and OSM roads across Hong Kong Island, Kowloon, the New Territories and islands.
 // Dynamic Hong Kong traffic and harbour life remain separate from the static ground so content can be built up over time.
 
 const TAXI_STYLE = 'hk-urban';
@@ -33,7 +33,7 @@ export const city = {
   defaultMode: 'car',
 
   build({ scene, markInit, setStatus }) {
-    setStatus('Building Hong Kong’s unified flat road map...');
+    setStatus('Building Hong Kong’s terrain-following road map...');
 
     const world = buildHongKongWorld(scene, { setStatus });
     markInit?.('world');
@@ -41,7 +41,7 @@ export const city = {
     // The traffic restaging halo follows the camera. CameraSystem is created after build(), so the focus is a mutable
     // point that update() keeps in sync.
     const focus = { x: SPAWN.car.x, z: SPAWN.car.z };
-    const traffic = createHongKongTraffic(scene, { getFocus: () => focus, taxiStyle: TAXI_STYLE });
+    const traffic = createHongKongTraffic(scene, { getFocus: () => focus, taxiStyle: TAXI_STYLE, getGroundHeight: world.getGroundHeight });
     markInit?.('traffic');
 
     const harbour = createHongKongHarbour(scene);
