@@ -389,7 +389,7 @@ test('Hong Kong livery paints a silver roof, black trim and chrome nose', () => 
   assert.match(source, /one\.sub\(max\(glass, seal, chromeBelt\)\)/);
 });
 
-test('Hong Kong livery follows the vertical door lettering and LPG reference decals', () => {
+test('Hong Kong livery follows the two-line door lettering and LPG reference decals', () => {
   const source = read('js/actor-models.js');
   assert.match(source, /function hkTaxiSideTexture\(\)/);
   assert.match(source, /function hkTaxiFrontTexture\(\)/);
@@ -399,8 +399,10 @@ test('Hong Kong livery follows the vertical door lettering and LPG reference dec
   assert.doesNotMatch(source, /TAXI 4 SEATS/);
   assert.doesNotMatch(source, /seatSticker\(655\)/);
   assert.match(source, /的士/);
-  assert.match(source, /fillText\('的', x, 100\)/);
-  assert.match(source, /fillText\('士', x, 205\)/);
+  assert.match(source, /drawHKTaxiGlyphs\(ctx, '的士', x, 135, 94, 44\)/);
+  assert.match(source, /fillText\('TAXI', x, 255, 44\)/);
+  assert.doesNotMatch(source, /fillText\('的', x, 100\)/);
+  assert.doesNotMatch(source, /fillText\('士', x, 205\)/);
   assert.match(source, /石油氣的士/);
   assert.match(source, /LPG/);
   assert.match(source, /lpgAdvertisement\(434\)/);
@@ -426,6 +428,9 @@ test('Hong Kong taxi follows the supplied roof-sign, rear-detail and plate refer
   const source = read('js/actor-models.js');
   assert.match(source, /taillight: \[0\.57, 0\.69, 0\.29, 0\.115\]/);
   assert.match(source, /function hkTaxiRearTexture\(\)/);
+  assert.match(source, /ctx\.translate\(512, 128\)/, 'Toyota emblem sits lower on the trunk');
+  assert.match(source, /ctx\.translate\(190, 315\)/, 'five-seat sticker sits on the left of the rear bumper');
+  assert.match(source, /spec\.name === 'hkTaxi' \? 0\.5 : 0\.45/, 'roof sign is centred on the Crown Comfort roof');
   assert.match(source, /TOYOTA LPG20/);
   assert.match(source, /CROWN COMFORT/);
   assert.match(source, /function buildHKTaxiHardware\(spec\)/);

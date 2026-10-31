@@ -24,6 +24,7 @@ import {
   instanceIndex
 } from 'three/tsl';
 import { mergeGeometries, mergeVertices } from 'three/addons/utils/BufferGeometryUtils.js';
+import { drawHKTaxiGlyphs } from './cities/hongkong/taxi-glyphs.js';
 
 // Vehicle geometry and materials adapted from Three.js LoftGeometry and CarGenerator.
 // Skinned character models and animation are in pedestrians.js.
@@ -833,7 +834,7 @@ function buildRoofRails(spec) {
 function taxiSignPlacement(spec) {
   const L = carLayout(spec);
   const cab = spec.cabin;
-  const z = lerp(cab.roofFront, cab.roofRear, spec.name === 'hkTaxi' ? 0.22 : 0.45);
+  const z = lerp(cab.roofFront, cab.roofRear, spec.name === 'hkTaxi' ? 0.5 : 0.45);
   const c = L.cabin(z);
   return { z, y: c.railY + c.h };
 }
@@ -1114,13 +1115,12 @@ function hkTaxiSideTexture() {
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
 
+  // The side atlas is physically much denser vertically than horizontally; condensed text widths keep glyphs upright on the doors.
   function lettering(x) {
     ctx.fillStyle = '#f7f7f2';
-    ctx.font = '700 100px "Noto Sans TC", "PingFang TC", "Microsoft JhengHei", sans-serif';
-    ctx.fillText('的', x, 100);
-    ctx.fillText('士', x, 205);
-    ctx.font = '800 68px Inter, Arial, sans-serif';
-    ctx.fillText('TAXI', x, 325, 170);
+    drawHKTaxiGlyphs(ctx, '的士', x, 135, 94, 44);
+    ctx.font = '800 82px Inter, Arial, sans-serif';
+    ctx.fillText('TAXI', x, 255, 44);
   }
 
   function flower(x, y, scale = 1) {
@@ -1149,8 +1149,7 @@ function hkTaxiSideTexture() {
     for (let i = 0; i < heights.length; i++) ctx.fillRect(x - 122 + i * 25, 242 - heights[i], 19, heights[i]);
     flower(x - 98, 188, 1.1);
     ctx.fillStyle = '#f7f7f2';
-    ctx.font = '800 40px "Noto Sans TC", "PingFang TC", "Microsoft JhengHei", sans-serif';
-    ctx.fillText('石油氣的士', x + 10, 278, 238);
+    drawHKTaxiGlyphs(ctx, '石油氣的士', x + 10, 278, 40, 45);
   }
 
   function lpgFender(x) {
@@ -1162,9 +1161,8 @@ function hkTaxiSideTexture() {
     ctx.stroke();
     flower(x, 181, 0.62);
     ctx.fillStyle = '#246a4a';
-    ctx.font = '700 23px "Noto Sans TC", "PingFang TC", "Microsoft JhengHei", sans-serif';
-    ctx.fillText('石油氣', x, 222, 68);
-    ctx.fillText('的士', x, 252, 68);
+    drawHKTaxiGlyphs(ctx, '石油氣', x, 222, 23, 16);
+    drawHKTaxiGlyphs(ctx, '的士', x, 252, 23, 11);
     ctx.fillStyle = '#b52f36';
     ctx.font = '900 27px Inter, Arial, sans-serif';
     ctx.fillText('LPG', x, 298);
@@ -1225,9 +1223,9 @@ function hkTaxiRearTexture() {
   ctx.textBaseline = 'middle';
 
   ctx.save();
-  ctx.translate(512, 94);
+  ctx.translate(512, 128);
   ctx.strokeStyle = '#eef1ef';
-  ctx.lineWidth = 5;
+  ctx.lineWidth = 4;
   ctx.shadowColor = 'rgba(0,0,0,0.65)';
   ctx.shadowBlur = 3;
   for (const [x, y, rx, ry] of [[0, 0, 42, 29], [0, -4, 12, 21], [0, 8, 28, 11]]) {
@@ -1247,7 +1245,7 @@ function hkTaxiRearTexture() {
   ctx.shadowBlur = 0;
 
   ctx.save();
-  ctx.translate(403, 315);
+  ctx.translate(190, 315);
   ctx.scale(0.85, 0.85);
   ctx.beginPath();
   ctx.moveTo(18, 140);
