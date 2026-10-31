@@ -60,6 +60,12 @@ export const HSBC_SITE = Object.freeze({
 });
 
 export const HSBC_HEIGHT = 178.8;
+// The rooftop device in the supplied front elevation is deliberately rendered at 2:1, wider than the square
+// entrance device. Keep texture and plane dimensions together so the canvas cannot stretch it back to 1:1.
+export const HSBC_ROOF_SIGN = Object.freeze({
+  textureWidth: 256, textureHeight: 128, deviceWidth: 192, deviceHeight: 96,
+  planeWidth: 4.8, planeHeight: 2.4
+});
 export const HSBC_PLAZA_TOP = 0.04;
 export const HSBC_BANKING_HALL_BASE = 10.8;
 export const HSBC_FLOOR_HEIGHT = 3.6;

@@ -83,10 +83,11 @@ export const SCB_SIGN_FIN = Object.freeze({
   baseY: SCB_MAIN_ROOF_Y, topY: SCB_HEIGHT
 });
 
-// The flight itself keeps the accepted triangular plan, but its bottom is now half of the facade's road projection.
-// The building-side diagonal is exactly collinear with the 35-degree facade and has no rail; only the outer edge does.
-// Every higher tread contracts linearly until its top matches the left-hand door's projected width.
-export const SCB_STAIR_COUNT = 30;
+// The corrected flight is a right trapezoid, not a pointed triangle: its left edge is perpendicular to the
+// road-parallel bottom tread, while the right edge remains exactly attached to the 35-degree facade. Keeping the
+// left edge upright and the right edge attached makes the bottom wider than the former half-facade flight.
+// Twenty-four 150 mm risers reach the 3.6 m lobby; every tread remains parallel to Des Voeux Road.
+export const SCB_STAIR_COUNT = 24;
 export const SCB_STAIR_RUN = 12.5;
 export const SCB_ROAD_SETBACK = 3;
 export const SCB_STAIR_TREAD = SCB_STAIR_RUN / SCB_STAIR_COUNT;
@@ -102,16 +103,19 @@ const roadLocalZ = roadWorldX * modelFrameSn + roadWorldZ * modelFrameCs;
 export const SCB_STAIR_ROAD_HEADING = Math.atan2(-roadLocalZ, roadLocalX);
 export const SCB_FACADE_STAIR_ANGLE = Math.abs(SCB_STAIR_ROAD_HEADING);
 const facingCos = Math.cos(SCB_FACADE_STAIR_ANGLE), facingSin = Math.sin(SCB_FACADE_STAIR_ANGLE);
-export const SCB_STAIR_WIDTH = SCB_WIDTH * facingCos * 0.5;
 export const SCB_STAIR_TOP_WIDTH = SCB_ENTRANCE_DOOR_WIDTH * facingCos;
 export const SCB_STAIR_TOP_CENTER_U = SCB_LEFT_ENTRANCE_X * facingCos;
 export const SCB_STAIR_TOP_RIGHT_U = SCB_STAIR_TOP_CENTER_U - SCB_STAIR_TOP_WIDTH * 0.5;
 export const SCB_STAIR_TOP_LEFT_U = SCB_STAIR_TOP_CENTER_U + SCB_STAIR_TOP_WIDTH * 0.5;
 export const SCB_STAIR_BOTTOM_RIGHT_U = SCB_STAIR_TOP_RIGHT_U - SCB_STAIR_RUN * facingCos / facingSin;
-export const SCB_STAIR_BOTTOM_LEFT_U = SCB_STAIR_BOTTOM_RIGHT_U + SCB_STAIR_WIDTH;
+// A constant road-frame U coordinate makes the left edge exactly 90 degrees to every road-parallel tread.
+export const SCB_STAIR_BOTTOM_LEFT_U = SCB_STAIR_TOP_LEFT_U;
+export const SCB_STAIR_WIDTH = SCB_STAIR_BOTTOM_LEFT_U - SCB_STAIR_BOTTOM_RIGHT_U;
 export const SCB_STAIR_RAIL_SIDES = Object.freeze([1]);
 export const SCB_STAIR_PARAPET_HEIGHT = 0.92;
 export const SCB_STAIR_PARAPET_THICKNESS = 0.34;
+export const SCB_STAIR_HANDRAIL_HEIGHT = 0.82;
+export const SCB_STAIR_HANDRAIL_OFFSET = 0.075;
 export const SCB_STAIR_TOP_LANDING_DEPTH = SCB_ENTRANCE_DOOR_WIDTH * facingSin + 0.25;
 
 // Position the tower from the required left-door / top-tread relationship after applying the same road setback to

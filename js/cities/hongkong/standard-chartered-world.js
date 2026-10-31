@@ -30,6 +30,8 @@ import {
   SCB_STAIR_RAIL_SIDES,
   SCB_STAIR_PARAPET_HEIGHT,
   SCB_STAIR_PARAPET_THICKNESS,
+  SCB_STAIR_HANDRAIL_HEIGHT,
+  SCB_STAIR_HANDRAIL_OFFSET,
   SCB_STAIR_TOP_LANDING_DEPTH,
   scbStairEdgesAt,
   scbStairRoadToLocal,
@@ -375,8 +377,8 @@ export function buildStandardCharteredBankBuilding(root) {
   entranceSign.rotation.y = Math.PI;
   group.add(entranceSign);
 
-  // Every riser stays parallel to Des Voeux Road while the two independently converging sides retain the triangular
-  // flight plan. The road frame remains independent of the 35-degree architectural frame.
+  // Every riser stays parallel to Des Voeux Road. The left boundary is a straight 90-degree edge in that road
+  // frame; only the right boundary converges, remaining flush with the independent 35-degree architectural frame.
   const stairMaterial = new THREE.MeshStandardMaterial({ color: 0xb7afa5, roughness: 0.82, metalness: 0.02 });
   const stairPoint = (u, v, y = 0) => ({ ...scbStairRoadToLocal(u, v), y });
   const stairVector = (u, v, y) => {
@@ -387,8 +389,8 @@ export function buildStandardCharteredBankBuilding(root) {
     const edges = scbStairEdgesAt(t);
     return side === 1 ? edges.left : edges.right;
   };
-  // Each tread is a trapezoidal prism. The building-side boundary lies on the facade itself; the outer boundary
-  // carries the only rail. Tread 1 is half the facade projection and tread 30 ends at the left-door width.
+  // Each tread is a trapezoidal prism. The right boundary lies on the facade itself; the straight left boundary
+  // carries the stone wall and its wall-mounted handrail. Tread 24 ends at the left-door width.
   const stairPositions = [];
   const stairTriangles = [
     4, 6, 5, 5, 6, 7, // top
@@ -446,8 +448,8 @@ export function buildStandardCharteredBankBuilding(root) {
   landingMesh.userData.landingCount = 1;
   group.add(landingMesh);
 
-  // A continuous stone parapet follows the outer diagonal from the Dec 2025 reference. Its bottom follows the stair
-  // ramp and its top rises 0.92 m above it, so there are no floating step-by-step wall fragments or saw-tooth coping.
+  // A continuous stone parapet follows the straight left edge from the Dec 2025 reference. Its bottom follows the
+  // stair ramp and its top rises 0.92 m above it, with no floating fragments or saw-tooth coping.
   const parapetMaterial = createScbParapetMaterial();
   const parapets = [];
   for (const side of SCB_STAIR_RAIL_SIDES) {
@@ -489,28 +491,28 @@ export function buildStandardCharteredBankBuilding(root) {
     parapets.push(parapet);
   }
 
-  const railPosts = [];
+  // The reference rail is fixed to the inner face of the stone wall, not carried by freestanding posts from the
+  // treads. Short horizontal brackets return to the wall; the rail itself stays below the stone coping.
   for (const side of SCB_STAIR_RAIL_SIDES) {
+    const railU = (t) => stairEdgeU(side, t) - side * SCB_STAIR_HANDRAIL_OFFSET;
     addBeamBetween(
       group,
-      stairVector(stairEdgeU(side, 0), 0, SCB_STAIR_RISE + 1.06),
-      stairVector(stairEdgeU(side, 1), SCB_STAIR_RUN, SCB_ENTRANCE_BASE_Y + 1.06),
+      stairVector(railU(0), 0, SCB_STAIR_HANDRAIL_HEIGHT),
+      stairVector(railU(1), SCB_STAIR_RUN, SCB_ENTRANCE_BASE_Y + SCB_STAIR_HANDRAIL_HEIGHT),
       0.045, octagonMetal, 'SCBEntranceStairHandrail'
     );
-    for (let i = 0; i < SCB_STAIR_COUNT; i += 5) {
-      const t = (i + 0.5) / SCB_STAIR_COUNT;
-      const top = (i + 1) * SCB_STAIR_RISE;
-      railPosts.push({
-        ...stairPoint(stairEdgeU(side, t), (i + 0.5) * SCB_STAIR_TREAD, top + 0.53),
-        sx: 0.055, sy: 1.06, sz: 0.055
-      });
+    for (let i = 0; i <= SCB_STAIR_COUNT; i += 4) {
+      const t = i / SCB_STAIR_COUNT;
+      const v = i * SCB_STAIR_TREAD;
+      const y = i * SCB_STAIR_RISE + SCB_STAIR_HANDRAIL_HEIGHT;
+      addBeamBetween(
+        group,
+        stairVector(stairEdgeU(side, t) + side * 0.012, v, y),
+        stairVector(railU(t), v, y),
+        0.025, octagonMetal, 'SCBEntranceStairWallRailBracket'
+      );
     }
-    railPosts.push({
-      ...stairPoint(stairEdgeU(side, 1), SCB_STAIR_RUN, SCB_ENTRANCE_BASE_Y + 0.53),
-      sx: 0.055, sy: 1.06, sz: 0.055
-    });
   }
-  addInstances(group, unitBox, octagonMetal, railPosts, 'SCBEntranceStairRailPosts');
 
   const colliders = SCB_TIERS.map((tier) => scbLocalCollider({
     x: 0, z: tier.z, w: SCB_WIDTH, d: tier.depth, minY: SCB_BASE_Y, maxY: tier.roofY + 0.45
@@ -530,7 +532,7 @@ export function buildStandardCharteredBankBuilding(root) {
       colliders.push(scbLocalCollider({
         x: (a.x + b.x) * 0.5, z: (a.z + b.z) * 0.5,
         w: SCB_STAIR_PARAPET_THICKNESS, d: Math.hypot(dx, dz) + 0.02,
-        minY: 0, maxY: last * SCB_STAIR_RISE + 1.06, heading: Math.atan2(dx, dz)
+        minY: 0, maxY: last * SCB_STAIR_RISE + SCB_STAIR_PARAPET_HEIGHT, heading: Math.atan2(dx, dz)
       }));
     }
   }

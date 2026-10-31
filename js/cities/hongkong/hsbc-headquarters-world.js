@@ -5,6 +5,7 @@ import { cityUniforms, facadeCell, filteredPulse, createFacadeBoxes, WALL_KINDS 
 import {
   HSBC_SITE,
   HSBC_HEIGHT,
+  HSBC_ROOF_SIGN,
   HSBC_PLAZA_TOP,
   HSBC_BANKING_HALL_BASE,
   HSBC_FLOOR_HEIGHT,
@@ -121,12 +122,17 @@ function createStairArchGeometry(radius = 0.03) {
   return new THREE.TubeGeometry(curve, 20, radius, 5, false);
 }
 
-function drawHsbcDevice(ctx, ox, oy, size, foreground, background = null) {
+function drawHsbcDevice(ctx, ox, oy, width, foreground, background = null, height = width) {
   // Correct HSBC device: four outer triangles around a negative-space cross, not a six-slice fan.
+  // The roof elevation is 2:1; the entrance call keeps its original square device via the default height.
   const hexagon = [[0.25, 0], [0.75, 0], [1, 0.5], [0.75, 1], [0.25, 1], [0, 0.5]];
+  const point = ([x, y]) => [ox + x * width, oy + y * height];
   if (background) {
     ctx.beginPath();
-    hexagon.forEach(([x, y], index) => index ? ctx.lineTo(ox + x * size, oy + y * size) : ctx.moveTo(ox + x * size, oy + y * size));
+    hexagon.forEach((vertex, index) => {
+      const [x, y] = point(vertex);
+      if (index) ctx.lineTo(x, y); else ctx.moveTo(x, y);
+    });
     ctx.closePath(); ctx.fillStyle = background; ctx.fill();
   }
   const triangles = [
@@ -138,18 +144,23 @@ function drawHsbcDevice(ctx, ox, oy, size, foreground, background = null) {
   ctx.fillStyle = foreground;
   for (const triangle of triangles) {
     ctx.beginPath();
-    triangle.forEach(([x, y], index) => index ? ctx.lineTo(ox + x * size, oy + y * size) : ctx.moveTo(ox + x * size, oy + y * size));
+    triangle.forEach((vertex, index) => {
+      const [x, y] = point(vertex);
+      if (index) ctx.lineTo(x, y); else ctx.moveTo(x, y);
+    });
     ctx.closePath(); ctx.fill();
   }
 }
 
 function createHsbcSignTexture() {
   const canvas = document.createElement('canvas');
-  canvas.width = 256; canvas.height = 192;
+  const { textureWidth, textureHeight, deviceWidth, deviceHeight } = HSBC_ROOF_SIGN;
+  canvas.width = textureWidth; canvas.height = textureHeight;
   const ctx = canvas.getContext('2d');
   ctx.clearRect(0, 0, canvas.width, canvas.height);
-  // The close elevation shows the red-and-white device centred above the dark curved sunscoop.
-  drawHsbcDevice(ctx, 48, 16, 160, '#db0011', '#ffffff');
+  // Front-elevation reference: a horizontally proportioned 2:1 device above the dark curved sunscoop.
+  drawHsbcDevice(ctx, (textureWidth - deviceWidth) / 2, (textureHeight - deviceHeight) / 2,
+    deviceWidth, '#db0011', '#ffffff', deviceHeight);
   const texture = new THREE.CanvasTexture(canvas);
   texture.colorSpace = THREE.SRGBColorSpace;
   texture.anisotropy = 4;
@@ -727,7 +738,7 @@ export function buildHsbcHeadquarters(root) {
   signMaterial.colorNode = signTex.rgb;
   signMaterial.opacityNode = signTex.a;
   for (const face of [-1, 1]) {
-    const sign = new THREE.Mesh(new THREE.PlaneGeometry(4.8, 3.6), signMaterial);
+    const sign = new THREE.Mesh(new THREE.PlaneGeometry(HSBC_ROOF_SIGN.planeWidth, HSBC_ROOF_SIGN.planeHeight), signMaterial);
     sign.position.set(0, 177, HSBC_MAIN_BAY.z + face * 5.04);
     if (face < 0) sign.rotation.y = Math.PI;
     sign.name = face < 0 ? 'HSBCNorthSign' : 'HSBCSouthSign';
