@@ -77,6 +77,9 @@ test('the hand-built HSBC model includes its photographic identifying features w
   assert.match(source, /HSBCUnderbellyCofferPanels/);
   assert.match(source, /HSBCEscalatorSteps/);
   assert.match(source, /HSBCRoundedStairLandingWindows/);
+  assert.match(source, /HSBCExternalStairLadderRails/);
+  assert.match(source, /HSBCExternalStairLadderLandings/);
+  assert.match(source, /floor <= bay\.floors/);
   assert.match(source, /double-height reception band/);
   assert.match(source, /createHsbcCurtainWallMaterial/);
   assert.match(source, /createHsbcSignTexture/);

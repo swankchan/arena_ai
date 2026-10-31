@@ -372,6 +372,7 @@ export function buildHsbcHeadquarters(root) {
 
   const claddingBoxes = [], steelBoxes = [], darkBoxes = [], lightBoxes = [], bronzeBoxes = [], stoneBoxes = [], cofferBoxes = [], greenBoxes = [];
   const beams = [], darkBeams = [], masts = [], mastCollars = [], stairWindows = [], stairArchWindows = [], escalatorSteps = [];
+  const ladderFrames = [], ladderLandings = [];
   const up = new THREE.Vector3(0, 1, 0);
   function beam(list, a, b, thickness) {
     const start = new THREE.Vector3(...a), end = new THREE.Vector3(...b);
@@ -415,6 +416,11 @@ export function buildHsbcHeadquarters(root) {
 
   const serviceWidth = (HSBC_FRAME_WIDTH - HSBC_GLASS_WIDTH) * 0.5;
   const serviceX = HSBC_GLASS_WIDTH * 0.5 + serviceWidth * 0.5;
+  // The exposed escape-stair strips flank the main glass like two ladders, between the glass edge and inner masts.
+  const ladderInnerX = HSBC_GLASS_WIDTH * 0.5;
+  const ladderOuterX = Math.abs(HSBC_MAST_X[1]);
+  const ladderWidth = ladderOuterX - ladderInnerX;
+  const ladderCenterX = (ladderInnerX + ladderOuterX) * 0.5;
   for (const bay of HSBC_BAYS) {
     const bodyHeight = bay.roofY - HSBC_BANKING_HALL_BASE;
     for (const side of [-1, 1]) {
@@ -439,12 +445,40 @@ export function buildHsbcHeadquarters(root) {
         lightBoxes.push({ x, y: HSBC_BANKING_HALL_BASE - 0.64, z: bay.z + zOffset, sx: 0.24, sy: 0.06, sz: 0.24 });
       }
     }
+    for (const face of [-1, 1]) {
+      const recessZ = bay.z + face * (bay.depth * 0.5 + 0.02);
+      const railZ = bay.z + face * (bay.depth * 0.5 + 0.13);
+      for (const side of [-1, 1]) {
+        darkBoxes.push({
+          x: side * ladderCenterX, y: HSBC_BANKING_HALL_BASE + bodyHeight * 0.5, z: recessZ,
+          sx: ladderWidth, sy: bodyHeight, sz: 0.04
+        });
+        for (const railX of [ladderInnerX, ladderOuterX]) {
+          ladderFrames.push({
+            x: side * railX, y: HSBC_BANKING_HALL_BASE + bodyHeight * 0.5, z: railZ,
+            sx: 0.17, sy: bodyHeight, sz: 0.2
+          });
+        }
+      }
+    }
+    // Every floor has a projecting horizontal landing: these are the ladder rungs visible in the front elevation.
+    for (let floor = 0; floor <= bay.floors; floor++) {
+      const y = HSBC_BANKING_HALL_BASE + floor * HSBC_FLOOR_HEIGHT + 0.18;
+      for (const face of [-1, 1]) {
+        for (const side of [-1, 1]) {
+          ladderLandings.push({
+            x: side * ladderCenterX, y, z: bay.z + face * (bay.depth * 0.5 + 0.23),
+            sx: ladderWidth + 0.12, sy: 0.17, sz: 0.56
+          });
+        }
+      }
+    }
     for (let floor = 0; floor < bay.floors; floor++) {
       const y = HSBC_BANKING_HALL_BASE + (floor + 0.5) * HSBC_FLOOR_HEIGHT;
       for (const face of [-1, 1]) {
         for (const side of [-1, 1]) {
           stairArchWindows.push({
-            x: side * (HSBC_GLASS_WIDTH * 0.5 + 1.15), y, z: bay.z + face * (bay.depth * 0.5 + 0.075)
+            x: side * ladderCenterX, y, z: bay.z + face * (bay.depth * 0.5 + 0.075)
           });
         }
       }
@@ -604,6 +638,8 @@ export function buildHsbcHeadquarters(root) {
   addInstances(group, new THREE.BoxGeometry(1, 1, 1), steel, steelBoxes, 'HSBCUnderbellyTerracesAndCranes');
   addInstances(group, new THREE.BoxGeometry(1, 1, 1), cofferMaterial, cofferBoxes, 'HSBCUnderbellyCofferPanels');
   addInstances(group, new THREE.BoxGeometry(1, 1, 1), dark, darkBoxes, 'HSBCServiceGlazingAndMastLadders');
+  addInstances(group, new THREE.BoxGeometry(1, 1, 1), steel, ladderFrames, 'HSBCExternalStairLadderRails');
+  addInstances(group, new THREE.BoxGeometry(1, 1, 1), steel, ladderLandings, 'HSBCExternalStairLadderLandings');
   addInstances(group, new THREE.BoxGeometry(1, 1, 1), dark, stairWindows, 'HSBCEscapeStairWindows', { castShadow: false });
   addInstances(group, createStairWindowGeometry(), stairGlass, stairArchWindows, 'HSBCRoundedStairLandingWindows', { castShadow: false });
   addInstances(group, new THREE.BoxGeometry(1, 1, 1), steel, beams, 'HSBCInvertedVSuspensionTrusses');
@@ -654,6 +690,8 @@ export function buildHsbcHeadquarters(root) {
     hsbcStoreys: HSBC_BAYS.reduce((sum, bay) => sum + bay.floors, 0),
     hsbcMasts: masts.length,
     hsbcSuspensionLevels: hsbcSuspensionLevelsForRoof(HSBC_MAIN_ROOF_Y).length,
+    hsbcStairLadders: HSBC_BAYS.length * 4,
+    hsbcStairLadderLandings: ladderLandings.length,
     hsbcLions: 2,
     hsbcEscalators: 2,
     hsbcColliders: colliders.length
