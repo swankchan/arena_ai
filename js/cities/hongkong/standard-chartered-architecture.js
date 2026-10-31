@@ -42,6 +42,9 @@ export const SCB_SITE = Object.freeze({
 export const SCB_HEIGHT = 191;
 export const SCB_FLOORS = 42;
 export const SCB_BASE_Y = 0.72;
+// The main lobby sits above the street at the head of the long ceremonial flight. Keep the structural tower base
+// separate: raising the whole building would create an unsupported undercroft around the side and rear elevations.
+export const SCB_ENTRANCE_BASE_Y = 4.2;
 export const SCB_PODIUM_HEIGHT = 27;
 export const SCB_FLOOR_HEIGHT = 4.05;
 export const SCB_OFFICE_ROWS = 37;
@@ -76,9 +79,34 @@ export const SCB_SIGN_FIN = Object.freeze({
   baseY: SCB_MAIN_ROOF_Y, topY: SCB_HEIGHT
 });
 
-export const SCB_STAIR_COUNT = 5;
-export const SCB_STAIR_DEPTH = 0.7;
-export const SCB_STAIR_FRONT_Z = SCB_FRONT_Z - (SCB_STAIR_COUNT + 1) * SCB_STAIR_DEPTH;
+// One long, shallow flight crosses the frontage obliquely: low at the screen-right end, high at the screen-left
+// entrance landing. Thirty broad treads fit the real frontage without pushing the bottom of the flight into the road.
+export const SCB_STAIR_COUNT = 30;
+export const SCB_STAIR_WIDTH = 3.8;
+export const SCB_STAIR_BOTTOM = Object.freeze({ x: -9, z: SCB_FRONT_Z - 3.8 });
+export const SCB_STAIR_TOP = Object.freeze({ x: 9, z: SCB_FRONT_Z - 1.4 });
+const stairDX = SCB_STAIR_TOP.x - SCB_STAIR_BOTTOM.x;
+const stairDZ = SCB_STAIR_TOP.z - SCB_STAIR_BOTTOM.z;
+export const SCB_STAIR_RUN = Math.hypot(stairDX, stairDZ);
+export const SCB_STAIR_TREAD = SCB_STAIR_RUN / SCB_STAIR_COUNT;
+export const SCB_STAIR_RISE = SCB_ENTRANCE_BASE_Y / SCB_STAIR_COUNT;
+export const SCB_STAIR_HEADING = Math.atan2(stairDX, stairDZ);
+export const SCB_STAIR_DIRECTION = Object.freeze({ x: stairDX / SCB_STAIR_RUN, z: stairDZ / SCB_STAIR_RUN });
+export const SCB_STAIR_TOP_LANDING_DEPTH = 1.6;
+export const SCB_ENTRANCE_LANDING = Object.freeze({
+  x: 0,
+  z: (SCB_STAIR_TOP.z + SCB_FRONT_Z + 0.05) * 0.5,
+  w: SCB_WIDTH + 1.1,
+  d: SCB_FRONT_Z + 0.05 - SCB_STAIR_TOP.z
+});
+
+function scbStairCoordinates(x, z, origin = SCB_STAIR_BOTTOM) {
+  const dx = x - origin.x, dz = z - origin.z;
+  return {
+    along: dx * SCB_STAIR_DIRECTION.x + dz * SCB_STAIR_DIRECTION.z,
+    across: dx * SCB_STAIR_DIRECTION.z - dz * SCB_STAIR_DIRECTION.x
+  };
+}
 
 export function scbLocalToWorld(x, z) {
   const cs = Math.cos(SCB_SITE.ry), sn = Math.sin(SCB_SITE.ry);
@@ -91,24 +119,30 @@ export function scbWorldToLocal(x, z) {
   return { x: dx * cs - dz * sn, z: dx * sn + dz * cs };
 }
 
-// Ground-height field for the real entrance stair / landing. It is deliberately limited to the stair footprint; the
-// whole OSM lot must not become an invisible raised platform around the tower.
+// Ground-height field for exactly the same diagonal stair and two landing footprints as the rendered meshes. Each
+// tread is sampled independently, so a pedestrian climbs thirty 0.14 m risers rather than sliding up an invisible ramp.
 export function scbEntranceGroundHeight(x, z, ground = 0) {
   const local = scbWorldToLocal(x, z);
-  if (Math.abs(local.x) > SCB_WIDTH * 0.5 + 0.6) return ground;
-  const stairRun = SCB_STAIR_COUNT * SCB_STAIR_DEPTH;
-  if (local.z >= SCB_STAIR_FRONT_Z && local.z < SCB_FRONT_Z - SCB_STAIR_DEPTH) {
-    const t = Math.max(0, Math.min(1, (local.z - SCB_STAIR_FRONT_Z) / stairRun));
-    return Math.max(ground, Math.ceil(t * SCB_STAIR_COUNT) * SCB_BASE_Y / SCB_STAIR_COUNT);
+  let height = ground;
+  const stair = scbStairCoordinates(local.x, local.z);
+  if (stair.along >= 0 && stair.along < SCB_STAIR_RUN && Math.abs(stair.across) <= SCB_STAIR_WIDTH * 0.5) {
+    const step = Math.min(SCB_STAIR_COUNT - 1, Math.floor(stair.along / SCB_STAIR_TREAD));
+    height = Math.max(height, (step + 1) * SCB_STAIR_RISE);
   }
-  if (local.z >= SCB_FRONT_Z - SCB_STAIR_DEPTH && local.z <= SCB_FRONT_Z + 0.05) {
-    return Math.max(ground, SCB_BASE_Y);
+  const topLanding = scbStairCoordinates(local.x, local.z, SCB_STAIR_TOP);
+  if (topLanding.along >= 0 && topLanding.along <= SCB_STAIR_TOP_LANDING_DEPTH
+    && Math.abs(topLanding.across) <= SCB_STAIR_WIDTH * 0.5) {
+    height = Math.max(height, SCB_ENTRANCE_BASE_Y);
   }
-  return ground;
+  if (Math.abs(local.x - SCB_ENTRANCE_LANDING.x) <= SCB_ENTRANCE_LANDING.w * 0.5
+    && Math.abs(local.z - SCB_ENTRANCE_LANDING.z) <= SCB_ENTRANCE_LANDING.d * 0.5) {
+    height = Math.max(height, SCB_ENTRANCE_BASE_Y);
+  }
+  return height;
 }
 
-export function scbLocalCollider({ x, z, w, d, minY, maxY }) {
-  const centre = scbLocalToWorld(x, z), cs = Math.cos(SCB_SITE.ry), sn = Math.sin(SCB_SITE.ry);
+export function scbLocalCollider({ x, z, w, d, minY, maxY, heading = 0 }) {
+  const centre = scbLocalToWorld(x, z), cs = Math.cos(SCB_SITE.ry + heading), sn = Math.sin(SCB_SITE.ry + heading);
   const hx = w * 0.5, hz = d * 0.5;
   return {
     minX: centre.x - Math.abs(cs) * hx - Math.abs(sn) * hz,

@@ -6,11 +6,13 @@ const test = require('node:test');
 const root = path.join(__dirname, '..');
 let architecture;
 let scb;
+let scbLogo;
 let geo;
 
 test.before(async () => {
   architecture = await import('../js/cities/hongkong/hsbc-headquarters-architecture.js');
   scb = await import('../js/cities/hongkong/standard-chartered-architecture.js');
+  scbLogo = await import('../js/cities/hongkong/standard-chartered-logo.js');
   geo = (await import('../js/hk-geodata.js')).GEO;
 });
 
@@ -139,12 +141,13 @@ test('Standard Chartered uses OSM way 85320719 immediately west of HSBC with a n
   assert.ok(north.z < south.z, 'local -z faces north / Des Voeux Road Central');
 });
 
-test('Standard Chartered keeps three stepped tiers, three octagon bays and a walkable entrance stair', () => {
+test('Standard Chartered keeps three stepped tiers and a thirty-tread oblique walkable entrance flight', () => {
   const {
     SCB_TIERS, SCB_MAIN_ROOF_Y, SCB_HEIGHT, SCB_FRONT_PIER_X, SCB_FRONT_GLASS_X,
     SCB_OCTAGON_Y, SCB_PODIUM_HEIGHT, SCB_ENTRANCE_HEIGHT, SCB_SIGN_FIN,
-    SCB_STAIR_COUNT, SCB_STAIR_FRONT_Z, SCB_FRONT_Z, SCB_BASE_Y,
-    scbLocalToWorld, scbEntranceGroundHeight, scbLocalCollider
+    SCB_STAIR_COUNT, SCB_STAIR_BOTTOM, SCB_STAIR_TOP, SCB_STAIR_RUN, SCB_STAIR_WIDTH,
+    SCB_STAIR_TREAD, SCB_STAIR_RISE, SCB_STAIR_DIRECTION, SCB_FRONT_Z,
+    SCB_BASE_Y, SCB_ENTRANCE_BASE_Y, scbLocalToWorld, scbEntranceGroundHeight, scbLocalCollider
   } = scb;
   assert.equal(SCB_TIERS.length, 3);
   assert.deepEqual(SCB_TIERS.map((tier) => tier.id), ['north', 'central', 'south']);
@@ -154,13 +157,30 @@ test('Standard Chartered keeps three stepped tiers, three octagon bays and a wal
   assert.ok(SCB_SIGN_FIN.baseY < SCB_HEIGHT && SCB_SIGN_FIN.baseY >= SCB_MAIN_ROOF_Y);
   assert.equal(SCB_FRONT_PIER_X.length, 3);
   assert.equal(SCB_FRONT_GLASS_X.length, 2);
-  assert.ok(SCB_OCTAGON_Y > SCB_ENTRANCE_HEIGHT && SCB_OCTAGON_Y < SCB_PODIUM_HEIGHT);
+  assert.ok(SCB_OCTAGON_Y > SCB_ENTRANCE_BASE_Y + SCB_ENTRANCE_HEIGHT && SCB_OCTAGON_Y < SCB_PODIUM_HEIGHT,
+    'the raised entrance glazing still clears the octagonal windows');
   assert.ok(SCB_ENTRANCE_HEIGHT > 12, 'the reference has unusually tall gold-framed entrance glazing');
-  assert.equal(SCB_STAIR_COUNT, 5);
-  const far = scbLocalToWorld(0, SCB_STAIR_FRONT_Z - 0.01);
-  const landing = scbLocalToWorld(0, SCB_FRONT_Z - 0.2);
+  assert.equal(SCB_STAIR_COUNT, 30);
+  assert.ok(SCB_STAIR_RUN > 18 && SCB_STAIR_RUN < 19);
+  assert.ok(SCB_STAIR_TOP.x > SCB_STAIR_BOTTOM.x && SCB_STAIR_TOP.z > SCB_STAIR_BOTTOM.z,
+    'the single flight climbs obliquely from screen-right / street side towards screen-left / entrance');
+  assert.ok(SCB_STAIR_WIDTH > 3 && SCB_STAIR_TREAD > 0.55 && SCB_STAIR_TREAD < 0.7);
+  assert.ok(Math.abs(SCB_STAIR_RISE * SCB_STAIR_COUNT - SCB_ENTRANCE_BASE_Y) < 1e-9);
+  const far = scbLocalToWorld(
+    SCB_STAIR_BOTTOM.x - SCB_STAIR_DIRECTION.x * 0.05,
+    SCB_STAIR_BOTTOM.z - SCB_STAIR_DIRECTION.z * 0.05
+  );
   assert.equal(scbEntranceGroundHeight(far.x, far.z, 0.025), 0.025);
-  assert.ok(Math.abs(scbEntranceGroundHeight(landing.x, landing.z, 0.025) - SCB_BASE_Y) < 1e-9);
+  for (let i = 0; i < SCB_STAIR_COUNT; i++) {
+    const point = scbLocalToWorld(
+      SCB_STAIR_BOTTOM.x + SCB_STAIR_DIRECTION.x * (i + 0.5) * SCB_STAIR_TREAD,
+      SCB_STAIR_BOTTOM.z + SCB_STAIR_DIRECTION.z * (i + 0.5) * SCB_STAIR_TREAD
+    );
+    assert.ok(Math.abs(scbEntranceGroundHeight(point.x, point.z, 0.025) - (i + 1) * SCB_STAIR_RISE) < 1e-9,
+      `tread ${i + 1} has its own exact walking height`);
+  }
+  const landing = scbLocalToWorld(0, SCB_FRONT_Z - 0.2);
+  assert.ok(Math.abs(scbEntranceGroundHeight(landing.x, landing.z, 0.025) - SCB_ENTRANCE_BASE_Y) < 1e-9);
   const collider = scbLocalCollider({ x: 0, z: 0, w: 20, d: 20, minY: SCB_BASE_Y, maxY: SCB_HEIGHT });
   assert.ok(collider.obb && collider.maxY === SCB_HEIGHT);
 });
@@ -175,10 +195,20 @@ test('the hand-built Standard Chartered model includes the photographed identifi
   assert.match(source, /SCBGoldEntranceSurrounds/);
   assert.match(source, /SCBTallEntranceGlazing/);
   assert.match(source, /SCBDesVoeuxRoadEntranceSteps/);
+  assert.match(source, /SCBEntranceRaisedLandings/);
+  assert.match(source, /SCBEntranceStairHandrail/);
+  assert.match(source, /SCBEntranceStairRailPosts/);
   assert.match(source, /SCBCrownLogo/);
   assert.match(source, /SCBCrownLogoWest/);
+  assert.match(source, /drawStandardCharteredDevice/);
   assert.match(source, /createScbRibbonFacadeMaterial/);
   assert.match(source, /createScbFrontGlassMaterial/);
   assert.match(source, /cityUniforms\.uInteriorGlow/);
-  assert.doesNotMatch(source, /TextureLoader|image-search|https?:\/\//);
+  assert.doesNotMatch(source, /bezierCurveTo|TextureLoader|image-search|https?:\/\//);
+  assert.equal(scbLogo.SCB_DEVICE_PATHS.length, 4, 'two interlocking main ribbons plus two detached caps');
+  assert.deepEqual(scbLogo.SCB_DEVICE_PATHS.map((part) => part.tone), ['green', 'blue', 'green', 'blue']);
+  assert.equal(new Set(scbLogo.SCB_DEVICE_PATHS.map((part) => part.d)).size, 4);
+  for (const part of scbLogo.SCB_DEVICE_PATHS) {
+    assert.ok(part.d.length > 150 && /[ac]/.test(part.d), 'each ribbon is curved vector geometry, not an S glyph');
+  }
 });

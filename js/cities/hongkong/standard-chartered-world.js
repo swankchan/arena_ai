@@ -1,10 +1,12 @@
 import * as THREE from 'three/webgpu';
 import { color, dot, float, fract, mix, sin, smoothstep, step, texture, uv, vec2 } from 'three/tsl';
 import { cityUniforms, facadeCell, filteredPulse, createFacadeBoxes } from '../../tsl-materials.js';
+import { drawStandardCharteredDevice } from './standard-chartered-logo.js';
 import {
   SCB_SITE,
   SCB_HEIGHT,
   SCB_BASE_Y,
+  SCB_ENTRANCE_BASE_Y,
   SCB_PODIUM_HEIGHT,
   SCB_FLOOR_HEIGHT,
   SCB_MAIN_ROOF_Y,
@@ -19,8 +21,16 @@ import {
   SCB_ENTRANCE_HEIGHT,
   SCB_SIGN_FIN,
   SCB_STAIR_COUNT,
-  SCB_STAIR_DEPTH,
-  SCB_STAIR_FRONT_Z,
+  SCB_STAIR_WIDTH,
+  SCB_STAIR_BOTTOM,
+  SCB_STAIR_TOP,
+  SCB_STAIR_RUN,
+  SCB_STAIR_TREAD,
+  SCB_STAIR_RISE,
+  SCB_STAIR_HEADING,
+  SCB_STAIR_DIRECTION,
+  SCB_STAIR_TOP_LANDING_DEPTH,
+  SCB_ENTRANCE_LANDING,
   scbLocalCollider
 } from './standard-chartered-architecture.js';
 
@@ -118,6 +128,18 @@ function addInstances(group, geometry, material, transforms, name, { castShadow 
   return mesh;
 }
 
+function addBeamBetween(group, a, b, radius, material, name) {
+  const direction = new THREE.Vector3().subVectors(b, a);
+  const mesh = new THREE.Mesh(new THREE.CylinderGeometry(radius, radius, direction.length(), 8), material);
+  mesh.position.copy(a).add(b).multiplyScalar(0.5);
+  mesh.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), direction.normalize());
+  mesh.name = name;
+  mesh.castShadow = true;
+  mesh.receiveShadow = true;
+  group.add(mesh);
+  return mesh;
+}
+
 function octagonPath(path, radius, reverse = false) {
   for (let n = 0; n < 8; n++) {
     const i = reverse ? 7 - n : n;
@@ -139,37 +161,13 @@ function createOctagonFrameGeometry() {
   return new THREE.ExtrudeGeometry(shape, { depth: 0.16, bevelEnabled: false, curveSegments: 1 });
 }
 
-// Hand-drawn vector device, generated to a canvas at runtime; no logo image or photographic facade is bundled.
-function drawScbDevice(ctx, ox, oy, width, height) {
-  ctx.save();
-  ctx.translate(ox, oy);
-  ctx.scale(width / 256, height / 320);
-  ctx.lineWidth = 31;
-  ctx.lineCap = 'butt';
-  ctx.lineJoin = 'round';
-  ctx.strokeStyle = '#1577bd';
-  ctx.beginPath();
-  ctx.moveTo(174, 37);
-  ctx.bezierCurveTo(128, 12, 69, 39, 73, 86);
-  ctx.bezierCurveTo(77, 130, 166, 109, 171, 155);
-  ctx.bezierCurveTo(176, 201, 108, 222, 65, 187);
-  ctx.stroke();
-  ctx.strokeStyle = '#62a744';
-  ctx.beginPath();
-  ctx.moveTo(191, 127);
-  ctx.bezierCurveTo(145, 101, 91, 124, 95, 169);
-  ctx.bezierCurveTo(99, 214, 187, 191, 192, 237);
-  ctx.bezierCurveTo(197, 281, 133, 302, 91, 270);
-  ctx.stroke();
-  ctx.restore();
-}
-
+// The crown uses the same four-path interlocking ribbon device as the entrance sign, with no raster logo asset.
 function createScbLogoTexture() {
   const canvas = document.createElement('canvas');
-  canvas.width = 384; canvas.height = 480;
+  canvas.width = 384; canvas.height = 552;
   const ctx = canvas.getContext('2d');
   ctx.clearRect(0, 0, canvas.width, canvas.height);
-  drawScbDevice(ctx, 24, 20, 336, 420);
+  drawStandardCharteredDevice(ctx, 24, 20, 336, 512);
   const logo = new THREE.CanvasTexture(canvas);
   logo.colorSpace = THREE.SRGBColorSpace;
   logo.anisotropy = 4;
@@ -181,7 +179,7 @@ function createScbEntranceSignTexture() {
   canvas.width = 1024; canvas.height = 256;
   const ctx = canvas.getContext('2d');
   ctx.clearRect(0, 0, canvas.width, canvas.height);
-  drawScbDevice(ctx, 22, 22, 130, 212);
+  drawStandardCharteredDevice(ctx, 22, 22, 130, 212);
   ctx.fillStyle = '#f0eee5';
   ctx.textBaseline = 'middle';
   ctx.font = '600 65px Arial, Helvetica, sans-serif';
@@ -255,7 +253,7 @@ export function buildStandardCharteredBankBuilding(root) {
   }], 'SCBCrownSignFin');
 
   const crownLogo = new THREE.Mesh(
-    new THREE.PlaneGeometry(8.8, 11),
+    new THREE.PlaneGeometry(7.6, 11),
     texturedSignMaterial(createScbLogoTexture(), 0.38)
   );
   crownLogo.name = 'SCBCrownLogo';
@@ -263,7 +261,7 @@ export function buildStandardCharteredBankBuilding(root) {
   crownLogo.rotation.y = Math.PI;
   group.add(crownLogo);
   const westCrownLogo = new THREE.Mesh(
-    new THREE.PlaneGeometry(4.55, 11),
+    new THREE.PlaneGeometry(4.55, 6.58),
     texturedSignMaterial(createScbLogoTexture(), 0.38)
   );
   westCrownLogo.name = 'SCBCrownLogoWest';
@@ -300,18 +298,18 @@ export function buildStandardCharteredBankBuilding(root) {
   const entranceGlass = new THREE.MeshStandardNodeMaterial({ color: 0x293231, roughness: 0.24, metalness: 0.4 });
   entranceGlass.emissiveNode = color(0xffd5a0).mul(nightAmount().mul(0.12));
   addInstances(group, unitBox, gold, SCB_FRONT_PIER_X.map((x) => ({
-    x, y: SCB_BASE_Y + SCB_ENTRANCE_HEIGHT * 0.5, z: SCB_FRONT_Z - 0.37,
+    x, y: SCB_ENTRANCE_BASE_Y + SCB_ENTRANCE_HEIGHT * 0.5, z: SCB_FRONT_Z - 0.37,
     sx: 4.5, sy: SCB_ENTRANCE_HEIGHT, sz: 0.1
   })), 'SCBGoldEntranceSurrounds');
   addInstances(group, unitBox, entranceGlass, SCB_FRONT_PIER_X.map((x) => ({
-    x, y: SCB_BASE_Y + SCB_ENTRANCE_HEIGHT * 0.5, z: SCB_FRONT_Z - 0.445,
+    x, y: SCB_ENTRANCE_BASE_Y + SCB_ENTRANCE_HEIGHT * 0.5, z: SCB_FRONT_Z - 0.445,
     sx: 3.82, sy: SCB_ENTRANCE_HEIGHT - 0.7, sz: 0.07
   })), 'SCBTallEntranceGlazing');
   const entranceMullions = [];
   for (const x of SCB_FRONT_PIER_X) {
-    entranceMullions.push({ x, y: SCB_BASE_Y + SCB_ENTRANCE_HEIGHT * 0.5, z: SCB_FRONT_Z - 0.495, sx: 0.095, sy: SCB_ENTRANCE_HEIGHT - 0.65, sz: 0.055 });
-    for (const y of [4.1, 8.1, 11.3]) {
-      entranceMullions.push({ x, y, z: SCB_FRONT_Z - 0.5, sx: 3.84, sy: 0.095, sz: 0.055 });
+    entranceMullions.push({ x, y: SCB_ENTRANCE_BASE_Y + SCB_ENTRANCE_HEIGHT * 0.5, z: SCB_FRONT_Z - 0.495, sx: 0.095, sy: SCB_ENTRANCE_HEIGHT - 0.65, sz: 0.055 });
+    for (const offset of [3.38, 7.38, 10.58]) {
+      entranceMullions.push({ x, y: SCB_ENTRANCE_BASE_Y + offset, z: SCB_FRONT_Z - 0.5, sx: 3.84, sy: 0.095, sz: 0.055 });
     }
   }
   addInstances(group, unitBox, gold, entranceMullions, 'SCBGoldEntranceMullions');
@@ -321,25 +319,67 @@ export function buildStandardCharteredBankBuilding(root) {
     texturedSignMaterial(createScbEntranceSignTexture(), 0.32)
   );
   entranceSign.name = 'SCBEntranceSign';
-  entranceSign.position.set(0, 5.15, SCB_FRONT_Z - 0.535);
+  entranceSign.position.set(0, SCB_ENTRANCE_BASE_Y + 4.43, SCB_FRONT_Z - 0.535);
   entranceSign.rotation.y = Math.PI;
   group.add(entranceSign);
 
-  // Five shallow steps and a landing match the raised Des Voeux Road entrance; ground height uses these same constants.
+  // Thirty broad treads form one oblique flight across the frontage. The landing meshes and the walking-height field
+  // share the same endpoints, heading and rise; the structural tower itself keeps its original base and colour.
   const stairMaterial = new THREE.MeshStandardMaterial({ color: 0xb7afa5, roughness: 0.82, metalness: 0.02 });
+  const stairPoint = (along, across = 0, y = 0) => ({
+    x: SCB_STAIR_BOTTOM.x + SCB_STAIR_DIRECTION.x * along + SCB_STAIR_DIRECTION.z * across,
+    y,
+    z: SCB_STAIR_BOTTOM.z + SCB_STAIR_DIRECTION.z * along - SCB_STAIR_DIRECTION.x * across
+  });
+  const stairVector = (along, across, y) => {
+    const point = stairPoint(along, across, y);
+    return new THREE.Vector3(point.x, point.y, point.z);
+  };
   const stairs = [];
   for (let i = 0; i < SCB_STAIR_COUNT; i++) {
-    const top = (i + 1) * SCB_BASE_Y / SCB_STAIR_COUNT;
+    const top = (i + 1) * SCB_STAIR_RISE;
     stairs.push({
-      x: 0, y: top * 0.5, z: SCB_STAIR_FRONT_Z + (i + 0.5) * SCB_STAIR_DEPTH,
-      sx: SCB_WIDTH + 1.1, sy: top, sz: SCB_STAIR_DEPTH + 0.025
+      ...stairPoint((i + 0.5) * SCB_STAIR_TREAD, 0, top * 0.5),
+      sx: SCB_STAIR_WIDTH, sy: top, sz: SCB_STAIR_TREAD + 0.018,
+      heading: SCB_STAIR_HEADING
     });
   }
-  stairs.push({
-    x: 0, y: SCB_BASE_Y * 0.5, z: SCB_FRONT_Z - SCB_STAIR_DEPTH * 0.5,
-    sx: SCB_WIDTH + 1.1, sy: SCB_BASE_Y, sz: SCB_STAIR_DEPTH + 0.03
-  });
   addInstances(group, unitBox, stairMaterial, stairs, 'SCBDesVoeuxRoadEntranceSteps');
+  const landings = [
+    {
+      ...stairPoint(SCB_STAIR_RUN + SCB_STAIR_TOP_LANDING_DEPTH * 0.5, 0, SCB_ENTRANCE_BASE_Y * 0.5),
+      sx: SCB_STAIR_WIDTH, sy: SCB_ENTRANCE_BASE_Y, sz: SCB_STAIR_TOP_LANDING_DEPTH + 0.02,
+      heading: SCB_STAIR_HEADING
+    },
+    {
+      x: SCB_ENTRANCE_LANDING.x, y: SCB_ENTRANCE_BASE_Y * 0.5, z: SCB_ENTRANCE_LANDING.z,
+      sx: SCB_ENTRANCE_LANDING.w, sy: SCB_ENTRANCE_BASE_Y, sz: SCB_ENTRANCE_LANDING.d
+    }
+  ];
+  addInstances(group, unitBox, stairMaterial, landings, 'SCBEntranceRaisedLandings');
+
+  const railOffset = SCB_STAIR_WIDTH * 0.5 - 0.12;
+  const railPosts = [];
+  for (const side of [-1, 1]) {
+    addBeamBetween(
+      group,
+      stairVector(0.12, side * railOffset, SCB_STAIR_RISE + 1.06),
+      stairVector(SCB_STAIR_RUN, side * railOffset, SCB_ENTRANCE_BASE_Y + 1.06),
+      0.045, octagonMetal, 'SCBEntranceStairHandrail'
+    );
+    for (let i = 0; i < SCB_STAIR_COUNT; i += 5) {
+      const top = (i + 1) * SCB_STAIR_RISE;
+      railPosts.push({
+        ...stairPoint((i + 0.5) * SCB_STAIR_TREAD, side * railOffset, top + 0.53),
+        sx: 0.055, sy: 1.06, sz: 0.055
+      });
+    }
+    railPosts.push({
+      ...stairPoint(SCB_STAIR_RUN, side * railOffset, SCB_ENTRANCE_BASE_Y + 0.53),
+      sx: 0.055, sy: 1.06, sz: 0.055
+    });
+  }
+  addInstances(group, unitBox, octagonMetal, railPosts, 'SCBEntranceStairRailPosts');
 
   const colliders = SCB_TIERS.map((tier) => scbLocalCollider({
     x: 0, z: tier.z, w: SCB_WIDTH, d: tier.depth, minY: SCB_BASE_Y, maxY: tier.roofY + 0.45
@@ -348,6 +388,18 @@ export function buildStandardCharteredBankBuilding(root) {
     x: SCB_SIGN_FIN.x, z: SCB_SIGN_FIN.z, w: SCB_SIGN_FIN.w, d: SCB_SIGN_FIN.d,
     minY: SCB_SIGN_FIN.baseY, maxY: SCB_HEIGHT
   }));
+  // Five-tread side segments follow both the solid stair edge and the handrail envelope without sealing the treads.
+  for (let first = 0; first < SCB_STAIR_COUNT; first += 5) {
+    const last = Math.min(SCB_STAIR_COUNT, first + 5);
+    const along = (first + last) * 0.5 * SCB_STAIR_TREAD;
+    for (const side of [-1, 1]) {
+      const point = stairPoint(along, side * (SCB_STAIR_WIDTH * 0.5 + 0.07));
+      colliders.push(scbLocalCollider({
+        x: point.x, z: point.z, w: 0.14, d: (last - first) * SCB_STAIR_TREAD,
+        minY: 0, maxY: last * SCB_STAIR_RISE + 1.06, heading: SCB_STAIR_HEADING
+      }));
+    }
+  }
 
   const landmark = {
     name: SCB_SITE.name,
@@ -363,7 +415,9 @@ export function buildStandardCharteredBankBuilding(root) {
     scbOctagonalWindows: SCB_FRONT_PIER_X.length,
     scbGoldEntrances: SCB_FRONT_PIER_X.length,
     scbEntranceSteps: SCB_STAIR_COUNT,
+    scbEntranceStairRun: SCB_STAIR_RUN,
+    scbEntranceBaseY: SCB_ENTRANCE_BASE_Y,
     scbColliders: colliders.length
   };
-  return { group, colliders, landmarks: [landmark], stats, baseY: SCB_BASE_Y };
+  return { group, colliders, landmarks: [landmark], stats, baseY: SCB_BASE_Y, entranceBaseY: SCB_ENTRANCE_BASE_Y };
 }
