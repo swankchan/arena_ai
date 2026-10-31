@@ -36,7 +36,9 @@ function createHsbcCurtainWallMaterial({ entrance = false } = {}) {
     .mul(float(1).sub(isRoof)).mul(float(1).sub(partial)).mul(float(1).sub(coping));
   const random = fract(sin(dot(cellId, vec2(127.1, 311.7)).add(18.86)).mul(43758.5453));
   const randomB = fract(random.mul(17.17).add(0.37));
-  const glass = color(0x3c4b4c).mul(mix(float(0.88), float(1.12), random));
+  const glassBase = color(entrance ? 0x3c4b4c : 0x315f73);
+  const reflectedGlass = mix(glassBase, color(0x9bb4c0), step(0.86, randomB).mul(entrance ? 0 : 0.68));
+  const glass = reflectedGlass.mul(mix(float(0.88), float(1.12), random));
   const frame = color(0x7f8e91);
   material.colorNode = mix(mix(frame, glass, paneMask), color(0x263237), isRoof);
   material.roughnessNode = mix(float(0.48), float(0.25), paneMask);
@@ -93,21 +95,30 @@ function roundedRectangle(path, width, height, radius) {
 function createCrownGeometry() {
   const shape = roundedRectangle(new THREE.Shape(), 36, 10, 5);
   shape.holes.push(roundedRectangle(new THREE.Path(), 31.6, 5.6, 2.8));
-  const geometry = new THREE.ExtrudeGeometry(shape, { depth: 6.4, bevelEnabled: false, curveSegments: 12 });
+  const geometry = new THREE.ExtrudeGeometry(shape, { depth: 1.6, bevelEnabled: false, curveSegments: 16 });
   geometry.rotateX(-Math.PI / 2);
-  geometry.translate(0, 172.4, HSBC_MAIN_BAY.z);
+  geometry.translate(0, 173.4, HSBC_MAIN_BAY.z);
   return geometry;
 }
 
 function createStairWindowGeometry() {
-  // Repeated rounded landing windows are a prominent vertical strip between each inner mast and the aluminium pier.
+  // Straight jambs and shallow curved lintel / soffit, rather than a generic oval opening.
   const shape = new THREE.Shape();
-  shape.moveTo(-0.43, -0.66);
-  shape.lineTo(0.43, -0.66);
-  shape.lineTo(0.43, 0.23);
-  shape.absarc(0, 0.23, 0.43, 0, Math.PI, false);
+  shape.moveTo(0.5, -0.2);
+  shape.lineTo(0.5, 0.2);
+  shape.bezierCurveTo(0.5, 0.48, -0.5, 0.48, -0.5, 0.2);
+  shape.lineTo(-0.5, -0.2);
+  shape.bezierCurveTo(-0.5, -0.48, 0.5, -0.48, 0.5, -0.2);
   shape.closePath();
-  return new THREE.ShapeGeometry(shape, 8);
+  return new THREE.ShapeGeometry(shape, 16);
+}
+
+function createStairArchGeometry(radius = 0.03) {
+  const curve = new THREE.CubicBezierCurve3(
+    new THREE.Vector3(0.5, 0.2, 0), new THREE.Vector3(0.5, 0.48, 0),
+    new THREE.Vector3(-0.5, 0.48, 0), new THREE.Vector3(-0.5, 0.2, 0)
+  );
+  return new THREE.TubeGeometry(curve, 20, radius, 5, false);
 }
 
 function drawHsbcDevice(ctx, ox, oy, size, foreground, background = null) {
@@ -134,15 +145,11 @@ function drawHsbcDevice(ctx, ox, oy, size, foreground, background = null) {
 
 function createHsbcSignTexture() {
   const canvas = document.createElement('canvas');
-  canvas.width = 1024; canvas.height = 192;
+  canvas.width = 256; canvas.height = 192;
   const ctx = canvas.getContext('2d');
   ctx.clearRect(0, 0, canvas.width, canvas.height);
-  ctx.fillStyle = '#202b31';
-  ctx.font = '700 126px Arial, Helvetica, sans-serif';
-  ctx.textBaseline = 'middle';
-  ctx.fillText('HSBC', 52, 101);
-  // The red-and-white device is drawn from vector geometry, not bundled as an image.
-  drawHsbcDevice(ctx, 772, 22, 146, '#db0011', '#ffffff');
+  // The close elevation shows the red-and-white device centred above the dark curved sunscoop.
+  drawHsbcDevice(ctx, 48, 16, 160, '#db0011', '#ffffff');
   const texture = new THREE.CanvasTexture(canvas);
   texture.colorSpace = THREE.SRGBColorSpace;
   texture.anisotropy = 4;
@@ -347,6 +354,12 @@ export function buildHsbcHeadquarters(root) {
   const stairGlass = new THREE.MeshStandardMaterial({
     color: 0x10252d, roughness: 0.3, metalness: 0.35, side: THREE.DoubleSide
   });
+  const stairBlueGlass = new THREE.MeshStandardNodeMaterial({ color: 0x235e78, roughness: 0.22, metalness: 0.42 });
+  stairBlueGlass.emissiveNode = color(0x4f829b).mul(nightAmount().mul(0.08));
+  const sunshadeSteel = new THREE.MeshStandardMaterial({ color: 0x71838a, roughness: 0.35, metalness: 0.65 });
+  const claddingSeam = new THREE.MeshStandardMaterial({ color: 0x879499, roughness: 0.6, metalness: 0.3 });
+  const crownSteel = new THREE.MeshStandardNodeMaterial({ color: 0x4c5d64, roughness: 0.32, metalness: 0.68 });
+  crownSteel.emissiveNode = color(0x8298a4).mul(nightAmount().mul(0.04));
   const plazaMaterial = new THREE.MeshStandardMaterial({ color: 0x99988f, roughness: 0.94, metalness: 0.02 });
   const bronze = new THREE.MeshStandardNodeMaterial({ color: 0x624438, roughness: 0.57, metalness: 0.58 });
   bronze.emissiveNode = color(0x8b5a3c).mul(nightAmount().mul(0.12));
@@ -372,7 +385,8 @@ export function buildHsbcHeadquarters(root) {
 
   const claddingBoxes = [], steelBoxes = [], darkBoxes = [], lightBoxes = [], bronzeBoxes = [], stoneBoxes = [], cofferBoxes = [], greenBoxes = [];
   const beams = [], darkBeams = [], masts = [], mastCollars = [], stairWindows = [], stairArchWindows = [], escalatorSteps = [];
-  const ladderFrames = [], ladderLandings = [];
+  const ladderFrames = [], ladderLandings = [], stairBlueWindows = [], stairWindowMullions = [], stairArchCurves = [], stairSillArches = [], ladderBraces = [];
+  const facadeSunshades = [], facadeFins = [], serviceGlassStrips = [], claddingSeams = [], crownMullions = [], crownFins = [], crownRimPanels = [];
   const up = new THREE.Vector3(0, 1, 0);
   function beam(list, a, b, thickness) {
     const start = new THREE.Vector3(...a), end = new THREE.Vector3(...b);
@@ -421,6 +435,7 @@ export function buildHsbcHeadquarters(root) {
   const ladderOuterX = Math.abs(HSBC_MAST_X[1]);
   const ladderWidth = ladderOuterX - ladderInnerX;
   const ladderCenterX = (ladderInnerX + ladderOuterX) * 0.5;
+  const ladderOpeningWidth = ladderWidth - 0.9;
   for (const bay of HSBC_BAYS) {
     const bodyHeight = bay.roofY - HSBC_BANKING_HALL_BASE;
     for (const side of [-1, 1]) {
@@ -445,41 +460,111 @@ export function buildHsbcHeadquarters(root) {
         lightBoxes.push({ x, y: HSBC_BANKING_HALL_BASE - 0.64, z: bay.z + zOffset, sx: 0.24, sy: 0.06, sz: 0.24 });
       }
     }
+    const suspensionLevels = hsbcSuspensionLevelsForRoof(bay.roofY);
+    // Deep vertical fins, a substantial centre mullion and four horizontal lines per floor reproduce the close glass elevation.
     for (const face of [-1, 1]) {
-      const recessZ = bay.z + face * (bay.depth * 0.5 + 0.02);
-      const railZ = bay.z + face * (bay.depth * 0.5 + 0.13);
-      for (const side of [-1, 1]) {
-        darkBoxes.push({
-          x: side * ladderCenterX, y: HSBC_BANKING_HALL_BASE + bodyHeight * 0.5, z: recessZ,
-          sx: ladderWidth, sy: bodyHeight, sz: 0.04
+      const finZ = bay.z + face * (bay.depth * 0.5 + 0.16);
+      for (let division = 0; division <= 20; division++) {
+        facadeFins.push({
+          x: -HSBC_GLASS_WIDTH * 0.5 + division * HSBC_GLASS_WIDTH / 20,
+          y: HSBC_BANKING_HALL_BASE + bodyHeight * 0.5, z: finZ,
+          sx: 0.065, sy: bodyHeight, sz: 0.3
         });
+      }
+      steelBoxes.push({
+        x: 0, y: HSBC_BANKING_HALL_BASE + bodyHeight * 0.5,
+        z: bay.z + face * (bay.depth * 0.5 + 0.34), sx: 0.32, sy: bodyHeight, sz: 0.42
+      });
+      for (let floor = 0; floor < bay.floors; floor++) {
+        const floorBase = HSBC_BANKING_HALL_BASE + floor * HSBC_FLOOR_HEIGHT;
+        const shadeZ = bay.z + face * (bay.depth * 0.5 + 0.25);
+        facadeSunshades.push({ x: 0, y: floorBase + 0.12, z: shadeZ, sx: HSBC_GLASS_WIDTH, sy: 0.14, sz: 0.46 });
+        for (const offset of [0.85, 1.63, 2.41]) {
+          facadeSunshades.push({ x: 0, y: floorBase + offset, z: shadeZ, sx: HSBC_GLASS_WIDTH, sy: 0.075, sz: 0.4 });
+        }
+      }
+    }
+    for (const face of [-1, 1]) {
+      const railZ = bay.z + face * (bay.depth * 0.5 + 0.18);
+      for (const side of [-1, 1]) {
         for (const railX of [ladderInnerX, ladderOuterX]) {
           ladderFrames.push({
             x: side * railX, y: HSBC_BANKING_HALL_BASE + bodyHeight * 0.5, z: railZ,
-            sx: 0.17, sy: bodyHeight, sz: 0.2
+            sx: 0.32, sy: bodyHeight, sz: 0.28
+          });
+        }
+        // A narrow blue glazing strip separates each ladder from the outer aluminium service panels.
+        serviceGlassStrips.push({
+          x: side * (ladderOuterX + 0.62), y: HSBC_BANKING_HALL_BASE + bodyHeight * 0.5,
+          z: bay.z + face * (bay.depth * 0.5 + 0.07), sx: 0.76, sy: bodyHeight, sz: 0.08
+        });
+        const panelInner = ladderOuterX + 1.15, panelOuter = HSBC_FRAME_WIDTH * 0.5;
+        const panelCenter = (panelInner + panelOuter) * 0.5, panelWidth = panelOuter - panelInner;
+        claddingSeams.push({
+          x: side * panelCenter, y: HSBC_BANKING_HALL_BASE + bodyHeight * 0.5,
+          z: bay.z + face * (bay.depth * 0.5 + 0.045), sx: 0.035, sy: bodyHeight, sz: 0.04
+        });
+        for (let y = HSBC_BANKING_HALL_BASE + 7.2; y < bay.roofY; y += 7.2) {
+          claddingSeams.push({
+            x: side * panelCenter, y, z: bay.z + face * (bay.depth * 0.5 + 0.045),
+            sx: panelWidth, sy: 0.035, sz: 0.04
           });
         }
       }
     }
-    // Every floor has a projecting horizontal landing: these are the ladder rungs visible in the front elevation.
+    // Projecting curved landing modules, not small decals on a flat service core.
     for (let floor = 0; floor <= bay.floors; floor++) {
-      const y = HSBC_BANKING_HALL_BASE + floor * HSBC_FLOOR_HEIGHT + 0.18;
+      const y = Math.min(HSBC_BANKING_HALL_BASE + floor * HSBC_FLOOR_HEIGHT + 0.32, bay.roofY - 0.12);
       for (const face of [-1, 1]) {
         for (const side of [-1, 1]) {
           ladderLandings.push({
-            x: side * ladderCenterX, y, z: bay.z + face * (bay.depth * 0.5 + 0.23),
-            sx: ladderWidth + 0.12, sy: 0.17, sz: 0.56
+            x: side * ladderCenterX, y, z: bay.z + face * (bay.depth * 0.5 + 0.28),
+            sx: ladderWidth + 0.14, sy: 0.22, sz: 0.72
           });
         }
       }
     }
     for (let floor = 0; floor < bay.floors; floor++) {
-      const y = HSBC_BANKING_HALL_BASE + (floor + 0.5) * HSBC_FLOOR_HEIGHT;
+      const floorBase = HSBC_BANKING_HALL_BASE + floor * HSBC_FLOOR_HEIGHT;
+      const y = floorBase + HSBC_FLOOR_HEIGHT * 0.5;
+      const trussModule = suspensionLevels.some((level) => Math.abs(floorBase - (level + 4.5)) < 1.01);
       for (const face of [-1, 1]) {
         for (const side of [-1, 1]) {
-          stairArchWindows.push({
-            x: side * ladderCenterX, y, z: bay.z + face * (bay.depth * 0.5 + 0.075)
+          const x = side * ladderCenterX;
+          const openingZ = bay.z + face * (bay.depth * 0.5 + 0.075);
+          stairArchWindows.push({ x, y, z: openingZ, sx: ladderOpeningWidth, sy: 3.0 });
+          stairArchCurves.push({
+            x, y, z: bay.z + face * (bay.depth * 0.5 + 0.13),
+            sx: ladderOpeningWidth, sy: 3.0
           });
+          stairSillArches.push({
+            x, y, z: bay.z + face * (bay.depth * 0.5 + 0.13),
+            sx: ladderOpeningWidth, sy: 3.0,
+            quaternion: new THREE.Quaternion().setFromEuler(new THREE.Euler(0, 0, Math.PI))
+          });
+          stairBlueWindows.push({
+            x, y: y - 0.12, z: bay.z + face * (bay.depth * 0.5 + 0.105),
+            sx: 1.12, sy: 1.65, sz: 0.08
+          });
+          for (const offset of [-0.29, 0.29]) {
+            stairWindowMullions.push({
+              x: x + offset, y: y - 0.12, z: bay.z + face * (bay.depth * 0.5 + 0.16),
+              sx: 0.055, sy: 1.65, sz: 0.1
+            });
+          }
+          const braceZ = bay.z + face * (bay.depth * 0.5 + 0.28);
+          if (trussModule) {
+            const half = ladderOpeningWidth * 0.43;
+            beam(ladderBraces, [x - half, y - 0.9, braceZ], [x + half, y + 0.9, braceZ], 0.2);
+            beam(ladderBraces, [x + half, y - 0.9, braceZ], [x - half, y + 0.9, braceZ], 0.2);
+          }
+          if (floor === bay.floors - 1) {
+            for (let spoke = 0; spoke <= 6; spoke++) {
+              const angle = spoke * Math.PI / 6;
+              beam(ladderBraces, [x, y - 0.9, braceZ],
+                [x + Math.cos(angle) * ladderOpeningWidth * 0.43, y - 0.9 + Math.sin(angle) * 1.55, braceZ], 0.075);
+            }
+          }
         }
       }
       for (const side of [-1, 1]) {
@@ -499,15 +584,24 @@ export function buildHsbcHeadquarters(root) {
         greenBoxes.push({ x, y: bay.roofY + 0.92, z: bay.z, sx: 5.8, sy: 0.55, sz: 1.05 });
       }
     }
-    for (const level of hsbcSuspensionLevelsForRoof(bay.roofY)) {
+    for (const level of suspensionLevels) {
       for (const face of [-1, 1]) {
         const z = bay.z + face * bay.depth * 0.5;
         const innerLeft = HSBC_MAST_X[1], innerRight = HSBC_MAST_X[2];
         // A darker double-height reception band sits behind each coat-hanger truss, as in the supplied elevation.
         darkBoxes.push({ x: 0, y: level + 1.25, z: z + face * 0.04, sx: HSBC_GLASS_WIDTH, sy: 5.7, sz: 0.12 });
         beam(beams, [-HSBC_FRAME_WIDTH * 0.5, level + 4.5, z], [HSBC_FRAME_WIDTH * 0.5, level + 4.5, z], 0.62);
-        beam(beams, [innerLeft, level + 4.5, z], [0, level, z], 0.82);
-        beam(beams, [0, level, z], [innerRight, level + 4.5, z], 0.82);
+        beam(beams, [innerLeft, level + 4.5, z], [0, level, z], 0.9);
+        beam(beams, [0, level, z], [innerRight, level + 4.5, z], 0.9);
+        const rearZ = z - face * 0.48;
+        beam(beams, [innerLeft, level + 4.5, rearZ], [0, level, rearZ], 0.36);
+        beam(beams, [0, level, rearZ], [innerRight, level + 4.5, rearZ], 0.36);
+        for (const side of [-1, 1]) {
+          const innerX = side * Math.abs(innerRight), outerX = side * HSBC_FRAME_WIDTH * 0.5;
+          beam(beams, [outerX, level + 0.2, z], [innerX, level + 4.5, z], 0.52);
+          steelBoxes.push({ x: innerX, y: level + 4.5, z: z + face * 0.08, sx: 1.15, sy: 0.85, sz: 0.45 });
+        }
+        steelBoxes.push({ x: 0, y: level, z: z + face * 0.08, sx: 1.1, sy: 0.72, sz: 0.45 });
         for (const x of [-8, 8]) beam(darkBeams, [x, level - 7.0, z], [x, level, z], 0.15);
       }
       for (const side of [-1, 1]) {
@@ -603,23 +697,38 @@ export function buildHsbcHeadquarters(root) {
     beam(darkBeams, [crane.x + crane.direction * 11.5, crane.y, crane.z], [crane.x + crane.direction * 11.5, crane.y - 6.2, crane.z], 0.08);
   }
 
-  const crown = new THREE.Mesh(createCrownGeometry(), cladding);
+  for (let index = 0; index < 48; index++) {
+    const angle = index * Math.PI * 2 / 48;
+    const x = Math.cos(angle) * 15.5, z = HSBC_MAIN_BAY.z + Math.sin(angle) * 2.65;
+    crownMullions.push({ x, y: 171.8, z, sx: 0.075, sy: 5.2, sz: 0.075 });
+    if (Math.abs(Math.cos(angle)) > 0.55) {
+      crownFins.push({ x, y: 176.9, z, sx: 0.055, sy: 3.8, sz: 0.055 });
+    }
+  }
+  for (const face of [-1, 1]) {
+    for (let index = -11; index <= 11; index++) {
+      crownRimPanels.push({
+        x: index * 1.15, y: 174.2, z: HSBC_MAIN_BAY.z + face * 5.03,
+        sx: 0.42, sy: 0.24, sz: 0.07
+      });
+    }
+  }
+  const crown = new THREE.Mesh(createCrownGeometry(), crownSteel);
   crown.name = 'HSBCOvalSunscoopCrown';
   crown.castShadow = true;
   group.add(crown);
-  const crownGlass = new THREE.Mesh(new THREE.CylinderGeometry(1, 1, 3.8, 32), dark);
-  crownGlass.position.set(0, 174.4, HSBC_MAIN_BAY.z); crownGlass.scale.set(15.5, 1, 2.65);
+  const crownGlass = new THREE.Mesh(new THREE.CylinderGeometry(1, 1, 5.2, 48), stairBlueGlass);
+  crownGlass.position.set(0, 171.8, HSBC_MAIN_BAY.z); crownGlass.scale.set(15.5, 1, 2.65);
   crownGlass.name = 'HSBCCrownGlass';
   group.add(crownGlass);
   const signTexture = createHsbcSignTexture();
   const signMaterial = new THREE.MeshBasicNodeMaterial({ transparent: true, depthWrite: false, toneMapped: false });
   const signTex = texture(signTexture, uv());
-  const textRegion = float(1).sub(step(0.72, uv().x));
-  signMaterial.colorNode = mix(signTex.rgb, color(0xe3eaed), nightAmount().mul(textRegion));
+  signMaterial.colorNode = signTex.rgb;
   signMaterial.opacityNode = signTex.a;
   for (const face of [-1, 1]) {
-    const sign = new THREE.Mesh(new THREE.PlaneGeometry(31, 4.5), signMaterial);
-    sign.position.set(0, 175.6, HSBC_MAIN_BAY.z + face * 5.04);
+    const sign = new THREE.Mesh(new THREE.PlaneGeometry(4.8, 3.6), signMaterial);
+    sign.position.set(0, 177, HSBC_MAIN_BAY.z + face * 5.04);
     if (face < 0) sign.rotation.y = Math.PI;
     sign.name = face < 0 ? 'HSBCNorthSign' : 'HSBCSouthSign';
     group.add(sign);
@@ -640,6 +749,18 @@ export function buildHsbcHeadquarters(root) {
   addInstances(group, new THREE.BoxGeometry(1, 1, 1), dark, darkBoxes, 'HSBCServiceGlazingAndMastLadders');
   addInstances(group, new THREE.BoxGeometry(1, 1, 1), steel, ladderFrames, 'HSBCExternalStairLadderRails');
   addInstances(group, new THREE.BoxGeometry(1, 1, 1), steel, ladderLandings, 'HSBCExternalStairLadderLandings');
+  addInstances(group, createStairArchGeometry(0.03), steel, stairArchCurves, 'HSBCStairLandingArches');
+  addInstances(group, createStairArchGeometry(0.04), steel, stairSillArches, 'HSBCStairLandingCurvedSoffits');
+  addInstances(group, new THREE.BoxGeometry(1, 1, 1), stairBlueGlass, stairBlueWindows, 'HSBCStairLandingBlueWindows', { castShadow: false });
+  addInstances(group, new THREE.BoxGeometry(1, 1, 1), steel, stairWindowMullions, 'HSBCStairLandingWindowMullions');
+  addInstances(group, new THREE.BoxGeometry(1, 1, 1), steel, ladderBraces, 'HSBCStairLandingXAndFanBraces');
+  addInstances(group, new THREE.BoxGeometry(1, 1, 1), sunshadeSteel, facadeSunshades, 'HSBCCurtainWallHorizontalSunshades');
+  addInstances(group, new THREE.BoxGeometry(1, 1, 1), sunshadeSteel, facadeFins, 'HSBCCurtainWallVerticalFins');
+  addInstances(group, new THREE.BoxGeometry(1, 1, 1), stairBlueGlass, serviceGlassStrips, 'HSBCServiceCoreBlueGlazingStrips', { castShadow: false });
+  addInstances(group, new THREE.BoxGeometry(1, 1, 1), claddingSeam, claddingSeams, 'HSBCAluminiumPanelSeams');
+  addInstances(group, new THREE.BoxGeometry(1, 1, 1), steel, crownMullions, 'HSBCCrownVerticalMullions');
+  addInstances(group, new THREE.BoxGeometry(1, 1, 1), steel, crownFins, 'HSBCCrownCurvedEndFins');
+  addInstances(group, new THREE.BoxGeometry(1, 1, 1), dark, crownRimPanels, 'HSBCCrownRimPanels');
   addInstances(group, new THREE.BoxGeometry(1, 1, 1), dark, stairWindows, 'HSBCEscapeStairWindows', { castShadow: false });
   addInstances(group, createStairWindowGeometry(), stairGlass, stairArchWindows, 'HSBCRoundedStairLandingWindows', { castShadow: false });
   addInstances(group, new THREE.BoxGeometry(1, 1, 1), steel, beams, 'HSBCInvertedVSuspensionTrusses');
@@ -692,6 +813,9 @@ export function buildHsbcHeadquarters(root) {
     hsbcSuspensionLevels: hsbcSuspensionLevelsForRoof(HSBC_MAIN_ROOF_Y).length,
     hsbcStairLadders: HSBC_BAYS.length * 4,
     hsbcStairLadderLandings: ladderLandings.length,
+    hsbcStairLandingModules: stairArchWindows.length,
+    hsbcStairLadderBraces: ladderBraces.length,
+    hsbcFacadeSunshades: facadeSunshades.length,
     hsbcLions: 2,
     hsbcEscalators: 2,
     hsbcColliders: colliders.length

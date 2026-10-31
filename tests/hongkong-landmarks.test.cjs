@@ -45,6 +45,8 @@ test('three stepped bays and five suspension levels preserve the open public pla
   assert.ok(Math.abs(HSBC_MAIN_ROOF_Y - 169.2) < 1e-9);
   assert.ok(HSBC_GLASS_WIDTH / HSBC_FRAME_WIDTH > 0.45 && HSBC_GLASS_WIDTH / HSBC_FRAME_WIDTH < 0.6);
   assert.ok(Math.abs(HSBC_MAST_X[1]) < HSBC_FRAME_WIDTH * 0.35, 'inner masts frame the narrower central glass');
+  const stairLadderWidth = Math.abs(HSBC_MAST_X[1]) - HSBC_GLASS_WIDTH * 0.5;
+  assert.ok(stairLadderWidth > 4 && stairLadderWidth < 5.5, 'the close elevation has broad ladder-like stair strips');
   assert.ok(HSBC_BANKING_HALL_BASE > 10, 'the banking hall is raised above people and vehicles');
   assert.equal(HSBC_ENTRANCE.height, HSBC_BANKING_HALL_BASE);
   assert.ok(HSBC_ENTRANCE.doorWidth >= 5 && HSBC_ENTRANCE.doorHeight > 2.3, 'the glazed entrance retains a real door opening');
@@ -79,6 +81,12 @@ test('the hand-built HSBC model includes its photographic identifying features w
   assert.match(source, /HSBCRoundedStairLandingWindows/);
   assert.match(source, /HSBCExternalStairLadderRails/);
   assert.match(source, /HSBCExternalStairLadderLandings/);
+  assert.match(source, /HSBCStairLandingArches/);
+  assert.match(source, /HSBCStairLandingCurvedSoffits/);
+  assert.match(source, /HSBCStairLandingXAndFanBraces/);
+  assert.match(source, /HSBCCurtainWallHorizontalSunshades/);
+  assert.match(source, /HSBCCrownCurvedEndFins/);
+  assert.match(source, /HSBCCrownRimPanels/);
   assert.match(source, /floor <= bay\.floors/);
   assert.match(source, /double-height reception band/);
   assert.match(source, /createHsbcCurtainWallMaterial/);

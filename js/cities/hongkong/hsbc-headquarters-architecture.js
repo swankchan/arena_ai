@@ -103,10 +103,11 @@ export function hsbcSuspensionLevelsForRoof(roofY) {
   // The top chord may project slightly above the office roof into the mast / crown zone; do not drop the fifth V.
   return HSBC_TRUSS_LEVELS.filter((level) => level <= roofY + 0.5);
 }
-// Four front columns: the inner pair sits immediately outside the narrow central curtain wall, as in the photograph.
+// Four front columns: the inner pair frames the broad ladder-like escape-stair strips beside the central glass.
+const HSBC_INNER_MAST_X = HSBC_GLASS_WIDTH * 0.5 + 4.6;
 export const HSBC_MAST_X = Object.freeze([
-  -HSBC_FRAME_WIDTH * 0.5, -HSBC_FRAME_WIDTH * 0.3,
-  HSBC_FRAME_WIDTH * 0.3, HSBC_FRAME_WIDTH * 0.5
+  -HSBC_FRAME_WIDTH * 0.5, -HSBC_INNER_MAST_X,
+  HSBC_INNER_MAST_X, HSBC_FRAME_WIDTH * 0.5
 ]);
 
 export function hsbcLocalToWorld(x, z) {
