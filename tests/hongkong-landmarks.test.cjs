@@ -30,13 +30,20 @@ test('HSBC uses its real OSM site, oriented footprint and 178.8 m landmark heigh
 
 test('three stepped bays and five suspension levels preserve the open public plaza', () => {
   const {
-    HSBC_BAYS, HSBC_TRUSS_LEVELS, HSBC_HEIGHT, HSBC_BANKING_HALL_BASE,
-    HSBC_PLAZA_TOP, HSBC_SITE, hsbcLocalToWorld, isHsbcPlazaPoint, hsbcLocalCollider
+    HSBC_BAYS, HSBC_MAIN_BAY, HSBC_MAIN_ROOF_Y, HSBC_TRUSS_LEVELS, HSBC_HEIGHT, HSBC_BANKING_HALL_BASE,
+    HSBC_FRAME_WIDTH, HSBC_GLASS_WIDTH, HSBC_MAST_X,
+    HSBC_PLAZA_TOP, HSBC_SITE, hsbcSuspensionLevelsForRoof,
+    hsbcLocalToWorld, isHsbcPlazaPoint, hsbcLocalCollider
   } = architecture;
-  assert.deepEqual(HSBC_BAYS.map((bay) => bay.floors), [29, 44, 36]);
+  assert.deepEqual(HSBC_BAYS.map((bay) => bay.floors), [44, 36, 29]);
   assert.deepEqual([...HSBC_BAYS.map((bay) => bay.floors)].sort((a, b) => a - b), [29, 36, 44]);
   assert.equal(HSBC_TRUSS_LEVELS.length, 5);
-  assert.equal(HSBC_BAYS[1].roofY + (HSBC_HEIGHT - HSBC_BAYS[1].roofY), HSBC_HEIGHT);
+  assert.deepEqual(HSBC_BAYS.map((bay) => hsbcSuspensionLevelsForRoof(bay.roofY).length), [5, 4, 3]);
+  assert.equal(HSBC_MAIN_BAY.id, 'north');
+  assert.equal(HSBC_MAIN_BAY.floors, 44, 'the supplied front elevation is not hidden by a lower front wing');
+  assert.ok(Math.abs(HSBC_MAIN_ROOF_Y - 169.2) < 1e-9);
+  assert.ok(HSBC_GLASS_WIDTH / HSBC_FRAME_WIDTH > 0.45 && HSBC_GLASS_WIDTH / HSBC_FRAME_WIDTH < 0.6);
+  assert.ok(Math.abs(HSBC_MAST_X[1]) < HSBC_FRAME_WIDTH * 0.35, 'inner masts frame the narrower central glass');
   assert.ok(HSBC_BANKING_HALL_BASE > 10, 'the banking hall is raised above people and vehicles');
   assert.ok(HSBC_PLAZA_TOP > 0);
   assert.ok(isHsbcPlazaPoint(HSBC_SITE.x, HSBC_SITE.z));
@@ -56,7 +63,9 @@ test('the hand-built HSBC model includes its photographic identifying features w
   assert.match(source, /HSBCOvalSunscoopCrown/);
   assert.match(source, /HSBCBronzeLions/);
   assert.match(source, /HSBCEscalatorSteps/);
-  assert.match(source, /createCurtainWallMaterial/);
+  assert.match(source, /HSBCRoundedStairLandingWindows/);
+  assert.match(source, /double-height reception band/);
+  assert.match(source, /createHsbcCurtainWallMaterial/);
   assert.match(source, /createHsbcSignTexture/);
   assert.match(source, /cityUniforms\.uInteriorGlow/);
   assert.doesNotMatch(source, /TextureLoader|image-search|https?:\/\//);

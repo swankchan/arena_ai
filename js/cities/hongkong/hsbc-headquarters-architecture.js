@@ -64,15 +64,16 @@ export const HSBC_PLAZA_TOP = 0.04;
 export const HSBC_BANKING_HALL_BASE = 10.8;
 export const HSBC_FLOOR_HEIGHT = 3.6;
 export const HSBC_FRAME_WIDTH = Math.min(62, HSBC_SITE.w - 1.6);
-export const HSBC_GLASS_WIDTH = Math.min(44, HSBC_SITE.w - 20);
+export const HSBC_GLASS_WIDTH = Math.min(32, HSBC_SITE.w - 30);
 export const HSBC_BAY_DEPTH = (HSBC_SITE.d - 1.6) / 3;
 
-// Three adjacent structural bays step up from the harbour-facing 29-storey wing to the 44-storey central tower;
-// the Queen's Road Central wing has 36 storeys. These are visual storeys, not a claim of surveyed floor elevations.
+// The supplied harbour-facing photograph shows the tallest 44-storey facade continuing all the way down to the
+// raised banking hall. Lower 36- and 29-storey bays step down behind it rather than obscuring that main elevation.
+// These are visual storeys, not a claim of surveyed floor elevations.
 export const HSBC_BAYS = Object.freeze([
-  Object.freeze({ id: 'north', floors: 29, z: -HSBC_BAY_DEPTH }),
-  Object.freeze({ id: 'central', floors: 44, z: 0 }),
-  Object.freeze({ id: 'south', floors: 36, z: HSBC_BAY_DEPTH })
+  Object.freeze({ id: 'north', floors: 44, z: -HSBC_BAY_DEPTH }),
+  Object.freeze({ id: 'central', floors: 36, z: 0 }),
+  Object.freeze({ id: 'south', floors: 29, z: HSBC_BAY_DEPTH })
 ].map((bay) => Object.freeze({
   ...bay,
   depth: HSBC_BAY_DEPTH - 0.35,
@@ -81,10 +82,17 @@ export const HSBC_BAYS = Object.freeze([
 
 // Five coat-hanger / inverted-V suspension levels are visible on the tallest bay. Shorter wings only receive the
 // levels below their own roofs.
+export const HSBC_MAIN_BAY = HSBC_BAYS[0];
+export const HSBC_MAIN_ROOF_Y = HSBC_MAIN_BAY.roofY;
 export const HSBC_TRUSS_LEVELS = Object.freeze([34.2, 67.2, 100.2, 133.2, 166.2]);
+export function hsbcSuspensionLevelsForRoof(roofY) {
+  // The top chord may project slightly above the office roof into the mast / crown zone; do not drop the fifth V.
+  return HSBC_TRUSS_LEVELS.filter((level) => level <= roofY + 0.5);
+}
+// Four front columns: the inner pair sits immediately outside the narrow central curtain wall, as in the photograph.
 export const HSBC_MAST_X = Object.freeze([
-  -HSBC_FRAME_WIDTH * 0.5, -HSBC_FRAME_WIDTH * 0.5 + 5.8,
-  HSBC_FRAME_WIDTH * 0.5 - 5.8, HSBC_FRAME_WIDTH * 0.5
+  -HSBC_FRAME_WIDTH * 0.5, -HSBC_FRAME_WIDTH * 0.3,
+  HSBC_FRAME_WIDTH * 0.3, HSBC_FRAME_WIDTH * 0.5
 ]);
 
 export function hsbcLocalToWorld(x, z) {

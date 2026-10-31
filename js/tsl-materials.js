@@ -3031,6 +3031,7 @@ export {
   cityUniforms,
   WALL_KINDS,
   filteredPulse,
+  facadeCell,
   createCurtainWallMaterial,
   createPreWarBuildingMaterial,
   createFacadeBoxes,
