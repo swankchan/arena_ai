@@ -30,7 +30,7 @@ export function buildHongKongTunnelLighting(root, routes) {
   group.name = 'HongKongTunnelLighting';
   group.userData.tunnelLighting = true;
   const ceilingMaterial = new THREE.MeshStandardNodeMaterial({ color: 0xc4c8c2, roughness: 0.42, metalness: 0.08 });
-  ceilingMaterial.emissiveNode = color(0xffe7bd).mul(3.2);
+  ceilingMaterial.emissiveNode = color(0xffd58f).mul(4.2);
   const reflectorMaterial = new THREE.MeshStandardNodeMaterial({ color: 0x7a4b16, roughness: 0.5 });
   reflectorMaterial.emissiveNode = color(0xffb14a).mul(0.9);
   const fixtures = [], reflectors = [], sites = [];
@@ -61,11 +61,11 @@ export function buildHongKongTunnelLighting(root, routes) {
     }
   }
 
-  addInstances(group, new THREE.BoxGeometry(0.2, 0.09, 3), ceilingMaterial, fixtures, 'HongKongTunnelCeilingLights');
+  addInstances(group, new THREE.BoxGeometry(0.24, 0.09, 4.2), ceilingMaterial, fixtures, 'HongKongTunnelCeilingLights');
   addInstances(group, new THREE.BoxGeometry(0.14, 0.22, 0.55), reflectorMaterial, reflectors, 'HongKongTunnelReflectors');
   const pool = [];
   for (let i = 0; i < LIGHT_POOL_SIZE; i++) {
-    const light = new THREE.PointLight(0xffe2b0, 0, 36, 1.45);
+    const light = new THREE.PointLight(0xffd08a, 0, 42, 1.35);
     light.name = 'HongKongTunnelPooledLight';
     pool.push(light);
     group.add(light);
@@ -87,7 +87,7 @@ export function buildHongKongTunnelLighting(root, routes) {
     }
     for (let i = 0; i < pool.length; i++) {
       const selected = nearest[i]?.site;
-      pool[i].intensity = selected ? 36 : 0;
+      pool[i].intensity = selected ? 62 : 0;
       if (selected) pool[i].position.set(selected.x, selected.y, selected.z);
     }
   }

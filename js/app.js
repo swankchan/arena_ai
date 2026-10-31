@@ -224,8 +224,8 @@ async function initApp(cityStub) {
     cyclist: [[['W', 'S'], 'Pedal / Brake'], [['A', 'D'], 'Lean & Turn'], [['Drag'], 'Orbit']],
     helicopter: [[['W', 'S'], 'Pitch'], [['A', 'D'], 'Yaw'], [['Space', 'E'], 'Ascend'], [['Q', 'C'], 'Descend']]
   };
-  // Top speeds in mph (controllers.js caps them at 8.2, 36, 19 & 52 m/s): full scale of the speed meter
-  const topSpeedMph = { person: 18, car: 81, cyclist: 43, helicopter: 116 };
+  // Top speeds in km/h (controllers.js caps them at 8.2, 36, 19 & 52 m/s): full scale of the speed meter
+  const topSpeedKph = { person: 30, car: 130, cyclist: 68, helicopter: 187 };
 
   // Cities may expose only a subset of the cameras (Grid City has no Manhattan scenic rigs).
   const cameraPresets = world.cameraPresets ?? city.cameraPresets ?? null;
@@ -808,15 +808,15 @@ async function initApp(cityStub) {
 
       const activeEnt = controllerManager.getActiveEntity();
       const mode = controllerManager.activeMode;
-      const mph = Math.round(Math.abs(activeEnt.speed) * 2.237);
+      const kmh = Math.round(Math.abs(activeEnt.speed) * 3.6);
       const altFt = Math.max(0, Math.round(activeEnt.position.y * 3.281));
 
       if (elFps) {
         elFps.textContent = String(currentFps);
         elFps.className = currentFps >= 50 ? 'fps-ok' : currentFps >= 30 ? 'fps-warn' : 'fps-bad';
       }
-      if (elSpeed) elSpeed.textContent = String(mph);
-      if (elSpeedMeter) elSpeedMeter.style.transform = `scaleX(${Math.min(1, mph / (topSpeedMph[mode] || 80))})`;
+      if (elSpeed) elSpeed.textContent = String(kmh);
+      if (elSpeedMeter) elSpeedMeter.style.transform = `scaleX(${Math.min(1, kmh / (topSpeedKph[mode] || 130))})`;
       if (elAltitude) elAltitude.textContent = altFt.toLocaleString('en-US');
       // The street corner of the player on the follow cameras, of the camera itself on the scenic ones
       const where = cameraSystem.getActivePreset().category === 'follow' ? activeEnt.position : cameraSystem.currentPos;

@@ -1674,7 +1674,7 @@ function roadWetMasks(field, drainage = 0.0) {
  * (as for the rivers), so puddles reflect the street through SSR at grazing angles yet only darken seen from above.
  * Lane markings are separate geometry built from the road network (js/road-paint.js).
  */
-function createRoadSurfaceMaterial() {
+function createRoadSurfaceMaterial({ dry = false } = {}) {
   const mat = new THREE.MeshStandardNodeMaterial({
     metalness: 0.24,
     roughness: 0.48
@@ -1686,7 +1686,8 @@ function createRoadSurfaceMaterial() {
 
   // Puddle field & wetness masks shared by every channel below (each node is generated once per fragment)
   const puddleField = roadPuddleField(positionWorld.x, positionWorld.z);
-  const wet = roadWetMasks(puddleField);
+  // Enclosed carriageways use the same aggregate/asphalt detail without the city's rain/puddle response.
+  const wet = dry ? vec3(0.0) : roadWetMasks(puddleField);
   const damp = wet.x;
   const puddle = wet.y;
   const film = wet.z;

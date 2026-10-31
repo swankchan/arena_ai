@@ -101,7 +101,9 @@ test('tunnel lighting combines continuous fixtures with a camera-following light
   const source = fs.readFileSync(path.join(__dirname, '../js/cities/hongkong/tunnel-lighting.js'), 'utf8');
   assert.match(source, /const LIGHT_SPACING = 18/);
   assert.match(source, /const LIGHT_POOL_SIZE = 16/);
-  assert.match(source, /emissiveNode = color\(0xffe7bd\)/);
+  assert.match(source, /emissiveNode = color\(0xffd58f\)\.mul\(4\.2\)/);
+  assert.match(source, /new THREE\.PointLight\(0xffd08a, 0, 42, 1\.35\)/);
+  assert.match(source, /pool\[i\]\.intensity = selected \? 62 : 0/);
   assert.match(source, /HongKongTunnelCeilingLights/);
   assert.match(source, /HongKongTunnelReflectors/);
   assert.match(source, /const position = cameraSystem\?\.camera\?\.position/);
@@ -109,6 +111,12 @@ test('tunnel lighting combines continuous fixtures with a camera-following light
   const world = fs.readFileSync(path.join(__dirname, '../js/cities/hongkong/crossings-world.js'), 'utf8');
   assert.match(world, /buildHongKongTunnelLighting\(root, CROSSING_ROUTES\)/);
   assert.match(world, /tunnelLighting\.update\(cameraSystem\)/);
+  assert.match(world, /createRoadSurfaceMaterial\(\{ dry: true \}\)/);
+  assert.match(world, /addTopQuad\(tube \? tunnelRoad : road, a, b, width\)/);
+  assert.match(world, /dry-tunnel-road/);
+  const materials = fs.readFileSync(path.join(__dirname, '../js/tsl-materials.js'), 'utf8');
+  assert.match(materials, /function createRoadSurfaceMaterial\(\{ dry = false \} = \{\}\)/);
+  assert.match(materials, /const wet = dry \? vec3\(0\.0\) : roadWetMasks\(puddleField\)/);
 });
 
 test('current height selects stacked surfaces without capturing traffic from another level', () => {

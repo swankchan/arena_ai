@@ -206,7 +206,7 @@ function carDynamicsHarness(motion = {}) {
     type: 'car', position: { x: 0, y: 0, z: 0 }, heading: 0, speed: 0,
     vx: 0, vz: 0, angularVel: 0, steerAngle: 0, pitchVel: 0, rollVel: 0, heaveVel: 0, heaveY: 0, wheelSpin: 0,
     chassisPivot: { rotation: { x: 0, z: 0 }, position: { y: 0 } }, wheels: [],
-    carState: { value: { x: 0, w: 0 } },
+    carState: { value: { x: 0, y: 0, z: 0, w: 0 } },
     ...motion
   };
   controller.entities = { car };
@@ -215,7 +215,7 @@ function carDynamicsHarness(motion = {}) {
   return {
     controller, car,
     advance(seconds, hz = 60) {
-      for (let i = 0; i < Math.round(seconds * hz); i++) controller.updateCar(1 / hz);
+      for (let i = 0; i < Math.round(seconds * hz); i++) controller.updateCar(1 / hz, i / hz);
     }
   };
 }
@@ -290,6 +290,32 @@ test('player brake and reverse lamps follow braking and backward travel', () => 
     assert.equal(sim.car.carState.value.x, 0, 'leaving the car releases its brake lights');
     assert.equal(sim.car.carState.value.w, 0, 'the parked car no longer shows reverse lights');
   }
+});
+
+test('player turn signals flash amber state on the steering side and reset with the car', () => {
+  const sim = carDynamicsHarness({ speed: 8 });
+  sim.controller.keys.left = 1;
+  sim.controller.updateCar(0.05, 0.1);
+  assert.equal(sim.car.carState.value.y, 1, 'left lamp is on during the lit half-cycle');
+  assert.equal(sim.car.carState.value.z, 0);
+  sim.controller.updateCar(0.05, 0.5);
+  assert.equal(sim.car.carState.value.y, 0, 'left lamp is off during the dark half-cycle');
+  sim.controller.updateCar(0.05, 0.9);
+  assert.equal(sim.car.carState.value.y, 1, 'the same indicator flashes again');
+  sim.controller.keys.left = 0;
+  sim.controller.keys.right = 1;
+  sim.controller.updateCar(0.05, 0.1);
+  assert.equal(sim.car.carState.value.y, 0);
+  assert.equal(sim.car.carState.value.z, 1, 'right lamp uses the independent rear/front mask');
+  sim.controller.keys.right = 0;
+  sim.controller.updateCar(0.05, 0.1);
+  assert.equal(sim.car.carState.value.z, 0, 'releasing steering cancels the indicator');
+  sim.controller.keys.left = 1;
+  sim.controller.updateCar(0.05, 0.1);
+  sim.controller.entities.person = {};
+  sim.controller.setMode('person');
+  assert.equal(sim.car.carState.value.y, 0, 'leaving the car switches both indicators off');
+  assert.equal(sim.car.carState.value.z, 0);
 });
 
 test('releasing car steering settles smoothly and suspension leans outward', () => {
@@ -417,7 +443,7 @@ function teleportHarness(mode, colliders = [], shore = () => ({ westX: -500, eas
     mesh: pivot(),
     verticalVel: 5, vx: 3, vz: -4, angularVel: 2, steerAngle: 0.4,
     pitchVel: 3, rollVel: 4, heaveY: 0.1, heaveVel: 2, chassisPivot: pivot(),
-    lastCollisionSpark: { speed: 5 }, carState: { value: { x: 1, w: 1 } }, wheelSpin: 1,
+    lastCollisionSpark: { speed: 5 }, carState: { value: { x: 1, y: 1, z: 1, w: 1 } }, wheelSpin: 1,
     wheels: [{ isFront: true, steerPivot: { rotation: { y: 0.4 } }, tire: { rotation: { x: 0 } } }],
     leanAngle: 0.3, leanPivot: pivot(), pedalPhase: 0.7,
     frontWheel: { rotation: { x: 0 } }, rearWheel: { rotation: { x: 0 } },
@@ -461,6 +487,8 @@ for (const mode of ['person', 'car', 'cyclist', 'helicopter']) {
       assert.equal(ent.wheels[0].steerPivot.rotation.y, 0);
       assert.equal(ent.lastCollisionSpark, null);
       assert.equal(ent.carState.value.x, 0);
+      assert.equal(ent.carState.value.y, 0);
+      assert.equal(ent.carState.value.z, 0);
       assert.equal(ent.carState.value.w, 0);
     } else if (mode === 'cyclist') {
       assert.equal(ent.leanAngle, 0);

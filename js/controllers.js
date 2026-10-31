@@ -346,7 +346,9 @@ class ThirdPersonControllerManager {
     if (!this.entities[mode]) return;
     this.activeMode = mode;
     const car = this.entities.car;
-    if (mode !== 'car' && car?.carState) car.carState.value.x = car.carState.value.w = 0;
+    if (mode !== 'car' && car?.carState) {
+      car.carState.value.x = car.carState.value.y = car.carState.value.z = car.carState.value.w = 0;
+    }
   }
 
   getActiveEntity() {
@@ -383,7 +385,7 @@ class ThirdPersonControllerManager {
       ent.chassisPivot.position.y = 0;
       ent.lastCollisionSpark = null;
       for (const wheel of ent.wheels) if (wheel.isFront) wheel.steerPivot.rotation.y = 0;
-      if (ent.carState) ent.carState.value.x = ent.carState.value.w = 0;
+      if (ent.carState) ent.carState.value.x = ent.carState.value.y = ent.carState.value.z = ent.carState.value.w = 0;
     } else if (this.activeMode === 'cyclist') {
       ent.leanAngle = ent.leanPivot.rotation.z = 0;
     } else if (heli) {
@@ -1164,7 +1166,7 @@ class ThirdPersonControllerManager {
     }
   }
 
-  updateCar(dt) {
+  updateCar(dt, elapsed = 0) {
     if (dt <= 0) return;
     const c = this.entities.car;
 
@@ -1241,7 +1243,10 @@ class ThirdPersonControllerManager {
     c.chassisPivot.position.y = c.heaveY;
 
     if (c.carState) {
+      const blinkOn = elapsed % 0.8 <= 0.4;
       c.carState.value.x = braking ? 1 : 0;
+      c.carState.value.y = blinkOn && steerInput > 0 ? 1 : 0;
+      c.carState.value.z = blinkOn && steerInput < 0 ? 1 : 0;
       c.carState.value.w = c.speed < -0.2 ? 1 : 0;
     }
 
