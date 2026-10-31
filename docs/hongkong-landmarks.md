@@ -1,0 +1,28 @@
+# 香港手建 Landmarks
+
+香港仍採用 `unified-simple` 展示：全港道路及基本地面保留，**不生成普通建築群**。手建地標會逐個加入；目前只有滙豐總行大廈。
+
+## 滙豐總行大廈 HSBC Main Building
+
+- 地點：皇后大道中一號，使用 `js/hk-geodata.js` 內現有 OSM `滙豐總行大廈` footprint。
+- 高度：**178.8 m**。
+- 造型：29／44／36 層三段梯級式結構、外露鋼柱、五級倒 V 懸吊桁架、外置服務核心、橢圓頂部冠頂、HSBC 標誌及維修吊臂。
+- 地面：架空公共廣場、雙扶手電梯、兩隻銅獅、鋪面及夜間照明。Elevated floors 的 colliders 由 raised banking hall 開始，不會用一座由地面起算的盒子封死廣場；柱、地面核心筒及獅子底座另有碰撞。
+- 日夜：玻璃由現有 curtain-wall material 處理窗格及室內燈光；鋼架只有非常低的夜間補光，沒有彩色日間結構燈。
+
+### 參考照片及資料
+
+主要參考 Foster + Partners 項目的照片、平面及剖面整理：
+
+- ArchEyes：HSBC Main Building, Hong Kong by Foster + Partners
+  https://archeyes.com/hsbc-headquarters-in-hong-kong-by-foster-partners/
+- 其中包括 Queen's Road Central 外觀、Statue Square／高空外觀、三段梯級塔樓、架空公共廣場、扶手電梯、桁架及維修吊臂照片。
+- 資料描述三個 **29、36、44 層**部分、外露懸吊結構、十層中庭及公共廣場；高度為 **178.8 m**。
+
+網上照片只作建模參考，**沒有打包進應用程式，也不是官方 HSBC 3D 資產**。模型是程序化重建；OSM 提供實際地盤位置及外框，但個別樓層高度、柱距、桁架尺寸、銅獅及小型裝置屬視覺比例，並非測量圖則。三段塔樓以前方 29 層、中央 44 層、後方 36 層表達其梯級輪廓，日後如有更可靠立面／剖面尺寸可再修正。
+
+## 程式入口
+
+- `hsbc-headquarters-architecture.js`：純地理位置、OBB、樓層比例及 collider 座標換算，可在 Node 測試。
+- `hsbc-headquarters-world.js`：Three.js 幾何、材質、廣場、碰撞及 stats。
+- `simple-world.js`：只整合這一個 authored landmark；普通 `buildings` 仍為 0。

@@ -4,6 +4,8 @@ import { crossingSurfaceAt, selectCrossingGround } from './crossings.js';
 import { isFlatTerritoryRoad, isTerritoryLand, isTerritoryRoad, territoryParkAt } from './full-meta.js';
 import { SPAWN } from './meta.js';
 import { createHongKongStreetLighting } from './street-lighting.js';
+import { buildHsbcHeadquarters } from './hsbc-headquarters-world.js';
+import { isHsbcPlazaPoint } from './hsbc-headquarters-architecture.js';
 
 const WATER_LEVEL = -2.2;
 
@@ -12,6 +14,8 @@ const WATER_LEVEL = -2.2;
 export function buildSimpleHongKongWorld(scene, { setStatus = () => {} } = {}) {
   setStatus('Building Hong Kong’s unified territory-wide road map...');
   const full = buildFullHongKongWorld(scene, { waterLevel: WATER_LEVEL, includeCore: true });
+  setStatus('Building the HSBC Main Building landmark...');
+  const hsbc = buildHsbcHeadquarters(scene);
   setStatus('Building drivable harbour bridges and tunnels...');
   const crossings = buildHongKongCrossings(scene);
   setStatus('Placing 144,995 lamp posts across Hong Kong...');
@@ -25,18 +29,20 @@ export function buildSimpleHongKongWorld(scene, { setStatus = () => {} } = {}) {
     if (isTerritoryLand(x, z)) base = FULL_WORLD_HEIGHT.land;
     if (territoryParkAt(x, z)) base = FULL_WORLD_HEIGHT.park;
     if (isFlatTerritoryRoad(x, z, 0.35)) base = FULL_WORLD_HEIGHT.road;
-    return selectCrossingGround(base, crossingSurfaceAt(x, z), referenceY, WATER_LEVEL);
+    const ground = selectCrossingGround(base, crossingSurfaceAt(x, z), referenceY, WATER_LEVEL);
+    return isHsbcPlazaPoint(x, z) ? Math.max(ground, hsbc.plazaTop) : ground;
   }
 
   const stats = {
     ...full.stats,
     ...crossings.stats,
     ...streetLighting.stats,
+    ...hsbc.stats,
     presentation: 'unified-simple',
     landMeshes: full.stats.fullLandRings,
     blocks: 0,
     parks: full.stats.fullParks,
-    landmarks: 0,
+    landmarks: hsbc.landmarks.length,
     lots: 0,
     buildings: 0,
     skippedLots: 0,
@@ -48,7 +54,7 @@ export function buildSimpleHongKongWorld(scene, { setStatus = () => {} } = {}) {
 
   return {
     root: scene,
-    colliders: [...full.colliders, ...crossings.colliders],
+    colliders: [...full.colliders, ...crossings.colliders, ...hsbc.colliders],
     bounds: full.bounds,
     stats,
     personSpawn: { ...SPAWN.person },
@@ -60,8 +66,9 @@ export function buildSimpleHongKongWorld(scene, { setStatus = () => {} } = {}) {
       streetLighting.update(context);
     },
     streetLighting,
+    hsbc,
     treeField: null,
-    landmarks: [],
+    landmarks: hsbc.landmarks,
     trafficAids: null
   };
 }

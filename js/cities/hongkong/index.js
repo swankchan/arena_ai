@@ -63,6 +63,8 @@ export const city = {
       colliders: world.colliders,
       dynamicRoots: [traffic.group, harbour.group, crowd.group],
       streetLighting: world.streetLighting,
+      hsbc: world.hsbc,
+      landmarks: world.landmarks,
       stats,
       teleports: TELEPORTS,
       cameraPresets: city.cameraPresets,
