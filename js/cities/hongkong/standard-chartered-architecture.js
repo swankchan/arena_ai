@@ -44,7 +44,7 @@ export const SCB_FLOORS = 42;
 export const SCB_BASE_Y = 0.72;
 // The main lobby sits above the street at the head of the long ceremonial flight. Keep the structural tower base
 // separate: raising the whole building would create an unsupported undercroft around the side and rear elevations.
-export const SCB_ENTRANCE_BASE_Y = 4.2;
+export const SCB_ENTRANCE_BASE_Y = 3.6;
 export const SCB_PODIUM_HEIGHT = 27;
 export const SCB_FLOOR_HEIGHT = 4.05;
 export const SCB_OFFICE_ROWS = 37;
@@ -79,33 +79,53 @@ export const SCB_SIGN_FIN = Object.freeze({
   baseY: SCB_MAIN_ROOF_Y, topY: SCB_HEIGHT
 });
 
-// One long, shallow flight crosses the frontage obliquely: low at the screen-right end, high at the screen-left
-// entrance landing. Thirty broad treads fit the real frontage without pushing the bottom of the flight into the road.
+// The treads follow Des Voeux Road, not the oblique HSBC-facing edge of the building. In plan the flight has a
+// road-parallel base, a square right edge and a tapering left edge, producing the right-triangle-like outline in the
+// supplied Street View. The road tangent is measured from the adjoining OSM way 7786 segments, independently of the OBB.
 export const SCB_STAIR_COUNT = 30;
-export const SCB_STAIR_WIDTH = 3.8;
-export const SCB_STAIR_BOTTOM = Object.freeze({ x: -9, z: SCB_FRONT_Z - 3.8 });
-export const SCB_STAIR_TOP = Object.freeze({ x: 9, z: SCB_FRONT_Z - 1.4 });
-const stairDX = SCB_STAIR_TOP.x - SCB_STAIR_BOTTOM.x;
-const stairDZ = SCB_STAIR_TOP.z - SCB_STAIR_BOTTOM.z;
-export const SCB_STAIR_RUN = Math.hypot(stairDX, stairDZ);
+export const SCB_STAIR_RUN = 6;
 export const SCB_STAIR_TREAD = SCB_STAIR_RUN / SCB_STAIR_COUNT;
 export const SCB_STAIR_RISE = SCB_ENTRANCE_BASE_Y / SCB_STAIR_COUNT;
-export const SCB_STAIR_HEADING = Math.atan2(stairDX, stairDZ);
-export const SCB_STAIR_DIRECTION = Object.freeze({ x: stairDX / SCB_STAIR_RUN, z: stairDZ / SCB_STAIR_RUN });
-export const SCB_STAIR_TOP_LANDING_DEPTH = 1.6;
+export const SCB_STAIR_RIGHT_U = -9;
+export const SCB_STAIR_LEFT_BOTTOM_U = 9;
+export const SCB_STAIR_LEFT_TOP_U = 3;
+export const SCB_STAIR_WIDTH = SCB_STAIR_LEFT_BOTTOM_U - SCB_STAIR_RIGHT_U;
+export const SCB_STAIR_TOP_WIDTH = SCB_STAIR_LEFT_TOP_U - SCB_STAIR_RIGHT_U;
+export const SCB_STAIR_TOP_LANDING_DEPTH = 1.2;
+const roadTangentLength = Math.hypot(18, 5.2);
+const roadWorldX = 18 / roadTangentLength, roadWorldZ = 5.2 / roadTangentLength;
+const siteCs = Math.cos(SCB_SITE.ry), siteSn = Math.sin(SCB_SITE.ry);
+const roadLocalX = roadWorldX * siteCs - roadWorldZ * siteSn;
+const roadLocalZ = roadWorldX * siteSn + roadWorldZ * siteCs;
+export const SCB_STAIR_ROAD_HEADING = Math.atan2(-roadLocalZ, roadLocalX);
+export const SCB_STAIR_TOP_Z = SCB_FRONT_Z - 1.2;
+export const SCB_STAIR_BOTTOM = Object.freeze({ x: 0, z: SCB_STAIR_TOP_Z - SCB_STAIR_RUN });
 export const SCB_ENTRANCE_LANDING = Object.freeze({
   x: 0,
-  z: (SCB_STAIR_TOP.z + SCB_FRONT_Z + 0.05) * 0.5,
+  z: (SCB_STAIR_TOP_Z + SCB_FRONT_Z + 0.05) * 0.5,
   w: SCB_WIDTH + 1.1,
-  d: SCB_FRONT_Z + 0.05 - SCB_STAIR_TOP.z
+  d: SCB_FRONT_Z + 0.05 - SCB_STAIR_TOP_Z
 });
 
-function scbStairCoordinates(x, z, origin = SCB_STAIR_BOTTOM) {
-  const dx = x - origin.x, dz = z - origin.z;
+export function scbStairEdgesAt(t) {
   return {
-    along: dx * SCB_STAIR_DIRECTION.x + dz * SCB_STAIR_DIRECTION.z,
-    across: dx * SCB_STAIR_DIRECTION.z - dz * SCB_STAIR_DIRECTION.x
+    right: SCB_STAIR_RIGHT_U,
+    left: SCB_STAIR_LEFT_BOTTOM_U + (SCB_STAIR_LEFT_TOP_U - SCB_STAIR_LEFT_BOTTOM_U) * t
   };
+}
+
+export function scbStairRoadToLocal(u, v) {
+  const cs = Math.cos(SCB_STAIR_ROAD_HEADING), sn = Math.sin(SCB_STAIR_ROAD_HEADING);
+  return {
+    x: SCB_STAIR_BOTTOM.x + cs * u + sn * v,
+    z: SCB_STAIR_BOTTOM.z - sn * u + cs * v
+  };
+}
+
+export function scbStairLocalToRoad(x, z) {
+  const cs = Math.cos(SCB_STAIR_ROAD_HEADING), sn = Math.sin(SCB_STAIR_ROAD_HEADING);
+  const dx = x - SCB_STAIR_BOTTOM.x, dz = z - SCB_STAIR_BOTTOM.z;
+  return { u: dx * cs - dz * sn, v: dx * sn + dz * cs };
 }
 
 export function scbLocalToWorld(x, z) {
@@ -119,19 +139,19 @@ export function scbWorldToLocal(x, z) {
   return { x: dx * cs - dz * sn, z: dx * sn + dz * cs };
 }
 
-// Ground-height field for exactly the same diagonal stair and two landing footprints as the rendered meshes. Each
-// tread is sampled independently, so a pedestrian climbs thirty 0.14 m risers rather than sliding up an invisible ramp.
+// Ground-height field for exactly the same road-aligned, tapering tread footprints as the rendered meshes. Sampling
+// the centre of each tread climbs thirty discrete risers; the tapered left edge never becomes an invisible walkway.
 export function scbEntranceGroundHeight(x, z, ground = 0) {
   const local = scbWorldToLocal(x, z);
+  const road = scbStairLocalToRoad(local.x, local.z);
   let height = ground;
-  const stair = scbStairCoordinates(local.x, local.z);
-  if (stair.along >= 0 && stair.along < SCB_STAIR_RUN && Math.abs(stair.across) <= SCB_STAIR_WIDTH * 0.5) {
-    const step = Math.min(SCB_STAIR_COUNT - 1, Math.floor(stair.along / SCB_STAIR_TREAD));
-    height = Math.max(height, (step + 1) * SCB_STAIR_RISE);
+  if (road.v >= 0 && road.v < SCB_STAIR_RUN) {
+    const step = Math.min(SCB_STAIR_COUNT - 1, Math.floor(road.v / SCB_STAIR_TREAD));
+    const edges = scbStairEdgesAt((step + 0.5) / SCB_STAIR_COUNT);
+    if (road.u >= edges.right && road.u <= edges.left) height = Math.max(height, (step + 1) * SCB_STAIR_RISE);
   }
-  const topLanding = scbStairCoordinates(local.x, local.z, SCB_STAIR_TOP);
-  if (topLanding.along >= 0 && topLanding.along <= SCB_STAIR_TOP_LANDING_DEPTH
-    && Math.abs(topLanding.across) <= SCB_STAIR_WIDTH * 0.5) {
+  if (road.v >= SCB_STAIR_RUN && road.v <= SCB_STAIR_RUN + SCB_STAIR_TOP_LANDING_DEPTH
+    && road.u >= SCB_STAIR_RIGHT_U && road.u <= SCB_STAIR_LEFT_TOP_U) {
     height = Math.max(height, SCB_ENTRANCE_BASE_Y);
   }
   if (Math.abs(local.x - SCB_ENTRANCE_LANDING.x) <= SCB_ENTRANCE_LANDING.w * 0.5

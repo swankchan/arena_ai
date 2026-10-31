@@ -141,13 +141,14 @@ test('Standard Chartered uses OSM way 85320719 immediately west of HSBC with a n
   assert.ok(north.z < south.z, 'local -z faces north / Des Voeux Road Central');
 });
 
-test('Standard Chartered keeps three stepped tiers and a thirty-tread oblique walkable entrance flight', () => {
+test('Standard Chartered keeps three stepped tiers and road-parallel tapering entrance treads', () => {
   const {
     SCB_TIERS, SCB_MAIN_ROOF_Y, SCB_HEIGHT, SCB_FRONT_PIER_X, SCB_FRONT_GLASS_X,
     SCB_OCTAGON_Y, SCB_PODIUM_HEIGHT, SCB_ENTRANCE_HEIGHT, SCB_SIGN_FIN,
-    SCB_STAIR_COUNT, SCB_STAIR_BOTTOM, SCB_STAIR_TOP, SCB_STAIR_RUN, SCB_STAIR_WIDTH,
-    SCB_STAIR_TREAD, SCB_STAIR_RISE, SCB_STAIR_DIRECTION, SCB_FRONT_Z,
-    SCB_BASE_Y, SCB_ENTRANCE_BASE_Y, scbLocalToWorld, scbEntranceGroundHeight, scbLocalCollider
+    SCB_STAIR_COUNT, SCB_STAIR_RUN, SCB_STAIR_WIDTH, SCB_STAIR_TOP_WIDTH,
+    SCB_STAIR_TREAD, SCB_STAIR_RISE, SCB_STAIR_RIGHT_U, SCB_STAIR_LEFT_BOTTOM_U,
+    SCB_STAIR_LEFT_TOP_U, SCB_FRONT_Z, SCB_BASE_Y, SCB_ENTRANCE_BASE_Y,
+    scbStairEdgesAt, scbStairRoadToLocal, scbLocalToWorld, scbEntranceGroundHeight, scbLocalCollider
   } = scb;
   assert.equal(SCB_TIERS.length, 3);
   assert.deepEqual(SCB_TIERS.map((tier) => tier.id), ['north', 'central', 'south']);
@@ -161,24 +162,39 @@ test('Standard Chartered keeps three stepped tiers and a thirty-tread oblique wa
     'the raised entrance glazing still clears the octagonal windows');
   assert.ok(SCB_ENTRANCE_HEIGHT > 12, 'the reference has unusually tall gold-framed entrance glazing');
   assert.equal(SCB_STAIR_COUNT, 30);
-  assert.ok(SCB_STAIR_RUN > 18 && SCB_STAIR_RUN < 19);
-  assert.ok(SCB_STAIR_TOP.x > SCB_STAIR_BOTTOM.x && SCB_STAIR_TOP.z > SCB_STAIR_BOTTOM.z,
-    'the single flight climbs obliquely from screen-right / street side towards screen-left / entrance');
-  assert.ok(SCB_STAIR_WIDTH > 3 && SCB_STAIR_TREAD > 0.55 && SCB_STAIR_TREAD < 0.7);
+  assert.equal(SCB_STAIR_RUN, 6);
+  assert.equal(SCB_STAIR_WIDTH, 18);
+  assert.equal(SCB_STAIR_TOP_WIDTH, 12);
+  assert.ok(SCB_STAIR_LEFT_BOTTOM_U > SCB_STAIR_LEFT_TOP_U && SCB_STAIR_LEFT_TOP_U > SCB_STAIR_RIGHT_U,
+    'the HSBC-side edge tapers while the opposite edge stays square to the road');
+  assert.deepEqual(scbStairEdgesAt(0), { right: SCB_STAIR_RIGHT_U, left: SCB_STAIR_LEFT_BOTTOM_U });
+  assert.deepEqual(scbStairEdgesAt(1), { right: SCB_STAIR_RIGHT_U, left: SCB_STAIR_LEFT_TOP_U });
   assert.ok(Math.abs(SCB_STAIR_RISE * SCB_STAIR_COUNT - SCB_ENTRANCE_BASE_Y) < 1e-9);
-  const far = scbLocalToWorld(
-    SCB_STAIR_BOTTOM.x - SCB_STAIR_DIRECTION.x * 0.05,
-    SCB_STAIR_BOTTOM.z - SCB_STAIR_DIRECTION.z * 0.05
-  );
+  const origin = scbStairRoadToLocal(0, 0);
+  const alongRoad = scbStairRoadToLocal(1, 0), towardsLobby = scbStairRoadToLocal(0, 1);
+  const ux = alongRoad.x - origin.x, uz = alongRoad.z - origin.z;
+  const vx = towardsLobby.x - origin.x, vz = towardsLobby.z - origin.z;
+  assert.ok(Math.abs(ux * vx + uz * vz) < 1e-9, 'road-parallel risers and the ascent form a right angle');
+  const worldOrigin = scbLocalToWorld(origin.x, origin.z);
+  const worldAlongRoad = scbLocalToWorld(alongRoad.x, alongRoad.z);
+  const roadLength = Math.hypot(18, 5.2);
+  assert.ok(Math.abs(worldAlongRoad.x - worldOrigin.x - 18 / roadLength) < 1e-9
+    && Math.abs(worldAlongRoad.z - worldOrigin.z - 5.2 / roadLength) < 1e-9,
+  'the treads follow the measured Des Voeux Road way 7786 tangent, independently of the tower OBB');
+  const farLocal = scbStairRoadToLocal(0, -0.05);
+  const far = scbLocalToWorld(farLocal.x, farLocal.z);
   assert.equal(scbEntranceGroundHeight(far.x, far.z, 0.025), 0.025);
   for (let i = 0; i < SCB_STAIR_COUNT; i++) {
-    const point = scbLocalToWorld(
-      SCB_STAIR_BOTTOM.x + SCB_STAIR_DIRECTION.x * (i + 0.5) * SCB_STAIR_TREAD,
-      SCB_STAIR_BOTTOM.z + SCB_STAIR_DIRECTION.z * (i + 0.5) * SCB_STAIR_TREAD
-    );
+    const edges = scbStairEdgesAt((i + 0.5) / SCB_STAIR_COUNT);
+    const local = scbStairRoadToLocal((edges.left + edges.right) * 0.5, (i + 0.5) * SCB_STAIR_TREAD);
+    const point = scbLocalToWorld(local.x, local.z);
     assert.ok(Math.abs(scbEntranceGroundHeight(point.x, point.z, 0.025) - (i + 1) * SCB_STAIR_RISE) < 1e-9,
-      `tread ${i + 1} has its own exact walking height`);
+      `road-parallel tread ${i + 1} has its own exact walking height`);
   }
+  const outsideTopLocal = scbStairRoadToLocal(8, SCB_STAIR_RUN * 0.5);
+  const outsideTop = scbLocalToWorld(outsideTopLocal.x, outsideTopLocal.z);
+  assert.equal(scbEntranceGroundHeight(outsideTop.x, outsideTop.z, 0.025), 0.025,
+    'the tapered triangle does not create an invisible rectangular walking surface');
   const landing = scbLocalToWorld(0, SCB_FRONT_Z - 0.2);
   assert.ok(Math.abs(scbEntranceGroundHeight(landing.x, landing.z, 0.025) - SCB_ENTRANCE_BASE_Y) < 1e-9);
   const collider = scbLocalCollider({ x: 0, z: 0, w: 20, d: 20, minY: SCB_BASE_Y, maxY: SCB_HEIGHT });

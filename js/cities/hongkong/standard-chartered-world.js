@@ -21,16 +21,17 @@ import {
   SCB_ENTRANCE_HEIGHT,
   SCB_SIGN_FIN,
   SCB_STAIR_COUNT,
-  SCB_STAIR_WIDTH,
-  SCB_STAIR_BOTTOM,
-  SCB_STAIR_TOP,
   SCB_STAIR_RUN,
   SCB_STAIR_TREAD,
   SCB_STAIR_RISE,
-  SCB_STAIR_HEADING,
-  SCB_STAIR_DIRECTION,
+  SCB_STAIR_RIGHT_U,
+  SCB_STAIR_LEFT_TOP_U,
+  SCB_STAIR_TOP_WIDTH,
+  SCB_STAIR_ROAD_HEADING,
   SCB_STAIR_TOP_LANDING_DEPTH,
   SCB_ENTRANCE_LANDING,
+  scbStairEdgesAt,
+  scbStairRoadToLocal,
   scbLocalCollider
 } from './standard-chartered-architecture.js';
 
@@ -323,33 +324,33 @@ export function buildStandardCharteredBankBuilding(root) {
   entranceSign.rotation.y = Math.PI;
   group.add(entranceSign);
 
-  // Thirty broad treads form one oblique flight across the frontage. The landing meshes and the walking-height field
-  // share the same endpoints, heading and rise; the structural tower itself keeps its original base and colour.
+  // Each riser is parallel to Des Voeux Road. The right edge runs squarely towards the lobby while the HSBC-side
+  // left edge tapers inwards, so the plan is a right-triangle-like flight rather than a rotated rectangular strip.
   const stairMaterial = new THREE.MeshStandardMaterial({ color: 0xb7afa5, roughness: 0.82, metalness: 0.02 });
-  const stairPoint = (along, across = 0, y = 0) => ({
-    x: SCB_STAIR_BOTTOM.x + SCB_STAIR_DIRECTION.x * along + SCB_STAIR_DIRECTION.z * across,
-    y,
-    z: SCB_STAIR_BOTTOM.z + SCB_STAIR_DIRECTION.z * along - SCB_STAIR_DIRECTION.x * across
-  });
-  const stairVector = (along, across, y) => {
-    const point = stairPoint(along, across, y);
+  const stairPoint = (u, v, y = 0) => ({ ...scbStairRoadToLocal(u, v), y });
+  const stairVector = (u, v, y) => {
+    const point = stairPoint(u, v, y);
     return new THREE.Vector3(point.x, point.y, point.z);
   };
+  const stairEdgeU = (side, t) => side === 1 ? scbStairEdgesAt(t).left : SCB_STAIR_RIGHT_U;
   const stairs = [];
   for (let i = 0; i < SCB_STAIR_COUNT; i++) {
+    const t = (i + 0.5) / SCB_STAIR_COUNT;
+    const edges = scbStairEdgesAt(t);
     const top = (i + 1) * SCB_STAIR_RISE;
     stairs.push({
-      ...stairPoint((i + 0.5) * SCB_STAIR_TREAD, 0, top * 0.5),
-      sx: SCB_STAIR_WIDTH, sy: top, sz: SCB_STAIR_TREAD + 0.018,
-      heading: SCB_STAIR_HEADING
+      ...stairPoint((edges.left + edges.right) * 0.5, (i + 0.5) * SCB_STAIR_TREAD, top * 0.5),
+      sx: edges.left - edges.right, sy: top, sz: SCB_STAIR_TREAD + 0.012,
+      heading: SCB_STAIR_ROAD_HEADING
     });
   }
   addInstances(group, unitBox, stairMaterial, stairs, 'SCBDesVoeuxRoadEntranceSteps');
   const landings = [
     {
-      ...stairPoint(SCB_STAIR_RUN + SCB_STAIR_TOP_LANDING_DEPTH * 0.5, 0, SCB_ENTRANCE_BASE_Y * 0.5),
-      sx: SCB_STAIR_WIDTH, sy: SCB_ENTRANCE_BASE_Y, sz: SCB_STAIR_TOP_LANDING_DEPTH + 0.02,
-      heading: SCB_STAIR_HEADING
+      ...stairPoint((SCB_STAIR_LEFT_TOP_U + SCB_STAIR_RIGHT_U) * 0.5,
+        SCB_STAIR_RUN + SCB_STAIR_TOP_LANDING_DEPTH * 0.5, SCB_ENTRANCE_BASE_Y * 0.5),
+      sx: SCB_STAIR_TOP_WIDTH, sy: SCB_ENTRANCE_BASE_Y, sz: SCB_STAIR_TOP_LANDING_DEPTH + 0.02,
+      heading: SCB_STAIR_ROAD_HEADING
     },
     {
       x: SCB_ENTRANCE_LANDING.x, y: SCB_ENTRANCE_BASE_Y * 0.5, z: SCB_ENTRANCE_LANDING.z,
@@ -358,24 +359,24 @@ export function buildStandardCharteredBankBuilding(root) {
   ];
   addInstances(group, unitBox, stairMaterial, landings, 'SCBEntranceRaisedLandings');
 
-  const railOffset = SCB_STAIR_WIDTH * 0.5 - 0.12;
   const railPosts = [];
   for (const side of [-1, 1]) {
     addBeamBetween(
       group,
-      stairVector(0.12, side * railOffset, SCB_STAIR_RISE + 1.06),
-      stairVector(SCB_STAIR_RUN, side * railOffset, SCB_ENTRANCE_BASE_Y + 1.06),
+      stairVector(stairEdgeU(side, 0), 0, SCB_STAIR_RISE + 1.06),
+      stairVector(stairEdgeU(side, 1), SCB_STAIR_RUN, SCB_ENTRANCE_BASE_Y + 1.06),
       0.045, octagonMetal, 'SCBEntranceStairHandrail'
     );
     for (let i = 0; i < SCB_STAIR_COUNT; i += 5) {
+      const t = (i + 0.5) / SCB_STAIR_COUNT;
       const top = (i + 1) * SCB_STAIR_RISE;
       railPosts.push({
-        ...stairPoint((i + 0.5) * SCB_STAIR_TREAD, side * railOffset, top + 0.53),
+        ...stairPoint(stairEdgeU(side, t), (i + 0.5) * SCB_STAIR_TREAD, top + 0.53),
         sx: 0.055, sy: 1.06, sz: 0.055
       });
     }
     railPosts.push({
-      ...stairPoint(SCB_STAIR_RUN, side * railOffset, SCB_ENTRANCE_BASE_Y + 0.53),
+      ...stairPoint(stairEdgeU(side, 1), SCB_STAIR_RUN, SCB_ENTRANCE_BASE_Y + 0.53),
       sx: 0.055, sy: 1.06, sz: 0.055
     });
   }
@@ -388,15 +389,17 @@ export function buildStandardCharteredBankBuilding(root) {
     x: SCB_SIGN_FIN.x, z: SCB_SIGN_FIN.z, w: SCB_SIGN_FIN.w, d: SCB_SIGN_FIN.d,
     minY: SCB_SIGN_FIN.baseY, maxY: SCB_HEIGHT
   }));
-  // Five-tread side segments follow both the solid stair edge and the handrail envelope without sealing the treads.
+  // Five-tread side segments follow the square right edge and the tapering HSBC-side edge independently.
   for (let first = 0; first < SCB_STAIR_COUNT; first += 5) {
     const last = Math.min(SCB_STAIR_COUNT, first + 5);
-    const along = (first + last) * 0.5 * SCB_STAIR_TREAD;
     for (const side of [-1, 1]) {
-      const point = stairPoint(along, side * (SCB_STAIR_WIDTH * 0.5 + 0.07));
+      const a = stairPoint(stairEdgeU(side, first / SCB_STAIR_COUNT), first * SCB_STAIR_TREAD);
+      const b = stairPoint(stairEdgeU(side, last / SCB_STAIR_COUNT), last * SCB_STAIR_TREAD);
+      const dx = b.x - a.x, dz = b.z - a.z;
       colliders.push(scbLocalCollider({
-        x: point.x, z: point.z, w: 0.14, d: (last - first) * SCB_STAIR_TREAD,
-        minY: 0, maxY: last * SCB_STAIR_RISE + 1.06, heading: SCB_STAIR_HEADING
+        x: (a.x + b.x) * 0.5, z: (a.z + b.z) * 0.5,
+        w: 0.14, d: Math.hypot(dx, dz) + 0.02,
+        minY: 0, maxY: last * SCB_STAIR_RISE + 1.06, heading: Math.atan2(dx, dz)
       }));
     }
   }
