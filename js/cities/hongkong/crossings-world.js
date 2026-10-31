@@ -2,6 +2,8 @@ import * as THREE from 'three/webgpu';
 import { createRoadSurfaceMaterial } from '../../tsl-materials.js';
 import { CROSSING_ROUTES } from './crossings.js';
 import { isTerritoryLand } from './full-meta.js';
+import { buildTsingMaArchitecture } from './tsing-ma-world.js';
+import { TSING_MA_TOWER_FRACTIONS } from './tsing-ma-architecture.js';
 import { segmentWall } from './colliders.js';
 
 const WATER_LEVEL = -2.2;
@@ -142,6 +144,10 @@ export function buildHongKongCrossings(root) {
       for (let i = 1; i < route.points.length; i++) {
         const point = route.points[i];
         if (point.s < nextPier || point.y < 8) continue;
+        const routeFraction = point.s / route.length;
+        // The shared suspension towers carry Tsing Ma's central span; generic approach piers must not fill that opening.
+        if (route.crossingId === 'tsing-ma' && routeFraction >= TSING_MA_TOWER_FRACTIONS[0]
+          && routeFraction <= TSING_MA_TOWER_FRACTIONS[1]) continue;
         const previous = route.points[i - 1];
         const bottom = isTerritoryLand(point.x, point.z) ? LAND_TOP : WATER_LEVEL - 1;
         const top = point.y - 0.75, height = top - bottom;
@@ -161,6 +167,7 @@ export function buildHongKongCrossings(root) {
     root.add(group);
   }
 
+  const tsingMa = buildTsingMaArchitecture(root);
   return {
     colliders,
     stats: {
@@ -169,7 +176,8 @@ export function buildHongKongCrossings(root) {
       crossingBridgePiers: bridgePiers,
       crossingTunnelSegments: tunnelSegments,
       crossingPortals: portals,
-      crossingColliders: colliders.length
+      crossingColliders: colliders.length,
+      ...tsingMa.stats
     }
   };
 }
