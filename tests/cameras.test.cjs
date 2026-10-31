@@ -240,3 +240,14 @@ test('teleport releases every camera pointer and ignores old gestures before acc
   close(h.camera.orbitYawOffset, -0.065);
   assert.equal(h.camera.isDragging, true);
 });
+
+test('chase and action cameras follow a car below sea level inside a tunnel', () => {
+  const h = cameraHarness();
+  h.entity.position.y = -22;
+  for (const preset of ['chase', 'action']) {
+    h.camera.setCameraPreset(preset, true);
+    for (let i = 0; i < 24; i++) h.camera.update(0.05, i * 0.05);
+    assert.ok(h.camera.camera.position.y < -18, `${preset} stays below sea level with the car`);
+    assert.ok(h.camera.camera.target.y < -18, `${preset} looks at the underground car`);
+  }
+});

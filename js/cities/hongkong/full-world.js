@@ -6,6 +6,7 @@ import { GEO } from '../../hk-geodata.js';
 import { createRoadSurfaceMaterial } from '../../tsl-materials.js';
 import { createHongKongHarbourWaterMaterial } from './harbour-water.js';
 import { buildTerritoryCoastColliders } from './coast-colliders.js';
+import { CROSSING_FLAT_EXCLUSION_IDS } from './crossings.js';
 import { FULL_BOUNDS, isDetailedCore } from './full-meta.js';
 
 // Territory-wide, flat street-level presentation over real coastline and park shapes. Unified mode includes the
@@ -83,7 +84,9 @@ function createRoadChunks(root, includeCore) {
     return chunk;
   };
   let segments = 0, joins = 0;
-  for (const [, width, , , , flat] of HK_FULL_ROADS.roads) {
+  for (const [wayId, road] of HK_FULL_ROADS.roads.entries()) {
+    if (CROSSING_FLAT_EXCLUSION_IDS.has(wayId)) continue;
+    const [, width, , , , flat] = road;
     for (let i = 2; i + 1 < flat.length; i += 2) {
       const x1 = flat[i - 2], z1 = flat[i - 1], x2 = flat[i], z2 = flat[i + 1];
       const dx = x2 - x1, dz = z2 - z1;

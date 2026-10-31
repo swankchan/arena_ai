@@ -57,7 +57,7 @@ export function createHongKongCrowd(scene, { getGroundHeight = null } = {}) {
   const routes = buildRoutes();
   const crowd = new PersonCrowd(MAX_DRAWN, { farDistance: 40, castShadow: true });
   group.add(...crowd.meshes);
-  const ground = (_owner, x, z) => getGroundHeight ? getGroundHeight(x, z, 'person') : SIDEWALK_TOP;
+  const ground = (owner, x, z) => getGroundHeight ? getGroundHeight(x, z, 'person', owner?.pelvisY ?? 0) : SIDEWALK_TOP;
   const walkers = [];
 
   const seeds = [
@@ -120,7 +120,7 @@ export function createHongKongCrowd(scene, { getGroundHeight = null } = {}) {
       const distance = Math.hypot(x - cameraPosition.x, z - cameraPosition.z);
       if (distance > DRAW_RADIUS || drawn >= MAX_DRAWN) continue;
       const heading = p.heading + (walker.dir < 0 ? Math.PI : 0);
-      walker.rig.update(dt, x, z, heading, ground, null, 0, true, -1);
+      walker.rig.update(dt, x, z, heading, ground, walker.rig, 0, true, -1);
       crowd.add(walker.rig, distance);
       drawn++;
     }

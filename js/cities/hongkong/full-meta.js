@@ -1,6 +1,7 @@
 import { GEO } from '../../hk-geodata.js';
 import { HK_FULL_MAP } from '../../hk-full-map-data.js';
 import { HK_FULL_ROADS } from '../../hk-full-roads-data.js';
+import { CROSSING_FLAT_EXCLUSION_IDS } from './crossings.js';
 
 // Spatial queries for the territory-wide 3D road layer. The detailed core keeps its original graph; outside it, these
 // way/segment indexes provide safe road spawns, HUD labels and ground heights without scanning 77,000 ways per query.
@@ -106,10 +107,10 @@ function segmentHit(x, z, way, i) {
   };
 }
 
-export function nearestFullRoad(x, z, { radius = 1800, minWidth = 0, namedOnly = false } = {}) {
+export function nearestFullRoad(x, z, { radius = 1800, minWidth = 0, namedOnly = false, excludeCrossings = false } = {}) {
   let best = null;
   for (const way of candidates(x, z, radius)) {
-    if (way.width < minWidth || (namedOnly && !way.name)) continue;
+    if (way.width < minWidth || (namedOnly && !way.name) || (excludeCrossings && CROSSING_FLAT_EXCLUSION_IDS.has(way.id))) continue;
     for (let i = 2; i + 1 < way.flat.length; i += 2) {
       const hit = segmentHit(x, z, way, i);
       if (hit.distance > radius || (best && hit.distance >= best.distance)) continue;
@@ -135,6 +136,11 @@ export function nearestFullRoads(x, z, radius = 45) {
 
 export function isTerritoryRoad(x, z, margin = 0) {
   const hit = nearestFullRoad(x, z, { radius: 70 + Math.max(0, margin) });
+  return Boolean(hit && hit.distance <= hit.width * 0.5 + margin);
+}
+
+export function isFlatTerritoryRoad(x, z, margin = 0) {
+  const hit = nearestFullRoad(x, z, { radius: 70 + Math.max(0, margin), excludeCrossings: true });
   return Boolean(hit && hit.distance <= hit.width * 0.5 + margin);
 }
 

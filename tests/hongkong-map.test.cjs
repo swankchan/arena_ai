@@ -77,13 +77,15 @@ test('Hong Kong OSM atlas contains territory-wide land, roads, parks and place l
   }
 });
 
-test('Hong Kong uses one unified flat world and full-road teleport rule', () => {
+test('Hong Kong uses one unified simple world and full-road teleport rule', () => {
   const world = readFileSync(join(__dirname, '../js/cities/hongkong/world.js'), 'utf8');
   const simple = readFileSync(join(__dirname, '../js/cities/hongkong/simple-world.js'), 'utf8');
   const map = readFileSync(join(__dirname, '../js/cities/hongkong/map.js'), 'utf8');
   assert.match(world, /buildHongKongWorld\(scene, options = \{\}\)[\s\S]*?return buildSimpleHongKongWorld\(scene, options\)/);
   assert.match(simple, /includeCore: true/);
-  assert.match(simple, /presentation: 'unified-flat'/);
+  assert.match(simple, /presentation: 'unified-simple'/);
+  assert.match(simple, /buildHongKongCrossings\(scene\)/);
+  assert.match(simple, /selectCrossingGround\(base, crossingSurfaceAt\(x, z\), referenceY, WATER_LEVEL\)/);
   assert.match(simple, /buildings: 0/);
   assert.match(map, /const spawn = spawnOnFullRoad\(x, z/);
   assert.doesNotMatch(map, /this\.drawGround\(ctx, view, false\)/);
