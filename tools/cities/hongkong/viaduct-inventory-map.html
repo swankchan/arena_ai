@@ -1,0 +1,293 @@
+<!doctype html>
+<html lang="zh-HK">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>香港高架橋資料 inventory</title>
+  <style>
+    :root { color-scheme: dark; --bg:#10161b; --panel:#172127; --line:#31414a; --muted:#9aabb3; --text:#eef4f5; --accent:#ffd54a; }
+    * { box-sizing:border-box; }
+    html,body { width:100%; height:100%; margin:0; overflow:hidden; background:var(--bg); color:var(--text); font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","Noto Sans TC","Microsoft JhengHei",sans-serif; }
+    button,input { font:inherit; }
+    header { height:76px; display:flex; align-items:center; gap:20px; padding:12px 20px; border-bottom:1px solid var(--line); background:#111a20; }
+    h1 { margin:0; font-size:21px; letter-spacing:.02em; }
+    header p { margin:4px 0 0; color:var(--muted); font-size:12px; }
+    .downloads { margin-left:auto; display:flex; gap:8px; flex-wrap:wrap; justify-content:flex-end; }
+    .downloads a,.tool button { color:var(--text); text-decoration:none; background:#23323a; border:1px solid #3b4c55; border-radius:7px; padding:7px 10px; font-size:12px; cursor:pointer; }
+    .downloads a:hover,.tool button:hover { border-color:var(--accent); }
+    .metrics { height:66px; display:flex; gap:10px; padding:10px 20px; border-bottom:1px solid var(--line); background:#141e24; }
+    .metric { min-width:145px; padding:2px 14px; border-left:2px solid #3d525c; }
+    .metric strong { display:block; font-size:20px; line-height:24px; }
+    .metric span { color:var(--muted); font-size:11px; }
+    main { height:calc(100% - 142px); display:flex; }
+    aside { width:365px; flex:0 0 365px; display:flex; flex-direction:column; border-right:1px solid var(--line); background:var(--panel); }
+    .controls { padding:14px; border-bottom:1px solid var(--line); }
+    input[type=search] { width:100%; padding:10px 11px; color:var(--text); background:#0f171c; border:1px solid #3a4a53; border-radius:7px; outline:none; }
+    input[type=search]:focus { border-color:var(--accent); }
+    .filters { display:grid; grid-template-columns:1fr 1fr; gap:7px 8px; margin-top:12px; }
+    .filters label { display:flex; align-items:center; gap:6px; color:#d7e0e3; font-size:11px; cursor:pointer; }
+    .filters input { accent-color:var(--accent); margin:0; }
+    .dot { display:inline-block; width:9px; height:9px; flex:0 0 9px; border-radius:50%; }
+    .warning { margin:10px 0 0; color:#d9bd82; font-size:11px; line-height:1.5; }
+    .results-head { display:flex; justify-content:space-between; padding:10px 14px 7px; color:var(--muted); font-size:11px; }
+    #results { overflow:auto; max-height:37%; border-bottom:1px solid var(--line); }
+    .result { width:100%; display:block; text-align:left; padding:9px 14px; color:var(--text); background:transparent; border:0; border-top:1px solid #26343b; cursor:pointer; }
+    .result:hover,.result.selected { background:#24343c; }
+    .result.selected { box-shadow:inset 3px 0 var(--accent); }
+    .result-title { display:flex; align-items:center; gap:7px; font-size:12px; font-weight:600; }
+    .result-meta { margin:4px 0 0 16px; color:var(--muted); font-size:10px; }
+    #details { overflow:auto; flex:1; padding:13px 15px 20px; font-size:12px; line-height:1.55; }
+    #details h2 { margin:0 0 4px; font-size:16px; }
+    #details h3 { margin:16px 0 5px; font-size:11px; color:var(--muted); text-transform:uppercase; letter-spacing:.08em; }
+    #details p { margin:6px 0; }
+    #details .muted { color:var(--muted); }
+    #details .badge { display:inline-block; padding:2px 7px; margin:3px 4px 3px 0; border:1px solid #41535d; border-radius:10px; font-size:10px; }
+    #details .ids { word-break:break-word; color:#b9c8cd; font-family:ui-monospace,SFMono-Regular,Consolas,monospace; font-size:10px; }
+    .map-wrap { position:relative; flex:1; min-width:0; background:#a9c9d1; }
+    #map { display:block; width:100%; height:100%; cursor:grab; touch-action:none; }
+    #map.dragging { cursor:grabbing; }
+    .tool { position:absolute; top:12px; right:12px; display:flex; gap:7px; }
+    .tool button { background:rgba(17,26,32,.9); }
+    .map-note { position:absolute; left:12px; right:12px; bottom:10px; display:flex; justify-content:space-between; gap:20px; pointer-events:none; color:#eaf0f1; text-shadow:0 1px 3px #14252c; font-size:10px; }
+    .map-note span:last-child { text-align:right; }
+    @media (max-width:900px) {
+      aside { width:310px; flex-basis:310px; }
+      .metric { min-width:0; flex:1; padding:2px 7px; }
+      .downloads { display:none; }
+      header { padding:12px; }
+      .metrics { padding:10px 12px; }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div>
+      <h1>香港高架橋資料 inventory</h1>
+      <p id="source">道路來源與覆核清單 · 並非已測量橋高</p>
+    </div>
+    <nav class="downloads" aria-label="下載資料">
+      <a href="viaduct-inventory.json" download>完整 JSON</a>
+      <a href="viaduct-groups.csv" download>群組 CSV</a>
+      <a href="viaduct-ways.csv" download>逐段 CSV</a>
+    </nav>
+  </header>
+  <section class="metrics" id="metrics"></section>
+  <main>
+    <aside>
+      <div class="controls">
+        <input id="search" type="search" placeholder="搜尋道路、群組、道路索引或 OSM way ID" autocomplete="off">
+        <div class="filters" id="filters"></div>
+        <p class="warning">黃色及橙色均需覆核；OSM layer 只係上下次序，唔係實際橋高。</p>
+      </div>
+      <div class="results-head"><span>群組結果</span><span id="result-count"></span></div>
+      <div id="results"></div>
+      <div id="details"><p class="muted">選擇群組或地圖上的橋段，查看來源、分類及高度狀態。</p></div>
+    </aside>
+    <section class="map-wrap" id="map-wrap">
+      <canvas id="map" aria-label="全港高架橋分類地圖"></canvas>
+      <div class="tool"><button id="reset">全港</button><button id="zoom-selected">所選群組</button></div>
+      <div class="map-note"><span>拖曳移動 · 滾輪縮放 · 點擊橋段查看</span><span>© OpenStreetMap contributors · ODbL 1.0</span></div>
+    </section>
+  </main>
+  <script>
+    const DATA = /*__VIADUCT_MAP_DATA__*/;
+    const inventory = DATA.inventory;
+    const definitions = inventory.definitions;
+    const definitionById = new Map(definitions.map(item => [item.id, item]));
+    const groups = inventory.groups;
+    const ways = inventory.ways;
+    const groupById = new Map(groups.map(group => [group.id, group]));
+    const active = new Set(definitions.filter(item => item.id !== 'excluded-tunnel').map(item => item.id));
+    const canvas = document.getElementById('map');
+    const context = canvas.getContext('2d');
+    const wrap = document.getElementById('map-wrap');
+    let selectedGroupId = null;
+    let cssWidth = 1, cssHeight = 1, dpr = 1;
+    const view = { x: 0, z: 0, scale: 0.03 };
+    const number = value => Number(value).toLocaleString('en-US');
+    const km = value => (value / 1000).toFixed(value >= 10000 ? 0 : 1);
+    const escapeHtml = value => String(value ?? '').replace(/[&<>"']/g, char => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[char]));
+
+    document.getElementById('source').textContent = `OSM ${inventory.source.sourceTimestamp} · 道路幾何與現時遊戲一致 · 高度未核實`;
+    const audit = inventory.summary.sourceAudit;
+    document.getElementById('metrics').innerHTML = [
+      [number(inventory.summary.totalElevatedWays), 'elevated 道路記錄'],
+      [number(inventory.summary.totalGroups), '候選／覆核群組'],
+      [`${number(audit.elevatedTaggedRecords)} / ${number(audit.elevatedRuntimeRecords)}`, '已精確補回原始 tags'],
+      [number(audit.elevatedTagUnavailableRecords), '待來源補全'],
+      [`${km(inventory.summary.carriagewayLengthM)} km`, '雙向分開計算車道總長']
+    ].map(([value,label]) => `<div class="metric"><strong>${value}</strong><span>${label}</span></div>`).join('');
+
+    const filters = document.getElementById('filters');
+    for (const definition of definitions) {
+      const label = document.createElement('label');
+      label.innerHTML = `<input type="checkbox" ${active.has(definition.id) ? 'checked' : ''}><span class="dot" style="background:${definition.color}"></span>${escapeHtml(definition.label)}`;
+      label.title = definition.description;
+      label.querySelector('input').addEventListener('change', event => {
+        if (event.target.checked) active.add(definition.id); else active.delete(definition.id);
+        draw(); renderResults();
+      });
+      filters.appendChild(label);
+    }
+
+    function resize() {
+      const rect = wrap.getBoundingClientRect();
+      cssWidth = Math.max(1, rect.width); cssHeight = Math.max(1, rect.height); dpr = Math.min(2, window.devicePixelRatio || 1);
+      canvas.width = Math.round(cssWidth * dpr); canvas.height = Math.round(cssHeight * dpr);
+      draw();
+    }
+    function screen(x,z) { return [(x - view.x) * view.scale + cssWidth / 2, (z - view.z) * view.scale + cssHeight / 2]; }
+    function world(x,y) { return [view.x + (x - cssWidth / 2) / view.scale, view.z + (y - cssHeight / 2) / view.scale]; }
+    function fitBounds(bounds, margin = 500, maximum = 8) {
+      const width = Math.max(1, bounds.maxX - bounds.minX + margin * 2);
+      const height = Math.max(1, bounds.maxZ - bounds.minZ + margin * 2);
+      view.x = (bounds.minX + bounds.maxX) / 2; view.z = (bounds.minZ + bounds.maxZ) / 2;
+      view.scale = Math.min(maximum, Math.min(cssWidth / width, cssHeight / height));
+      draw();
+    }
+    function fitAll() { fitBounds(inventory.bounds, 700); }
+    function pathFlat(flat) {
+      for (let i = 0; i < flat.length; i += 2) {
+        const point = screen(flat[i], flat[i + 1]);
+        if (i === 0) context.moveTo(point[0], point[1]); else context.lineTo(point[0], point[1]);
+      }
+    }
+    function strokeWay(way, color, width) {
+      if (way.lengthM <= 0) {
+        const point = screen(way.flat[0],way.flat[1]);
+        context.beginPath(); context.arc(point[0],point[1],Math.max(2,width),0,Math.PI*2); context.fillStyle=color; context.fill(); return;
+      }
+      context.beginPath(); pathFlat(way.flat); context.strokeStyle = color; context.lineWidth = width; context.stroke();
+    }
+    function draw() {
+      context.setTransform(dpr,0,0,dpr,0,0);
+      context.fillStyle = '#a9cbd3'; context.fillRect(0,0,cssWidth,cssHeight);
+      context.beginPath();
+      for (const polygon of DATA.land) pathFlat(polygon);
+      context.fillStyle = '#d6d5c8'; context.fill(); context.strokeStyle = '#b6b9ac'; context.lineWidth = 1; context.stroke();
+      context.lineCap = 'round'; context.lineJoin = 'round';
+      const order = ['excluded-tunnel','review-degenerate-geometry','review-tag-unavailable','review-layer-only','review-special-bridge','confirmed-bridge','confirmed-viaduct','existing-crossing'];
+      for (const classification of order) {
+        if (!active.has(classification)) continue;
+        const definition = definitionById.get(classification);
+        for (const way of ways) {
+          if (way.classification !== classification || way.groupId === selectedGroupId) continue;
+          strokeWay(way, definition.color, classification === 'existing-crossing' ? 3.2 : 1.7);
+        }
+      }
+      if (selectedGroupId) {
+        context.shadowColor = 'rgba(20,25,20,.5)'; context.shadowBlur = 5;
+        for (const way of ways) if (way.groupId === selectedGroupId) strokeWay(way, '#ffe057', 5);
+        context.shadowBlur = 0;
+      }
+      context.font = '600 12px -apple-system,BlinkMacSystemFont,"Segoe UI","Noto Sans TC",sans-serif';
+      context.textAlign = 'center'; context.textBaseline = 'bottom';
+      for (const place of DATA.places) {
+        const point = screen(place.x,place.z);
+        if (point[0] < -50 || point[1] < -30 || point[0] > cssWidth + 50 || point[1] > cssHeight + 30) continue;
+        context.fillStyle = '#52656a'; context.beginPath(); context.arc(point[0],point[1],2.4,0,Math.PI*2); context.fill();
+        context.fillStyle = '#40565c'; context.fillText(place.name,point[0],point[1]-6);
+      }
+      const visibleWays = ways.filter(way => active.has(way.classification));
+      const visibleGroups = new Set(visibleWays.map(way => way.groupId));
+      document.getElementById('result-count').textContent = `${number(visibleGroups.size)} 群組／${number(visibleWays.length)} 段`;
+    }
+
+    const searchIndex = new Map(groups.map(group => [group.id, [
+      group.id, group.names.join(' '), group.namesEn.join(' '), group.refs.join(' '),
+      group.sourceRecordIndexes.join(' '), group.osmWayIds.join(' ')
+    ].join(' ').toLowerCase()]));
+    function matchingGroups() {
+      const query = document.getElementById('search').value.trim().toLowerCase();
+      return groups.filter(group => active.has(group.classification) && (!query || searchIndex.get(group.id).includes(query)))
+        .sort((a,b) => b.carriagewayLengthM - a.carriagewayLengthM || a.id.localeCompare(b.id));
+    }
+    function renderResults() {
+      const matches = matchingGroups();
+      document.getElementById('results').innerHTML = matches.slice(0,100).map(group => {
+        const definition = definitionById.get(group.classification);
+        return `<button class="result ${group.id === selectedGroupId ? 'selected' : ''}" data-group="${group.id}">
+          <span class="result-title"><span class="dot" style="background:${definition.color}"></span>${escapeHtml(group.names.join('／') || group.id)}</span>
+          <span class="result-meta">${group.id} · ${definition.label} · ${group.wayCount} 段 · ${km(group.carriagewayLengthM)} km</span>
+        </button>`;
+      }).join('') || '<p style="padding:15px;color:#9aabb3;font-size:12px">沒有符合條件的群組。</p>';
+      for (const button of document.querySelectorAll('.result')) button.addEventListener('click', () => selectGroup(button.dataset.group,true));
+    }
+    function selectGroup(id,zoom) {
+      const group = groupById.get(id); if (!group) return;
+      selectedGroupId = id;
+      const definition = definitionById.get(group.classification);
+      const center = group.center;
+      document.getElementById('details').innerHTML = `
+        <h2>${escapeHtml(group.names.join('／') || group.id)}</h2>
+        <div class="muted ids">${group.id}</div>
+        <p><span class="dot" style="background:${definition.color}"></span> <b>${definition.label}</b></p>
+        <p>${escapeHtml(definition.description)}</p>
+        <h3>處理及高度</h3>
+        <p><span class="badge">${group.disposition}</span><span class="badge">${group.heightStatus}</span></p>
+        <h3>幾何</h3>
+        <p>${group.wayCount} 段 · ${km(group.carriagewayLengthM)} km（雙向分開計算）</p>
+        <p>中心：${center.x.toFixed(1)}, ${center.z.toFixed(1)}</p>
+        <h3>來源覆蓋</h3>
+        <p>${group.tagCoverage.matchedWayCount} / ${group.tagCoverage.totalWayCount} 段已精確補回原始 tags</p>
+        <p>Layer：${group.layerValues.join(', ') || '未知'}<br>Bridge：${group.bridgeValues.join(', ') || '未知／無標記'}</p>
+        <h3>遊戲道路索引</h3><p class="ids">${group.sourceRecordIndexes.slice(0,60).join(', ')}${group.sourceRecordIndexes.length > 60 ? ' …' : ''}</p>
+        <h3>原始 OSM way IDs</h3><p class="ids">${group.osmWayIds.length ? group.osmWayIds.slice(0,60).join(', ') : '待來源補全'}${group.osmWayIds.length > 60 ? ' …' : ''}</p>`;
+      renderResults();
+      if (zoom) fitBounds(group.bounds,180,2.5); else draw();
+    }
+
+    let drag = null;
+    canvas.addEventListener('pointerdown', event => {
+      drag = { x:event.clientX, y:event.clientY, startX:event.clientX, startY:event.clientY };
+      canvas.setPointerCapture(event.pointerId); canvas.classList.add('dragging');
+    });
+    canvas.addEventListener('pointermove', event => {
+      if (!drag) return;
+      const dx = event.clientX - drag.x, dy = event.clientY - drag.y;
+      view.x -= dx / view.scale; view.z -= dy / view.scale;
+      drag.x = event.clientX; drag.y = event.clientY; draw();
+    });
+    canvas.addEventListener('pointerup', event => {
+      if (!drag) return;
+      const moved = Math.hypot(event.clientX-drag.startX,event.clientY-drag.startY);
+      drag = null; canvas.classList.remove('dragging');
+      if (moved > 5) return;
+      const rect = canvas.getBoundingClientRect(), px = event.clientX-rect.left, py = event.clientY-rect.top;
+      let best = null;
+      function distanceToSegment(x1,y1,x2,y2) {
+        const dx=x2-x1,dy=y2-y1,length=dx*dx+dy*dy;
+        const t=length ? Math.max(0,Math.min(1,((px-x1)*dx+(py-y1)*dy)/length)) : 0;
+        return Math.hypot(px-(x1+dx*t),py-(y1+dy*t));
+      }
+      for (const way of ways) {
+        if (!active.has(way.classification)) continue;
+        if (way.lengthM <= 0) {
+          const point=screen(way.flat[0],way.flat[1]),distance=Math.hypot(px-point[0],py-point[1]);
+          if (distance <= 9 && (!best || distance < best.distance)) best={way,distance};
+          continue;
+        }
+        for (let i=2;i<way.flat.length;i+=2) {
+          const a=screen(way.flat[i-2],way.flat[i-1]),b=screen(way.flat[i],way.flat[i+1]);
+          if (Math.max(a[0],b[0]) < px-10 || Math.min(a[0],b[0]) > px+10 || Math.max(a[1],b[1]) < py-10 || Math.min(a[1],b[1]) > py+10) continue;
+          const distance=distanceToSegment(a[0],a[1],b[0],b[1]);
+          if (distance <= 9 && (!best || distance < best.distance)) best={way,distance};
+        }
+      }
+      if (best) selectGroup(best.way.groupId,false);
+    });
+    canvas.addEventListener('wheel', event => {
+      event.preventDefault();
+      const rect=canvas.getBoundingClientRect(),px=event.clientX-rect.left,py=event.clientY-rect.top;
+      const before=world(px,py),factor=Math.exp(-event.deltaY*0.0012);
+      view.scale=Math.max(0.006,Math.min(12,view.scale*factor));
+      const after=world(px,py); view.x+=before[0]-after[0]; view.z+=before[1]-after[1]; draw();
+    },{passive:false});
+    document.getElementById('search').addEventListener('input',renderResults);
+    document.getElementById('reset').addEventListener('click',fitAll);
+    document.getElementById('zoom-selected').addEventListener('click',() => { if (selectedGroupId) selectGroup(selectedGroupId,true); });
+    new ResizeObserver(resize).observe(wrap);
+    resize(); fitAll(); renderResults();
+  </script>
+</body>
+</html>
