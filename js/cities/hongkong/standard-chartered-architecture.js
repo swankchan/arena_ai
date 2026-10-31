@@ -51,14 +51,15 @@ export const SCB_OFFICE_ROWS = 37;
 export const SCB_MAIN_ROOF_Y = SCB_PODIUM_HEIGHT + SCB_OFFICE_ROWS * SCB_FLOOR_HEIGHT;
 export const SCB_WIDTH = Math.min(27.2, SCB_SITE.w - 0.7);
 
-// The supplied Des Voeux Road elevation belongs to the tallest north tier. Lower tiers step down towards Queen's Road
-// Central; this is the sculptural stepped silhouette visible in the side / rear photographs, not a generic extruded box.
-const tierDepth = SCB_SITE.d / 3;
-export const SCB_TIERS = Object.freeze([
-  Object.freeze({ id: 'north', z: -tierDepth, depth: tierDepth, roofY: SCB_MAIN_ROOF_Y, rows: 37 }),
-  Object.freeze({ id: 'central', z: 0, depth: tierDepth, roofY: SCB_PODIUM_HEIGHT + 31 * SCB_FLOOR_HEIGHT, rows: 31 }),
-  Object.freeze({ id: 'south', z: tierDepth, depth: tierDepth, roofY: SCB_PODIUM_HEIGHT + 25 * SCB_FLOOR_HEIGHT, rows: 25 })
-]);
+// Seven front-to-back sandwich slabs form the requested symmetric convex (凸) silhouette. The fourth / central slab
+// is tallest and carries the only crown sign; three slabs step down towards each street elevation.
+const tierDepth = SCB_SITE.d / 7;
+const tierRows = [25, 29, 33, 37, 33, 29, 25];
+const tierIds = ['north-outer', 'north-middle', 'north-inner', 'central', 'south-inner', 'south-middle', 'south-outer'];
+export const SCB_TIERS = Object.freeze(tierRows.map((rows, index) => Object.freeze({
+  id: tierIds[index], z: (index - 3) * tierDepth, depth: tierDepth,
+  roofY: SCB_PODIUM_HEIGHT + rows * SCB_FLOOR_HEIGHT, rows
+})));
 export const SCB_FRONT_Z = SCB_TIERS[0].z - SCB_TIERS[0].depth * 0.5;
 
 export const SCB_FRONT_PIER_WIDTH = 5.4;
@@ -78,15 +79,15 @@ export const SCB_ENTRANCE_DOOR_WIDTH = 4.5;
 // With the camera outside local -z looking towards +z, the left-hand entrance is the positive-local-x door.
 export const SCB_LEFT_ENTRANCE_X = SCB_FRONT_PIER_X[SCB_FRONT_PIER_X.length - 1];
 export const SCB_SIGN_FIN = Object.freeze({
-  x: 0, z: SCB_FRONT_Z + 3, w: 11.8, d: 5.4,
+  x: 0, z: SCB_TIERS[3].z, w: 11.8, d: 5.4,
   baseY: SCB_MAIN_ROOF_Y, topY: SCB_HEIGHT
 });
 
-// The flight itself, not a platform added afterwards, has the right-triangle-like plan requested by the user. Its road
-// frame stays independent of the 35-degree architectural frame. The bottom matches the facade's road-facing projected
-// width; every higher tread contracts linearly until its top matches the left-hand door's projected width.
+// The flight itself keeps the accepted triangular plan, but its bottom is now half of the facade's road projection.
+// The building-side diagonal is exactly collinear with the 35-degree facade and has no rail; only the outer edge does.
+// Every higher tread contracts linearly until its top matches the left-hand door's projected width.
 export const SCB_STAIR_COUNT = 30;
-export const SCB_STAIR_RUN = 13.5;
+export const SCB_STAIR_RUN = 12.5;
 export const SCB_STAIR_TREAD = SCB_STAIR_RUN / SCB_STAIR_COUNT;
 export const SCB_STAIR_RISE = SCB_ENTRANCE_BASE_Y / SCB_STAIR_COUNT;
 export const SCB_HSBC_FACING_ANGLE = 35 * Math.PI / 180;
@@ -100,16 +101,15 @@ const roadLocalZ = roadWorldX * modelFrameSn + roadWorldZ * modelFrameCs;
 export const SCB_STAIR_ROAD_HEADING = Math.atan2(-roadLocalZ, roadLocalX);
 export const SCB_FACADE_STAIR_ANGLE = Math.abs(SCB_STAIR_ROAD_HEADING);
 const facingCos = Math.cos(SCB_FACADE_STAIR_ANGLE), facingSin = Math.sin(SCB_FACADE_STAIR_ANGLE);
-export const SCB_STAIR_WIDTH = SCB_WIDTH * facingCos;
+export const SCB_STAIR_WIDTH = SCB_WIDTH * facingCos * 0.5;
 export const SCB_STAIR_TOP_WIDTH = SCB_ENTRANCE_DOOR_WIDTH * facingCos;
 export const SCB_STAIR_TOP_CENTER_U = SCB_LEFT_ENTRANCE_X * facingCos;
-export const SCB_STAIR_BOTTOM_RIGHT_U = -SCB_STAIR_WIDTH * 0.5;
-export const SCB_STAIR_BOTTOM_LEFT_U = SCB_STAIR_WIDTH * 0.5;
 export const SCB_STAIR_TOP_RIGHT_U = SCB_STAIR_TOP_CENTER_U - SCB_STAIR_TOP_WIDTH * 0.5;
 export const SCB_STAIR_TOP_LEFT_U = SCB_STAIR_TOP_CENTER_U + SCB_STAIR_TOP_WIDTH * 0.5;
-export const SCB_STAIR_DOOR_CLEARANCE = 1;
-export const SCB_STAIR_TOP_LANDING_DEPTH = SCB_ENTRANCE_DOOR_WIDTH * facingSin
-  + SCB_STAIR_DOOR_CLEARANCE + 0.25;
+export const SCB_STAIR_BOTTOM_RIGHT_U = SCB_STAIR_TOP_RIGHT_U - SCB_STAIR_RUN * facingCos / facingSin;
+export const SCB_STAIR_BOTTOM_LEFT_U = SCB_STAIR_BOTTOM_RIGHT_U + SCB_STAIR_WIDTH;
+export const SCB_STAIR_RAIL_SIDES = Object.freeze([1]);
+export const SCB_STAIR_TOP_LANDING_DEPTH = SCB_ENTRANCE_DOOR_WIDTH * facingSin + 0.25;
 
 // Keep the established kerbside origin, but position the tower from the required left-door / top-tread relationship.
 // This replaces the old connector-corner anchor, which produced a large flat triangle instead of triangular stairs.
@@ -118,7 +118,7 @@ export const SCB_STAIR_BOTTOM_WORLD = Object.freeze({
   x: SCB_SITE.x + siteFrameSn * oldStairBottomZ,
   z: SCB_SITE.z + siteFrameCs * oldStairBottomZ
 });
-const doorCenterV = SCB_STAIR_RUN + SCB_ENTRANCE_DOOR_WIDTH * facingSin * 0.5 + SCB_STAIR_DOOR_CLEARANCE;
+const doorCenterV = SCB_STAIR_RUN + SCB_ENTRANCE_DOOR_WIDTH * facingSin * 0.5;
 const leftDoorWorld = {
   x: SCB_STAIR_BOTTOM_WORLD.x + roadWorldX * SCB_STAIR_TOP_CENTER_U - roadWorldZ * doorCenterV,
   z: SCB_STAIR_BOTTOM_WORLD.z + roadWorldZ * SCB_STAIR_TOP_CENTER_U + roadWorldX * doorCenterV
@@ -196,9 +196,9 @@ export function scbEntranceGroundHeight(x, z, ground = 0) {
     const edges = scbStairEdgesAt(road.v / SCB_STAIR_RUN);
     if (road.u >= edges.right && road.u <= edges.left) height = Math.max(height, (step + 1) * SCB_STAIR_RISE);
   }
-  if (road.v >= SCB_STAIR_RUN && road.v <= SCB_STAIR_RUN + SCB_STAIR_TOP_LANDING_DEPTH
-    && road.u >= SCB_STAIR_TOP_RIGHT_U && road.u <= SCB_STAIR_TOP_LEFT_U) {
-    height = Math.max(height, SCB_ENTRANCE_BASE_Y);
+  if (road.v >= SCB_STAIR_RUN && road.v <= SCB_STAIR_RUN + SCB_STAIR_TOP_LANDING_DEPTH) {
+    const edges = scbStairEdgesAt(road.v / SCB_STAIR_RUN);
+    if (road.u >= edges.right && road.u <= edges.left) height = Math.max(height, SCB_ENTRANCE_BASE_Y);
   }
   return height;
 }

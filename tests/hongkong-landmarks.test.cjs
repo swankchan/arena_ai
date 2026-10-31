@@ -156,21 +156,27 @@ test('Standard Chartered preserves its OSM site while the tower turns 35 degrees
   assert.ok(newOutwardX > oldOutwardX, 'the entrance normal turns east towards HSBC, not along the old road normal');
 });
 
-test('Standard Chartered stairs contract from the road-facing base to the left-hand door', () => {
+test('Standard Chartered has seven sandwich slabs and half-width facade-attached stairs', () => {
   const {
     SCB_TIERS, SCB_MAIN_ROOF_Y, SCB_HEIGHT, SCB_WIDTH, SCB_FRONT_PIER_X, SCB_FRONT_GLASS_X,
     SCB_OCTAGON_Y, SCB_PODIUM_HEIGHT, SCB_ENTRANCE_HEIGHT, SCB_ENTRANCE_DOOR_WIDTH,
     SCB_LEFT_ENTRANCE_X, SCB_SIGN_FIN, SCB_STAIR_COUNT, SCB_STAIR_RUN, SCB_STAIR_WIDTH,
     SCB_STAIR_TOP_WIDTH, SCB_STAIR_TOP_CENTER_U, SCB_STAIR_BOTTOM_RIGHT_U, SCB_STAIR_BOTTOM_LEFT_U,
     SCB_STAIR_TOP_RIGHT_U, SCB_STAIR_TOP_LEFT_U, SCB_STAIR_TOP_LANDING_DEPTH,
-    SCB_STAIR_TREAD, SCB_STAIR_RISE, SCB_FRONT_Z, SCB_BASE_Y, SCB_ENTRANCE_BASE_Y, SCB_FACADE_STAIR_ANGLE,
+    SCB_STAIR_TREAD, SCB_STAIR_RISE, SCB_STAIR_RAIL_SIDES,
+    SCB_FRONT_Z, SCB_BASE_Y, SCB_ENTRANCE_BASE_Y, SCB_FACADE_STAIR_ANGLE,
     scbStairEdgesAt, scbStairRoadToLocal, scbStairLocalToRoad, scbLocalToWorld,
     scbEntranceGroundHeight, scbLocalCollider
   } = scb;
-  assert.equal(SCB_TIERS.length, 3);
-  assert.deepEqual(SCB_TIERS.map((tier) => tier.id), ['north', 'central', 'south']);
-  assert.ok(SCB_TIERS[0].roofY > SCB_TIERS[1].roofY && SCB_TIERS[1].roofY > SCB_TIERS[2].roofY);
-  assert.equal(SCB_TIERS[0].roofY, SCB_MAIN_ROOF_Y);
+  assert.equal(SCB_TIERS.length, 7);
+  assert.deepEqual(SCB_TIERS.map((tier) => tier.id), [
+    'north-outer', 'north-middle', 'north-inner', 'central', 'south-inner', 'south-middle', 'south-outer'
+  ]);
+  assert.deepEqual(SCB_TIERS.map((tier) => tier.rows), [25, 29, 33, 37, 33, 29, 25]);
+  assert.deepEqual(SCB_TIERS.map((tier) => tier.roofY), [...SCB_TIERS].reverse().map((tier) => tier.roofY),
+    'the seven front-to-back slabs form a symmetric convex silhouette');
+  assert.equal(SCB_TIERS[3].roofY, SCB_MAIN_ROOF_Y);
+  assert.equal(SCB_SIGN_FIN.z, SCB_TIERS[3].z, 'the crown sign belongs only to the central tallest slab');
   assert.equal(SCB_SIGN_FIN.topY, SCB_HEIGHT);
   assert.ok(SCB_SIGN_FIN.baseY < SCB_HEIGHT && SCB_SIGN_FIN.baseY >= SCB_MAIN_ROOF_Y);
   assert.equal(SCB_FRONT_PIER_X.length, 3);
@@ -179,11 +185,12 @@ test('Standard Chartered stairs contract from the road-facing base to the left-h
     'the raised entrance glazing still clears the octagonal windows');
   assert.ok(SCB_ENTRANCE_HEIGHT > 12, 'the reference has unusually tall gold-framed entrance glazing');
   assert.equal(SCB_STAIR_COUNT, 30);
-  assert.equal(SCB_STAIR_RUN, 13.5);
-  assert.equal(SCB_STAIR_TREAD, 0.45);
+  assert.equal(SCB_STAIR_RUN, 12.5);
+  assert.equal(SCB_STAIR_TREAD, 12.5 / 30);
+  assert.deepEqual(SCB_STAIR_RAIL_SIDES, [1], 'only the outer edge has a rail');
   const projected = (width) => width * Math.cos(SCB_FACADE_STAIR_ANGLE);
-  assert.ok(Math.abs(SCB_STAIR_WIDTH - projected(SCB_WIDTH)) < 1e-9,
-    'the bottom tread matches the full road-facing facade projection');
+  assert.ok(Math.abs(SCB_STAIR_WIDTH - projected(SCB_WIDTH) * 0.5) < 1e-9,
+    'the bottom tread is half of the road-facing facade projection');
   assert.ok(Math.abs(SCB_STAIR_TOP_WIDTH - projected(SCB_ENTRANCE_DOOR_WIDTH)) < 1e-9,
     'the top tread matches the left-hand door projection');
   assert.ok(Math.abs(SCB_STAIR_TOP_CENTER_U - SCB_LEFT_ENTRANCE_X * Math.cos(SCB_FACADE_STAIR_ANGLE)) < 1e-9,
@@ -224,25 +231,29 @@ test('Standard Chartered stairs contract from the road-facing base to the left-h
   }
   for (let i = 0; i <= SCB_STAIR_COUNT; i++) {
     const edges = scbStairEdgesAt(i / SCB_STAIR_COUNT);
-    for (const u of [edges.right, edges.left]) {
-      const local = scbStairRoadToLocal(u, i * SCB_STAIR_TREAD);
-      if (Math.abs(local.x) <= SCB_WIDTH * 0.5) {
-        assert.ok(SCB_FRONT_Z - local.z > 0.7,
-          `stair boundary ${i} clears the rotated facade and its projecting stone frames`);
-      }
-    }
+    const buildingSide = scbStairRoadToLocal(edges.right, i * SCB_STAIR_TREAD);
+    assert.ok(Math.abs(buildingSide.z - SCB_FRONT_Z) < 1e-9,
+      `building-side stair boundary ${i} is exactly attached to the facade`);
+    assert.ok(Math.abs(buildingSide.x) <= SCB_WIDTH * 0.5 + 1e-9,
+      `building-side stair boundary ${i} meets actual facade, not empty space beyond its corner`);
+    const outerSide = scbStairRoadToLocal(edges.left, i * SCB_STAIR_TREAD);
+    assert.ok(SCB_FRONT_Z - outerSide.z > 0.7, `outer stair boundary ${i} remains outside the facade`);
   }
   const outsideTopLocal = scbStairRoadToLocal(0, SCB_STAIR_RUN - 0.01);
   const outsideTop = scbLocalToWorld(outsideTopLocal.x, outsideTopLocal.z);
   assert.equal(scbEntranceGroundHeight(outsideTop.x, outsideTop.z, 0.025), 0.025,
     'the tapered triangle does not create an invisible rectangular walking surface');
-  const landingLocal = scbStairRoadToLocal(SCB_STAIR_TOP_CENTER_U, SCB_STAIR_RUN + 0.5);
+  const landingV = SCB_STAIR_RUN + 0.5;
+  const landingEdges = scbStairEdgesAt(landingV / SCB_STAIR_RUN);
+  const landingLocal = scbStairRoadToLocal((landingEdges.left + landingEdges.right) * 0.5, landingV);
   const landing = scbLocalToWorld(landingLocal.x, landingLocal.z);
   assert.equal(scbEntranceGroundHeight(landing.x, landing.z, 0.025), SCB_ENTRANCE_BASE_Y,
     'only the small left-door landing is raised');
   for (const dx of [-SCB_ENTRANCE_DOOR_WIDTH * 0.5, 0, SCB_ENTRANCE_DOOR_WIDTH * 0.5]) {
     const door = scbStairLocalToRoad(SCB_LEFT_ENTRANCE_X + dx, SCB_FRONT_Z);
-    assert.ok(door.u >= SCB_STAIR_TOP_RIGHT_U - 1e-9 && door.u <= SCB_STAIR_TOP_LEFT_U + 1e-9);
+    const edges = scbStairEdgesAt(door.v / SCB_STAIR_RUN);
+    assert.ok(door.u >= edges.right - 1e-9 && door.u <= edges.left + 1e-9,
+      'the door meets the landing without crossing the attached facade edge');
     assert.ok(door.v >= SCB_STAIR_RUN && door.v <= SCB_STAIR_RUN + SCB_STAIR_TOP_LANDING_DEPTH,
       'the complete angled left-door width meets the top landing');
   }
@@ -258,6 +269,8 @@ test('Standard Chartered stairs contract from the road-facing base to the left-h
 test('the hand-built Standard Chartered model includes the photographed identifiers without bundled photo assets', () => {
   const source = fs.readFileSync(path.join(root, 'js/cities/hongkong/standard-chartered-world.js'), 'utf8');
   assert.match(source, /SCBSteppedTowerTiers/);
+  assert.match(source, /SCBSandwichStepStonePiers/);
+  assert.match(source, /SCBSandwichStepRoseGlassChannels/);
   assert.match(source, /SCBFrontStonePiers/);
   assert.match(source, /SCBFrontRoseGlassChannels/);
   assert.match(source, /SCBOctagonalWindowFrames/);
@@ -270,6 +283,7 @@ test('the hand-built Standard Chartered model includes the photographed identifi
   assert.match(source, /SCB_BUILDING_HEADING/);
   assert.match(source, /SCBEntranceStairHandrail/);
   assert.match(source, /SCBEntranceStairRailPosts/);
+  assert.match(source, /for \(const side of SCB_STAIR_RAIL_SIDES\)/);
   assert.match(source, /SCBCrownLogo/);
   assert.match(source, /SCBCrownLogoWest/);
   assert.match(source, /drawStandardCharteredDevice/);
