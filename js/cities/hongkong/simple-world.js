@@ -51,7 +51,7 @@ export function buildSimpleHongKongWorld(scene, { setStatus = () => {} } = {}) {
     isPointOnLand,
     isPointOnSidewalk,
     getGroundHeight,
-    update() { crossings.update?.(); },
+    update(dt, elapsed, context) { crossings.update?.(context); },
     treeField: null,
     landmarks: [],
     trafficAids: null

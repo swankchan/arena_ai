@@ -4,6 +4,7 @@ import { CROSSING_ROUTES } from './crossings.js';
 import { isTerritoryLand } from './full-meta.js';
 import { buildTsingMaArchitecture } from './tsing-ma-world.js';
 import { TSING_MA_TOWER_FRACTIONS } from './tsing-ma-architecture.js';
+import { buildHongKongTunnelLighting } from './tunnel-lighting.js';
 import { segmentWall } from './colliders.js';
 
 const WATER_LEVEL = -2.2;
@@ -168,9 +169,14 @@ export function buildHongKongCrossings(root) {
   }
 
   const tsingMa = buildTsingMaArchitecture(root);
+  const tunnelLighting = buildHongKongTunnelLighting(root, CROSSING_ROUTES);
+  function update({ cameraSystem } = {}) {
+    tsingMa.update();
+    tunnelLighting.update(cameraSystem);
+  }
   return {
     colliders,
-    update: tsingMa.update,
+    update,
     stats: {
       crossingRoutes: CROSSING_ROUTES.length,
       crossingSegments: segments,
@@ -178,6 +184,7 @@ export function buildHongKongCrossings(root) {
       crossingTunnelSegments: tunnelSegments,
       crossingPortals: portals,
       crossingColliders: colliders.length,
+      ...tunnelLighting.stats,
       ...tsingMa.stats
     }
   };

@@ -87,8 +87,9 @@ test('crossing world installs the shared Tsing Ma architecture exactly once', ()
   const source = fs.readFileSync(path.join(__dirname, '../js/cities/hongkong/crossings-world.js'), 'utf8');
   assert.equal(source.match(/buildTsingMaArchitecture\(root\)/g)?.length, 1);
   assert.match(source, /\.\.\.tsingMa\.stats/);
-  assert.match(source, /update: tsingMa\.update/);
+  assert.match(source, /tsingMa\.update\(\);/);
+  assert.match(source, /tunnelLighting\.update\(cameraSystem\)/);
   assert.match(source, /import \{ buildTsingMaArchitecture \} from '\.\/tsing-ma-world\.js';/);
   const simple = fs.readFileSync(path.join(__dirname, '../js/cities/hongkong/simple-world.js'), 'utf8');
-  assert.match(simple, /update\(\) \{ crossings\.update\?\.\(\); \}/);
+  assert.match(simple, /update\(dt, elapsed, context\) \{ crossings\.update\?\.\(context\); \}/);
 });

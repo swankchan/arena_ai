@@ -6,7 +6,7 @@ export const CROSSING_BASE_HEIGHT = 0.025;
 export const CROSSING_DEFINITIONS = Object.freeze([
   { id: 'cross-harbour', name: '海底隧道（紅磡）', kind: 'tunnel', level: -22, ramp: 260, routes: [[19157], [19159]] },
   { id: 'eastern-harbour', name: '東區海底隧道', kind: 'tunnel', level: -22, ramp: 280, routes: [[13375], [5964]] },
-  { id: 'western-harbour', name: '西區海底隧道', kind: 'tunnel', level: -22, ramp: 280, routes: [[24471], [24472]] },
+  { id: 'western-harbour', name: '西區海底隧道', kind: 'tunnel', level: -22, ramp: 280, curveAmplitude: 42, routes: [[24471], [24472]] },
   { id: 'ting-kau', name: '汀九橋', kind: 'bridge', level: 28, ramp: 300, routes: [[23987, 5996, 23979, 23981, 23980], [23976, 23982, 23978, 23977, 9534, 24022, 24027, 24026]] },
   { id: 'tsing-ma', name: '青馬大橋', kind: 'bridge', level: 32, ramp: 340, routes: [[23961], [11841]] },
   { id: 'kap-shui-mun', name: '汲水門大橋', kind: 'bridge', level: 28, ramp: 300, routes: [[17446], [17447]] }
@@ -17,6 +17,15 @@ function profileHeight(s, length, definition) {
   const t = Math.max(0, Math.min(1, edge / definition.ramp));
   const smooth = t * t * (3 - 2 * t);
   return CROSSING_BASE_HEIGHT + (definition.level - CROSSING_BASE_HEIGHT) * smooth;
+}
+
+function curveOffset(definition, s, length) {
+  if (!definition.curveAmplitude) return 0;
+  // A smooth S lives wholly inside the deep submerged section. Portals and their road openings keep the OSM positions.
+  const start = definition.ramp, end = length - definition.ramp;
+  if (s <= start || s >= end) return 0;
+  const u = (s - start) / (end - start);
+  return definition.curveAmplitude * Math.sin(Math.PI * 2 * u) * Math.sin(Math.PI * u);
 }
 
 function rawRoute(definition, wayIds) {
@@ -48,6 +57,15 @@ function buildRoute(definition, wayIds, direction) {
   const raw = rawRoute(definition, wayIds);
   const length = raw[raw.length - 1]?.s || 0;
   if (length < 100) throw new Error(`Crossing route too short: ${definition.name}`);
+  let curveFrame = null;
+  if (definition.curveAmplitude) {
+    // Both carriageways use one world-space reference axis. At a given station they receive exactly the same displacement,
+    // so the two tubes bend together instead of driving their walls through one another.
+    const reference = rawRoute(definition, definition.routes[0]);
+    const first = reference[0], last = reference[reference.length - 1];
+    const dx = last.x - first.x, dz = last.z - first.z, referenceLength = Math.hypot(dx, dz);
+    curveFrame = { x: first.x, z: first.z, ux: dx / referenceLength, uz: dz / referenceLength, length: referenceLength };
+  }
   const points = [];
   for (let i = 1; i < raw.length; i++) {
     const a = raw[i - 1], b = raw[i];
@@ -55,9 +73,12 @@ function buildRoute(definition, wayIds, direction) {
     const steps = Math.max(1, Math.ceil(segmentLength / 20));
     for (let step = 0; step < steps; step++) {
       const t = step / steps, s = a.s + segmentLength * t;
+      const rawX = a.x + (b.x - a.x) * t, rawZ = a.z + (b.z - a.z) * t;
+      const station = curveFrame ? (rawX - curveFrame.x) * curveFrame.ux + (rawZ - curveFrame.z) * curveFrame.uz : 0;
+      const offset = curveFrame ? curveOffset(definition, station, curveFrame.length) : 0;
       points.push({
-        x: a.x + (b.x - a.x) * t,
-        z: a.z + (b.z - a.z) * t,
+        x: rawX + (curveFrame?.uz || 0) * offset,
+        z: rawZ - (curveFrame?.ux || 0) * offset,
         y: profileHeight(s, length, definition),
         width: a.width,
         wayId: a.wayId,
@@ -67,6 +88,12 @@ function buildRoute(definition, wayIds, direction) {
   }
   const last = raw[raw.length - 1];
   points.push({ x: last.x, z: last.z, y: CROSSING_BASE_HEIGHT, width: last.width, wayId: last.wayId, s: length });
+  // Store true arc length after bending so following, lighting and end-of-route checks use the same geometry.
+  let curvedLength = 0;
+  for (let i = 1; i < points.length; i++) {
+    curvedLength += Math.hypot(points[i].x - points[i - 1].x, points[i].z - points[i - 1].z);
+    points[i].s = curvedLength;
+  }
   return {
     id: `${definition.id}:${direction}`,
     crossingId: definition.id,
@@ -75,7 +102,7 @@ function buildRoute(definition, wayIds, direction) {
     level: definition.level,
     direction,
     wayIds: [...wayIds],
-    length,
+    length: curvedLength,
     points
   };
 }

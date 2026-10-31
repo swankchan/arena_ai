@@ -1,7 +1,7 @@
 import { GEO } from '../../hk-geodata.js';
 import { HK_FULL_MAP } from '../../hk-full-map-data.js';
 import { HK_FULL_ROADS } from '../../hk-full-roads-data.js';
-import { CROSSING_FLAT_EXCLUSION_IDS } from './crossings.js';
+import { CROSSING_FLAT_EXCLUSION_IDS, crossingSurfaceAt } from './crossings.js';
 
 // Spatial queries for the territory-wide 3D road layer. The detailed core keeps its original graph; outside it, these
 // way/segment indexes provide safe road spawns, HUD labels and ground heights without scanning 77,000 ways per query.
@@ -136,7 +136,9 @@ export function nearestFullRoads(x, z, radius = 45) {
 
 export function isTerritoryRoad(x, z, margin = 0) {
   const hit = nearestFullRoad(x, z, { radius: 70 + Math.max(0, margin) });
-  return Boolean(hit && hit.distance <= hit.width * 0.5 + margin);
+  if (hit && hit.distance <= hit.width * 0.5 + margin) return true;
+  // Procedurally curved crossings can leave their original OSM ribbon by several metres; they are still real roads.
+  return Boolean(crossingSurfaceAt(x, z, margin));
 }
 
 export function isFlatTerritoryRoad(x, z, margin = 0) {

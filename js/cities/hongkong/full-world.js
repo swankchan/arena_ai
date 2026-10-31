@@ -167,8 +167,8 @@ function createRoadChunks(root, includeCore) {
 
 function createSeawalls(root, waterLevel, includeCore) {
   const positions = [];
-  const { segments, colliders, openings } = buildTerritoryCoastColliders(includeCore);
-  for (const [x1, z1, x2, z2] of segments) {
+  const { wallSegments, colliders, openings } = buildTerritoryCoastColliders(includeCore);
+  for (const [x1, z1, x2, z2] of wallSegments) {
     positions.push(
       x1, LAND_TOP, z1, x2, LAND_TOP, z2, x2, waterLevel - 1.2, z2,
       x1, LAND_TOP, z1, x2, waterLevel - 1.2, z2, x1, waterLevel - 1.2, z1

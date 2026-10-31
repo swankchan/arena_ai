@@ -130,6 +130,22 @@ test('Ting Kau Bridge centre and left lane have no coastal collision wall', () =
   assert.ok(ways >= 10 && samples >= 500, `${ways} Ting Kau ways / ${samples} samples`);
 });
 
+test('visible seawalls omit the Western tunnel opening just like their colliders', () => {
+  const { segments, wallSegments, openings } = buildTerritoryCoastColliders(true);
+  assert.equal(wallSegments.length, segments.length - openings);
+  const x = -1349.6764093897661, z = -928.5733495916046;
+  const distance = ([x1, z1, x2, z2]) => {
+    const dx = x2 - x1, dz = z2 - z1, lengthSq = dx * dx + dz * dz;
+    const t = Math.max(0, Math.min(1, ((x - x1) * dx + (z - z1) * dz) / lengthSq));
+    return Math.hypot(x - x1 - dx * t, z - z1 - dz * t);
+  };
+  assert.ok(Math.min(...segments.map(distance)) < 0.001, 'fixture is the formerly visible Western entrance seawall');
+  assert.ok(Math.min(...wallSegments.map(distance)) > 8, 'the visible wall no longer crosses the carriageway');
+  const world = readFileSync(join(__dirname, '../js/cities/hongkong/full-world.js'), 'utf8');
+  assert.match(world, /const \{ wallSegments, colliders, openings \}/);
+  assert.match(world, /for \(const \[x1, z1, x2, z2\] of wallSegments\)/);
+});
+
 test('Hong Kong atlas clicks outside the core use real roads and reject roadless points', () => {
   const core = { x: (GEO.bounds.minX + GEO.bounds.maxX) / 2, z: (GEO.bounds.minZ + GEO.bounds.maxZ) / 2 };
   assert.equal(isHongKongCorePoint(core.x, core.z), true);

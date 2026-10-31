@@ -18,6 +18,7 @@ export function territoryCoastHasRoadOpening(x1, z1, x2, z2) {
 
 export function buildTerritoryCoastColliders(includeCore = false) {
   const segments = [];
+  const wallSegments = [];
   const colliders = [];
   let openings = 0;
   for (const ring of HK_FULL_MAP.land) {
@@ -27,9 +28,10 @@ export function buildTerritoryCoastColliders(includeCore = false) {
       if ((!includeCore && isDetailedCore(mx, mz)) || isDataBoundarySegment(x1, z1, x2, z2, FULL_BOUNDS)) continue;
       segments.push([x1, z1, x2, z2]);
       if (territoryCoastHasRoadOpening(x1, z1, x2, z2)) { openings++; continue; }
+      wallSegments.push([x1, z1, x2, z2]);
       const wall = segmentWall(x1, z1, x2, z2);
       if (wall) colliders.push(wall);
     }
   }
-  return { segments, colliders, openings };
+  return { segments, wallSegments, colliders, openings };
 }

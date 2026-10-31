@@ -1,4 +1,6 @@
 const assert = require('node:assert/strict');
+const fs = require('node:fs');
+const path = require('node:path');
 const test = require('node:test');
 
 let crossings;
@@ -41,7 +43,8 @@ test('every crossing profile is continuous, finely sampled and connected at both
     for (let i = 1; i < route.points.length; i++) {
       const a = route.points[i - 1], b = route.points[i];
       const horizontal = Math.hypot(b.x - a.x, b.z - a.z);
-      assert.ok(horizontal > 0 && horizontal <= 20.001, `${route.id} segment ${i} is resampled to 20 m`);
+      const limit = route.crossingId === 'western-harbour' ? 21 : 20.001;
+      assert.ok(horizontal > 0 && horizontal <= limit, `${route.id} segment ${i} is resampled to about 20 m`);
       assert.ok(Math.abs(b.y - a.y) <= 3, `${route.id} segment ${i} has no height discontinuity`);
       assert.ok(b.s > a.s, `${route.id} has monotonic route distance`);
     }
@@ -59,6 +62,53 @@ test('crossing spatial queries return deck and tunnel elevations along the whole
       assert.ok(Math.abs(hit.height - point.y) < 0.75, `${route.id} point ${i} keeps its profile height`);
     }
   }
+});
+
+test('Western Harbour Crossing has real smooth S-bends while both portals stay fixed', () => {
+  const { CROSSING_ROUTES, CROSSING_DEFINITIONS } = crossings;
+  const definition = CROSSING_DEFINITIONS.find((item) => item.id === 'western-harbour');
+  assert.equal(definition.curveAmplitude, 42);
+  const expectedEnds = {
+    'western-harbour:0': [[-297.2, -2130.7], [-1379.1, -874.3]],
+    'western-harbour:1': [[-1387.9, -885.7], [-385.5, -2045.6]]
+  };
+  for (const route of CROSSING_ROUTES.filter((item) => item.crossingId === 'western-harbour')) {
+    const [first, last] = expectedEnds[route.id];
+    assert.deepEqual([route.points[0].x, route.points[0].z], first);
+    assert.deepEqual([route.points.at(-1).x, route.points.at(-1).z], last);
+    let totalTurn = 0, previousHeading = null;
+    for (let i = 1; i < route.points.length; i++) {
+      const a = route.points[i - 1], b = route.points[i];
+      const heading = Math.atan2(b.x - a.x, b.z - a.z);
+      if (previousHeading !== null) {
+        const turn = Math.atan2(Math.sin(heading - previousHeading), Math.cos(heading - previousHeading));
+        totalTurn += Math.abs(turn);
+      }
+      previousHeading = heading;
+    }
+    assert.ok(totalTurn > 0.9 && totalTurn < 1.5, `${route.id} has a readable but driveable S-bend`);
+    assert.ok(route.length > 1530 && route.length < 1700);
+  }
+  const western = CROSSING_ROUTES.filter((item) => item.crossingId === 'western-harbour');
+  let minimumSeparation = Infinity;
+  for (const a of western[0].points) {
+    for (const b of western[1].points) minimumSeparation = Math.min(minimumSeparation, Math.hypot(a.x - b.x, a.z - b.z));
+  }
+  assert.ok(minimumSeparation > 11.5, `paired tubes keep their OSM separation (${minimumSeparation.toFixed(2)} m)`);
+});
+
+test('tunnel lighting combines continuous fixtures with a camera-following light pool', () => {
+  const source = fs.readFileSync(path.join(__dirname, '../js/cities/hongkong/tunnel-lighting.js'), 'utf8');
+  assert.match(source, /const LIGHT_SPACING = 18/);
+  assert.match(source, /const LIGHT_POOL_SIZE = 16/);
+  assert.match(source, /emissiveNode = color\(0xffe7bd\)/);
+  assert.match(source, /HongKongTunnelCeilingLights/);
+  assert.match(source, /HongKongTunnelReflectors/);
+  assert.match(source, /const position = cameraSystem\?\.camera\?\.position/);
+  assert.match(source, /nearest\.splice/);
+  const world = fs.readFileSync(path.join(__dirname, '../js/cities/hongkong/crossings-world.js'), 'utf8');
+  assert.match(world, /buildHongKongTunnelLighting\(root, CROSSING_ROUTES\)/);
+  assert.match(world, /tunnelLighting\.update\(cameraSystem\)/);
 });
 
 test('current height selects stacked surfaces without capturing traffic from another level', () => {
