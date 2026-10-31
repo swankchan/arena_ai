@@ -1553,6 +1553,11 @@ function createLoftedCarMaterial(spec, fixedColorHex = null, options = {}) {
     ? smoothstep(-0.48, -0.62, tailAxis)
     : smoothstep(-0.53, -0.57, tailAxis);
   const turnRear = turnRearSection.mul(tailLens);
+  // Crown Comfort front-fender repeaters exist on both sides; the shared blink state still lights only the steering side.
+  const turnSide = livery === 'hk'
+    ? roundedRect(vec2(p.z.sub(cab.cowl - 0.06), p.y.sub(0.72)), vec2(0.075, 0.022), 0.006)
+      .mul(isSide).mul(isBody)
+    : float(0);
   const redLens = tailLens.mul(one.sub(max(turnRearSection, reverseRearSection)));
   const plateRear = roundedRect(vec2(p.x, p.y.sub(plateR)), vec2(livery === 'hk' ? 0.17 : 0.155, livery === 'hk' ? 0.095 : 0.06), 0.008).mul(rear);
   const platePocket = roundedRect(vec2(p.x, p.y.sub(plateR + 0.01)), vec2(livery === 'hk' ? 0.245 : 0.235, livery === 'hk' ? 0.135 : 0.105), 0.03).mul(rear);
@@ -1576,7 +1581,7 @@ function createLoftedCarMaterial(spec, fixedColorHex = null, options = {}) {
   const signFace = smoothstep(0.55, 0.75, abs(n.z)).mul(isSign);
   const signGlyph = step(0.42, sin(p.x.mul(90.0))).mul(step(ax, 0.17)).mul(smoothstep(0.045, 0.04, abs(p.y.sub(signY))));
   const mirrorGlass = isMirror.mul(step(0.55, n.z.negate()));
-  const lamp = max(max(headlight, taillight), hkFog);
+  const lamp = max(max(max(headlight, taillight), hkFog), turnSide);
   const plates = max(max(plateFront, plateRear), hkPlateFront);
   const cladding =
     spec.cladding > 0
@@ -1693,6 +1698,7 @@ function createLoftedCarMaterial(spec, fixedColorHex = null, options = {}) {
   body = mix(body, color(0x7a0a10), reflector);
   body = mix(body, color(0x222326), taillight);
   body = mix(body, tailColor, tailLens);
+  body = mix(body, color(0x9b5a17), turnSide);
   // Shaded recess and handle sit in the painted trunk / hatch, above the bumper.
   const pocketShade = smoothstep(plateR - 0.09, plateR + 0.115, p.y).mul(-0.25).add(0.9);
   body = mix(body, body.mul(pocketShade), platePocket);
@@ -1801,7 +1807,7 @@ function createLoftedCarMaterial(spec, fixedColorHex = null, options = {}) {
     .mul(one.sub(turnFront.mul(blink)));
   const tail = color(0xff0a12).mul(redLens.mul(tailShade).mul(brake.mul(2.1).add(nightHeadlamp.mul(0.4))));
   const stop = color(0xff0a12).mul(chmsl.mul(brake).mul(2.1));
-  const turn = color(0xff9a14).mul(max(turnFront, turnRear).mul(blink).mul(2.2));
+  const turn = color(0xff9a14).mul(max(max(turnFront, turnRear), turnSide).mul(blink).mul(2.2));
   let sign = color(0xffe28a).mul(signFace.mul(one.sub(signGlyph.mul(0.9))).mul(1.65));
   if (livery === 'hk') sign = color(0xfff1c8).mul(signFace).mul(signTex.g).mul(1.2);
 

@@ -45,25 +45,28 @@ function headGeometry() {
 }
 
 function glowGeometry() {
-  return new THREE.SphereGeometry(0.30, 6, 4).translate(0, 9.60, ARM_REACH);
+  return new THREE.SphereGeometry(0.36, 6, 4).translate(0, 9.60, ARM_REACH);
 }
 
 function materials() {
   const night = smoothstep(0.7, 1.45, cityUniforms.uInteriorGlow);
   const metal = new THREE.MeshStandardMaterial({ color: 0x737875, metalness: 0.68, roughness: 0.48 });
   const head = new THREE.MeshStandardNodeMaterial({ color: 0x8d845e, metalness: 0.16, roughness: 0.48 });
-  head.emissiveNode = color(0xffb84f).mul(night.mul(4.8));
+  head.emissiveNode = color(0xffb84f).mul(night.mul(4.2));
   const glow = new THREE.MeshBasicNodeMaterial({
     transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, fog: false
   });
-  glow.colorNode = color(0xffb235).mul(night.mul(1.9));
-  glow.opacityNode = night.mul(0.72);
+  glow.colorNode = color(0xffb235).mul(night.mul(1.6));
+  glow.opacityNode = night.mul(0.55);
   const pool = new THREE.MeshBasicNodeMaterial({
     transparent: true, depthWrite: false, blending: THREE.AdditiveBlending
   });
   const radius = length(uv().sub(0.5)).mul(2);
-  const falloff = pow(clamp(float(1).sub(radius), 0, 1), 2.2);
-  pool.colorNode = color(0xffb446).mul(falloff.mul(night).mul(0.38));
+  const radial = clamp(float(1).sub(radius), 0, 1);
+  // Broad, low-energy scattering plus a gentle core: no hard-edged orange spot under each lamp.
+  const scattered = pow(radial, 1.35).mul(0.16);
+  const softCore = pow(radial, 3.2).mul(0.08);
+  pool.colorNode = color(0xffbd67).mul(scattered.add(softCore).mul(night));
   pool.opacityNode = float(1);
   return { metal, head, glow, pool };
 }
@@ -113,7 +116,7 @@ export function createHongKongStreetLighting(root, { lamps = HK_STREET_LIGHTS.la
 
   const material = materials();
   const poleGeo = poleGeometry(), armGeo = armGeometry(), headGeo = headGeometry(), glowGeo = glowGeometry();
-  const poolGeo = new THREE.PlaneGeometry(11, 11).rotateX(-Math.PI / 2);
+  const poolGeo = new THREE.PlaneGeometry(18, 18).rotateX(-Math.PI / 2);
   const representatives = {}, chunks = [], dummy = new THREE.Object3D();
   for (const bucket of buckets.values()) {
     const chunk = new THREE.Group();

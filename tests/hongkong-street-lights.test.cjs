@@ -93,6 +93,9 @@ test('street-light rendering mixes curved single and double arms with chunked ni
   assert.match(source, /const GEOMETRY_RANGE = 800/);
   assert.match(source, /const NIGHT_GLOW_RANGE = 1800/);
   assert.match(source, /emissiveNode = color\(0xffb84f\)/);
+  assert.match(source, /new THREE\.PlaneGeometry\(18, 18\)/);
+  assert.match(source, /const scattered = pow\(radial, 1\.35\)\.mul\(0\.16\)/);
+  assert.match(source, /const softCore = pow\(radial, 3\.2\)\.mul\(0\.08\)/);
   assert.match(source, /new THREE\.InstancedMesh/);
   assert.doesNotMatch(source, /new THREE\.PointLight/);
   const simple = fs.readFileSync(path.join(root, 'js/cities/hongkong/simple-world.js'), 'utf8');

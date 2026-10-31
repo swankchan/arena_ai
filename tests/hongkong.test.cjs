@@ -475,6 +475,15 @@ test('Hong Kong taxi has clean front glass, a smaller crown and red idle tail le
   assert.match(source, /const turn = color\(0xff9a14\)/, 'amber remains available while indicating');
 });
 
+test('Hong Kong taxi has left and right fender repeaters without turning them into hazard lights', () => {
+  const source = read('js/actor-models.js');
+  assert.match(source, /const turnSide = livery === 'hk'/);
+  assert.match(source, /p\.z\.sub\(cab\.cowl - 0\.06\), p\.y\.sub\(0\.72\)/);
+  assert.match(source, /body = mix\(body, color\(0x9b5a17\), turnSide\)/);
+  assert.match(source, /max\(max\(turnFront, turnRear\), turnSide\)\.mul\(blink\)/);
+  assert.match(source, /const blink = max\(state\.y\.mul\(step\(0\.0, p\.x\)\), state\.z\.mul\(step\(p\.x, 0\.0\)\)\)/);
+});
+
 test('Hong Kong buses use a detailed two-deck model with instanced wheels and destination signs', () => {
   const actor = read('js/actor-models.js');
   assert.match(actor, /const HK_BUS_SPEC = /);
