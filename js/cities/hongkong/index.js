@@ -62,6 +62,7 @@ export const city = {
     return {
       colliders: world.colliders,
       dynamicRoots: [traffic.group, harbour.group, crowd.group],
+      streetLighting: world.streetLighting,
       stats,
       teleports: TELEPORTS,
       cameraPresets: city.cameraPresets,

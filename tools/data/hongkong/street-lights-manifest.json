@@ -1,0 +1,85 @@
+{
+  "dataset": "Hong Kong lamp-post positions",
+  "source": {
+    "file": "lamppost_en.csv",
+    "sha256": "c82d05cb082e7f9cda514983da90f01f1ad095be77127cfe04d472f7d6e65c0d",
+    "bytes": 8633164,
+    "records": 144995,
+    "uniqueLampPostNumbers": 144995,
+    "upstreamMetadataSupplied": false,
+    "fields": [
+      "Lamp Post Number",
+      "District",
+      "Location",
+      "Latitude",
+      "Longitude"
+    ],
+    "bounds": {
+      "south": 22.19466449,
+      "north": 22.55951679,
+      "west": 113.84856751,
+      "east": 114.37627136
+    },
+    "duplicateCoordinates": 19,
+    "duplicateCoordinatePolicy": "preserve every uniquely numbered source record"
+  },
+  "position": {
+    "frame": {
+      "lat0": 22.2819,
+      "lon0": 114.1596,
+      "bearingDeg": 0,
+      "origin": {
+        "lat": 22.2819,
+        "lon": 114.1596
+      }
+    },
+    "precisionM": 0.001,
+    "order": "source CSV row order; runtime array index does not replace the source Lamp Post Number"
+  },
+  "derivation": {
+    "roadSourceSha256": "c6fd49e15358616f46e3f00efb041ef2dfe6df470274b6074bc6492f3e406224",
+    "roadSourceTimestamp": "2026-10-29T21:21:26Z",
+    "roadSegments": 252962,
+    "nearestRoadRadiusM": 55,
+    "singleArmDefault": true,
+    "doubleArmRules": [
+      "central pole within 1.6 m of a two-way drivable centreline at least 13 m wide",
+      "parallel drivable carriageway on the opposite side, both within 28 m and at least 6 m wide"
+    ],
+    "armStyleFieldInSource": false,
+    "orientationFallbacks": 12467,
+    "doubleReasons": {
+      "opposite-parallel-carriageway": 19061,
+      "central-pole-wide-two-way-road": 71
+    }
+  },
+  "counts": {
+    "lamps": 144995,
+    "singleArm": 125863,
+    "doubleArm": 19132,
+    "luminaireHeads": 164127,
+    "districts": {
+      "Central & Western": 5041,
+      "Eastern": 3796,
+      "Islands": 11018,
+      "Kowloon City": 5031,
+      "Kwai Tsing": 7008,
+      "Kwun Tong": 4757,
+      "North": 14675,
+      "Others": 174,
+      "Sai Kung": 9654,
+      "Sha Tin": 11917,
+      "Sham Shui Po": 4178,
+      "Southern": 4373,
+      "Tai Po": 11155,
+      "Tsuen Wan": 6812,
+      "Tuen Mun": 9144,
+      "Wan Chai": 3947,
+      "Wong Tai Sin": 2358,
+      "Yau Tsim Mong": 4732,
+      "Yuen Long": 25225
+    }
+  },
+  "output": "js/hk-street-light-data.js",
+  "bytes": 4463396
+}

@@ -3,6 +3,7 @@ import { buildHongKongCrossings } from './crossings-world.js';
 import { crossingSurfaceAt, selectCrossingGround } from './crossings.js';
 import { isFlatTerritoryRoad, isTerritoryLand, isTerritoryRoad, territoryParkAt } from './full-meta.js';
 import { SPAWN } from './meta.js';
+import { createHongKongStreetLighting } from './street-lighting.js';
 
 const WATER_LEVEL = -2.2;
 
@@ -13,6 +14,8 @@ export function buildSimpleHongKongWorld(scene, { setStatus = () => {} } = {}) {
   const full = buildFullHongKongWorld(scene, { waterLevel: WATER_LEVEL, includeCore: true });
   setStatus('Building drivable harbour bridges and tunnels...');
   const crossings = buildHongKongCrossings(scene);
+  setStatus('Placing 144,995 lamp posts across Hong Kong...');
+  const streetLighting = createHongKongStreetLighting(scene);
 
   const isPointOnLand = (x, z) => isTerritoryLand(x, z) || isTerritoryRoad(x, z, 0.35);
   const isPointOnSidewalk = () => false;
@@ -28,6 +31,7 @@ export function buildSimpleHongKongWorld(scene, { setStatus = () => {} } = {}) {
   const stats = {
     ...full.stats,
     ...crossings.stats,
+    ...streetLighting.stats,
     presentation: 'unified-simple',
     landMeshes: full.stats.fullLandRings,
     blocks: 0,
@@ -36,7 +40,7 @@ export function buildSimpleHongKongWorld(scene, { setStatus = () => {} } = {}) {
     lots: 0,
     buildings: 0,
     skippedLots: 0,
-    lamps: 0,
+    lamps: streetLighting.stats.streetLightSourceLamps,
     trees: 0,
     signs: 0
   };
@@ -51,7 +55,11 @@ export function buildSimpleHongKongWorld(scene, { setStatus = () => {} } = {}) {
     isPointOnLand,
     isPointOnSidewalk,
     getGroundHeight,
-    update(dt, elapsed, context) { crossings.update?.(context); },
+    update(dt, elapsed, context) {
+      crossings.update?.(context);
+      streetLighting.update(context);
+    },
+    streetLighting,
     treeField: null,
     landmarks: [],
     trafficAids: null
