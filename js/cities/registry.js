@@ -16,9 +16,9 @@ export const CITIES = [
     taxiStyle: 'hk-urban',
     name: '香港 Hong Kong',
     short: 'HK',
-    badge: 'Full detail',
-    tagline: '維多利亞港兩岸，港島北岸至九龍腹地',
-    description: '由真實街道與街區建成的香港：堅尼地城、中環、灣仔、銅鑼灣、鰂魚涌、跑馬地、尖沙咀、旺角、長沙灣、石硤尾、九龍塘與九龍城，全部街道以中文命名。',
+    badge: 'Full Hong Kong',
+    tagline: '全港統一簡潔道路，由港九至新界及離島',
+    description: '以真實 OpenStreetMap 道路、海岸及地區構成的全港簡潔 3D 地圖；港九、新界與離島使用同一套平面街道，可逐步加入更多內容。',
     load: () => import('./hongkong/index.js')
   },
   {

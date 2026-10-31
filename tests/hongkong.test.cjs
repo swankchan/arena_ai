@@ -24,13 +24,13 @@ test.before(async () => {
   hkFrame = makeFrame(config.frame);
 });
 
-test('Hong Kong is a full-detail city pack in the registry', () => {
+test('Hong Kong is a unified full-territory city pack in the registry', () => {
   const city = registry.getCity('hongkong');
   assert.ok(city, 'registry exposes Hong Kong');
   assert.match(city.name, /香港/);
   assert.match(city.tagline, CJK);
   assert.match(city.description, CJK);
-  assert.equal(city.badge, 'Full detail');
+  assert.equal(city.badge, 'Full Hong Kong');
   assert.match(read('js/cities/hongkong/index.js'), /id:\s*'hongkong'/);
   assert.match(read('js/cities/hongkong/index.js'), /build\s*\(/);
   assert.match(read('js/cities/hongkong/index.js'), /createMap/);

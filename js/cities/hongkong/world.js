@@ -16,6 +16,7 @@ import { AREA_LABELS } from './meta.js';
 import { buildFullHongKongWorld, FULL_WORLD_HEIGHT } from './full-world.js';
 import { isDetailedCore, isTerritoryLand, isTerritoryRoad } from './full-meta.js';
 import { createHongKongTrafficAids } from './traffic-aids.js';
+import { buildSimpleHongKongWorld } from './simple-world.js';
 import {
   createHongKongHarbourWaterMaterial,
   createHongKongHarbourWaterGeometry
@@ -317,7 +318,12 @@ function createNeonSigns(root, signs) {
   }
 }
 
-export function buildHongKongWorld(scene, { setStatus = () => {} } = {}) {
+export function buildHongKongWorld(scene, options = {}) {
+  return buildSimpleHongKongWorld(scene, options);
+}
+
+// Kept as the legacy detailed presentation; the default Hong Kong experience now uses the unified flat map above.
+export function buildDetailedHongKongWorld(scene, { setStatus = () => {} } = {}) {
   setStatus('Building Hong Kong’s expanded street core...');
   const root = new THREE.Group();
   root.name = 'HongKongWorld';

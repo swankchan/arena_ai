@@ -5,6 +5,7 @@ const test = require('node:test');
 
 let GEO;
 let HK_FULL_MAP;
+let HK_FULL_ROADS;
 let meta;
 let fullMeta;
 let cfg;
@@ -13,15 +14,20 @@ let pointInRing;
 let hongKongFitZoom;
 let isHongKongCorePoint;
 let HKGMapSystem;
+let buildTerritoryCoastColliders;
+let colliderContains;
 test.before(async () => {
   ({ GEO } = await import('../js/hk-geodata.js'));
   ({ HK_FULL_MAP } = await import('../js/hk-full-map-data.js'));
+  ({ HK_FULL_ROADS } = await import('../js/hk-full-roads-data.js'));
   meta = await import('../js/cities/hongkong/meta.js');
   fullMeta = await import('../js/cities/hongkong/full-meta.js');
   ({ default: cfg } = await import('../tools/cities/hongkong/config.mjs'));
   ({ makeFrame } = await import('../tools/geo/frame.mjs'));
   ({ pointInRing } = await import('../tools/geo/geom.mjs'));
   ({ hongKongFitZoom, isHongKongCorePoint, HKGMapSystem } = await import('../js/cities/hongkong/map.js'));
+  ({ buildTerritoryCoastColliders } = await import('../js/cities/hongkong/coast-colliders.js'));
+  ({ colliderContains } = await import('../js/cities/hongkong/colliders.js'));
 });
 
 test('Hong Kong full-map fit uses the available wide and portrait viewports', () => {
@@ -69,6 +75,57 @@ test('Hong Kong OSM atlas contains territory-wide land, roads, parks and place l
     const [x, z] = frame.toWorld(check.lon, check.lat);
     assert.equal(rings.some((ring) => pointInRing(ring, x, z)), false, `${check.name} remains water`);
   }
+});
+
+test('Hong Kong uses one unified flat world and full-road teleport rule', () => {
+  const world = readFileSync(join(__dirname, '../js/cities/hongkong/world.js'), 'utf8');
+  const simple = readFileSync(join(__dirname, '../js/cities/hongkong/simple-world.js'), 'utf8');
+  const map = readFileSync(join(__dirname, '../js/cities/hongkong/map.js'), 'utf8');
+  assert.match(world, /buildHongKongWorld\(scene, options = \{\}\)[\s\S]*?return buildSimpleHongKongWorld\(scene, options\)/);
+  assert.match(simple, /includeCore: true/);
+  assert.match(simple, /presentation: 'unified-flat'/);
+  assert.match(simple, /buildings: 0/);
+  assert.match(map, /const spawn = spawnOnFullRoad\(x, z/);
+  assert.doesNotMatch(map, /this\.drawGround\(ctx, view, false\)/);
+  assert.doesNotMatch(map, /詳細建築區/);
+});
+
+test('Ting Kau Bridge centre and left lane have no coastal collision wall', () => {
+  const { colliders, openings } = buildTerritoryCoastColliders(true);
+  assert.ok(openings > 0);
+  const cells = new Map(), CELL = 128;
+  const key = (x, z) => `${Math.floor(x / CELL)},${Math.floor(z / CELL)}`;
+  for (const collider of colliders) {
+    for (let x = Math.floor(collider.minX / CELL); x <= Math.floor(collider.maxX / CELL); x++) {
+      for (let z = Math.floor(collider.minZ / CELL); z <= Math.floor(collider.maxZ / CELL); z++) {
+        const cell = `${x},${z}`;
+        if (!cells.has(cell)) cells.set(cell, []);
+        cells.get(cell).push(collider);
+      }
+    }
+  }
+  const blocked = (x, z) => (cells.get(key(x, z)) || []).find((collider) => colliderContains(collider, x, z, 0.2));
+  let ways = 0, samples = 0;
+  for (const road of HK_FULL_ROADS.roads) {
+    if (!road[0]?.includes('汀九橋')) continue;
+    ways++;
+    const flat = road[5], width = road[1];
+    for (let i = 2; i < flat.length; i += 2) {
+      const ax = flat[i - 2], az = flat[i - 1], bx = flat[i], bz = flat[i + 1];
+      const dx = bx - ax, dz = bz - az, length = Math.hypot(dx, dz);
+      const steps = Math.max(1, Math.ceil(length / 8));
+      const sign = road[2] === -1 ? -1 : 1, ux = dx / length * sign, uz = dz / length * sign;
+      const offset = Math.min(2.4, Math.max(1.2, width * 0.22));
+      for (let step = 0; step <= steps; step++) {
+        const t = step / steps, x = ax + dx * t, z = az + dz * t;
+        for (const [label, px, pz] of [['centre', x, z], ['left', x + uz * offset, z - ux * offset]]) {
+          samples++;
+          assert.equal(blocked(px, pz), undefined, `${road[0]} ${label} is blocked at ${px},${pz}`);
+        }
+      }
+    }
+  }
+  assert.ok(ways >= 10 && samples >= 500, `${ways} Ting Kau ways / ${samples} samples`);
 });
 
 test('Hong Kong atlas clicks outside the core use real roads and reject roadless points', () => {

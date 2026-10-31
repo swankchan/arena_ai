@@ -1,7 +1,8 @@
 import { GEO } from '../../hk-geodata.js';
 import { HK_FULL_MAP } from '../../hk-full-map-data.js';
 import { HK_FULL_ROADS } from '../../hk-full-roads-data.js';
-import { AREA_LABELS, isLand, locationLabel, nearestRoadNode, spawnOnRoad } from './meta.js';
+import { AREA_LABELS, locationLabel, nearestRoadNode } from './meta.js';
+import { spawnOnFullRoad } from './full-meta.js';
 
 // Hong Kong minimap and full-screen street atlas. The same Path2D world layers feed both maps; the labels use a
 // CJK-capable font stack so Chinese street and district names render correctly on every platform.
@@ -294,7 +295,7 @@ export class HKGMapSystem {
     }
     const compass = document.querySelector('.map-compass');
     if (compass) compass.title = '正北';
-    if (this.elHoverInfo) this.elHoverInfo.textContent = '全港道路可點擊傳送 · 虛線框為港九詳細建築區';
+    if (this.elHoverInfo) this.elHoverInfo.textContent = '全港統一簡潔道路 · 點擊附近道路傳送';
     if (this.elPlayerInfo) this.elPlayerInfo.textContent = '你在此：中環';
     const compassNeedle = document.getElementById('map-compass-needle');
     if (compassNeedle) compassNeedle.setAttribute('transform', 'rotate(0 22 22)');
@@ -383,17 +384,11 @@ export class HKGMapSystem {
         return;
       }
       if (this.elHoverInfo) {
-        if (!this.isCore(world)) {
-          const road = nearestRoadNode(world.x, world.z, { fullRoad: true });
-          const place = road?.name || this.nearestPlace(world.x, world.z) || locationLabel(world.x, world.z);
-          this.elHoverInfo.textContent = road && road.distance <= 1500
-            ? `${place} · 點擊傳送至附近道路`
-            : `${place} · 附近沒有可駕駛道路`;
-        } else {
-          const land = isLand(world.x, world.z);
-          const label = land ? locationLabel(world.x, world.z) : '維多利亞港';
-          this.elHoverInfo.textContent = `${label} · ${land ? '點擊傳送' : '水域 · 請選擇陸地'}`;
-        }
+        const road = nearestRoadNode(world.x, world.z, { fullRoad: true });
+        const place = road?.name || this.nearestPlace(world.x, world.z) || locationLabel(world.x, world.z);
+        this.elHoverInfo.textContent = road && road.distance <= 1500
+          ? `${place} · 點擊傳送至附近道路`
+          : `${place} · 附近沒有可駕駛道路`;
       }
     });
     const endPointer = (e) => {
@@ -452,34 +447,13 @@ export class HKGMapSystem {
   }
 
   teleportAt(x, z) {
-    if (!isHongKongCorePoint(x, z)) {
-      const spawn = spawnOnRoad(x, z, { minWidth: 5, laneOffset: 2.4 });
-      if (!Number.isFinite(spawn.roadId) || spawn.distance > 1500) {
-        if (this.elHoverInfo) this.elHoverInfo.textContent = '附近沒有可駕駛道路 · 請移近全港 OSM 道路再試';
-        return false;
-      }
-      this.waypoint = { x: spawn.x, z: spawn.z, name: locationLabel(spawn.x, spawn.z) };
-      this.onTeleport?.(spawn.x, spawn.z, spawn.heading);
-      this.renderFullMap();
-      return true;
+    const spawn = spawnOnFullRoad(x, z, { minWidth: 5, laneOffset: 2.4 });
+    if (!spawn || spawn.distance > 1500) {
+      if (this.elHoverInfo) this.elHoverInfo.textContent = '附近沒有可駕駛道路 · 請移近全港 OSM 道路再試';
+      return false;
     }
-    const clickedOnLand = isLand(x, z);
-    let node = nearestRoadNode(x, z);
-    if (node && !isLand(node.x, node.z)) {
-      // A water click still snaps to the nearest safe road; a land click keeps the clicked land instead of jumping
-      // across a dock or along the coast to a much more distant node.
-      node = clickedOnLand ? null : nearestRoadNode(x, z, { landOnly: true });
-    }
-    let targetX = node ? node.x : x;
-    let targetZ = node ? node.z : z;
-    if (!isLand(targetX, targetZ)) {
-      if (!clickedOnLand) return false;
-      targetX = x;
-      targetZ = z;
-    }
-    const heading = this.controllerManager.getActiveEntity().heading;
-    this.waypoint = { x: targetX, z: targetZ, name: locationLabel(targetX, targetZ) };
-    this.onTeleport?.(targetX, targetZ, heading);
+    this.waypoint = { x: spawn.x, z: spawn.z, name: locationLabel(spawn.x, spawn.z) };
+    this.onTeleport?.(spawn.x, spawn.z, spawn.heading);
     this.renderFullMap();
     return true;
   }
@@ -925,10 +899,9 @@ export class HKGMapSystem {
     const target = Math.max(0.1, RADAR_SCALE / (1 + Math.max(0, entity.position.y - 25) / 180));
     this.miniScale += (target - this.miniScale) * 0.08;
     const zoom = this.miniScale;
-    const overview = !this.isCore({ x: px, z: pz });
 
     let cache = this.miniCache;
-    if (!cache || cache.overview !== overview || Math.abs(cache.s - zoom) > 0.025 ||
+    if (!cache || Math.abs(cache.s - zoom) > 0.025 ||
       Math.hypot(px - cache.cx, pz - cache.cz) > 55) {
       if (!cache) cache = this.miniCache = { canvas: document.createElement('canvas') };
       cache.canvas.width = bw;
@@ -937,19 +910,12 @@ export class HKGMapSystem {
       cache.cx = px;
       cache.cz = pz;
       cache.s = zoom;
-      cache.overview = overview;
       const view = new MapView(px, pz, zoom, w, h, dpr);
       cache.ctx.setTransform(1, 0, 0, 1, 0, 0);
       cache.ctx.clearRect(0, 0, bw, bh);
-      if (overview) {
-        this.drawOverviewGround(cache.ctx, view);
-        this.drawOverviewPlaceLabels(cache.ctx, view);
-        this.drawOverviewRoadLabels(cache.ctx, view);
-      } else {
-        this.drawGround(cache.ctx, view, true);
-        this.drawAreaLabels(cache.ctx, view, true);
-        this.drawRoadLabels(cache.ctx, view, { fontPx: 9, maxLabels: 22, sameNameGap: 150 });
-      }
+      this.drawOverviewGround(cache.ctx, view);
+      this.drawOverviewPlaceLabels(cache.ctx, view);
+      this.drawOverviewRoadLabels(cache.ctx, view);
     }
 
     const ctx = this.miniCtx;
@@ -974,7 +940,6 @@ export class HKGMapSystem {
       if (Math.abs(wx - w / 2) < w || Math.abs(wy - h / 2) < h) drawDashedRoute(ctx, w / 2, h / 2, wx, wy);
       drawWaypoint(ctx, wx, wy, 4.2);
     }
-    this.drawLandmarkLabels(ctx, view, true);
     this.drawPlayer(ctx, view, w * 0.5, h * 0.5, entity, true);
   }
 
@@ -988,41 +953,9 @@ export class HKGMapSystem {
     ctx.setTransform(1, 0, 0, 1, 0, 0);
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     this.drawOverviewGround(ctx, view);
-
-    const b = GEO.bounds;
-    const coreVisible = view.toX(b.maxX) >= 0 && view.toX(b.minX) <= view.w && view.toY(b.maxZ) >= 0 && view.toY(b.minZ) <= view.h;
-    if (coreVisible) {
-      ctx.save();
-      view.screen(ctx);
-      ctx.beginPath();
-      ctx.rect(view.toX(b.minX), view.toY(b.minZ), (b.maxX - b.minX) * view.zoom, (b.maxZ - b.minZ) * view.zoom);
-      ctx.clip();
-      this.drawGround(ctx, view, false);
-      ctx.restore();
-    }
     this.drawSearch(ctx, view);
-    if (coreVisible) {
-      ctx.save();
-      view.world(ctx);
-      ctx.strokeStyle = 'rgba(125, 211, 232, 0.72)';
-      ctx.lineWidth = 1.5 / view.zoom;
-      ctx.setLineDash([12 / view.zoom, 8 / view.zoom]);
-      ctx.stroke(fullMapLayers().coreOutline);
-      ctx.restore();
-    }
     this.drawOverviewPlaceLabels(ctx, view);
     this.drawOverviewRoadLabels(ctx, view);
-    if (coreVisible && view.zoom >= 0.12) {
-      this.drawAreaLabels(ctx, view, false);
-      const majorOnly = view.zoom < 0.3;
-      this.drawRoadLabels(ctx, view, {
-        fontPx: view.zoom < 0.28 ? 9.5 : 10.5,
-        maxLabels: view.zoom < 0.28 ? 70 : view.zoom < 0.7 ? 220 : 420,
-        majorOnly,
-        sameNameGap: view.zoom < 0.3 ? 260 : 180
-      });
-    }
-    if (coreVisible && view.zoom >= 0.35) this.drawLandmarkLabels(ctx, view, false);
     this.fullStatic = { canvas };
     this.fullStaticKey = key;
     return this.fullStatic;

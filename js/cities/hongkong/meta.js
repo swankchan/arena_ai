@@ -233,7 +233,7 @@ const linkLines = GRAPH.links.map(([a, b, name, width, lanes, dir, inner]) => {
 });
 
 export function nearestRoadNode(x, z, { landOnly = false, fullRoad = false } = {}) {
-  if (fullRoad && !isDetailedCore(x, z)) {
+  if (fullRoad) {
     const hit = nearestFullRoad(x, z, { radius: 3000 });
     if (!hit) return null;
     return {

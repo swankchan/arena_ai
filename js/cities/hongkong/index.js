@@ -12,9 +12,8 @@ import {
   getLocationLabel
 } from './meta.js';
 
-// Hong Kong pack: both shores of Victoria Harbour, from Kennedy Town and Happy Valley to Quarry Bay, Cheung Sha Wan,
-// Kowloon Tong and Kowloon City, built from real OpenStreetMap blocks, streets and landmark sites. js/app.js only
-// sees the world object returned by build().
+// Hong Kong pack: a unified flat OSM road map across Hong Kong Island, Kowloon, the New Territories and islands.
+// Dynamic Hong Kong traffic and harbour life remain separate from the static ground so content can be built up over time.
 
 const TAXI_STYLE = 'hk-urban';
 
@@ -34,7 +33,7 @@ export const city = {
   defaultMode: 'car',
 
   build({ scene, markInit, setStatus }) {
-    setStatus('Building Hong Kong’s expanded street core...');
+    setStatus('Building Hong Kong’s unified flat road map...');
 
     const world = buildHongKongWorld(scene, { setStatus });
     markInit?.('world');
@@ -46,7 +45,7 @@ export const city = {
     markInit?.('traffic');
 
     const harbour = createHongKongHarbour(scene);
-    const crowd = createHongKongCrowd(scene);
+    const crowd = createHongKongCrowd(scene, { getGroundHeight: world.getGroundHeight });
     markInit?.('harbour');
     markInit?.('crowd');
 
