@@ -123,7 +123,8 @@ test('unified simple mode adds only the authored landmarks and keeps generic bui
 test('Standard Chartered preserves its OSM site while the tower turns 35 degrees towards HSBC', () => {
   const {
     SCB_SITE, SCB_HEIGHT, SCB_FLOORS, SCB_BUILDING_HEADING, SCB_HSBC_FACING_ANGLE,
-    SCB_MODEL_ORIGIN, SCB_MAP_SITE, SCB_FRONT_CENTER, SCB_FRONT_Z, scbSiteWorldToLocal, scbLocalToWorld
+    SCB_MODEL_ORIGIN, SCB_MAP_SITE, SCB_FRONT_CENTER, SCB_FRONT_Z,
+    SCB_STAIR_BOTTOM_WORLD, SCB_ROAD_SETBACK, scbSiteWorldToLocal, scbLocalToWorld
   } = scb;
   const { HSBC_SITE } = architecture;
   assert.equal(SCB_SITE.name, '渣打銀行大廈');
@@ -146,6 +147,14 @@ test('Standard Chartered preserves its OSM site while the tower turns 35 degrees
   assert.ok(Math.hypot(front.x - SCB_FRONT_CENTER.x, front.z - SCB_FRONT_CENTER.z) < 1e-9,
     'the model origin and exported entrance centre use the same rotated architectural frame');
   assert.ok(SCB_MODEL_ORIGIN.x < SCB_SITE.x, 'the rotated massing swings west, away from HSBC');
+  const oldBottomZ = SCB_FRONT_Z - 7.2;
+  const oldBottomX = SCB_SITE.x + Math.sin(SCB_SITE.ry) * oldBottomZ;
+  const oldBottomWorldZ = SCB_SITE.z + Math.cos(SCB_SITE.ry) * oldBottomZ;
+  const roadLength = Math.hypot(18, 5.2);
+  assert.ok(Math.abs(SCB_STAIR_BOTTOM_WORLD.x - oldBottomX + 5.2 / roadLength * SCB_ROAD_SETBACK) < 1e-9
+    && Math.abs(SCB_STAIR_BOTTOM_WORLD.z - oldBottomWorldZ - 18 / roadLength * SCB_ROAD_SETBACK) < 1e-9,
+  'the entire landmark and stair base move three metres away from the carriageway');
+  assert.equal(SCB_ROAD_SETBACK, 3);
   assert.equal(SCB_MAP_SITE.x, SCB_MODEL_ORIGIN.x);
   assert.equal(SCB_MAP_SITE.z, SCB_MODEL_ORIGIN.z);
   assert.equal(SCB_MAP_SITE.ry, SCB_BUILDING_HEADING);
@@ -164,6 +173,7 @@ test('Standard Chartered has seven sandwich slabs and half-width facade-attached
     SCB_STAIR_TOP_WIDTH, SCB_STAIR_TOP_CENTER_U, SCB_STAIR_BOTTOM_RIGHT_U, SCB_STAIR_BOTTOM_LEFT_U,
     SCB_STAIR_TOP_RIGHT_U, SCB_STAIR_TOP_LEFT_U, SCB_STAIR_TOP_LANDING_DEPTH,
     SCB_STAIR_TREAD, SCB_STAIR_RISE, SCB_STAIR_RAIL_SIDES,
+    SCB_STAIR_PARAPET_HEIGHT, SCB_STAIR_PARAPET_THICKNESS,
     SCB_FRONT_Z, SCB_BASE_Y, SCB_ENTRANCE_BASE_Y, SCB_FACADE_STAIR_ANGLE,
     scbStairEdgesAt, scbStairRoadToLocal, scbStairLocalToRoad, scbLocalToWorld,
     scbEntranceGroundHeight, scbLocalCollider
@@ -187,7 +197,9 @@ test('Standard Chartered has seven sandwich slabs and half-width facade-attached
   assert.equal(SCB_STAIR_COUNT, 30);
   assert.equal(SCB_STAIR_RUN, 12.5);
   assert.equal(SCB_STAIR_TREAD, 12.5 / 30);
-  assert.deepEqual(SCB_STAIR_RAIL_SIDES, [1], 'only the outer edge has a rail');
+  assert.deepEqual(SCB_STAIR_RAIL_SIDES, [1], 'only the outer edge has a rail and its referenced stone parapet');
+  assert.equal(SCB_STAIR_PARAPET_HEIGHT, 0.92);
+  assert.equal(SCB_STAIR_PARAPET_THICKNESS, 0.34);
   const projected = (width) => width * Math.cos(SCB_FACADE_STAIR_ANGLE);
   assert.ok(Math.abs(SCB_STAIR_WIDTH - projected(SCB_WIDTH) * 0.5) < 1e-9,
     'the bottom tread is half of the road-facing facade projection');
@@ -273,6 +285,9 @@ test('the hand-built Standard Chartered model includes the photographed identifi
   assert.match(source, /SCBSandwichStepRoseGlassChannels/);
   assert.match(source, /SCBFrontStonePiers/);
   assert.match(source, /SCBFrontRoseGlassChannels/);
+  assert.match(source, /const frontRoofY = SCB_TIERS\[0\]\.roofY/);
+  assert.match(source, /h: frontRoofY - SCB_BASE_Y/);
+  assert.match(source, /h: frontRoofY - SCB_PODIUM_HEIGHT/);
   assert.match(source, /SCBOctagonalWindowFrames/);
   assert.match(source, /SCBOctagonalWindowLouvres/);
   assert.match(source, /SCBGoldEntranceSurrounds/);
@@ -283,6 +298,8 @@ test('the hand-built Standard Chartered model includes the photographed identifi
   assert.match(source, /SCB_BUILDING_HEADING/);
   assert.match(source, /SCBEntranceStairHandrail/);
   assert.match(source, /SCBEntranceStairRailPosts/);
+  assert.match(source, /SCBEntranceStairStoneParapet/);
+  assert.match(source, /createScbParapetMaterial/);
   assert.match(source, /for \(const side of SCB_STAIR_RAIL_SIDES\)/);
   assert.match(source, /SCBCrownLogo/);
   assert.match(source, /SCBCrownLogoWest/);

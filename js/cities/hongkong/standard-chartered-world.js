@@ -28,6 +28,8 @@ import {
   SCB_STAIR_TREAD,
   SCB_STAIR_RISE,
   SCB_STAIR_RAIL_SIDES,
+  SCB_STAIR_PARAPET_HEIGHT,
+  SCB_STAIR_PARAPET_THICKNESS,
   SCB_STAIR_TOP_LANDING_DEPTH,
   scbStairEdgesAt,
   scbStairRoadToLocal,
@@ -201,6 +203,31 @@ function texturedSignMaterial(map, glow = 0.25) {
   return material;
 }
 
+// The supplied close Street View shows a stone parapet, not freestanding rail posts. One repeating procedural tile
+// gives the swept wall real panel joints without bundling the photograph or any external texture asset.
+function createScbParapetMaterial() {
+  const canvas = document.createElement('canvas');
+  canvas.width = canvas.height = 256;
+  const ctx = canvas.getContext('2d');
+  ctx.fillStyle = '#b7afa5';
+  ctx.fillRect(0, 0, 256, 256);
+  for (let y = 0; y < 256; y += 16) {
+    for (let x = 0; x < 256; x += 16) {
+      const tone = 172 + ((x * 13 + y * 7) % 19);
+      ctx.fillStyle = `rgba(${tone},${tone - 7},${tone - 12},0.12)`;
+      ctx.fillRect(x, y, 16, 16);
+    }
+  }
+  ctx.strokeStyle = 'rgba(108,98,91,0.72)';
+  ctx.lineWidth = 3;
+  ctx.strokeRect(1.5, 1.5, 253, 253);
+  const map = new THREE.CanvasTexture(canvas);
+  map.colorSpace = THREE.SRGBColorSpace;
+  map.wrapS = map.wrapT = THREE.RepeatWrapping;
+  map.anisotropy = 4;
+  return new THREE.MeshStandardMaterial({ map, roughness: 0.82, metalness: 0.02 });
+}
+
 export function buildStandardCharteredBankBuilding(root) {
   const group = new THREE.Group();
   group.name = 'StandardCharteredBankBuilding';
@@ -222,9 +249,10 @@ export function buildStandardCharteredBankBuilding(root) {
   addFacadeBoxes(group, ribbon, tierBoxes, 'SCBSteppedTowerTiers');
 
   // North elevation: three stone blades, two recessed rose-glass channels, and solid podium infills between the blades.
+  const frontRoofY = SCB_TIERS[0].roofY;
   const pierBoxes = SCB_FRONT_PIER_X.map((x) => ({
-    x, y: (SCB_BASE_Y + SCB_MAIN_ROOF_Y) * 0.5, z: SCB_FRONT_Z - 0.16,
-    w: SCB_FRONT_PIER_WIDTH, h: SCB_MAIN_ROOF_Y - SCB_BASE_Y, d: 0.32, tone: 0.62
+    x, y: (SCB_BASE_Y + frontRoofY) * 0.5, z: SCB_FRONT_Z - 0.16,
+    w: SCB_FRONT_PIER_WIDTH, h: frontRoofY - SCB_BASE_Y, d: 0.32, tone: 0.62
   }));
   addFacadeBoxes(group, stone, pierBoxes, 'SCBFrontStonePiers');
   const podiumInfills = SCB_FRONT_GLASS_X.map((x) => ({
@@ -233,8 +261,8 @@ export function buildStandardCharteredBankBuilding(root) {
   }));
   addFacadeBoxes(group, stone, podiumInfills, 'SCBPodiumStoneInfills');
   const glassChannels = SCB_FRONT_GLASS_X.map((x) => ({
-    x, y: (SCB_PODIUM_HEIGHT + SCB_MAIN_ROOF_Y) * 0.5, z: SCB_FRONT_Z - 0.075,
-    w: SCB_FRONT_GLASS_WIDTH, h: SCB_MAIN_ROOF_Y - SCB_PODIUM_HEIGHT, d: 0.15, tone: 0.72
+    x, y: (SCB_PODIUM_HEIGHT + frontRoofY) * 0.5, z: SCB_FRONT_Z - 0.075,
+    w: SCB_FRONT_GLASS_WIDTH, h: frontRoofY - SCB_PODIUM_HEIGHT, d: 0.15, tone: 0.72
   }));
   addFacadeBoxes(group, frontGlass, glassChannels, 'SCBFrontRoseGlassChannels');
 
@@ -418,6 +446,49 @@ export function buildStandardCharteredBankBuilding(root) {
   landingMesh.userData.landingCount = 1;
   group.add(landingMesh);
 
+  // A continuous stone parapet follows the outer diagonal from the Dec 2025 reference. Its bottom follows the stair
+  // ramp and its top rises 0.92 m above it, so there are no floating step-by-step wall fragments or saw-tooth coping.
+  const parapetMaterial = createScbParapetMaterial();
+  const parapets = [];
+  for (const side of SCB_STAIR_RAIL_SIDES) {
+    const nearInner = stairEdgeU(side, 0) + side * 0.012;
+    const farInner = stairEdgeU(side, 1) + side * 0.012;
+    const nearOuter = nearInner + side * SCB_STAIR_PARAPET_THICKNESS;
+    const farOuter = farInner + side * SCB_STAIR_PARAPET_THICKNESS;
+    const nearLimits = [Math.min(nearInner, nearOuter), Math.max(nearInner, nearOuter)];
+    const farLimits = [Math.min(farInner, farOuter), Math.max(farInner, farOuter)];
+    const corners = [
+      { u: nearLimits[0], v: 0, y: 0 }, { u: nearLimits[1], v: 0, y: 0 },
+      { u: farLimits[0], v: SCB_STAIR_RUN, y: SCB_ENTRANCE_BASE_Y },
+      { u: farLimits[1], v: SCB_STAIR_RUN, y: SCB_ENTRANCE_BASE_Y },
+      { u: nearLimits[0], v: 0, y: SCB_STAIR_PARAPET_HEIGHT },
+      { u: nearLimits[1], v: 0, y: SCB_STAIR_PARAPET_HEIGHT },
+      { u: farLimits[0], v: SCB_STAIR_RUN, y: SCB_ENTRANCE_BASE_Y + SCB_STAIR_PARAPET_HEIGHT },
+      { u: farLimits[1], v: SCB_STAIR_RUN, y: SCB_ENTRANCE_BASE_Y + SCB_STAIR_PARAPET_HEIGHT }
+    ];
+    const positions = [], texcoords = [];
+    stairTriangles.forEach((corner, index) => {
+      const point = corners[corner];
+      const local = stairPoint(point.u, point.v, point.y);
+      positions.push(local.x, local.y, local.z);
+      const face = Math.floor(index / 6);
+      if (face < 2) texcoords.push(point.v / 1.8, point.u / 1.8);
+      else if (face < 4) texcoords.push(point.u / 1.8, point.y / 0.9);
+      else texcoords.push(point.v / 1.8, point.y / 0.9);
+    });
+    const geometry = new THREE.BufferGeometry();
+    geometry.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
+    geometry.setAttribute('uv', new THREE.Float32BufferAttribute(texcoords, 2));
+    geometry.computeVertexNormals();
+    geometry.computeBoundingBox();
+    geometry.computeBoundingSphere();
+    const parapet = new THREE.Mesh(geometry, parapetMaterial);
+    parapet.name = 'SCBEntranceStairStoneParapet';
+    parapet.castShadow = parapet.receiveShadow = true;
+    group.add(parapet);
+    parapets.push(parapet);
+  }
+
   const railPosts = [];
   for (const side of SCB_STAIR_RAIL_SIDES) {
     addBeamBetween(
@@ -452,12 +523,13 @@ export function buildStandardCharteredBankBuilding(root) {
   for (let first = 0; first < SCB_STAIR_COUNT; first += 5) {
     const last = Math.min(SCB_STAIR_COUNT, first + 5);
     for (const side of SCB_STAIR_RAIL_SIDES) {
-      const a = stairPoint(stairEdgeU(side, first / SCB_STAIR_COUNT), first * SCB_STAIR_TREAD);
-      const b = stairPoint(stairEdgeU(side, last / SCB_STAIR_COUNT), last * SCB_STAIR_TREAD);
+      const offset = side * (0.012 + SCB_STAIR_PARAPET_THICKNESS * 0.5);
+      const a = stairPoint(stairEdgeU(side, first / SCB_STAIR_COUNT) + offset, first * SCB_STAIR_TREAD);
+      const b = stairPoint(stairEdgeU(side, last / SCB_STAIR_COUNT) + offset, last * SCB_STAIR_TREAD);
       const dx = b.x - a.x, dz = b.z - a.z;
       colliders.push(scbLocalCollider({
         x: (a.x + b.x) * 0.5, z: (a.z + b.z) * 0.5,
-        w: 0.14, d: Math.hypot(dx, dz) + 0.02,
+        w: SCB_STAIR_PARAPET_THICKNESS, d: Math.hypot(dx, dz) + 0.02,
         minY: 0, maxY: last * SCB_STAIR_RISE + 1.06, heading: Math.atan2(dx, dz)
       }));
     }
@@ -479,6 +551,7 @@ export function buildStandardCharteredBankBuilding(root) {
     scbGoldEntrances: SCB_FRONT_PIER_X.length,
     scbEntranceSteps: SCB_STAIR_COUNT,
     scbEntranceStairRun: SCB_STAIR_RUN,
+    scbEntranceStoneParapets: parapets.length,
     scbEntranceBaseY: SCB_ENTRANCE_BASE_Y,
     scbColliders: colliders.length
   };

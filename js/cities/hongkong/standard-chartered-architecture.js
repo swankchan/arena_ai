@@ -88,6 +88,7 @@ export const SCB_SIGN_FIN = Object.freeze({
 // Every higher tread contracts linearly until its top matches the left-hand door's projected width.
 export const SCB_STAIR_COUNT = 30;
 export const SCB_STAIR_RUN = 12.5;
+export const SCB_ROAD_SETBACK = 3;
 export const SCB_STAIR_TREAD = SCB_STAIR_RUN / SCB_STAIR_COUNT;
 export const SCB_STAIR_RISE = SCB_ENTRANCE_BASE_Y / SCB_STAIR_COUNT;
 export const SCB_HSBC_FACING_ANGLE = 35 * Math.PI / 180;
@@ -109,14 +110,18 @@ export const SCB_STAIR_TOP_LEFT_U = SCB_STAIR_TOP_CENTER_U + SCB_STAIR_TOP_WIDTH
 export const SCB_STAIR_BOTTOM_RIGHT_U = SCB_STAIR_TOP_RIGHT_U - SCB_STAIR_RUN * facingCos / facingSin;
 export const SCB_STAIR_BOTTOM_LEFT_U = SCB_STAIR_BOTTOM_RIGHT_U + SCB_STAIR_WIDTH;
 export const SCB_STAIR_RAIL_SIDES = Object.freeze([1]);
+export const SCB_STAIR_PARAPET_HEIGHT = 0.92;
+export const SCB_STAIR_PARAPET_THICKNESS = 0.34;
 export const SCB_STAIR_TOP_LANDING_DEPTH = SCB_ENTRANCE_DOOR_WIDTH * facingSin + 0.25;
 
-// Keep the established kerbside origin, but position the tower from the required left-door / top-tread relationship.
-// This replaces the old connector-corner anchor, which produced a large flat triangle instead of triangular stairs.
+// Position the tower from the required left-door / top-tread relationship after applying the same road setback to
+// both the tower and stairs. This keeps their internal join exact while reopening the carriageway.
+// Move the complete authored landmark, including the stair base, three metres directly away from the carriageway.
+// All door relationships and the seven-slab massing remain unchanged in the shared road / building frames.
 const oldStairBottomZ = SCB_FRONT_Z - 7.2;
 export const SCB_STAIR_BOTTOM_WORLD = Object.freeze({
-  x: SCB_SITE.x + siteFrameSn * oldStairBottomZ,
-  z: SCB_SITE.z + siteFrameCs * oldStairBottomZ
+  x: SCB_SITE.x + siteFrameSn * oldStairBottomZ - roadWorldZ * SCB_ROAD_SETBACK,
+  z: SCB_SITE.z + siteFrameCs * oldStairBottomZ + roadWorldX * SCB_ROAD_SETBACK
 });
 const doorCenterV = SCB_STAIR_RUN + SCB_ENTRANCE_DOOR_WIDTH * facingSin * 0.5;
 const leftDoorWorld = {
