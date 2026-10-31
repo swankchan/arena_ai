@@ -46,21 +46,49 @@ test('main cables meet both tower tops and sag without touching the driving deck
   close(tsingMaCableHeight(middle), sampleTsingMa(middle).y + 14);
 });
 
-test('paired main cables stay symmetric and outside the combined carriageway edges', () => {
-  const { sampleTsingMa, tsingMaCablePoint } = architecture;
+test('main cables and lamp bases follow the actual carriageway edges without floating', () => {
+  const { tsingMaCablePoint, tsingMaDeckEdgePoint, tsingMaLampBasePoint, TSING_MA_LAMP_EDGE_INSET } = architecture;
   for (const f of [0, 0.1, 0.22, 0.5, 0.82, 1]) {
-    const frame = sampleTsingMa(f), a = tsingMaCablePoint(f, -1), b = tsingMaCablePoint(f, 1);
-    close((a.x + b.x) * 0.5, frame.x);
-    close((a.z + b.z) * 0.5, frame.z);
-    close(a.y, b.y);
-    close(Math.hypot(a.x - b.x, a.z - b.z) * 0.5, frame.halfDeck + 0.9);
-    assert.ok(frame.halfDeck > frame.separation * 0.5);
+    for (const side of [-1, 1]) {
+      const edge = tsingMaDeckEdgePoint(f, side), cable = tsingMaCablePoint(f, side);
+      close(cable.x, edge.x);
+      close(cable.z, edge.z);
+      const edgeHit = crossings.crossingSurfaceAt(edge.x, edge.z, 0.02);
+      assert.ok(edgeHit, `missing bridge deck at ${f}/${side}`);
+      assert.equal(edgeHit.crossingId, 'tsing-ma');
+      close(edgeHit.distance, edgeHit.width * 0.5, 0.03);
+      close(edgeHit.height, edge.y, 0.001);
+
+      const lamp = tsingMaLampBasePoint(f, side);
+      close(lamp.y, edge.y);
+      const lampHit = crossings.crossingSurfaceAt(lamp.x, lamp.z, 0.02);
+      assert.ok(lampHit, `lamp base is off the bridge at ${f}/${side}`);
+      close(lampHit.distance, lampHit.width * 0.5 - TSING_MA_LAMP_EDGE_INSET, 0.03);
+      close(lampHit.height, lamp.y, 0.001);
+    }
   }
+});
+
+test('neutral bridge materials stay unlit by day and coloured fittings turn on after dusk', () => {
+  const source = fs.readFileSync(path.join(__dirname, '../js/cities/hongkong/tsing-ma-world.js'), 'utf8');
+  assert.match(source, /color: 0xa8aaa6/);
+  assert.match(source, /color: 0x4b5154/);
+  assert.match(source, /smoothstep\(0\.7, 1\.45, cityUniforms\.uInteriorGlow\)/);
+  assert.match(source, /material\.emissiveNode = color\(lightColor\)\.mul\(night\.mul\(intensity\)\)/);
+  assert.match(source, /new THREE\.PointLight\([^\n]+, 0, 190, 1\.6\)/);
+  assert.match(source, /light\.intensity = light\.userData\.nightIntensity \* night/);
+  assert.match(source, /TsingMaCableSaddle/);
+  assert.match(source, /TsingMaCableAnchorage/);
+  assert.match(source, /TsingMaLampBases/);
+  assert.match(source, /TsingMaLampArms/);
 });
 
 test('crossing world installs the shared Tsing Ma architecture exactly once', () => {
   const source = fs.readFileSync(path.join(__dirname, '../js/cities/hongkong/crossings-world.js'), 'utf8');
   assert.equal(source.match(/buildTsingMaArchitecture\(root\)/g)?.length, 1);
   assert.match(source, /\.\.\.tsingMa\.stats/);
+  assert.match(source, /update: tsingMa\.update/);
   assert.match(source, /import \{ buildTsingMaArchitecture \} from '\.\/tsing-ma-world\.js';/);
+  const simple = fs.readFileSync(path.join(__dirname, '../js/cities/hongkong/simple-world.js'), 'utf8');
+  assert.match(simple, /update\(\) \{ crossings\.update\?\.\(\); \}/);
 });

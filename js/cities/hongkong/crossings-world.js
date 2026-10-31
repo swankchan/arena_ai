@@ -170,6 +170,7 @@ export function buildHongKongCrossings(root) {
   const tsingMa = buildTsingMaArchitecture(root);
   return {
     colliders,
+    update: tsingMa.update,
     stats: {
       crossingRoutes: CROSSING_ROUTES.length,
       crossingSegments: segments,

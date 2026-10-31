@@ -1,17 +1,27 @@
 import * as THREE from 'three/webgpu';
+import { color, smoothstep } from 'three/tsl';
+import { cityUniforms } from '../../tsl-materials.js';
 import { isTerritoryLand } from './full-meta.js';
 import {
   TSING_MA_TOWERS,
-  sampleTsingMa,
-  tsingMaCablePoint,
-  tsingMaCableHeight
+  tsingMaDeckEdgePoint,
+  tsingMaLampBasePoint,
+  tsingMaCablePoint
 } from './tsing-ma-architecture.js';
 
 const WATER_BOTTOM = -3.2;
 const LAND_BOTTOM = -0.08;
 
-function luminous(color, intensity) {
-  return new THREE.MeshStandardMaterial({ color: 0x101010, emissive: color, emissiveIntensity: intensity, roughness: 0.38 });
+function luminous(lightColor, intensity, dayColor) {
+  const material = new THREE.MeshStandardNodeMaterial({ color: dayColor, roughness: 0.62, metalness: 0.04 });
+  const night = smoothstep(0.7, 1.45, cityUniforms.uInteriorGlow);
+  material.emissiveNode = color(lightColor).mul(night.mul(intensity));
+  return material;
+}
+
+function nightAmount() {
+  const t = Math.max(0, Math.min(1, (cityUniforms.uInteriorGlow.value - 0.7) / 0.75));
+  return t * t * (3 - 2 * t);
 }
 
 function addInstances(group, geometry, material, transforms, name) {
@@ -37,12 +47,13 @@ export function buildTsingMaArchitecture(root) {
   const group = new THREE.Group();
   group.name = 'HongKongTsingMaArchitecture';
   group.userData.tsingMaArchitecture = true;
-  const concrete = new THREE.MeshStandardMaterial({ color: 0x9aa4aa, roughness: 0.68, metalness: 0.08 });
-  const cableMaterial = new THREE.MeshStandardMaterial({ color: 0x8d969c, roughness: 0.42, metalness: 0.55 });
-  const suspenderMaterial = new THREE.MeshStandardMaterial({ color: 0x818b91, roughness: 0.48, metalness: 0.42 });
-  const warmLight = luminous(0xffb84d, 3.4);
-  const cyanLight = luminous(0x20c9ff, 3.2);
-  const magentaLight = luminous(0xff4fbd, 3.2);
+  // Neutral concrete and steel match the daylight photographs; only the separate light fittings emit colour.
+  const concrete = new THREE.MeshStandardMaterial({ color: 0xa8aaa6, roughness: 0.82, metalness: 0.02 });
+  const cableMaterial = new THREE.MeshStandardMaterial({ color: 0x4b5154, roughness: 0.56, metalness: 0.34 });
+  const suspenderMaterial = new THREE.MeshStandardMaterial({ color: 0xabb0ad, roughness: 0.58, metalness: 0.24 });
+  const warmLight = luminous(0xffc66d, 2.4, 0x4b5154);
+  const cyanLight = luminous(0x20c9ff, 2.2, 0xa8aaa6);
+  const magentaLight = luminous(0xff4fbd, 2.2, 0xa8aaa6);
 
   function box(x, y, z, sx, sy, sz, heading, material, name) {
     const mesh = new THREE.Mesh(new THREE.BoxGeometry(sx, sy, sz), material);
@@ -66,35 +77,44 @@ export function buildTsingMaArchitecture(root) {
     return mesh;
   }
 
-  const warmLights = [], deckLights = [], suspenders = [], lampPosts = [];
+  const warmLights = [], deckLights = [], suspenders = [], lampPosts = [], lampArms = [], lampBases = [];
+  const floodlights = [];
   for (const [towerIndex, tower] of TSING_MA_TOWERS.entries()) {
     const { frame, topY } = tower;
-    const bottom = isTerritoryLand(frame.x, frame.z) ? LAND_BOTTOM : WATER_BOTTOM;
-    const legOffset = frame.halfDeck + 2.3;
     const upperLegMaterial = towerIndex === 0 ? cyanLight : magentaLight;
+    const legPoints = new Map();
     for (const side of [-1, 1]) {
-      const x = frame.x + frame.normalX * legOffset * side;
-      const z = frame.z + frame.normalZ * legOffset * side;
+      const edge = tsingMaDeckEdgePoint(tower.fraction, side);
+      // A three-metre leg sits just outside its cable; the cable and saddle meet the leg's inner face.
+      const x = edge.x + edge.outwardX * 1.5, z = edge.z + edge.outwardZ * 1.5;
+      const bottom = isTerritoryLand(x, z) ? LAND_BOTTOM : WATER_BOTTOM;
+      legPoints.set(side, { x, z });
       box(x, bottom + (topY - bottom) * 0.5, z, 3, topY - bottom, 4.2, frame.heading, concrete, 'TsingMaTowerLeg');
       const lowerTop = frame.y + 12, lowerBottom = bottom + 1;
       for (const face of [-1, 1]) {
-        const stripX = x + frame.normalX * face * 1.56, stripZ = z + frame.normalZ * face * 1.56;
-        box(stripX, (lowerBottom + lowerTop) * 0.5, stripZ, 0.38, lowerTop - lowerBottom, 4.35,
+        const stripX = x + frame.normalX * face * 1.54, stripZ = z + frame.normalZ * face * 1.54;
+        box(stripX, (lowerBottom + lowerTop) * 0.5, stripZ, 0.18, lowerTop - lowerBottom, 0.3,
           frame.heading, cyanLight, 'TsingMaTowerLowerLight');
-        box(stripX, (lowerTop + topY - 1) * 0.5, stripZ, 0.38, topY - 1 - lowerTop, 4.35,
+        box(stripX, (lowerTop + topY - 1) * 0.5, stripZ, 0.18, topY - 1 - lowerTop, 0.3,
           frame.heading, upperLegMaterial, 'TsingMaTowerUpperLight');
       }
+      const cablePoint = tsingMaCablePoint(tower.fraction, side);
+      box(cablePoint.x, topY - 0.05, cablePoint.z, 1.1, 0.5, 1.6,
+        frame.heading, cableMaterial, 'TsingMaCableSaddle');
       warmLights.push({ x, y: topY + 0.8, z, sx: 1.15, sy: 1.15, sz: 1.15 });
     }
     for (const level of [frame.y + 8, frame.y + 37, frame.y + 65, topY - 2]) {
-      const a = new THREE.Vector3(frame.x - frame.normalX * legOffset, level, frame.z - frame.normalZ * legOffset);
-      const b = new THREE.Vector3(frame.x + frame.normalX * legOffset, level, frame.z + frame.normalZ * legOffset);
+      const left = legPoints.get(-1), right = legPoints.get(1);
+      const a = new THREE.Vector3(left.x, level, left.z), b = new THREE.Vector3(right.x, level, right.z);
       beam(a, b, 2.1, concrete, 'TsingMaTowerCrossbeam');
-      beam(a.clone().add(new THREE.Vector3(0, 1.25, 0)), b.clone().add(new THREE.Vector3(0, 1.25, 0)),
-        0.68, magentaLight, 'TsingMaTowerCrossbeamLight');
+      beam(a.clone().add(new THREE.Vector3(0, 1.13, 0)), b.clone().add(new THREE.Vector3(0, 1.13, 0)),
+        0.24, magentaLight, 'TsingMaTowerCrossbeamLight');
     }
-    const glow = new THREE.PointLight(towerIndex === 0 ? 0xff4fbd : 0x20c9ff, 55, 190, 1.6);
+    const glow = new THREE.PointLight(towerIndex === 0 ? 0x20c9ff : 0xff4fbd, 0, 190, 1.6);
+    glow.name = 'TsingMaNightFloodlight';
+    glow.userData.nightIntensity = 45;
     glow.position.set(frame.x, topY - 20, frame.z);
+    floodlights.push(glow);
     group.add(glow);
   }
 
@@ -105,9 +125,15 @@ export function buildTsingMaArchitecture(root) {
       const fraction = i / CABLE_SAMPLES, point = tsingMaCablePoint(fraction, side);
       points.push(new THREE.Vector3(point.x, point.y, point.z));
       if (i % 3 === 0) warmLights.push({ x: point.x, y: point.y, z: point.z, sx: 0.85, sy: 0.85, sz: 0.85 });
-      if (i % 5 === 0) {
-        const bottom = sampleTsingMa(fraction).y + 0.7, height = point.y - bottom;
+      const edge = tsingMaDeckEdgePoint(fraction, side);
+      if (i % 5 === 0 && fraction >= TSING_MA_TOWERS[0].fraction && fraction <= TSING_MA_TOWERS[1].fraction) {
+        const bottom = edge.y - 0.35, height = point.y - bottom;
         if (height > 1) suspenders.push({ x: point.x, y: bottom + height * 0.5, z: point.z, sy: height });
+      }
+      if (i === 0 || i === CABLE_SAMPLES) {
+        const bottom = edge.y - 0.75, top = point.y + 0.25;
+        box(point.x, (bottom + top) * 0.5, point.z, 1.6, top - bottom, 2.4,
+          edge.heading, concrete, 'TsingMaCableAnchorage');
       }
     }
     const curve = new THREE.CatmullRomCurve3(points, false, 'centripetal');
@@ -119,17 +145,24 @@ export function buildTsingMaArchitecture(root) {
 
   const DECK_LAMP_SAMPLES = 120;
   for (let i = 0; i <= DECK_LAMP_SAMPLES; i++) {
-    const frame = sampleTsingMa(i / DECK_LAMP_SAMPLES);
+    const fraction = i / DECK_LAMP_SAMPLES;
     for (const side of [-1, 1]) {
-      const offset = (frame.halfDeck + 0.35) * side;
-      const x = frame.x + frame.normalX * offset, z = frame.z + frame.normalZ * offset;
-      lampPosts.push({ x, y: frame.y + 2.85, z, sy: 4.3 });
-      deckLights.push({ x, y: frame.y + 5.1, z, heading: frame.heading });
+      const base = tsingMaLampBasePoint(fraction, side), { x, z } = base;
+      lampBases.push({ x, y: base.y + 0.09, z });
+      lampPosts.push({ x, y: base.y + 2.5, z, sy: 5 });
+      lampArms.push({
+        x: x - base.outwardX * 0.7, y: base.y + 4.92, z: z - base.outwardZ * 0.7, heading: base.heading
+      });
+      deckLights.push({
+        x: x - base.outwardX * 1.35, y: base.y + 4.78, z: z - base.outwardZ * 1.35, heading: base.heading
+      });
     }
   }
 
   addInstances(group, new THREE.CylinderGeometry(0.09, 0.09, 1, 4), suspenderMaterial, suspenders, 'TsingMaSuspenders');
-  addInstances(group, new THREE.CylinderGeometry(0.12, 0.16, 1, 5), cableMaterial, lampPosts, 'TsingMaLampPosts');
+  addInstances(group, new THREE.CylinderGeometry(0.12, 0.16, 1, 6), suspenderMaterial, lampPosts, 'TsingMaLampPosts');
+  addInstances(group, new THREE.CylinderGeometry(0.26, 0.26, 0.18, 8), cableMaterial, lampBases, 'TsingMaLampBases');
+  addInstances(group, new THREE.BoxGeometry(1.4, 0.12, 0.12), suspenderMaterial, lampArms, 'TsingMaLampArms');
   addInstances(group, new THREE.SphereGeometry(0.7, 7, 5), warmLight, warmLights, 'TsingMaWarmLights');
   addInstances(group, new THREE.BoxGeometry(0.85, 0.18, 0.45), warmLight, deckLights, 'TsingMaDeckLights');
   root.add(group);
@@ -138,8 +171,15 @@ export function buildTsingMaArchitecture(root) {
     tsingMaMainCables: 2,
     tsingMaSuspenders: suspenders.length,
     tsingMaLampPosts: lampPosts.length,
+    tsingMaCableSaddles: TSING_MA_TOWERS.length * 2,
+    tsingMaCableAnchorages: 4,
     tsingMaLights: warmLights.length + deckLights.length
   };
   group.userData.stats = stats;
-  return { group, stats };
+  function update() {
+    const night = nightAmount();
+    for (const light of floodlights) light.intensity = light.userData.nightIntensity * night;
+  }
+  update();
+  return { group, stats, update };
 }

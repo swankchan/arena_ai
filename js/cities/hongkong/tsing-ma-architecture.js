@@ -41,6 +41,40 @@ export function sampleTsingMa(fraction) {
   };
 }
 
+export const TSING_MA_LAMP_EDGE_INSET = 0.22;
+
+// Resolve the actual outer edge of whichever directional carriageway is on the requested side. Using the combined
+// deck's approximate width here used to leave the cables and lamps hovering beyond the real road geometry.
+export function tsingMaDeckEdgePoint(fraction, side) {
+  const frame = sampleTsingMa(fraction), direction = side < 0 ? -1 : 1;
+  const candidates = [sampleCrossingRoute(routes[0], fraction), sampleCrossingRoute(routes[1], 1 - fraction)];
+  let selected = candidates[0], selectedSide = -Infinity;
+  for (const candidate of candidates) {
+    const signed = ((candidate.x - frame.x) * frame.normalX + (candidate.z - frame.z) * frame.normalZ) * direction;
+    if (signed > selectedSide) { selected = candidate; selectedSide = signed; }
+  }
+  const nx = Math.cos(selected.heading), nz = -Math.sin(selected.heading);
+  const outwardSign = (nx * frame.normalX + nz * frame.normalZ) * direction >= 0 ? 1 : -1;
+  const outwardX = nx * outwardSign, outwardZ = nz * outwardSign;
+  return {
+    x: selected.x + outwardX * selected.width * 0.5,
+    y: selected.y,
+    z: selected.z + outwardZ * selected.width * 0.5,
+    heading: selected.heading,
+    outwardX,
+    outwardZ
+  };
+}
+
+export function tsingMaLampBasePoint(fraction, side) {
+  const edge = tsingMaDeckEdgePoint(fraction, side);
+  return {
+    ...edge,
+    x: edge.x - edge.outwardX * TSING_MA_LAMP_EDGE_INSET,
+    z: edge.z - edge.outwardZ * TSING_MA_LAMP_EDGE_INSET
+  };
+}
+
 export const TSING_MA_TOWERS = Object.freeze(TSING_MA_TOWER_FRACTIONS.map((fraction) => {
   const frame = sampleTsingMa(fraction);
   return Object.freeze({ fraction, frame, topY: frame.y + TSING_MA_TOWER_RISE });
@@ -64,10 +98,6 @@ export function tsingMaCableHeight(fraction) {
 }
 
 export function tsingMaCablePoint(fraction, side) {
-  const frame = sampleTsingMa(fraction), offset = (frame.halfDeck + 0.9) * side;
-  return {
-    x: frame.x + frame.normalX * offset,
-    y: tsingMaCableHeight(fraction),
-    z: frame.z + frame.normalZ * offset
-  };
+  const edge = tsingMaDeckEdgePoint(fraction, side);
+  return { x: edge.x, y: tsingMaCableHeight(fraction), z: edge.z };
 }
