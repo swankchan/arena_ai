@@ -7,12 +7,12 @@
 - 地點：皇后大道中一號，使用 `js/hk-geodata.js` 內現有 OSM `滙豐總行大廈` footprint。
 - 高度：**178.8 m**。
 - 造型：由 harbour-facing 主立面起 **44／36／29 層**向後遞減；外露四組鋼柱、五級倒 V 懸吊桁架、深色雙層 reception bands、淺色鋁板服務核心、連續圓頂梯窗、橢圓冠頂、HSBC 標誌及維修吊臂。
-- 地面：架空公共廣場、雙扶手電梯、兩隻銅獅、鋪面及夜間照明。Elevated floors 的 colliders 由 raised banking hall 開始，不會用一座由地面起算的盒子封死廣場；柱、地面核心筒及獅子底座另有碰撞。
-- 日夜：HSBC 專用灰綠玻璃分格不包含住宅式室內模型；日間不亮隨機房燈，夜間只顯示少量辦公室燈光。鋼架只有非常低的夜間補光，沒有彩色日間結構燈。
+- 地面：架空公共廣場、雙扶手電梯、玻璃入口及金色「HSBC 滙豐」字、方格天花、圓鋼柱接縫，以及按實景分別製作的開口左獅／閉口右獅、鬃毛、腳爪及捲尾。Elevated floors 的 colliders 由 raised banking hall 開始，不會用一座由地面起算的盒子封死廣場；入口保留 5.2 m 寬、3.4 m 高門洞，柱、地面核心筒、玻璃牆及獅子底座另有碰撞。
+- 日夜：HSBC 專用灰綠玻璃分格不包含住宅式室內模型；日間不亮隨機房燈，夜間只顯示少量辦公室燈光，入口大堂使用柔和暖光。鋼架只有非常低的夜間補光，沒有彩色日間結構燈。
 
 ### 參考照片及資料
 
-正面比例以用戶提供的 `HK_HSBC_Main_Building_2008.jpg` 為主要依據；另參考 Foster + Partners 項目的照片、平面及剖面整理：
+正面比例以用戶提供的 `HK_HSBC_Main_Building_2008.jpg` 為主要依據；入口及銅獅細節依據 `HSBC_door.jpg`、`HSBC_Leftlion.jpg` 及 `HSBC_Right_Lion.jpg`。另參考 Foster + Partners 項目的照片、平面及剖面整理：
 
 - ArchEyes：HSBC Main Building, Hong Kong by Foster + Partners
   https://archeyes.com/hsbc-headquarters-in-hong-kong-by-foster-partners/

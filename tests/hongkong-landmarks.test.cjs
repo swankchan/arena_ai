@@ -30,7 +30,7 @@ test('HSBC uses its real OSM site, oriented footprint and 178.8 m landmark heigh
 
 test('three stepped bays and five suspension levels preserve the open public plaza', () => {
   const {
-    HSBC_BAYS, HSBC_MAIN_BAY, HSBC_MAIN_ROOF_Y, HSBC_TRUSS_LEVELS, HSBC_HEIGHT, HSBC_BANKING_HALL_BASE,
+    HSBC_BAYS, HSBC_MAIN_BAY, HSBC_MAIN_ROOF_Y, HSBC_ENTRANCE, HSBC_TRUSS_LEVELS, HSBC_HEIGHT, HSBC_BANKING_HALL_BASE,
     HSBC_FRAME_WIDTH, HSBC_GLASS_WIDTH, HSBC_MAST_X,
     HSBC_PLAZA_TOP, HSBC_SITE, hsbcSuspensionLevelsForRoof,
     hsbcLocalToWorld, isHsbcPlazaPoint, hsbcLocalCollider
@@ -45,6 +45,8 @@ test('three stepped bays and five suspension levels preserve the open public pla
   assert.ok(HSBC_GLASS_WIDTH / HSBC_FRAME_WIDTH > 0.45 && HSBC_GLASS_WIDTH / HSBC_FRAME_WIDTH < 0.6);
   assert.ok(Math.abs(HSBC_MAST_X[1]) < HSBC_FRAME_WIDTH * 0.35, 'inner masts frame the narrower central glass');
   assert.ok(HSBC_BANKING_HALL_BASE > 10, 'the banking hall is raised above people and vehicles');
+  assert.equal(HSBC_ENTRANCE.height, HSBC_BANKING_HALL_BASE);
+  assert.ok(HSBC_ENTRANCE.doorWidth >= 5 && HSBC_ENTRANCE.doorHeight > 2.3, 'the glazed entrance retains a real door opening');
   assert.ok(HSBC_PLAZA_TOP > 0);
   assert.ok(isHsbcPlazaPoint(HSBC_SITE.x, HSBC_SITE.z));
   const north = hsbcLocalToWorld(0, -10), south = hsbcLocalToWorld(0, 10);
@@ -62,6 +64,10 @@ test('the hand-built HSBC model includes its photographic identifying features w
   assert.match(source, /HSBCExposedSteelMasts/);
   assert.match(source, /HSBCOvalSunscoopCrown/);
   assert.match(source, /HSBCBronzeLions/);
+  assert.match(source, /HSBCLeftBronzeLionOpenMouth/);
+  assert.match(source, /HSBCRightBronzeLionReclining/);
+  assert.match(source, /HSBCGroundEntranceGoldSign/);
+  assert.match(source, /HSBCUnderbellyCofferPanels/);
   assert.match(source, /HSBCEscalatorSteps/);
   assert.match(source, /HSBCRoundedStairLandingWindows/);
   assert.match(source, /double-height reception band/);

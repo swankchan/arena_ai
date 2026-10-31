@@ -84,6 +84,9 @@ export const HSBC_BAYS = Object.freeze([
 // levels below their own roofs.
 export const HSBC_MAIN_BAY = HSBC_BAYS[0];
 export const HSBC_MAIN_ROOF_Y = HSBC_MAIN_BAY.roofY;
+export const HSBC_ENTRANCE = Object.freeze({
+  z: -8.8, width: 36, doorWidth: 5.2, doorHeight: 3.4, height: HSBC_BANKING_HALL_BASE
+});
 export const HSBC_TRUSS_LEVELS = Object.freeze([34.2, 67.2, 100.2, 133.2, 166.2]);
 export function hsbcSuspensionLevelsForRoof(roofY) {
   // The top chord may project slightly above the office roof into the mast / crown zone; do not drop the fifth V.

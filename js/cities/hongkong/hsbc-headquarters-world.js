@@ -1,4 +1,5 @@
 import * as THREE from 'three/webgpu';
+import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 import { color, dot, float, fract, mix, sin, smoothstep, step, texture, uv, vec2 } from 'three/tsl';
 import { cityUniforms, facadeCell, filteredPulse, createFacadeBoxes, WALL_KINDS } from '../../tsl-materials.js';
 import {
@@ -13,6 +14,7 @@ import {
   HSBC_BAYS,
   HSBC_MAIN_BAY,
   HSBC_MAIN_ROOF_Y,
+  HSBC_ENTRANCE,
   HSBC_MAST_X,
   hsbcSuspensionLevelsForRoof,
   hsbcWorldToLocal,
@@ -23,7 +25,7 @@ function nightAmount() {
   return smoothstep(0.7, 1.45, cityUniforms.uInteriorGlow);
 }
 
-function createHsbcCurtainWallMaterial() {
+function createHsbcCurtainWallMaterial({ entrance = false } = {}) {
   // Office curtain wall rather than the generic residential shader: no apartment interiors or daytime lit rooms.
   const material = new THREE.MeshStandardNodeMaterial({ metalness: 0.32, roughness: 0.26, envMapIntensity: 0.35 });
   const { cellId, cellUV, fw, isRoof, partial, coping } = facadeCell(1.65, HSBC_FLOOR_HEIGHT, true);
@@ -37,7 +39,9 @@ function createHsbcCurtainWallMaterial() {
   material.colorNode = mix(mix(frame, glass, paneMask), color(0x263237), isRoof);
   material.roughnessNode = mix(float(0.48), float(0.25), paneMask);
   const officeLight = mix(color(0xc4d6df), color(0xffd79b), step(0.48, randomB));
-  material.emissiveNode = officeLight.mul(step(0.84, random)).mul(paneMask).mul(nightAmount()).mul(0.95);
+  material.emissiveNode = entrance
+    ? color(0xffdca2).mul(paneMask).mul(nightAmount()).mul(0.12)
+    : officeLight.mul(step(0.84, random)).mul(paneMask).mul(nightAmount()).mul(0.95);
   return material;
 }
 
@@ -132,6 +136,155 @@ function createHsbcSignTexture() {
   return texture;
 }
 
+function createEntranceSignTexture() {
+  const canvas = document.createElement('canvas');
+  canvas.width = 1024; canvas.height = 224;
+  const ctx = canvas.getContext('2d');
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  ctx.fillStyle = '#b9a262';
+  ctx.textBaseline = 'middle';
+  ctx.font = '600 116px Arial, Helvetica, sans-serif';
+  ctx.fillText('HSBC', 54, 116);
+  const ox = 410, oy = 38, s = 148;
+  const points = [[0.25, 0], [0.75, 0], [1, 0.5], [0.75, 1], [0.25, 1], [0, 0.5]];
+  for (let i = 0; i < 6; i++) {
+    ctx.beginPath();
+    ctx.moveTo(ox + 0.5 * s, oy + 0.5 * s);
+    ctx.lineTo(ox + points[i][0] * s, oy + points[i][1] * s);
+    ctx.lineTo(ox + points[(i + 1) % 6][0] * s, oy + points[(i + 1) % 6][1] * s);
+    ctx.closePath();
+    ctx.fillStyle = i % 2 === 0 ? '#b9a262' : 'rgba(0,0,0,0)';
+    ctx.fill();
+  }
+  ctx.fillStyle = '#b9a262';
+  ctx.font = '700 112px "Noto Sans TC", "Microsoft JhengHei", sans-serif';
+  ctx.fillText('滙豐', 620, 116);
+  const signTexture = new THREE.CanvasTexture(canvas);
+  signTexture.colorSpace = THREE.SRGBColorSpace;
+  signTexture.anisotropy = 4;
+  return signTexture;
+}
+
+function createHsbcLionGeometry({ openMouth, reclining, tailSide }) {
+  const bronzeParts = [], maneParts = [], detailParts = [];
+  const unitSphere = new THREE.SphereGeometry(1, 12, 8);
+  const up = new THREE.Vector3(0, 1, 0);
+  function put(list, geometry, position, scale = [1, 1, 1], quaternion = new THREE.Quaternion()) {
+    const g = geometry.index ? geometry.toNonIndexed() : geometry.clone();
+    const matrix = new THREE.Matrix4().compose(
+      new THREE.Vector3(...position), quaternion, new THREE.Vector3(...scale)
+    );
+    g.applyMatrix4(matrix);
+    list.push(g);
+  }
+  function ellipsoid(list, x, y, z, sx, sy, sz, rotation = [0, 0, 0]) {
+    put(list, unitSphere, [x, y, z], [sx, sy, sz], new THREE.Quaternion().setFromEuler(new THREE.Euler(...rotation)));
+  }
+  function limb(list, a, b, radius) {
+    const start = new THREE.Vector3(...a), end = new THREE.Vector3(...b);
+    const direction = end.clone().sub(start), length = direction.length();
+    const geometry = new THREE.CapsuleGeometry(radius, Math.max(0.01, length - radius * 2), 3, 7);
+    put(list, geometry, start.add(end).multiplyScalar(0.5).toArray(), [1, 1, 1],
+      new THREE.Quaternion().setFromUnitVectors(up, direction.normalize()));
+  }
+  function lock(a, b, radius) {
+    const start = new THREE.Vector3(...a), end = new THREE.Vector3(...b);
+    const direction = end.clone().sub(start), length = direction.length();
+    const geometry = new THREE.CapsuleGeometry(radius, Math.max(0.01, length - radius * 2), 3, 6);
+    put(bronzeParts, geometry, start.add(end).multiplyScalar(0.5).toArray(), [1, 1, 0.48],
+      new THREE.Quaternion().setFromUnitVectors(up, direction.normalize()));
+  }
+  function paw(x, y, z, long = false) {
+    ellipsoid(bronzeParts, x, y, z, 0.27, 0.15, long ? 0.42 : 0.32);
+    for (let toe = 0; toe < 4; toe++) {
+      ellipsoid(bronzeParts, x + (toe - 1.5) * 0.12, y + 0.015, z - (long ? 0.34 : 0.26), 0.075, 0.085, 0.15);
+    }
+  }
+
+  const headY = reclining ? 2.12 : 2.35;
+  const headZ = reclining ? -0.92 : -0.82;
+  ellipsoid(bronzeParts, 0, reclining ? 1.25 : 1.38, 0.12, 0.59, reclining ? 0.56 : 0.7, reclining ? 0.92 : 0.62);
+  ellipsoid(bronzeParts, 0, 1.57, -0.4, 0.58, 0.67, 0.5);
+  for (const side of [-1, 1]) {
+    ellipsoid(bronzeParts, side * 0.4, 1.12, 0.58, 0.4, 0.48, 0.48);
+    const frontA = [side * 0.34, reclining ? 1.32 : 1.5, -0.38];
+    const frontB = [side * 0.42, 0.94, reclining ? -1.25 : -0.72];
+    limb(bronzeParts, frontA, frontB, 0.16);
+    paw(side * 0.42, 0.86, reclining ? -1.5 : -0.95, reclining);
+    paw(side * 0.5, 0.86, reclining ? 0.84 : 0.68, false);
+  }
+
+  // Mane volume stays behind the facial features; individual sculpted locks form the silhouette and chest.
+  ellipsoid(maneParts, 0, headY - 0.08, headZ + 0.2, 0.61, 0.68, 0.35);
+  ellipsoid(bronzeParts, 0, headY, headZ, 0.44, 0.48, 0.4);
+  for (const side of [-1, 1]) {
+    ellipsoid(bronzeParts, side * 0.24, headY - 0.08, headZ - 0.27, 0.17, 0.2, 0.19);
+    ellipsoid(bronzeParts, side * 0.14, headY - 0.15, headZ - 0.43, 0.18, 0.14, 0.2);
+  }
+  // Sculpted strands flow back over the crown and down the cheeks instead of radiating as spikes.
+  for (let strand = -4; strand <= 4; strand++) {
+    const x = strand * 0.1;
+    const mid = [x * 1.08, headY + 0.52 - Math.abs(strand) * 0.012, headZ + 0.02];
+    lock([x, headY + 0.34, headZ - 0.1], mid, 0.034);
+    lock(mid, [x * 1.16, headY + 0.55 - Math.abs(strand) * 0.025, headZ + 0.25], 0.027);
+  }
+  for (const side of [-1, 1]) {
+    for (let strand = 0; strand < 8; strand++) {
+      const start = [side * (0.39 + strand * 0.012), headY + 0.3 - strand * 0.075, headZ - 0.02];
+      const mid = [side * (0.5 + Math.sin(strand) * 0.018), headY + 0.1 - strand * 0.09, headZ - 0.04];
+      const end = [side * (0.53 + strand * 0.012), headY - 0.08 - strand * 0.09, headZ + 0.04];
+      lock(start, mid, 0.033);
+      lock(mid, end, 0.026);
+    }
+  }
+  for (let strand = -5; strand <= 5; strand++) {
+    const mid = [strand * 0.105, (headY + (reclining ? 1.05 : 1.0)) * 0.5, reclining ? -0.54 : -0.5];
+    lock([strand * 0.09, headY - 0.43, headZ - 0.04], mid, 0.034);
+    lock(mid, [strand * 0.115, reclining ? 1.05 : 1.0, reclining ? -0.64 : -0.57], 0.026);
+  }
+  for (let strand = -2; strand <= 2; strand++) {
+    lock(
+      [strand * 0.09, headY - 0.37, headZ - 0.47],
+      [strand * 0.1, headY - 0.66, headZ - 0.43], 0.026);
+  }
+
+  for (const side of [-1, 1]) {
+    put(bronzeParts, new THREE.ConeGeometry(0.13, 0.24, 7),
+      [side * 0.34, headY + 0.4, headZ + 0.02], [1, 1, 1],
+      new THREE.Quaternion().setFromEuler(new THREE.Euler(0, 0, side * -0.42)));
+    ellipsoid(detailParts, side * 0.18, headY + 0.12, headZ - 0.39, 0.065, 0.035, 0.018);
+    ellipsoid(bronzeParts, side * 0.18, headY + 0.12, headZ - 0.412, 0.03, 0.025, 0.015);
+    limb(bronzeParts, [side * 0.09, headY + 0.21, headZ - 0.35],
+      [side * 0.27, headY + 0.18, headZ - 0.35], 0.022);
+  }
+  ellipsoid(bronzeParts, 0, headY - 0.03, headZ - 0.65, 0.17, 0.08, 0.1);
+  for (const side of [-1, 1]) ellipsoid(detailParts, side * 0.07, headY - 0.04, headZ - 0.755, 0.022, 0.016, 0.012);
+  if (openMouth) {
+    ellipsoid(detailParts, 0, headY - 0.28, headZ - 0.6, 0.21, 0.2, 0.07);
+    ellipsoid(bronzeParts, 0, headY - 0.48, headZ - 0.45, 0.24, 0.09, 0.22);
+    for (const side of [-1, 1]) {
+      put(bronzeParts, new THREE.ConeGeometry(0.035, 0.13, 5), [side * 0.12, headY - 0.14, headZ - 0.68], [1, 1, 1],
+        new THREE.Quaternion().setFromEuler(new THREE.Euler(Math.PI, 0, 0)));
+      put(bronzeParts, new THREE.ConeGeometry(0.03, 0.1, 5), [side * 0.11, headY - 0.41, headZ - 0.66]);
+    }
+  } else {
+    limb(detailParts, [-0.16, headY - 0.28, headZ - 0.635], [0.16, headY - 0.28, headZ - 0.635], 0.012);
+    ellipsoid(bronzeParts, 0, headY - 0.32, headZ - 0.46, 0.27, 0.12, 0.22);
+  }
+
+  const tailCurve = new THREE.CatmullRomCurve3([
+    new THREE.Vector3(0, 1.28, 0.78),
+    new THREE.Vector3(tailSide * 0.48, 1.02, 1.18),
+    new THREE.Vector3(tailSide * 0.84, 0.9, 0.88),
+    new THREE.Vector3(tailSide * 0.82, 0.85, 0.28),
+    new THREE.Vector3(tailSide * 0.56, 0.92, 0.08)
+  ]);
+  put(bronzeParts, new THREE.TubeGeometry(tailCurve, 24, 0.065, 6, false), [0, 0, 0]);
+  ellipsoid(bronzeParts, tailSide * 0.56, 0.92, 0.08, 0.12, 0.1, 0.16);
+  const merge = (parts) => mergeGeometries(parts, false);
+  return { bronze: merge(bronzeParts), mane: merge(maneParts), details: merge(detailParts) };
+}
+
 function createPlazaGeometry() {
   const shape = new THREE.Shape();
   for (let i = 0; i + 1 < HSBC_SITE.ring.length; i += 2) {
@@ -176,8 +329,13 @@ export function buildHsbcHeadquarters(root) {
     color: 0x10252d, roughness: 0.3, metalness: 0.35, side: THREE.DoubleSide
   });
   const plazaMaterial = new THREE.MeshStandardMaterial({ color: 0x99988f, roughness: 0.94, metalness: 0.02 });
-  const bronze = new THREE.MeshStandardMaterial({ color: 0x4c5140, roughness: 0.48, metalness: 0.72 });
-  const bronzeMane = new THREE.MeshStandardMaterial({ color: 0x363d30, roughness: 0.58, metalness: 0.66 });
+  const bronze = new THREE.MeshStandardNodeMaterial({ color: 0x624438, roughness: 0.57, metalness: 0.58 });
+  bronze.emissiveNode = color(0x8b5a3c).mul(nightAmount().mul(0.12));
+  const bronzeMane = new THREE.MeshStandardNodeMaterial({ color: 0x50362d, roughness: 0.62, metalness: 0.58 });
+  bronzeMane.emissiveNode = color(0x71503a).mul(nightAmount().mul(0.08));
+  const lionRecess = new THREE.MeshStandardMaterial({ color: 0x1c1712, roughness: 0.65, metalness: 0.45 });
+  const plinthStone = new THREE.MeshStandardMaterial({ color: 0x9a9d99, roughness: 0.9, metalness: 0.02 });
+  const cofferMaterial = new THREE.MeshStandardMaterial({ color: 0xaeb5b3, roughness: 0.72, metalness: 0.2 });
   const greenery = new THREE.MeshStandardMaterial({ color: 0x35563c, roughness: 0.96 });
   const escalatorGlass = new THREE.MeshStandardMaterial({
     color: 0x789aa2, transparent: true, opacity: 0.32, depthWrite: false,
@@ -186,14 +344,15 @@ export function buildHsbcHeadquarters(root) {
   const warmLight = new THREE.MeshStandardNodeMaterial({ color: 0x807b68, roughness: 0.6 });
   warmLight.emissiveNode = color(0xffdca2).mul(nightAmount().mul(1.4));
   const glass = createHsbcCurtainWallMaterial();
+  const entranceGlass = createHsbcCurtainWallMaterial({ entrance: true });
 
   const plaza = new THREE.Mesh(createPlazaGeometry(), plazaMaterial);
   plaza.name = 'HSBCPublicPlaza';
   plaza.receiveShadow = true;
   group.add(plaza);
 
-  const claddingBoxes = [], steelBoxes = [], darkBoxes = [], lightBoxes = [], bronzeBoxes = [], greenBoxes = [];
-  const beams = [], darkBeams = [], bronzeBeams = [], masts = [], stairWindows = [], stairArchWindows = [], escalatorSteps = [], lionBodies = [], lionManes = [];
+  const claddingBoxes = [], steelBoxes = [], darkBoxes = [], lightBoxes = [], bronzeBoxes = [], stoneBoxes = [], cofferBoxes = [], greenBoxes = [];
+  const beams = [], darkBeams = [], masts = [], mastCollars = [], stairWindows = [], stairArchWindows = [], escalatorSteps = [];
   const up = new THREE.Vector3(0, 1, 0);
   function beam(list, a, b, thickness) {
     const start = new THREE.Vector3(...a), end = new THREE.Vector3(...b);
@@ -216,6 +375,24 @@ export function buildHsbcHeadquarters(root) {
   facade.name = 'HSBCCurtainWallThreeSteppedBays';
   facade.castShadow = true; facade.receiveShadow = true;
   group.add(facade);
+  const entranceFacadeBoxes = [];
+  const entranceSideWidth = (HSBC_ENTRANCE.width - HSBC_ENTRANCE.doorWidth) * 0.5;
+  const entranceSideX = HSBC_ENTRANCE.doorWidth * 0.5 + entranceSideWidth * 0.5;
+  for (const side of [-1, 1]) {
+    entranceFacadeBoxes.push({
+      x: side * entranceSideX, y: HSBC_ENTRANCE.height * 0.5, z: HSBC_ENTRANCE.z,
+      w: entranceSideWidth, h: HSBC_ENTRANCE.height, d: 0.32, faces, tone: 0.42
+    });
+  }
+  entranceFacadeBoxes.push({
+    x: 0, y: HSBC_ENTRANCE.doorHeight + (HSBC_ENTRANCE.height - HSBC_ENTRANCE.doorHeight) * 0.5,
+    z: HSBC_ENTRANCE.z, w: HSBC_ENTRANCE.width, h: HSBC_ENTRANCE.height - HSBC_ENTRANCE.doorHeight,
+    d: 0.32, faces, tone: 0.42
+  });
+  const entranceFacade = createFacadeBoxes(entranceGlass, entranceFacadeBoxes);
+  entranceFacade.name = 'HSBCGroundFloorEntranceGlazing';
+  entranceFacade.castShadow = true; entranceFacade.receiveShadow = true;
+  group.add(entranceFacade);
 
   const serviceWidth = (HSBC_FRAME_WIDTH - HSBC_GLASS_WIDTH) * 0.5;
   const serviceX = HSBC_GLASS_WIDTH * 0.5 + serviceWidth * 0.5;
@@ -237,6 +414,12 @@ export function buildHsbcHeadquarters(root) {
       x: 0, y: HSBC_BANKING_HALL_BASE - 0.28, z: bay.z,
       sx: HSBC_FRAME_WIDTH, sy: 0.56, sz: bay.depth
     });
+    for (let x = -27; x <= 27; x += 6) {
+      for (const zOffset of [-6, -2, 2, 6]) {
+        cofferBoxes.push({ x, y: HSBC_BANKING_HALL_BASE - 0.595, z: bay.z + zOffset, sx: 4.65, sy: 0.07, sz: 2.65 });
+        lightBoxes.push({ x, y: HSBC_BANKING_HALL_BASE - 0.64, z: bay.z + zOffset, sx: 0.24, sy: 0.06, sz: 0.24 });
+      }
+    }
     for (let floor = 0; floor < bay.floors; floor++) {
       const y = HSBC_BANKING_HALL_BASE + (floor + 0.5) * HSBC_FLOOR_HEIGHT;
       for (const face of [-1, 1]) {
@@ -291,7 +474,10 @@ export function buildHsbcHeadquarters(root) {
     const height = boundary.roofY + 4.2 - HSBC_PLAZA_TOP;
     for (const x of HSBC_MAST_X) {
       masts.push({ x, y: HSBC_PLAZA_TOP + height * 0.5, z: boundary.z, sy: height });
-      darkBoxes.push({ x: x + 0.54, y: HSBC_PLAZA_TOP + height * 0.5, z: boundary.z, sx: 0.13, sy: height, sz: 0.18 });
+      darkBoxes.push({ x: x + 0.66, y: HSBC_PLAZA_TOP + height * 0.5, z: boundary.z, sx: 0.13, sy: height, sz: 0.18 });
+      for (let y = 14.4; y < boundary.roofY + 4.2; y += 14.4) {
+        mastCollars.push({ x, y, z: boundary.z, sy: 0.12 });
+      }
     }
   }
 
@@ -312,23 +498,28 @@ export function buildHsbcHeadquarters(root) {
     }
     addEscalatorGlass(group, escalatorGlass, x, start, end);
   }
-  for (const z of [-18, -12, -6, 0, 6, 12, 18]) {
-    lightBoxes.push({ x: 0, y: HSBC_BANKING_HALL_BASE - 0.59, z, sx: 8.5, sy: 0.08, sz: 0.35 });
-  }
-
-  // Two small bronze lions face the harbour-side entrance, on separate plinths beside the escalators.
-  for (const x of [-7.2, 7.2]) {
+  // The two supplied photographs show different poses: an upright open-mouth left lion and a reclining closed-mouth right lion.
+  const lionsGroup = new THREE.Group();
+  lionsGroup.name = 'HSBCBronzeLions';
+  group.add(lionsGroup);
+  for (const lion of [
+    { x: -7.2, openMouth: true, reclining: false, tailSide: -1, name: 'HSBCLeftBronzeLionOpenMouth' },
+    { x: 7.2, openMouth: false, reclining: true, tailSide: 1, name: 'HSBCRightBronzeLionReclining' }
+  ]) {
     const z = -HSBC_BAY_DEPTH * 1.35;
-    bronzeBoxes.push({ x, y: 0.29, z, sx: 2.1, sy: 0.58, sz: 2.8 });
-    lionBodies.push({ x, y: 1.08, z, sx: 0.67, sy: 0.55, sz: 1.02 });
-    lionManes.push({ x, y: 1.5, z: z - 0.64, sx: 0.7, sy: 0.68, sz: 0.52 });
-    lionBodies.push({ x, y: 1.48, z: z - 0.91, sx: 0.42, sy: 0.42, sz: 0.4 });
-    lionBodies.push({ x, y: 1.4, z: z - 1.18, sx: 0.28, sy: 0.24, sz: 0.3 });
-    for (const side of [-1, 1]) lionBodies.push({ x: x + side * 0.31, y: 1.85, z: z - 0.72, sx: 0.13, sy: 0.15, sz: 0.12 });
-    for (const side of [-1, 1]) {
-      for (const dz of [-0.48, 0.48]) bronzeBoxes.push({ x: x + side * 0.38, y: 0.67, z: z + dz, sx: 0.24, sy: 0.72, sz: 0.28 });
+    stoneBoxes.push({ x: lion.x, y: 0.275, z, sx: 2.8, sy: 0.55, sz: 3.6 });
+    bronzeBoxes.push({ x: lion.x, y: 0.64, z, sx: 2.45, sy: 0.18, sz: 3.25 });
+    const geometry = createHsbcLionGeometry(lion);
+    const lionGroup = new THREE.Group();
+    lionGroup.position.set(lion.x, 0, z);
+    lionGroup.name = lion.name;
+    for (const [part, material] of [['bronze', bronze], ['mane', bronzeMane], ['details', lionRecess]]) {
+      const mesh = new THREE.Mesh(geometry[part], material);
+      mesh.name = `${lion.name}${part[0].toUpperCase()}${part.slice(1)}`;
+      mesh.castShadow = true; mesh.receiveShadow = true;
+      lionGroup.add(mesh);
     }
-    beam(bronzeBeams, [x, 1.16, z + 0.8], [x + 0.65, 1.45, z + 1.05], 0.12);
+    lionsGroup.add(lionGroup);
   }
 
   // Roof maintenance cranes are part of the original high-tech silhouette, not decorative antennae.
@@ -363,9 +554,19 @@ export function buildHsbcHeadquarters(root) {
     sign.name = face < 0 ? 'HSBCNorthSign' : 'HSBCSouthSign';
     group.add(sign);
   }
+  const entranceSignMaterial = new THREE.MeshBasicNodeMaterial({ transparent: true, depthWrite: false, toneMapped: false });
+  const entranceSignTex = texture(createEntranceSignTexture(), uv());
+  entranceSignMaterial.colorNode = mix(entranceSignTex.rgb, color(0xffd88a), nightAmount().mul(0.4));
+  entranceSignMaterial.opacityNode = entranceSignTex.a;
+  const entranceSign = new THREE.Mesh(new THREE.PlaneGeometry(10.8, 2.35), entranceSignMaterial);
+  entranceSign.position.set(-10.5, 6.15, HSBC_ENTRANCE.z - 0.18);
+  entranceSign.rotation.y = Math.PI;
+  entranceSign.name = 'HSBCGroundEntranceGoldSign';
+  group.add(entranceSign);
 
   addInstances(group, new THREE.BoxGeometry(1, 1, 1), cladding, claddingBoxes, 'HSBCAluminiumServiceCores');
   addInstances(group, new THREE.BoxGeometry(1, 1, 1), steel, steelBoxes, 'HSBCUnderbellyTerracesAndCranes');
+  addInstances(group, new THREE.BoxGeometry(1, 1, 1), cofferMaterial, cofferBoxes, 'HSBCUnderbellyCofferPanels');
   addInstances(group, new THREE.BoxGeometry(1, 1, 1), dark, darkBoxes, 'HSBCServiceGlazingAndMastLadders');
   addInstances(group, new THREE.BoxGeometry(1, 1, 1), dark, stairWindows, 'HSBCEscapeStairWindows', { castShadow: false });
   addInstances(group, createStairWindowGeometry(), stairGlass, stairArchWindows, 'HSBCRoundedStairLandingWindows', { castShadow: false });
@@ -373,12 +574,11 @@ export function buildHsbcHeadquarters(root) {
   addInstances(group, new THREE.BoxGeometry(1, 1, 1), dark, darkBeams, 'HSBCSuspendersEscalatorsAndCraneCables');
   addInstances(group, new THREE.BoxGeometry(1, 1, 1), steel, escalatorSteps, 'HSBCEscalatorSteps');
   addInstances(group, new THREE.BoxGeometry(1, 1, 1), warmLight, lightBoxes, 'HSBCPlazaLights', { castShadow: false });
-  addInstances(group, new THREE.BoxGeometry(1, 1, 1), bronze, bronzeBoxes, 'HSBCBronzeLionPlinthsAndLegs');
-  addInstances(group, new THREE.SphereGeometry(1, 10, 7), bronze, lionBodies, 'HSBCBronzeLions');
-  addInstances(group, new THREE.IcosahedronGeometry(1, 1), bronzeMane, lionManes, 'HSBCBronzeLionManes');
-  addInstances(group, new THREE.BoxGeometry(1, 1, 1), bronze, bronzeBeams, 'HSBCBronzeLionTails');
+  addInstances(group, new THREE.BoxGeometry(1, 1, 1), plinthStone, stoneBoxes, 'HSBCLionStonePlinths');
+  addInstances(group, new THREE.BoxGeometry(1, 1, 1), bronze, bronzeBoxes, 'HSBCBronzeLionBasePlates');
   addInstances(group, new THREE.BoxGeometry(1, 1, 1), greenery, greenBoxes, 'HSBCGardenTerraces', { castShadow: false });
-  addInstances(group, new THREE.CylinderGeometry(0.48, 0.58, 1, 8), steel, masts, 'HSBCExposedSteelMasts');
+  addInstances(group, new THREE.CylinderGeometry(0.68, 0.68, 1, 16), steel, masts, 'HSBCExposedSteelMasts');
+  addInstances(group, new THREE.CylinderGeometry(0.72, 0.72, 1, 16), steel, mastCollars, 'HSBCMastCollarJoints');
 
   const colliders = [];
   for (const bay of HSBC_BAYS) {
@@ -392,13 +592,23 @@ export function buildHsbcHeadquarters(root) {
       }));
     }
   }
+  for (const side of [-1, 1]) {
+    colliders.push(hsbcLocalCollider({
+      x: side * entranceSideX, z: HSBC_ENTRANCE.z, w: entranceSideWidth, d: 0.32,
+      minY: 0, maxY: HSBC_ENTRANCE.height
+    }));
+  }
+  colliders.push(hsbcLocalCollider({
+    x: 0, z: HSBC_ENTRANCE.z, w: HSBC_ENTRANCE.width, d: 0.32,
+    minY: HSBC_ENTRANCE.doorHeight, maxY: HSBC_ENTRANCE.height
+  }));
   for (const boundary of boundaries) {
     for (const x of HSBC_MAST_X) {
-      colliders.push(hsbcLocalCollider({ x, z: boundary.z, w: 1.15, d: 1.15, minY: 0, maxY: boundary.roofY + 4.2 }));
+      colliders.push(hsbcLocalCollider({ x, z: boundary.z, w: 1.48, d: 1.48, minY: 0, maxY: boundary.roofY + 4.2 }));
     }
   }
   for (const x of [-7.2, 7.2]) {
-    colliders.push(hsbcLocalCollider({ x, z: -HSBC_BAY_DEPTH * 1.35, w: 2.1, d: 2.8, minY: 0, maxY: 2.1 }));
+    colliders.push(hsbcLocalCollider({ x, z: -HSBC_BAY_DEPTH * 1.35, w: 2.8, d: 3.6, minY: 0, maxY: 3.1 }));
   }
 
   root.add(group);
