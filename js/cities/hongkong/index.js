@@ -74,6 +74,7 @@ export const city = {
       theCenter: world.theCenter,
       ninaTower: world.ninaTower,
       cheungKong: world.cheungKong,
+      k11Atelier: world.k11Atelier,
       landmarks: world.landmarks,
       stats,
       teleports: TELEPORTS,

@@ -129,6 +129,7 @@ test('unified simple mode adds only the authored landmarks and keeps generic bui
   assert.match(source, /buildTheCenter\(scene, \{ groundOffset: HONG_KONG_TERRAIN_META\.theCenterPadHeight \}\)/);
   assert.match(source, /buildNinaTower\(scene, \{ groundOffset: HONG_KONG_TERRAIN_META\.ninaTowerPadHeight \}\)/);
   assert.match(source, /buildCheungKongCenter\(scene, \{ groundOffset: HONG_KONG_TERRAIN_META\.cheungKongPadHeight \}\)/);
+  assert.match(source, /buildK11Atelier\(scene, \{ groundOffset: HONG_KONG_TERRAIN_META\.k11AtelierPadHeight \}\)/);
   assert.match(source, /isHsbcPlazaPoint\(x, z\)/);
   assert.match(source, /isTwoIfcPlazaPoint\(x, z\)/);
   assert.match(source, /isIccPlazaPoint\(x, z\)/);
@@ -137,6 +138,7 @@ test('unified simple mode adds only the authored landmarks and keeps generic bui
   assert.match(source, /isTheCenterPlazaPoint\(x, z\)/);
   assert.match(source, /!road && isNinaTowerPlazaPoint\(x, z\)/);
   assert.match(source, /!road && isCheungKongPlazaPoint\(x, z\)/);
+  assert.match(source, /!groundUsesRoad && isK11AtelierPlazaPoint\(x, z\)/);
   assert.match(source, /scbEntranceGroundHeight\(x, z, crossingGround, standardChartered\.groundOffset\)/);
   assert.match(source, /\.\.\.hsbc\.stats/);
   assert.match(source, /\.\.\.standardChartered\.stats/);
@@ -147,6 +149,7 @@ test('unified simple mode adds only the authored landmarks and keeps generic bui
   assert.match(source, /\.\.\.theCenter\.stats/);
   assert.match(source, /\.\.\.ninaTower\.stats/);
   assert.match(source, /\.\.\.cheungKong\.stats/);
+  assert.match(source, /\.\.\.k11Atelier\.stats/);
   assert.match(source, /\.\.\.hsbc\.colliders/);
   assert.match(source, /\.\.\.standardChartered\.colliders/);
   assert.match(source, /\.\.\.twoIfc\.colliders/);
@@ -156,9 +159,10 @@ test('unified simple mode adds only the authored landmarks and keeps generic bui
   assert.match(source, /\.\.\.theCenter\.colliders/);
   assert.match(source, /\.\.\.ninaTower\.colliders/);
   assert.match(source, /\.\.\.cheungKong\.colliders/);
-  assert.match(source, /landmarks: hsbc\.landmarks\.length \+ standardChartered\.landmarks\.length \+ twoIfc\.landmarks\.length \+ icc\.landmarks\.length \+ bankOfChina\.landmarks\.length \+ centralPlaza\.landmarks\.length \+ theCenter\.landmarks\.length \+ ninaTower\.landmarks\.length \+ cheungKong\.landmarks\.length/);
+  assert.match(source, /\.\.\.k11Atelier\.colliders/);
+  assert.match(source, /landmarks: hsbc\.landmarks\.length \+ standardChartered\.landmarks\.length \+ twoIfc\.landmarks\.length \+ icc\.landmarks\.length \+ bankOfChina\.landmarks\.length \+ centralPlaza\.landmarks\.length \+ theCenter\.landmarks\.length \+ ninaTower\.landmarks\.length \+ cheungKong\.landmarks\.length \+ k11Atelier\.landmarks\.length/);
   assert.match(source, /buildings: 0/);
-  assert.match(source, /landmarks: \[\.\.\.hsbc\.landmarks, \.\.\.standardChartered\.landmarks, \.\.\.twoIfc\.landmarks, \.\.\.icc\.landmarks, \.\.\.bankOfChina\.landmarks, \.\.\.centralPlaza\.landmarks, \.\.\.theCenter\.landmarks, \.\.\.ninaTower\.landmarks, \.\.\.cheungKong\.landmarks\]/);
+  assert.match(source, /landmarks: \[\.\.\.hsbc\.landmarks, \.\.\.standardChartered\.landmarks, \.\.\.twoIfc\.landmarks, \.\.\.icc\.landmarks, \.\.\.bankOfChina\.landmarks, \.\.\.centralPlaza\.landmarks, \.\.\.theCenter\.landmarks, \.\.\.ninaTower\.landmarks, \.\.\.cheungKong\.landmarks, \.\.\.k11Atelier\.landmarks\]/);
   assert.match(source, /createHongKongTrafficAids\(scene, \{/);
   assert.match(source, /getGroundHeight, getSurfaceHeight: getRoadPaintHeight, surfaceY: FULL_WORLD_HEIGHT\.road/);
   assert.match(source, /\.\.\.trafficAids\.stats/);
@@ -170,6 +174,7 @@ test('unified simple mode adds only the authored landmarks and keeps generic bui
   assert.match(pack, /theCenter: world\.theCenter/);
   assert.match(pack, /ninaTower: world\.ninaTower/);
   assert.match(pack, /cheungKong: world\.cheungKong/);
+  assert.match(pack, /k11Atelier: world\.k11Atelier/);
 });
 
 test('Standard Chartered preserves its OSM site while the tower turns 35 degrees towards HSBC', () => {
@@ -463,7 +468,7 @@ test('building inventory independently tracks scene status, refinement and landm
   assert.deepEqual(parsed.map((row) => row.id), Array.from({ length: 100 }, (_, index) =>
     `\`HK-B${String(index + 1).padStart(4, '0')}\``));
   assert.equal(new Set(parsed.map((row) => row.id)).size, 100);
-  assert.deepEqual(parsed.slice(0, 9).map(({ id, status, refined, landmark }) => ({ id, status, refined, landmark })), [
+  assert.deepEqual(parsed.slice(0, 10).map(({ id, status, refined, landmark }) => ({ id, status, refined, landmark })), [
     { id: '`HK-B0001`', status: '已加入', refined: '**是**', landmark: '**是**' },
     { id: '`HK-B0002`', status: '已加入', refined: '**是**', landmark: '**是**' },
     { id: '`HK-B0003`', status: '已加入', refined: '**是**', landmark: '**是**' },
@@ -472,9 +477,10 @@ test('building inventory independently tracks scene status, refinement and landm
     { id: '`HK-B0006`', status: '已加入', refined: '**是**', landmark: '**是**' },
     { id: '`HK-B0007`', status: '已加入', refined: '**是**', landmark: '**是**' },
     { id: '`HK-B0008`', status: '已加入', refined: '**是**', landmark: '**是**' },
-    { id: '`HK-B0009`', status: '已加入', refined: '**是**', landmark: '**是**' }
+    { id: '`HK-B0009`', status: '已加入', refined: '**是**', landmark: '**是**' },
+    { id: '`HK-B0010`', status: '已加入', refined: '**是**', landmark: '**是**' }
   ]);
-  assert.ok(parsed.slice(9).every((row) => row.status === '待製作' && row.refined === '否'
+  assert.ok(parsed.slice(10).every((row) => row.status === '待製作' && row.refined === '否'
     && row.landmark === '否' && row.implementation === '—'), 'OSM candidates are not presented as integrated or refined');
   assert.ok(parsed.every((row) => row.source && row.source !== '—'));
   assert.match(rows[0], /滙豐總行大廈 HSBC Main Building/);
@@ -493,9 +499,11 @@ test('building inventory independently tracks scene status, refinement and landm
   assert.match(rows[7], /nina-tower-world\.js/);
   assert.match(rows[8], /長江集團中心 Cheung Kong Center/);
   assert.match(rows[8], /cheung-kong-world\.js/);
+  assert.match(rows[9], /K11 Atelier/);
+  assert.match(rows[9], /k11-atelier-world\.js/);
   assert.match(inventory, /\| 施工清單總數 \| 100 \|/);
-  assert.match(inventory, /\| 已加入場景的建築物 \| 9 \|/);
-  assert.match(inventory, /\| 待製作 \| 91 \|/);
+  assert.match(inventory, /\| 已加入場景的建築物 \| 10 \|/);
+  assert.match(inventory, /\| 待製作 \| 90 \|/);
   assert.match(inventory, /367\.4 m†/);
   assert.match(inventory, /沒有 `height` tag/);
   assert.match(inventory, /373\.9 m‡/);

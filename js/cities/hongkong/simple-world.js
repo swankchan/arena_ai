@@ -24,6 +24,8 @@ import { buildNinaTower } from './nina-tower-world.js';
 import { isNinaTowerPlazaPoint } from './nina-tower-architecture.js';
 import { buildCheungKongCenter } from './cheung-kong-world.js';
 import { isCheungKongPlazaPoint } from './cheung-kong-architecture.js';
+import { buildK11Atelier } from './k11-atelier-world.js';
+import { isK11AtelierPlazaPoint } from './k11-atelier-architecture.js';
 import { createHongKongTrafficAids } from './traffic-aids.js';
 
 const WATER_LEVEL = -2.2;
@@ -51,6 +53,8 @@ export function buildSimpleHongKongWorld(scene, { setStatus = () => {} } = {}) {
   const ninaTower = buildNinaTower(scene, { groundOffset: HONG_KONG_TERRAIN_META.ninaTowerPadHeight });
   setStatus('Building Cheung Kong Center, its sunshades and fibre-optic facade...');
   const cheungKong = buildCheungKongCenter(scene, { groundOffset: HONG_KONG_TERRAIN_META.cheungKongPadHeight });
+  setStatus('Building K11 Atelier, its limestone piers and stepped crown...');
+  const k11Atelier = buildK11Atelier(scene, { groundOffset: HONG_KONG_TERRAIN_META.k11AtelierPadHeight });
   setStatus('Building drivable harbour bridges and tunnels...');
   const crossings = buildHongKongCrossings(scene);
   setStatus('Placing 144,995 lamp posts across Hong Kong...');
@@ -72,9 +76,10 @@ export function buildSimpleHongKongWorld(scene, { setStatus = () => {} } = {}) {
     if (isTerritoryLand(x, z)) base = hongKongTerrainHeight(x, z) + FULL_WORLD_HEIGHT.land;
     if (territoryParkAt(x, z)) base = hongKongTerrainHeight(x, z) + FULL_WORLD_HEIGHT.park;
     const road = fullRoadSurfaceAt(x, z, 0.35, referenceY);
+    let groundUsesRoad = false;
     if (road) {
       const layered = Boolean(road.flags & 6);
-      if (!layered || Math.abs(road.height - referenceY) <= Math.abs(base - referenceY) + 0.5) base = road.height;
+      if (!layered || Math.abs(road.height - referenceY) <= Math.abs(base - referenceY) + 0.5) { base = road.height; groundUsesRoad = true; }
     }
     const crossingGround = selectCrossingGround(base, crossingSurfaceAt(x, z), referenceY, WATER_LEVEL);
     const ground = scbEntranceGroundHeight(x, z, crossingGround, standardChartered.groundOffset);
@@ -86,7 +91,9 @@ export function buildSimpleHongKongWorld(scene, { setStatus = () => {} } = {}) {
     // Nina Tower's ground-level service roads and tunnels remain roads; only the non-road mall floor is raised.
     const ninaGround = !road && isNinaTowerPlazaPoint(x, z) ? Math.max(theCenterGround, ninaTower.plazaTop) : theCenterGround;
     const cheungKongGround = !road && isCheungKongPlazaPoint(x, z) ? Math.max(ninaGround, cheungKong.plazaTop) : ninaGround;
-    return isHsbcPlazaPoint(x, z) ? Math.max(cheungKongGround, hsbc.plazaTop) : cheungKongGround;
+    // K11's surface access roads stay drivable through authored portals; an unselected tunnel below does not suppress the lobby floor.
+    const k11AtelierGround = !groundUsesRoad && isK11AtelierPlazaPoint(x, z) ? Math.max(cheungKongGround, k11Atelier.plazaTop) : cheungKongGround;
+    return isHsbcPlazaPoint(x, z) ? Math.max(k11AtelierGround, hsbc.plazaTop) : k11AtelierGround;
   }
 
   const stats = {
@@ -103,11 +110,12 @@ export function buildSimpleHongKongWorld(scene, { setStatus = () => {} } = {}) {
     ...theCenter.stats,
     ...ninaTower.stats,
     ...cheungKong.stats,
+    ...k11Atelier.stats,
     presentation: 'unified-simple',
     landMeshes: full.stats.fullLandRings,
     blocks: 0,
     parks: full.stats.fullParks,
-    landmarks: hsbc.landmarks.length + standardChartered.landmarks.length + twoIfc.landmarks.length + icc.landmarks.length + bankOfChina.landmarks.length + centralPlaza.landmarks.length + theCenter.landmarks.length + ninaTower.landmarks.length + cheungKong.landmarks.length,
+    landmarks: hsbc.landmarks.length + standardChartered.landmarks.length + twoIfc.landmarks.length + icc.landmarks.length + bankOfChina.landmarks.length + centralPlaza.landmarks.length + theCenter.landmarks.length + ninaTower.landmarks.length + cheungKong.landmarks.length + k11Atelier.landmarks.length,
     lots: 0,
     buildings: 0,
     skippedLots: 0,
@@ -119,7 +127,7 @@ export function buildSimpleHongKongWorld(scene, { setStatus = () => {} } = {}) {
 
   return {
     root: scene,
-    colliders: [...full.colliders, ...crossings.colliders, ...hsbc.colliders, ...standardChartered.colliders, ...twoIfc.colliders, ...icc.colliders, ...bankOfChina.colliders, ...centralPlaza.colliders, ...theCenter.colliders, ...ninaTower.colliders, ...cheungKong.colliders],
+    colliders: [...full.colliders, ...crossings.colliders, ...hsbc.colliders, ...standardChartered.colliders, ...twoIfc.colliders, ...icc.colliders, ...bankOfChina.colliders, ...centralPlaza.colliders, ...theCenter.colliders, ...ninaTower.colliders, ...cheungKong.colliders, ...k11Atelier.colliders],
     bounds: full.bounds,
     stats,
     personSpawn: { ...SPAWN.person },
@@ -142,8 +150,9 @@ export function buildSimpleHongKongWorld(scene, { setStatus = () => {} } = {}) {
     theCenter,
     ninaTower,
     cheungKong,
+    k11Atelier,
     treeField: null,
-    landmarks: [...hsbc.landmarks, ...standardChartered.landmarks, ...twoIfc.landmarks, ...icc.landmarks, ...bankOfChina.landmarks, ...centralPlaza.landmarks, ...theCenter.landmarks, ...ninaTower.landmarks, ...cheungKong.landmarks],
+    landmarks: [...hsbc.landmarks, ...standardChartered.landmarks, ...twoIfc.landmarks, ...icc.landmarks, ...bankOfChina.landmarks, ...centralPlaza.landmarks, ...theCenter.landmarks, ...ninaTower.landmarks, ...cheungKong.landmarks, ...k11Atelier.landmarks],
     trafficAids
   };
 }

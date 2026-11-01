@@ -1,6 +1,6 @@
 # 香港手建 Landmarks
 
-香港仍採用 `unified-simple` 展示：全港道路及基本地面保留，**不生成普通建築群**。手建地標會逐個加入；目前有滙豐總行大廈、渣打銀行大廈、國際金融中心二期、環球貿易廣場、中銀大廈、中環廣場、中環中心、如心廣場及長江集團中心。
+香港仍採用 `unified-simple` 展示：全港道路及基本地面保留，**不生成普通建築群**。手建地標會逐個加入；目前有滙豐總行大廈、渣打銀行大廈、國際金融中心二期、環球貿易廣場、中銀大廈、中環廣場、中環中心、如心廣場、長江集團中心及 K11 Atelier。
 
 建築物進度、**精修**與 **Landmark** 獨立標記，以及道路衝突台帳，見 [香港建築物 Inventory](hongkong-building-inventory.md)。
 
@@ -205,6 +205,35 @@
   https://zolimacitymag.com/hong-kong-skyline-icon-hilton-hotel-cheung-kong-center/
 - 夜景只作整體光點效果參考；搜尋中誤標的 The Henderson、Two IFC 及 Cheung Kong Center II 圖片沒有用作本幢證據。研究照片沒有打包進應用程式。
 
+## K11 Atelier（Victoria Dockside）
+
+- 地點及來源：梳士巴利道 18 號，採目前 **OSM way 668219664 version 14** 的 26 個獨立頂點；原始 WGS84 geometry、tags、版本及 ODbL attribution 保存在 `k11-atelier-architecture.js`。minimum-area OBB 中心為 **(1664.0993512000164, -1438.3614526756262)**，定向尺寸 **63.55503258862382 × 49.47862969496305 m**。這是塔身 outline，**不是**整個 Victoria Dockside 土地用途範圍；K11 ARTUS 仍是 `HK-B0074`、K11 MUSEA 仍是 `HK-B0099`，沒有藉本幢提前完成。
+- 高度及層數分列：OSM 為 **274 m／66 levels**；CVU／CTBUH 為 **272.5 m architectural、277.3 m to-tip、255.1 m occupied、66 above-ground／5 below-ground**。官方項目資料另採約 **273 m** 及 **62 層（排除兩層避火、兩層機電）**；KPF／ArchDaily 設計報道採 **66-story／280 m**，Wikipedia 的 **284 m** 也另存為不同 convention。模型主體止於 272.5 m、冠頂 fins 止於 277.3 m，不把不同來源平均、取整或混寫成 OSM 標籤。
+- 分段體量：以精確來源 ring 建立雙層高大堂及五段 occupied tiers，四次退台分別位於視覺樓層 **17／33／47／57** 之後。各段保留 26 邊平面及凹角，再以照片導向的非對稱縮放、平移形成逐段收分；這些 transforms 是明確標示的外觀控制，不是額外實測樓層 rings。regression 對每段邊界取樣，確認上段留在前一輪廓內。
+- 幕牆及材料：依 KPF 文字和近景照片分開處理深色 panoramic glass insets、深色 spandrels、葡萄牙石灰石直翼牆及古銅色窗框。本幢有 **4,088 個主體 vision panels、4,088 個 spandrel panels、57 個大堂玻璃 panels、4,418 段石灰石 courses**；細橫框、較粗石灰石 fins 及每層玻璃都有實際幾何，不是 footprint 盒體貼窗格圖。四個避火／機電外觀帶及塔冠通風帶合共 **2,916 段百頁**；其層位屬照片導向視覺編排，不是實測 MEP schedule。
+- 凹角斜框：近照中暗色凹角內的斜向金屬框架另以 **488 段真實斜梁**重建，分布在四條 source-derived recessed edges，而非把整幢做成完全相同的平面玻璃格。斜框位置及截面是外觀重建，沒有冒充結構工程圖則。
+- 退台屋面及塔冠：四段退台各有屋面、薄 parapet 及收口。255.1 m 以上有 **200 個冠頂玻璃 panels、50 支石灰石 fins**、古銅橫框及通風百頁；270.8 m 是照片導向的屋面控制，272.5 m 另有薄 parapet，三個低矮 roof-plant enclosures 不超過 277.3 m to-tip。沒有任意加入尖頂、天線或巨型屋頂標誌。
+- 入口及大堂：北側 source edge 5 作 Salisbury Road office lobby frontage，有玻璃門、古銅平底雨篷、石灰石柱、小型 K11 ATELIER 字牌及暖色天花燈。入口位置由地址及外觀照片推導；OSM way **沒有 door tag**，雨篷和門框尺寸也是視覺建模控制，不能稱為實測入口節點。字牌獨立放在門框前方，避免被中央門棂遮住。
+- 大堂可識別細節：依 ArchDaily 的實際室內照片，在玻璃入口後加入淺色石地板、木飾面牆、三聯水墨藝術牆、接待台及五條保安閘機通道（六個深色機櫃及玻璃翼）。三聯畫由 Canvas 程序筆觸重建，**不是把參考照片貼上牆**；其在大堂中的確切位置屬視覺整合，不是室內測量圖。
+- 日夜：日間保持反光灰綠玻璃、石灰石及古銅色差；夜間只有低量暖色辦公窗、入口及大堂暖光。現有資料不足以核實完整官方夜間燈光節目，因此沒有加入自創 LED 動畫或聲稱重播實際燈光時序。研究照片及三聯畫參考均沒有打包進應用程式。
+- 地面、碰撞及道路：raw DTM 施工地台為 **5.444955721524252 m**，plaza 面抬高 **0.12 m**，不是道路工程標高。精確 ring 與 4 個道路 segment 相交：地面 ways **44075／50914** 及隧道 ways **44081／50542**；七條地面相交外牆邊保留車輛開口及 **9 m soffit**。最低 portal lintel 對 `roadRibbonProfileAtSegment` 的實際渲染剖面仍超過 **4.5 m** 車輛淨空；不搬路、不刪隧道、不改白色標線。source ring 及入口 canopy 均沒有 clearance 後街燈，canopy 也沒有地面道路衝突。ground query 不把地面車路覆蓋成 plaza，同時不讓未選中的地下隧道錯誤壓低大堂地面。
+- 瀏覽器驗證：實際檢查全塔日景、北面、背面、退台、入口、大堂、凹角斜框、塔冠、全塔夜景及入口夜景共十個視角。最終場景為 **10 landmarks／0 generic buildings**；本幢 **57 meshes、451,070 vertices、216,754 triangles、194 colliders**，全部 194 個 colliders 均進入世界碰撞陣列。所有 position／normal／color／aLit 及 bounding spheres 通過 finite audit，`geometryIssues=[]`、`badColliders=[]`。大廈中心和入口的 player ground query 均為 **5.564955721524252 m**；地面道路取樣則為 **5.75 m**，沒有被 plaza 覆蓋。沒有 pageerror、shader 或 WebGL error；只有既有外部字體 `ERR_CONNECTION_CLOSED` 及 SwiftShader performance warnings。完整 `node --test tests/*.test.cjs` 為 **348／348 pass**。
+
+### 參考資料
+
+- OSM 塔身及目前 API 幾何：https://www.openstreetmap.org/way/668219664
+  https://api.openstreetmap.org/api/0.6/way/668219664/full.json
+- K11 Atelier 官方 premises info：約 273 m、Q2 2017、62 層的排除避火／機電計法、辦公室／酒店／長住住宅用途及典型樓層資料：
+  https://www.k11atelier.com/hk/victoria-dockside/premises-info/
+- ArchDaily／KPF：分段不規則體量、panoramic glass insets、Portuguese limestone piers、bronze trims、66-story／280 m 設計表述，以及本幢外觀和大堂三聯畫／木牆／保安閘機照片：
+  https://www.archdaily.com/885155/k11-atelier-at-victoria-dockside-kpf
+- CVU／CTBUH：272.5 m architectural、277.3 m to-tip、255.1 m occupied、66 above-ground／5 below-ground、2017 completed、all-concrete 及混合用途：
+  https://www.skyscrapercenter.com/building/victoria-dockside/9349
+- KPF 及 WSP 項目資料（分段體量及另一個約 280 m／66-storey 設計報道口徑）：
+  https://www.kpf.com/project/victoria-dockside
+  https://www.wsp.com/en-us/projects/victoria-dockside
+- 284 m 只作另一來源 convention 保存，沒有覆寫上述高度：https://en.wikipedia.org/wiki/Victoria_Dockside
+
 ## 程式入口
 
 - `hsbc-headquarters-architecture.js`：滙豐純地理位置、OBB、樓層比例及 collider 座標換算，可在 Node 測試。
@@ -227,4 +256,6 @@
 - `nina-tower-world.js`：如心廣場雙塔精確幕牆、機電百頁、開放冠架、玻璃底天橋、商場車輛開口、atrium vault、入口雨篷、日夜材質及 stats。
 - `cheung-kong-architecture.js`：長江集團中心六頂點來源、OBB、高度 conventions、chamfer、圓角大堂、真實入口、plaza 及碰撞座標換算。
 - `cheung-kong-world.js`：長江集團中心雙排玻璃幕牆、aerofoil 遮陽翼、豎 fins、低層百頁、圓角大堂、入口雨篷、平屋頂及光纖夜景。
-- `simple-world.js`：只整合這九個 authored landmarks；普通 `buildings` 仍為 0。
+- `k11-atelier-architecture.js`：K11 Atelier 26 頂點 OSM 來源、OBB、高度／層數 conventions、五段非對稱退台、車輛開口、入口及 plaza／collider 座標換算。
+- `k11-atelier-world.js`：K11 Atelier 玻璃／石灰石／古銅幕牆、凹角斜框、百頁、退台屋面、塔冠、入口、大堂三聯畫及保安閘機、日夜材質、碰撞及 stats。
+- `simple-world.js`：只整合這十個 authored landmarks；普通 `buildings` 仍為 0。
