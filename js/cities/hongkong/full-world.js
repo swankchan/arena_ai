@@ -11,7 +11,10 @@ import { buildTunnelOpeningRects, subtractTunnelOpenings } from './tunnel-openin
 import { FULL_BOUNDS, isDetailedCore, isTerritoryLand, territoryParkAt } from './full-meta.js';
 import { HK_TERRAIN, HONG_KONG_TERRAIN_META, hongKongTerrainCellLand, hongKongTerrainHeight, rawHongKongTerrainHeight } from './terrain.js';
 import { roadRibbonHeightAtSegment, roadRibbonProfileAtSegment, verifiedBridgeProfileAtSegment, TERRAIN_TUNNEL_OPENING_RECTS } from './road-elevation.js';
-import { DERIVED_ROAD_MARKINGS, signedRoadLaneCount } from './derived-road-markings.js';
+import {
+  DERIVED_ROAD_MARKINGS, DERIVED_ROAD_PAINT_POLICY, DERIVED_ROAD_PAINT_STATS,
+  addDerivedPaintPolicyStations, derivedPaintAllowed, signedRoadLaneCount
+} from './derived-road-markings.js';
 
 // Territory-wide DTM terrain with roads, players and furniture sharing the same triangle-matched height field.
 // The legacy detailed builder can exclude its original core; unified mode includes every road and all terrain.
@@ -78,25 +81,30 @@ function cutTunnelOpenings(geometry, yOrSampler, rects) {
   return cut;
 }
 
-function addRoadQuad(positions, paint, indices, x1, z1, y1, x2, z2, y2, width, chainage, lanes) {
+function addRoadQuad(positions, paint, indices, x1, z1, y1, x2, z2, y2, width, chainage, lanes, {
+  paintAllowed = true, extendStart = true, extendEnd = true
+} = {}) {
   let dx = x2 - x1, dz = z2 - z1;
   const length = Math.hypot(dx, dz);
   if (length < 0.05) return;
   dx /= length; dz /= length;
   const extension = Math.min(1.2, width * 0.12);
-  const ax = x1 - dx * extension, az = z1 - dz * extension;
-  const bx = x2 + dx * extension, bz = z2 + dz * extension;
+  const startExtension = extendStart ? extension : 0, endExtension = extendEnd ? extension : 0;
+  const ax = x1 - dx * startExtension, az = z1 - dz * startExtension;
+  const bx = x2 + dx * endExtension, bz = z2 + dz * endExtension;
   const nx = dz * width * 0.5, nz = -dx * width * 0.5;
   const a0 = [ax + nx, az + nz], a1 = [ax - nx, az - nz];
   const b0 = [bx + nx, bz + nz], b1 = [bx - nx, bz - nz];
   const base = positions.length / 3;
   positions.push(a0[0], y1, a0[1], a1[0], y1, a1[1], b0[0], y2, b0[1], b1[0], y2, b1[1]);
   indices.push(base, base + 3, base + 2, base, base + 1, base + 3);
-  const half = width * 0.5, s1 = chainage + length;
-  // roadPaint = lateral metres, chainage metres, signed lane count (negative = two-way), carriageway width.
+  const half = width * 0.5, s0 = chainage - startExtension, s1 = chainage + length + endExtension;
+  const paintLanes = paintAllowed ? lanes : 0, paintWidth = paintAllowed ? width : 0;
+  // roadPaint = lateral metres, true chainage metres, signed lane count (negative = two-way), carriageway width.
+  // Zero paint width is a clipped policy quad, not a zero-width road; its asphalt geometry remains untouched.
   paint.push(
-    half, chainage, lanes, width, -half, chainage, lanes, width,
-    half, s1, lanes, width, -half, s1, lanes, width
+    half, s0, paintLanes, paintWidth, -half, s0, paintLanes, paintWidth,
+    half, s1, paintLanes, paintWidth, -half, s1, paintLanes, paintWidth
   );
 }
 
@@ -200,6 +208,7 @@ function createRoadChunks(root, includeCore) {
     return chunk;
   };
   let segments = 0, sourceSegments = 0, joins = 0, submergedTunnelSegments = 0, verifiedBridgeSegments = 0, verifiedBridgePiers = 0;
+  let derivedPaintQuads = 0, derivedPaintSuppressedQuads = 0;
   for (const [wayId, road] of HK_FULL_ROADS.roads.entries()) {
     if (CROSSING_FLAT_EXCLUSION_IDS.has(wayId)) continue;
     const [, width, , , , flat] = road;
@@ -221,18 +230,17 @@ function createRoadChunks(root, includeCore) {
         sourceSegments++;
         const profile = roadRibbonProfileAtSegment(wayId, segmentIndex);
         const verifiedBridge = verifiedBridgeProfileAtSegment(wayId, segmentIndex);
+        const segmentLength = Math.hypot(dx, dz), segmentStart = chainage;
         const stations = [ta];
         for (const t of profile.ts) if (t > ta + 1e-7 && t < tb - 1e-7) stations.push(t);
         stations.push(tb);
-        if (road[4] & 4) {
-          addTunnelCoastStations(stations, x1, z1, dx, dz);
-          stations.sort((a, b) => a - b);
-          for (let i = stations.length - 1; i >= 0; i--) {
-            if (stations[i] < ta - 1e-7 || stations[i] > tb + 1e-7) stations.splice(i, 1);
-            else if (i > 0 && stations[i] - stations[i - 1] < 1e-7) stations.splice(i, 1);
-          }
+        if (road[4] & 4) addTunnelCoastStations(stations, x1, z1, dx, dz);
+        addDerivedPaintPolicyStations(stations, DERIVED_ROAD_PAINT_POLICY, wayId, segmentStart, segmentLength, ta, tb);
+        stations.sort((a, b) => a - b);
+        for (let i = stations.length - 1; i >= 0; i--) {
+          if (stations[i] < ta - 1e-7 || stations[i] > tb + 1e-7) stations.splice(i, 1);
+          else if (i > 0 && stations[i] - stations[i - 1] < 1e-7) stations.splice(i, 1);
         }
-        const segmentLength = Math.hypot(dx, dz);
         for (let step = 0; step + 1 < stations.length; step++) {
           const t0 = stations[step], t1 = stations[step + 1];
           const ax = x1 + dx * t0, az = z1 + dz * t0, bx = x1 + dx * t1, bz = z1 + dz * t1;
@@ -241,7 +249,12 @@ function createRoadChunks(root, includeCore) {
           const ay = roadRibbonHeightAtSegment(wayId, segmentIndex, t0);
           const by = roadRibbonHeightAtSegment(wayId, segmentIndex, t1);
           const chunk = chunkAt(mx, mz);
-          addRoadQuad(chunk.positions, chunk.paint, chunk.indices, ax, az, ay, bx, bz, by, width, chainage + segmentLength * t0, lanes);
+          const paintAllowed = derivedPaintAllowed(DERIVED_ROAD_PAINT_POLICY, wayId, segmentIndex,
+            segmentStart + segmentLength * (t0 + t1) * 0.5);
+          addRoadQuad(chunk.positions, chunk.paint, chunk.indices, ax, az, ay, bx, bz, by, width,
+            segmentStart + segmentLength * t0, lanes,
+            { paintAllowed, extendStart: t0 <= 1e-7, extendEnd: t1 >= 1 - 1e-7 });
+          if (paintAllowed) derivedPaintQuads++; else derivedPaintSuppressedQuads++;
           segments++;
           if (verifiedBridge) {
             const concrete = bridgeChunkAt(mx, mz);
@@ -314,7 +327,10 @@ function createRoadChunks(root, includeCore) {
     root.add(mesh);
     verifiedBridgeMeshes++;
   }
-  return { segments, sourceSegments, meshes, joins, submergedTunnelSegments, verifiedBridgeSegments, verifiedBridgePiers, verifiedBridgeMeshes };
+  return {
+    segments, sourceSegments, meshes, joins, submergedTunnelSegments, verifiedBridgeSegments, verifiedBridgePiers, verifiedBridgeMeshes,
+    derivedPaintQuads, derivedPaintSuppressedQuads
+  };
 }
 
 const TERRAIN_COLOURS = {
@@ -477,8 +493,11 @@ export function buildFullHongKongWorld(root, { waterLevel = -2.2, includeCore = 
       fullRoadSourceSegments: roads.sourceSegments,
       fullRoadJoins: roads.joins,
       fullRoadChunks: roads.meshes,
-      fullRoadDerivedPaint: 'in-asphalt-shader',
+      fullRoadDerivedPaint: 'in-asphalt-shader-with-junction-and-survey-clipping',
       fullRoadDerivedPaintExtraTriangles: 0,
+      fullRoadDerivedPaintQuads: roads.derivedPaintQuads,
+      fullRoadDerivedPaintSuppressedQuads: roads.derivedPaintSuppressedQuads,
+      fullRoadDerivedPaintPolicy: DERIVED_ROAD_PAINT_STATS,
       fullSubmergedTunnelSegmentsHidden: roads.submergedTunnelSegments,
       verifiedBridgeWays: HK_VERIFIED_BRIDGES.ways.length,
       verifiedBridgeSegments: roads.verifiedBridgeSegments,

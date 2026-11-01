@@ -1732,16 +1732,17 @@ function createRoadSurfaceMaterialProfile({ dry = false, hongKong = false, struc
     const twoWay = float(1.0).sub(step(0.0, signedLanes));
     const centreLine = twoWay.mul(float(1.0).sub(smoothstep(0.02, 0.08, abs(laneCoordinate.sub(lanes.mul(0.5))))));
     const period = derivedMarkings.dashMark + derivedMarkings.dashGap;
-    const dash = float(1.0).sub(step(derivedMarkings.dashMark / period, fract(chainage.div(period))));
+    const dashTime = chainage.div(period), dashFootprint = max(fwidth(dashTime), 0.0001);
+    const duty = derivedMarkings.dashMark / period;
+    // Box-filter the dash module over this pixel. True chainage includes the small geometric end extensions, so
+    // adjacent terrain/profile quads share one phase instead of restarting or compressing the white marks.
+    const onSoFar = (value) => floor(value).mul(duty).add(clamp(fract(value), 0.0, duty));
+    const dash = onSoFar(dashTime.add(dashFootprint.mul(0.5)))
+      .sub(onSoFar(dashTime.sub(dashFootprint.mul(0.5)))).div(dashFootprint);
     const lanePaint = coverage(laneDistance).mul(insideCarriageway).mul(mix(dash, float(1.0), centreLine));
-    let guard = float(1.0);
-    if (derivedMarkings.guard) {
-      const b = derivedMarkings.guard;
-      const inside = step(b.minX, positionWorld.x).mul(step(positionWorld.x, b.maxX))
-        .mul(step(b.minZ, positionWorld.z)).mul(step(positionWorld.z, b.maxZ));
-      guard = float(1.0).sub(inside);
-    }
-    return max(edgePaint, lanePaint).mul(step(0.01, roadWidth)).mul(guard);
+    // Junctions and surveyed paint are clipped per source segment in full-world.js. A zero roadPaint.w clears the
+    // whole policy quad while retaining its asphalt, avoiding both a huge rectangular guard and extra attributes.
+    return max(edgePaint, lanePaint).mul(step(0.01, roadWidth));
   })() : null;
 
   mat.colorNode = Fn(() => {
