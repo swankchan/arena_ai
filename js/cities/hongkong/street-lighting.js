@@ -67,8 +67,8 @@ function materials() {
   const radius = length(uv().sub(0.5)).mul(2);
   const radial = clamp(float(1).sub(radius), 0, 1);
   // Broad, low-energy scattering plus a gentle core: no hard-edged orange spot under each lamp.
-  const scattered = pow(radial, 1.35).mul(0.16);
-  const softCore = pow(radial, 3.2).mul(0.08);
+  const scattered = pow(radial, 1.35).mul(0.30);
+  const softCore = pow(radial, 3.2).mul(0.14);
   pool.colorNode = color(0xffbd67).mul(scattered.add(softCore).mul(night));
   pool.opacityNode = float(1);
   return { metal, head, glow, pool };
@@ -123,7 +123,7 @@ export function createHongKongStreetLighting(root, { lamps = HK_STREET_LIGHTS.la
 
   const material = materials();
   const poleGeo = poleGeometry(), armGeo = armGeometry(), headGeo = headGeometry(), glowGeo = glowGeometry();
-  const poolGeo = new THREE.PlaneGeometry(18, 18).rotateX(-Math.PI / 2);
+  const poolGeo = new THREE.PlaneGeometry(32, 32).rotateX(-Math.PI / 2);
   const representatives = {}, chunks = [], dummy = new THREE.Object3D();
   for (const bucket of buckets.values()) {
     const chunk = new THREE.Group();
