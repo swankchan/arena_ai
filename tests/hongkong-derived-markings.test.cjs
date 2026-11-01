@@ -12,6 +12,7 @@ test.before(async () => {
 });
 
 const road = (width, flat) => ['', width, 0, 2, 0, flat];
+const oneWayRoad = (width, flat) => ['', width, 1, 2, 0, flat];
 
 test('junction clearance uses incident degree, including a T-junction made from only two ways', () => {
   const synthetic = [
@@ -73,6 +74,39 @@ test('collinear but disjoint surveyed lines do not suppress a distant road segme
     'the same collinear geometry is guarded when it is genuinely nearby');
 });
 
+test('opposite one-way carriageways suppress only the duplicated inner edge', () => {
+  const touching = [
+    oneWayRoad(8, [0, 0, 40, 0]),
+    oneWayRoad(8, [40, 8, 0, 8])
+  ];
+  const policy = markings.buildDerivedRoadPaintPolicy(touching, null);
+  assert.equal(markings.derivedPaintEdgeMask(policy, 0, 20), 3, 'the equal-width lower id owns the boundary');
+  assert.equal(markings.derivedPaintEdgeMask(policy, 1, 20), 2, 'only the negative inner edge is removed');
+  assert.equal(markings.signedRoadLaneCount(touching[0]), 2, 'lane dashes retain their recorded count');
+  assert.equal(markings.signedRoadLaneCount(touching[1]), 2);
+
+  const sameDirection = [touching[0], oneWayRoad(8, [0, 8, 40, 8])];
+  assert.equal(markings.buildDerivedRoadPaintPolicy(sameDirection, null).sharedEdges.size, 0,
+    'same-direction lanes are not relabelled as an opposing carriageway boundary');
+  const separated = [touching[0], oneWayRoad(8, [40, 20, 0, 20])];
+  assert.equal(markings.buildDerivedRoadPaintPolicy(separated, null).sharedEdges.size, 0,
+    'roads with a real wide separator keep both edge lines');
+  const stacked = markings.buildDerivedRoadPaintPolicy(touching, null, (wayId) => wayId === 0 ? 0 : 20);
+  assert.equal(stacked.sharedEdges.size, 0, 'parallel decks at different heights keep independent edge paint');
+});
+
+test('the Gloucester Tower approach keeps one boundary for ways 46013 and 14999', () => {
+  const policy = markings.DERIVED_ROAD_PAINT_POLICY;
+  assert.equal(roads.roads[46013][3], 3);
+  assert.equal(roads.roads[14999][3], 2);
+  assert.equal(markings.derivedPaintEdgeMask(policy, 46013, 23), 3,
+    'the three-lane carriageway owns the single shared boundary');
+  assert.equal(markings.derivedPaintEdgeMask(policy, 14999, 23), 2,
+    'the opposite two-lane carriageway drops its duplicate negative inner edge');
+  assert.equal(markings.derivedPaintEdgeMask(policy, 5068, 23), 3,
+    'the perpendicular Pedder Street approach is not treated as a parallel carriageway');
+});
+
 test('auxiliary paint stays in the asphalt shader and uses continuous extended chainage', () => {
   const root = path.resolve(__dirname, '..');
   const world = fs.readFileSync(path.join(root, 'js/cities/hongkong/full-world.js'), 'utf8');
@@ -80,6 +114,8 @@ test('auxiliary paint stays in the asphalt shader and uses continuous extended c
   assert.match(world, /s0 = chainage - startExtension, s1 = chainage \+ length \+ endExtension/);
   assert.match(world, /extendStart: t0 <= 1e-7, extendEnd: t1 >= 1 - 1e-7/);
   assert.match(world, /fullRoadDerivedPaintExtraTriangles: 0/);
+  assert.match(world, /setAttribute\('roadPaintEdges'/);
+  assert.match(materials, /edgeSides\.x/);
   assert.match(materials, /Box-filter the dash module over this pixel/);
   assert.doesNotMatch(materials, /derivedMarkings\.guard/);
 });

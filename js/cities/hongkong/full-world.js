@@ -13,7 +13,7 @@ import { HK_TERRAIN, HONG_KONG_TERRAIN_META, hongKongTerrainCellLand, hongKongTe
 import { roadRibbonHeightAtSegment, roadRibbonProfileAtSegment, verifiedBridgeProfileAtSegment, TERRAIN_TUNNEL_OPENING_RECTS } from './road-elevation.js';
 import {
   DERIVED_ROAD_MARKINGS, DERIVED_ROAD_PAINT_POLICY, DERIVED_ROAD_PAINT_STATS,
-  addDerivedPaintPolicyStations, derivedPaintAllowed, signedRoadLaneCount
+  addDerivedPaintPolicyStations, derivedPaintAllowed, derivedPaintEdgeMask, signedRoadLaneCount
 } from './derived-road-markings.js';
 
 // Territory-wide DTM terrain with roads, players and furniture sharing the same triangle-matched height field.
@@ -81,8 +81,8 @@ function cutTunnelOpenings(geometry, yOrSampler, rects) {
   return cut;
 }
 
-function addRoadQuad(positions, paint, indices, x1, z1, y1, x2, z2, y2, width, chainage, lanes, {
-  paintAllowed = true, extendStart = true, extendEnd = true
+function addRoadQuad(positions, paint, edgePaint, indices, x1, z1, y1, x2, z2, y2, width, chainage, lanes, {
+  paintAllowed = true, edgeMask = 3, extendStart = true, extendEnd = true
 } = {}) {
   let dx = x2 - x1, dz = z2 - z1;
   const length = Math.hypot(dx, dz);
@@ -105,6 +105,11 @@ function addRoadQuad(positions, paint, indices, x1, z1, y1, x2, z2, y2, width, c
   paint.push(
     half, s0, paintLanes, paintWidth, -half, s0, paintLanes, paintWidth,
     half, s1, paintLanes, paintWidth, -half, s1, paintLanes, paintWidth
+  );
+  const negativeEdge = edgeMask & 1, positiveEdge = (edgeMask >> 1) & 1;
+  edgePaint.push(
+    negativeEdge, positiveEdge, negativeEdge, positiveEdge,
+    negativeEdge, positiveEdge, negativeEdge, positiveEdge
   );
 }
 
@@ -198,7 +203,7 @@ function createRoadChunks(root, includeCore) {
   const chunkAt = (x, z) => {
     const key = `${Math.floor(x / CHUNK)},${Math.floor(z / CHUNK)}`;
     let chunk = chunks.get(key);
-    if (!chunk) chunks.set(key, (chunk = { positions: [], paint: [], indices: [] }));
+    if (!chunk) chunks.set(key, (chunk = { positions: [], paint: [], edgePaint: [], indices: [] }));
     return chunk;
   };
   const bridgeChunkAt = (x, z) => {
@@ -249,11 +254,12 @@ function createRoadChunks(root, includeCore) {
           const ay = roadRibbonHeightAtSegment(wayId, segmentIndex, t0);
           const by = roadRibbonHeightAtSegment(wayId, segmentIndex, t1);
           const chunk = chunkAt(mx, mz);
-          const paintAllowed = derivedPaintAllowed(DERIVED_ROAD_PAINT_POLICY, wayId, segmentIndex,
-            segmentStart + segmentLength * (t0 + t1) * 0.5);
-          addRoadQuad(chunk.positions, chunk.paint, chunk.indices, ax, az, ay, bx, bz, by, width,
+          const paintChainage = segmentStart + segmentLength * (t0 + t1) * 0.5;
+          const paintAllowed = derivedPaintAllowed(DERIVED_ROAD_PAINT_POLICY, wayId, segmentIndex, paintChainage);
+          const edgeMask = derivedPaintEdgeMask(DERIVED_ROAD_PAINT_POLICY, wayId, paintChainage);
+          addRoadQuad(chunk.positions, chunk.paint, chunk.edgePaint, chunk.indices, ax, az, ay, bx, bz, by, width,
             segmentStart + segmentLength * t0, lanes,
-            { paintAllowed, extendStart: t0 <= 1e-7, extendEnd: t1 >= 1 - 1e-7 });
+            { paintAllowed, edgeMask, extendStart: t0 <= 1e-7, extendEnd: t1 >= 1 - 1e-7 });
           if (paintAllowed) derivedPaintQuads++; else derivedPaintSuppressedQuads++;
           segments++;
           if (verifiedBridge) {
@@ -284,6 +290,7 @@ function createRoadChunks(root, includeCore) {
       const base = chunk.positions.length / 3;
       if (addRoadJoin(chunk.positions, flat[i - 2], flat[i - 1], x, z, flat[i + 2], flat[i + 3], width, y, () => y)) {
         chunk.paint.push(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0);
+        chunk.edgePaint.push(0, 0, 0, 0, 0, 0);
         chunk.indices.push(base, base + 1, base + 2);
         joins++;
       }
@@ -296,6 +303,7 @@ function createRoadChunks(root, includeCore) {
     const geometry = new THREE.BufferGeometry();
     geometry.setAttribute('position', new THREE.Float32BufferAttribute(chunk.positions, 3));
     geometry.setAttribute('roadPaint', new THREE.Float32BufferAttribute(chunk.paint, 4));
+    geometry.setAttribute('roadPaintEdges', new THREE.Float32BufferAttribute(chunk.edgePaint, 2));
     geometry.setIndex(chunk.indices);
     geometry.computeVertexNormals();
     geometry.computeBoundingBox();

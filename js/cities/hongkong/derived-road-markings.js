@@ -1,6 +1,7 @@
 import { GEO } from '../../hk-geodata.js';
 import { HK_FULL_ROADS } from '../../hk-full-roads-data.js';
 import { ROAD_MARK_STYLES } from './traffic-aid-geometry.js';
+import { roadRibbonHeightAtSegment } from './road-elevation.js';
 
 // Auxiliary paint is evaluated in the existing asphalt shader, not emitted as millions of coincident triangles.
 // Its coordinates come from each OSM way's centreline, width, lane count and direction. It is not surveyed paint.
@@ -12,6 +13,12 @@ export const DERIVED_SURVEYED_CLEARANCE = 1.25;
 const SURVEY_GUARD_MARGIN = 8;
 const REF_VERTEX_SCALE = 1000000;
 const CROSSING_TYPES = new Set(['SOLID', 'NONE', 'RM1076', 'ZEBRA4']);
+const SHARED_EDGE_CELL = 64;
+const SHARED_EDGE_MIN_CENTRE_GAP = 0.25;
+const SHARED_EDGE_MAX_GROUND_GAP = 1.2;
+const SHARED_EDGE_MIN_OVERLAP = 1;
+const SHARED_EDGE_PARALLEL = 0.94;
+const SHARED_EDGE_MAX_HEIGHT_DIFFERENCE = 2;
 
 function surveyedPaintBounds(aids = GEO.trafficAids) {
   if (!aids) return null;
@@ -94,12 +101,150 @@ function nearSurveyedPaint(road, segmentIndex, parts) {
   return false;
 }
 
+function linearRange(p0, p1, start, end, minimum, maximum) {
+  const delta = p1 - p0;
+  if (Math.abs(delta) < 1e-9) return p0 >= minimum && p0 <= maximum ? [start, end] : null;
+  let lo = 0, hi = 1;
+  const a = (minimum - p0) / delta, b = (maximum - p0) / delta;
+  lo = Math.max(lo, Math.min(a, b));
+  hi = Math.min(hi, Math.max(a, b));
+  if (hi - lo <= 1e-9) return null;
+  return [start + (end - start) * lo, start + (end - start) * hi];
+}
+
+// Return chainage ranges on `road` where a neighbouring, opposite-flow carriageway shares the same paved corridor.
+// Coordinates are exact for the straight source segments: longitudinal overlap and signed lateral separation are
+// both linear, so the paint stations can be inserted at the real transitions rather than sampled every few metres.
+function sharedCarriagewayRanges(road, other) {
+  const q0 = (other.ax - road.ax) * road.ux + (other.az - road.az) * road.uz;
+  const q1 = (other.bx - road.ax) * road.ux + (other.bz - road.az) * road.uz;
+  const overlapStart = Math.max(0, Math.min(q0, q1));
+  const overlapEnd = Math.min(road.length, Math.max(q0, q1));
+  if (overlapEnd - overlapStart < SHARED_EDGE_MIN_OVERLAP) return [];
+  const sourceP0 = road.ux * (other.az - road.az) - road.uz * (other.ax - road.ax);
+  const sourceP1 = road.ux * (other.bz - road.az) - road.uz * (other.bx - road.ax);
+  const atOverlap = (chainage, p0, p1) => Math.abs(q1 - q0) < 1e-9
+    ? (p0 + p1) * 0.5 : p0 + (p1 - p0) * (chainage - q0) / (q1 - q0);
+  const p0 = atOverlap(overlapStart, sourceP0, sourceP1);
+  const p1 = atOverlap(overlapEnd, sourceP0, sourceP1);
+  const maximum = road.halfWidth + other.halfWidth + SHARED_EDGE_MAX_GROUND_GAP;
+  const ranges = [];
+  for (const side of [-1, 1]) {
+    const range = linearRange(p0 * side, p1 * side, overlapStart, overlapEnd,
+      SHARED_EDGE_MIN_CENTRE_GAP, maximum);
+    if (!range || range[1] - range[0] < SHARED_EDGE_MIN_OVERLAP) continue;
+    // A positive cross product is the negative `roadPaint.x` side (see addRoadQuad's right-hand normal).
+    ranges.push([road.chainage + range[0], road.chainage + range[1], -side]);
+  }
+  return ranges;
+}
+
+function sameLevelRanges(road, other, ranges, heightAt) {
+  if (!heightAt) return ranges;
+  return ranges.filter(([start, end]) => {
+    // Check both ends and the middle. A conservative rejection leaves ordinary independent edge paint in place on
+    // stacked ramps; it is safer than joining two decks merely because their plan geometry is close.
+    for (const chainage of [start, (start + end) * 0.5, end]) {
+      const local = chainage - road.chainage;
+      const x = road.ax + road.ux * local, z = road.az + road.uz * local;
+      const otherLocal = (x - other.ax) * other.ux + (z - other.az) * other.uz;
+      const a = heightAt(road.wayId, road.segmentIndex, local / road.length);
+      const b = heightAt(other.wayId, other.segmentIndex, otherLocal / other.length);
+      if (!Number.isFinite(a) || !Number.isFinite(b) ||
+          Math.abs(a - b) > SHARED_EDGE_MAX_HEIGHT_DIFFERENCE) return false;
+    }
+    return true;
+  });
+}
+
+function buildSharedCarriagewayEdges(roads, heightAt) {
+  const records = [], grid = new Map();
+  let maxHalfWidth = 0;
+  for (const [wayId, road] of roads.entries()) {
+    // Two-way ways already have an explicit centre line. This policy only deduplicates the inner edge lines of
+    // separately mapped one-way carriageways; it never rewrites their lane counts or asphalt geometry.
+    if (road[2] !== 1) continue;
+    const flat = road[5], halfWidth = road[1] * 0.5;
+    maxHalfWidth = Math.max(maxHalfWidth, halfWidth);
+    let chainage = 0;
+    for (let vertex = 0; vertex + 1 < flat.length / 2; vertex++) {
+      const ax = flat[vertex * 2], az = flat[vertex * 2 + 1];
+      const bx = flat[vertex * 2 + 2], bz = flat[vertex * 2 + 3];
+      const dx = bx - ax, dz = bz - az, length = Math.hypot(dx, dz);
+      if (length >= 1) {
+        const record = {
+          index: records.length, wayId, segmentIndex: vertex, chainage, length, halfWidth,
+          flags: road[4] & 6, width: road[1], ax, az, bx, bz, ux: dx / length, uz: dz / length,
+          minX: Math.min(ax, bx), maxX: Math.max(ax, bx), minZ: Math.min(az, bz), maxZ: Math.max(az, bz)
+        };
+        records.push(record);
+        for (let col = Math.floor(record.minX / SHARED_EDGE_CELL); col <= Math.floor(record.maxX / SHARED_EDGE_CELL); col++) {
+          for (let row = Math.floor(record.minZ / SHARED_EDGE_CELL); row <= Math.floor(record.maxZ / SHARED_EDGE_CELL); row++) {
+            const key = `${col},${row}`;
+            let bucket = grid.get(key);
+            if (!bucket) grid.set(key, (bucket = []));
+            bucket.push(record);
+          }
+        }
+      }
+      chainage += length;
+    }
+  }
+
+  const sharedEdges = new Map();
+  const addRanges = (wayId, ranges) => {
+    if (!ranges.length) return;
+    let target = sharedEdges.get(wayId);
+    if (!target) sharedEdges.set(wayId, (target = []));
+    target.push(...ranges);
+  };
+  for (const record of records) {
+    const reach = record.halfWidth + maxHalfWidth + SHARED_EDGE_MAX_GROUND_GAP;
+    const candidates = new Set();
+    for (let col = Math.floor((record.minX - reach) / SHARED_EDGE_CELL); col <= Math.floor((record.maxX + reach) / SHARED_EDGE_CELL); col++) {
+      for (let row = Math.floor((record.minZ - reach) / SHARED_EDGE_CELL); row <= Math.floor((record.maxZ + reach) / SHARED_EDGE_CELL); row++) {
+        for (const other of grid.get(`${col},${row}`) || []) {
+          // Each unordered pair is considered from its lower record index; the local set removes repeated grid hits.
+          if (other.index <= record.index || candidates.has(other.index)) continue;
+          candidates.add(other.index);
+          if (record.wayId === other.wayId || record.flags !== other.flags) continue;
+          const dot = record.ux * other.ux + record.uz * other.uz;
+          if (dot > -SHARED_EDGE_PARALLEL) continue;
+          // The wider way owns the single remaining boundary. Equal widths use the lower source id, making the
+          // result stable regardless of spatial-hash iteration order.
+          const recordWins = record.width > other.width ||
+            (record.width === other.width && record.wayId < other.wayId);
+          const loser = recordWins ? other : record, winner = recordWins ? record : other;
+          const ranges = sharedCarriagewayRanges(loser, winner);
+          addRanges(loser.wayId, sameLevelRanges(loser, winner, ranges, heightAt));
+        }
+      }
+    }
+  }
+
+  let rangeCount = 0;
+  for (const [wayId, ranges] of sharedEdges) {
+    ranges.sort((a, b) => a[2] - b[2] || a[0] - b[0] || a[1] - b[1]);
+    const merged = [];
+    for (const range of ranges) {
+      const last = merged.at(-1);
+      if (last && last[2] === range[2] && range[0] <= last[1] + 1e-7) {
+        last[1] = Math.max(last[1], range[1]);
+      } else merged.push(range);
+    }
+    sharedEdges.set(wayId, merged);
+    rangeCount += merged.length;
+  }
+  return { sharedEdges, ways: sharedEdges.size, ranges: rangeCount };
+}
+
 const segmentKey = (wayId, segmentIndex) => wayId * 100000 + segmentIndex;
 const nodeKey = (x, z) => Math.round(x * 10) * 1000000 + Math.round(z * 10);
 
 // Build a compact paint policy from geometry, not from road names. A node with three or more incident segments is a
 // junction even when a through-road and a terminating side road are represented by only two OSM ways.
-export function buildDerivedRoadPaintPolicy(roads = HK_FULL_ROADS.roads, aids = GEO.trafficAids) {
+export function buildDerivedRoadPaintPolicy(roads = HK_FULL_ROADS.roads, aids = GEO.trafficAids,
+  heightAt = roads === HK_FULL_ROADS.roads ? roadRibbonHeightAtSegment : null) {
   const nodes = new Map();
   for (const [wayId, road] of roads.entries()) {
     const flat = road[5];
@@ -165,12 +310,15 @@ export function buildDerivedRoadPaintPolicy(roads = HK_FULL_ROADS.roads, aids = 
     }
   }
 
+  const shared = buildSharedCarriagewayEdges(roads, heightAt);
   return {
-    ways, surveyed,
+    ways, surveyed, sharedEdges: shared.sharedEdges,
     stats: {
       junctionNodes,
       junctionWays: ways.size,
       surveyedSegments: surveyed.size,
+      sharedCarriagewayWays: shared.ways,
+      sharedCarriagewayRanges: shared.ranges,
       clearanceMetres: DERIVED_JUNCTION_CLEARANCE,
       surveyedClearanceMetres: DERIVED_SURVEYED_CLEARANCE
     }
@@ -190,6 +338,12 @@ export function addDerivedPaintPolicyStations(stations, policy, wayId, segmentSt
       if (t > minT + 1e-7 && t < maxT - 1e-7) stations.push(t);
     }
   }
+  for (const range of policy.sharedEdges.get(wayId) || []) {
+    for (const chainage of [range[0], range[1]]) {
+      const t = (chainage - segmentStart) / segmentLength;
+      if (t > minT + 1e-7 && t < maxT - 1e-7) stations.push(t);
+    }
+  }
 }
 
 export function derivedPaintAllowed(policy, wayId, segmentIndex, chainage) {
@@ -198,4 +352,15 @@ export function derivedPaintAllowed(policy, wayId, segmentIndex, chainage) {
     if (chainage >= start - 1e-7 && chainage <= end + 1e-7) return false;
   }
   return true;
+}
+
+// Bit 0 is the negative-lateral edge, bit 1 the positive-lateral edge. Lane dashes and two-way centre lines are not
+// changed: only a duplicated inner edge is removed where a wider neighbouring carriageway owns the shared boundary.
+export function derivedPaintEdgeMask(policy, wayId, chainage) {
+  let mask = 3;
+  for (const [start, end, side] of policy.sharedEdges.get(wayId) || []) {
+    if (chainage < start - 1e-7 || chainage > end + 1e-7) continue;
+    mask &= side < 0 ? ~1 : ~2;
+  }
+  return mask;
 }

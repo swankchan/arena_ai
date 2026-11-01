@@ -1723,8 +1723,11 @@ function createRoadSurfaceMaterialProfile({ dry = false, hongKong = false, struc
         .sub(max(lineHalf.negate(), distance.sub(footprint.mul(0.5)))).div(footprint),
       0.0, 1.0
     );
-    const edgeDistance = abs(abs(lateral).sub(halfWidth.sub(derivedMarkings.edgeInset)));
-    const edgePaint = coverage(edgeDistance);
+    const edgeOffset = halfWidth.sub(derivedMarkings.edgeInset);
+    const edgeSides = attribute('roadPaintEdges', 'vec2');
+    const negativeEdge = coverage(abs(lateral.add(edgeOffset))).mul(edgeSides.x);
+    const positiveEdge = coverage(abs(lateral.sub(edgeOffset))).mul(edgeSides.y);
+    const edgePaint = max(negativeEdge, positiveEdge);
     const laneWidth = roadWidth.div(max(lanes, 1.0));
     const laneCoordinate = lateral.add(halfWidth).div(max(roadWidth, 0.001)).mul(lanes);
     const laneDistance = abs(fract(laneCoordinate.add(0.5)).sub(0.5)).mul(laneWidth);
