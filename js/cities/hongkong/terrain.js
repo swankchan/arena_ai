@@ -4,6 +4,7 @@ import { SCB_SITE, SCB_STAIR_BOTTOM_WORLD } from './standard-chartered-architect
 import { TWO_IFC_SITE } from './two-ifc-architecture.js';
 import { ICC_SITE } from './icc-architecture.js';
 import { BANK_OF_CHINA_SITE } from './bank-of-china-architecture.js';
+import { CENTRAL_PLAZA_SITE } from './central-plaza-architecture.js';
 
 function decodeBytes(base64) {
   const binary = atob(base64);
@@ -42,6 +43,7 @@ const SCB_PAD_HEIGHT = rawHongKongTerrainHeight(SCB_STAIR_BOTTOM_WORLD.x, SCB_ST
 const TWO_IFC_PAD_HEIGHT = rawHongKongTerrainHeight(TWO_IFC_SITE.x, TWO_IFC_SITE.z);
 const ICC_PAD_HEIGHT = rawHongKongTerrainHeight(ICC_SITE.x, ICC_SITE.z);
 const BANK_OF_CHINA_PAD_HEIGHT = rawHongKongTerrainHeight(BANK_OF_CHINA_SITE.x, BANK_OF_CHINA_SITE.z);
+const CENTRAL_PLAZA_PAD_HEIGHT = rawHongKongTerrainHeight(CENTRAL_PLAZA_SITE.x, CENTRAL_PLAZA_SITE.z);
 
 export function hongKongTerrainHeight(x, z) {
   if (pointInFlatRing(HSBC_SITE.ring, x, z)) return HSBC_PAD_HEIGHT;
@@ -49,6 +51,7 @@ export function hongKongTerrainHeight(x, z) {
   if (pointInFlatRing(TWO_IFC_SITE.ring, x, z)) return TWO_IFC_PAD_HEIGHT;
   if (pointInFlatRing(ICC_SITE.ring, x, z)) return ICC_PAD_HEIGHT;
   if (pointInFlatRing(BANK_OF_CHINA_SITE.ring, x, z)) return BANK_OF_CHINA_PAD_HEIGHT;
+  if (pointInFlatRing(CENTRAL_PLAZA_SITE.ring, x, z)) return CENTRAL_PLAZA_PAD_HEIGHT;
   return rawHongKongTerrainHeight(x, z);
 }
 
@@ -60,6 +63,7 @@ export const HONG_KONG_TERRAIN_META = Object.freeze({
   twoIfcPadHeight: TWO_IFC_PAD_HEIGHT,
   iccPadHeight: ICC_PAD_HEIGHT,
   bankOfChinaPadHeight: BANK_OF_CHINA_PAD_HEIGHT,
+  centralPlazaPadHeight: CENTRAL_PLAZA_PAD_HEIGHT,
   tunnelStats: HK_TERRAIN.stats
 });
 

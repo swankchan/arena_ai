@@ -16,6 +16,8 @@ import { buildInternationalCommerceCentre } from './icc-world.js';
 import { isIccPlazaPoint } from './icc-architecture.js';
 import { buildBankOfChinaTower } from './bank-of-china-world.js';
 import { isBankOfChinaPlazaPoint } from './bank-of-china-architecture.js';
+import { buildCentralPlaza } from './central-plaza-world.js';
+import { isCentralPlazaPlazaPoint } from './central-plaza-architecture.js';
 import { createHongKongTrafficAids } from './traffic-aids.js';
 
 const WATER_LEVEL = -2.2;
@@ -35,6 +37,8 @@ export function buildSimpleHongKongWorld(scene, { setStatus = () => {} } = {}) {
   const icc = buildInternationalCommerceCentre(scene, { groundOffset: HONG_KONG_TERRAIN_META.iccPadHeight });
   setStatus('Building the Bank of China Tower...');
   const bankOfChina = buildBankOfChinaTower(scene, { groundOffset: HONG_KONG_TERRAIN_META.bankOfChinaPadHeight });
+  setStatus('Building Central Plaza and its Lightime clock...');
+  const centralPlaza = buildCentralPlaza(scene, { groundOffset: HONG_KONG_TERRAIN_META.centralPlazaPadHeight });
   setStatus('Building drivable harbour bridges and tunnels...');
   const crossings = buildHongKongCrossings(scene);
   setStatus('Placing 144,995 lamp posts across Hong Kong...');
@@ -65,7 +69,8 @@ export function buildSimpleHongKongWorld(scene, { setStatus = () => {} } = {}) {
     const twoIfcGround = isTwoIfcPlazaPoint(x, z) ? Math.max(ground, twoIfc.plazaTop) : ground;
     const iccGround = isIccPlazaPoint(x, z) ? Math.max(twoIfcGround, icc.plazaTop) : twoIfcGround;
     const bocGround = isBankOfChinaPlazaPoint(x, z) ? Math.max(iccGround, bankOfChina.plazaTop) : iccGround;
-    return isHsbcPlazaPoint(x, z) ? Math.max(bocGround, hsbc.plazaTop) : bocGround;
+    const centralPlazaGround = isCentralPlazaPlazaPoint(x, z) ? Math.max(bocGround, centralPlaza.plazaTop) : bocGround;
+    return isHsbcPlazaPoint(x, z) ? Math.max(centralPlazaGround, hsbc.plazaTop) : centralPlazaGround;
   }
 
   const stats = {
@@ -78,11 +83,12 @@ export function buildSimpleHongKongWorld(scene, { setStatus = () => {} } = {}) {
     ...twoIfc.stats,
     ...icc.stats,
     ...bankOfChina.stats,
+    ...centralPlaza.stats,
     presentation: 'unified-simple',
     landMeshes: full.stats.fullLandRings,
     blocks: 0,
     parks: full.stats.fullParks,
-    landmarks: hsbc.landmarks.length + standardChartered.landmarks.length + twoIfc.landmarks.length + icc.landmarks.length + bankOfChina.landmarks.length,
+    landmarks: hsbc.landmarks.length + standardChartered.landmarks.length + twoIfc.landmarks.length + icc.landmarks.length + bankOfChina.landmarks.length + centralPlaza.landmarks.length,
     lots: 0,
     buildings: 0,
     skippedLots: 0,
@@ -94,7 +100,7 @@ export function buildSimpleHongKongWorld(scene, { setStatus = () => {} } = {}) {
 
   return {
     root: scene,
-    colliders: [...full.colliders, ...crossings.colliders, ...hsbc.colliders, ...standardChartered.colliders, ...twoIfc.colliders, ...icc.colliders, ...bankOfChina.colliders],
+    colliders: [...full.colliders, ...crossings.colliders, ...hsbc.colliders, ...standardChartered.colliders, ...twoIfc.colliders, ...icc.colliders, ...bankOfChina.colliders, ...centralPlaza.colliders],
     bounds: full.bounds,
     stats,
     personSpawn: { ...SPAWN.person },
@@ -103,6 +109,7 @@ export function buildSimpleHongKongWorld(scene, { setStatus = () => {} } = {}) {
     getGroundHeight,
     update(dt, elapsed, context) {
       crossings.update?.(context);
+      centralPlaza.update?.(dt, elapsed, context);
       streetLighting.update(context);
     },
     streetLighting,
@@ -111,8 +118,9 @@ export function buildSimpleHongKongWorld(scene, { setStatus = () => {} } = {}) {
     twoIfc,
     icc,
     bankOfChina,
+    centralPlaza,
     treeField: null,
-    landmarks: [...hsbc.landmarks, ...standardChartered.landmarks, ...twoIfc.landmarks, ...icc.landmarks, ...bankOfChina.landmarks],
+    landmarks: [...hsbc.landmarks, ...standardChartered.landmarks, ...twoIfc.landmarks, ...icc.landmarks, ...bankOfChina.landmarks, ...centralPlaza.landmarks],
     trafficAids
   };
 }
