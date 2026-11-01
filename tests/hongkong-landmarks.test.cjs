@@ -342,3 +342,22 @@ test('the hand-built Standard Chartered model includes the photographed identifi
     assert.ok(part.d.length > 150 && /[ac]/.test(part.d), 'each ribbon is curved vector geometry, not an S glyph');
   }
 });
+
+test('building inventory independently tracks scene status, refinement and landmark integration', () => {
+  const inventory = fs.readFileSync(path.join(root, 'docs/hongkong-building-inventory.md'), 'utf8');
+  for (const heading of ['場景狀態', '精修', 'Landmark', '道路衝突紀錄']) {
+    assert.ok(inventory.includes(heading), `inventory defines ${heading}`);
+  }
+  assert.match(inventory, /建築物優先、道路配合/);
+  assert.match(inventory, /不代表已經加入場景/);
+  const rows = inventory.split('\n').filter((line) => /^\| `HK-B\d{4}` /.test(line));
+  assert.deepEqual(rows.map((row) => {
+    const cells = row.split('|').map((cell) => cell.trim());
+    return { id: cells[1], status: cells[4], refined: cells[5], landmark: cells[6] };
+  }), [
+    { id: '`HK-B0001`', status: '已加入', refined: '**是**', landmark: '**是**' },
+    { id: '`HK-B0002`', status: '已加入', refined: '**是**', landmark: '**是**' }
+  ]);
+  assert.match(rows[0], /滙豐總行大廈 HSBC Main Building/);
+  assert.match(rows[1], /渣打銀行大廈 Standard Chartered Bank Building/);
+});
