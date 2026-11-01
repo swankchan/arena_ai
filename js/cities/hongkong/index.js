@@ -68,6 +68,7 @@ export const city = {
       hsbc: world.hsbc,
       standardChartered: world.standardChartered,
       twoIfc: world.twoIfc,
+      icc: world.icc,
       landmarks: world.landmarks,
       stats,
       teleports: TELEPORTS,
