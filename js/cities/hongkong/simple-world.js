@@ -10,6 +10,8 @@ import { buildHsbcHeadquarters } from './hsbc-headquarters-world.js';
 import { isHsbcPlazaPoint } from './hsbc-headquarters-architecture.js';
 import { buildStandardCharteredBankBuilding } from './standard-chartered-world.js';
 import { scbEntranceGroundHeight } from './standard-chartered-architecture.js';
+import { buildTwoInternationalFinanceCentre } from './two-ifc-world.js';
+import { isTwoIfcPlazaPoint } from './two-ifc-architecture.js';
 import { createHongKongTrafficAids } from './traffic-aids.js';
 
 const WATER_LEVEL = -2.2;
@@ -23,6 +25,8 @@ export function buildSimpleHongKongWorld(scene, { setStatus = () => {} } = {}) {
   const hsbc = buildHsbcHeadquarters(scene, { groundOffset: HONG_KONG_TERRAIN_META.hsbcPadHeight });
   setStatus('Building the Standard Chartered Bank Building landmark...');
   const standardChartered = buildStandardCharteredBankBuilding(scene, { groundOffset: HONG_KONG_TERRAIN_META.scbPadHeight });
+  setStatus('Building Two International Finance Centre...');
+  const twoIfc = buildTwoInternationalFinanceCentre(scene, { groundOffset: HONG_KONG_TERRAIN_META.twoIfcPadHeight });
   setStatus('Building drivable harbour bridges and tunnels...');
   const crossings = buildHongKongCrossings(scene);
   setStatus('Placing 144,995 lamp posts across Hong Kong...');
@@ -50,7 +54,8 @@ export function buildSimpleHongKongWorld(scene, { setStatus = () => {} } = {}) {
     }
     const crossingGround = selectCrossingGround(base, crossingSurfaceAt(x, z), referenceY, WATER_LEVEL);
     const ground = scbEntranceGroundHeight(x, z, crossingGround, standardChartered.groundOffset);
-    return isHsbcPlazaPoint(x, z) ? Math.max(ground, hsbc.plazaTop) : ground;
+    const authoredGround = isTwoIfcPlazaPoint(x, z) ? Math.max(ground, twoIfc.plazaTop) : ground;
+    return isHsbcPlazaPoint(x, z) ? Math.max(authoredGround, hsbc.plazaTop) : authoredGround;
   }
 
   const stats = {
@@ -60,11 +65,12 @@ export function buildSimpleHongKongWorld(scene, { setStatus = () => {} } = {}) {
     ...trafficAids.stats,
     ...hsbc.stats,
     ...standardChartered.stats,
+    ...twoIfc.stats,
     presentation: 'unified-simple',
     landMeshes: full.stats.fullLandRings,
     blocks: 0,
     parks: full.stats.fullParks,
-    landmarks: hsbc.landmarks.length + standardChartered.landmarks.length,
+    landmarks: hsbc.landmarks.length + standardChartered.landmarks.length + twoIfc.landmarks.length,
     lots: 0,
     buildings: 0,
     skippedLots: 0,
@@ -76,7 +82,7 @@ export function buildSimpleHongKongWorld(scene, { setStatus = () => {} } = {}) {
 
   return {
     root: scene,
-    colliders: [...full.colliders, ...crossings.colliders, ...hsbc.colliders, ...standardChartered.colliders],
+    colliders: [...full.colliders, ...crossings.colliders, ...hsbc.colliders, ...standardChartered.colliders, ...twoIfc.colliders],
     bounds: full.bounds,
     stats,
     personSpawn: { ...SPAWN.person },
@@ -90,8 +96,9 @@ export function buildSimpleHongKongWorld(scene, { setStatus = () => {} } = {}) {
     streetLighting,
     hsbc,
     standardChartered,
+    twoIfc,
     treeField: null,
-    landmarks: [...hsbc.landmarks, ...standardChartered.landmarks],
+    landmarks: [...hsbc.landmarks, ...standardChartered.landmarks, ...twoIfc.landmarks],
     trafficAids
   };
 }

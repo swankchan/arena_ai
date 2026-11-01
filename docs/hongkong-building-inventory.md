@@ -1,8 +1,8 @@
 # 香港建築物 Inventory
 
-這份文件是香港場景**實際建築物進度總表**，記錄建築物是否已加入、是否精修，以及是否作為 Landmark 整合。`tools/data/hongkong/landmarks.json` 只是 OSM 來源／候選資料；資料出現在該 JSON **不代表已經加入場景**。
+這份文件是香港場景**實際建築物進度總表及 100 幢主要大廈施工清單**，記錄建築物是否已加入、是否精修，以及是否作為 Landmark 整合。`tools/data/hongkong/landmarks.json` 及下表的待製作項目只是來源／候選資料；資料出現在該 JSON 或本清單 **不代表已經加入場景**。
 
-最後整理：**2026-11-01**。本次只建立紀錄，沒有改動建築模型、道路或交通。
+最後整理：**2026-11-01**。目前已實際加入 **3 幢**；其餘 **97 幢**仍是待製作項目，沒有基本體量或精修完成的意思。
 
 ## 標記定義
 
@@ -11,29 +11,135 @@
   - **製作中**：已開始實作，但尚未完整整合及驗證。
   - **待製作**：已確定列入計劃，尚未開始實作。
 - **精修**：有針對該建築製作可識別的比例、立面、入口、屋頂、標誌或其他細節，而非只按 footprint 拉出基本體量。「精修」與「已加入」是不同狀態。
-- **Landmark**：本專案將它作為獨立命名地標整合，而不是一般建築群的一部分。這是專案分類，**不是**照抄 OSM `landmark` tag，也不是對現實知名度的評級。
-- **內部 ID**：只供本 inventory、衝突紀錄及測試互相對應，不是政府或 OSM 編號。
+- **Landmark**：本專案將它作為獨立命名地標整合，而不是一般建築群的一部分。這是專案分類，**不是**照抄 OSM `landmark` tag，也不是對現實知名度的評級。待製作項目在尚未整合前一律標「否」。
+- **內部 ID**：只供本 inventory、衝突紀錄及測試互相對應，不是政府或 OSM 編號；ID 不重複、不重用。
 
 ## 數量總覽
 
 | 項目 | 數量 |
 | --- | ---: |
-| 已加入場景的建築物 | 2 |
-| 已加入而且精修 | 2 |
+| 施工清單總數 | 100 |
+| 已加入場景的建築物 | 3 |
+| 已加入而且精修 | 3 |
 | 已加入但只有基本體量 | 0 |
-| 已加入並作為 Landmark 整合 | 2 |
+| 已加入並作為 Landmark 整合 | 3 |
 | 製作中 | 0 |
+| 待製作 | 97 |
 
 目前普通建築群仍為 **0**；上表只計實際加入的建築物，不把橋樑、道路構築物或純 OSM 候選資料計算在內。
 
-## 建築物總表
+## 100 幢施工清單
+
+清單次序是**施工次序**，不是官方高度、知名度或重要性排名。選取原則是有明確名稱、天際線或公共重要性，以及可追溯的建築／地盤資料；正式建模前仍須核實當幢 footprint、來源及道路衝突。高度是來源參考值，不代表已按該高度建模；`—` 表示目前採用的來源沒有可用高度值。
+
+- 大部分 OSM 元件及高度來自本地 Geofabrik 快照；目前 API 補核的三個 `building` 元件會在對應列明示，未假裝已存在於本地快照。
+- **† 中銀大廈 367.4 m** 是[外部建築資料](https://en.wikipedia.org/wiki/Bank_of_China_Tower_(Hong_Kong))的建築高度參考；OSM way **25604760** 提供 `building=office` footprint，但沒有 `height` tag，不能寫成由 OSM 高度標籤核實。
+- Two IFC 的 **415.8 m／90 levels** 來自本地 OSM；建築設計及幕牆資料的 **412 m／88 層** 是另一套來源表述，兩者在詳細紀錄分列，沒有混合成一個假精確規格。
 
 | 內部 ID | 建築物 | 地區 | 場景狀態 | 精修 | Landmark | 高度 | 位置／footprint 依據 | 主要實作 |
 | --- | --- | --- | --- | --- | --- | ---: | --- | --- |
-| `HK-B0001` | 滙豐總行大廈 HSBC Main Building | 中環 | 已加入 | **是** | **是** | 178.8 m | `js/hk-geodata.js` 內現有 OSM「滙豐總行大廈」footprint | `js/cities/hongkong/hsbc-headquarters-world.js` |
-| `HK-B0002` | 渣打銀行大廈 Standard Chartered Bank Building | 中環 | 已加入 | **是** | **是** | 191 m | OSM way **85320719** 的完整地盤外框；建築朝向及入口另按已記錄模型規則處理 | `js/cities/hongkong/standard-chartered-world.js` |
+| `HK-B0001` | 滙豐總行大廈 HSBC Main Building | 中環 | 已加入 | **是** | **是** | 178.8 m | `js/hk-geodata.js` 內現有 OSM footprint | `js/cities/hongkong/hsbc-headquarters-world.js` |
+| `HK-B0002` | 渣打銀行大廈 Standard Chartered Bank Building | 中環 | 已加入 | **是** | **是** | 191 m | OSM way **85320719** | `js/cities/hongkong/standard-chartered-world.js` |
+| `HK-B0003` | 國際金融中心二期 Two International Finance Centre | 中環 | 已加入 | **是** | **是** | 415.8 m | OSM way **25589595** | `js/cities/hongkong/two-ifc-world.js` |
+| `HK-B0004` | 環球貿易廣場 International Commerce Centre | 西九龍 | 待製作 | 否 | 否 | 484 m | OSM way **25590249** | — |
+| `HK-B0005` | 中銀大廈 Bank of China Tower | 中環 | 待製作 | 否 | 否 | 367.4 m† | OSM way **25604760**（目前 API building；本地快照未收錄） | — |
+| `HK-B0006` | 中環廣場 Central Plaza | 灣仔 | 待製作 | 否 | 否 | 309 m | OSM way **27087018** | — |
+| `HK-B0007` | 中環中心 The Center | 中環 | 待製作 | 否 | 否 | 346 m | OSM way **148228888** | — |
+| `HK-B0008` | 如心廣場 Nina Tower | 荃灣 | 待製作 | 否 | 否 | 318 m | OSM way **112284860**（目前 API building；本地快照未收錄） | — |
+| `HK-B0009` | 長江集團中心 Cheung Kong Center | 中環 | 待製作 | 否 | 否 | 283 m | OSM way **64897826**（目前 API building；本地快照未收錄） | — |
+| `HK-B0010` | K11 Atelier | 尖沙咀 | 待製作 | 否 | 否 | 274 m | OSM way **668219664** | — |
+| `HK-B0011` | 天璽I The Cullinan I | 西九龍 | 待製作 | 否 | 否 | 270 m | OSM way **200726114** | — |
+| `HK-B0012` | 天璽II The Cullinan II | 西九龍 | 待製作 | 否 | 否 | 270 m | OSM way **25608721** | — |
+| `HK-B0013` | 名鑄 The Masterpiece | 尖沙咀 | 待製作 | 否 | 否 | 261 m | OSM way **124697429** | — |
+| `HK-B0014` | 朗豪坊辦公大樓 Langham Place Office Tower | 旺角 | 待製作 | 否 | 否 | 255 m | OSM way **65259283** | — |
+| `HK-B0015` | 御峰 The Summit | 半山區 | 待製作 | 否 | 否 | 220 m | OSM way **65257281** | — |
+| `HK-B0016` | 合和中心 Hopewell Centre | 灣仔 | 待製作 | 否 | 否 | 216 m | OSM way **88391069** | — |
+| `HK-B0017` | 新鴻基中心 Sun Hung Kai Centre | 灣仔 | 待製作 | 否 | 否 | 215 m | OSM way **107497703** | — |
+| `HK-B0018` | 太古廣場二座 Two Pacific Place | 金鐘 | 待製作 | 否 | 否 | 213 m | OSM way **41498695** | — |
+| `HK-B0019` | AIRSIDE | 啟德 | 待製作 | 否 | 否 | 213 m | OSM way **1212412229** | — |
+| `HK-B0020` | 利園一期 Lee Garden One | 銅鑼灣 | 待製作 | 否 | 否 | 211 m | OSM way **1424342883** | — |
+| `HK-B0021` | 國際金融中心一期 One International Finance Centre | 中環 | 待製作 | 否 | 否 | 210 m | OSM way **148554945** | — |
+| `HK-B0022` | 冠君大廈 Champion Tower | 中環 | 待製作 | 否 | 否 | 205 m | OSM way **85320726** | — |
+| `HK-B0023` | 長江集團中心二期 Cheung Kong Center II | 金鐘 | 待製作 | 否 | 否 | 205 m | OSM way **1272960455** | — |
+| `HK-B0024` | 金鐘道政府合署高座 Queensway Government Offices High Block | 金鐘 | 待製作 | 否 | 否 | 199 m | OSM way **41499029** | — |
+| `HK-B0025` | 香港港麗酒店 Conrad Hong Kong | 金鐘 | 待製作 | 否 | 否 | 198 m | OSM way **41498759** | — |
+| `HK-B0026` | 希慎廣場 Hysan Place | 銅鑼灣 | 待製作 | 否 | 否 | 197 m | OSM way **755914808** | — |
+| `HK-B0027` | 太古坊二座 Two Taikoo Place | 鰂魚涌 | 待製作 | 否 | 否 | 195 m | OSM way **710522581** | — |
+| `HK-B0028` | The Henderson | 中環 | 待製作 | 否 | 否 | 190 m | OSM way **26434768** | — |
+| `HK-B0029` | 交易廣場第一座 One Exchange Square | 中環 | 待製作 | 否 | 否 | 188 m | OSM way **32530560** | — |
+| `HK-B0030` | 交易廣場第二座 Two Exchange Square | 中環 | 待製作 | 否 | 否 | 188 m | OSM way **148554953** | — |
+| `HK-B0031` | 力寶中心第二座 Lippo Centre Tower 2 | 金鐘 | 待製作 | 否 | 否 | 186 m | OSM way **107336263** | — |
+| `HK-B0032` | 友邦金融中心 AIA Central | 中環 | 待製作 | 否 | 否 | 185 m | OSM way **107324767** | — |
+| `HK-B0033` | 太古廣場三座 Three Pacific Place | 金鐘 | 待製作 | 否 | 否 | 182 m | OSM way **88391081** | — |
+| `HK-B0034` | 會展廣場辦公大樓 Convention Plaza Office Tower | 灣仔 | 待製作 | 否 | 否 | 181 m | OSM way **107497689** | — |
+| `HK-B0035` | 入境事務大樓 Immigration Tower | 灣仔 | 待製作 | 否 | 否 | 180 m | OSM way **510722228** | — |
+| `HK-B0036` | 稅務大樓 Revenue Tower | 灣仔 | 待製作 | 否 | 否 | 180 m | OSM way **27087037** | — |
+| `HK-B0037` | 怡和大廈 Jardine House | 中環 | 待製作 | 否 | 否 | 178.54 m | OSM way **42293714** | — |
+| `HK-B0038` | 華潤大廈 China Resources Building | 灣仔 | 待製作 | 否 | 否 | 178 m | OSM way **107497701** | — |
+| `HK-B0039` | 遠東金融中心 Far East Finance Centre | 金鐘 | 待製作 | 否 | 否 | 176 m | OSM way **107336261** | — |
+| `HK-B0040` | 力寶中心第一座 Lippo Centre Tower 1 | 金鐘 | 待製作 | 否 | 否 | 172 m | OSM way **107336260** | — |
+| `HK-B0041` | 中國工商銀行大廈 ICBC Tower | 金鐘 | 待製作 | 否 | 否 | 167 m | OSM way **107497693** | — |
+| `HK-B0042` | 香港JW萬豪酒店 JW Marriott Hotel Hong Kong | 金鐘 | 待製作 | 否 | 否 | 164 m | OSM way **41499014** | — |
+| `HK-B0043` | 會景閣 Convention Plaza | 灣仔 | 待製作 | 否 | 否 | 164 m | OSM way **107497692** | — |
+| `HK-B0044` | 香港康得思酒店 Cordis Hong Kong | 旺角 | 待製作 | 否 | 否 | 162 m | OSM way **185564131** | — |
+| `HK-B0045` | 太古廣場一座 One Pacific Place | 金鐘 | 待製作 | 否 | 否 | 161 m | OSM way **41498860** | — |
+| `HK-B0046` | 告羅士打大廈 Gloucester Tower | 中環 | 待製作 | 否 | 否 | 159 m | OSM way **107302745** | — |
+| `HK-B0047` | 世貿中心 wwwtc | 銅鑼灣 | 待製作 | 否 | 否 | 152 m | OSM relation **19456337** | — |
+| `HK-B0048` | 新世界大廈 New World Tower | 中環 | 待製作 | 否 | 否 | 151 m | OSM way **1323550598** | — |
+| `HK-B0049` | 多盛大廈 Dorset House | 鰂魚涌 | 待製作 | 否 | 否 | 151 m | OSM way **100652800** | — |
+| `HK-B0050` | 萬麗海景酒店 Renaissance Hong Kong Harbour View Hotel | 灣仔 | 待製作 | 否 | 否 | 150 m | OSM way **107497707** | — |
+| `HK-B0051` | 大新金融中心 Dah Sing Financial Centre | 灣仔 | 待製作 | 否 | 否 | 150 m | OSM way **200283000** | — |
+| `HK-B0052` | 美國銀行中心 Bank of America Tower | 金鐘 | 待製作 | 否 | 否 | 146 m | OSM relation **17045256** | — |
+| `HK-B0053` | 海港中心 Harbour Centre | 灣仔 | 待製作 | 否 | 否 | 146 m | OSM relation **18183384** | — |
+| `HK-B0054` | 鷹君中心 Great Eagle Centre | 灣仔 | 待製作 | 否 | 否 | 146 m | OSM relation **18183385** | — |
+| `HK-B0055` | 交易廣場第三座 Three Exchange Square | 中環 | 待製作 | 否 | 否 | 144 m | OSM way **148554950** | — |
+| `HK-B0056` | 皇室大廈安達人壽大樓 Chubb Tower, Windsor House | 銅鑼灣 | 待製作 | 否 | 否 | 140 m | OSM way **149401356** | — |
+| `HK-B0057` | 統一中心 United Centre | 金鐘 | 待製作 | 否 | 否 | 140 m | OSM way **107336258** | — |
+| `HK-B0058` | 灣仔政府大樓 Wanchai Tower | 灣仔 | 待製作 | 否 | 否 | 137 m | OSM way **27087041** | — |
+| `HK-B0059` | 恒生銀行總行大廈 Hang Seng Bank Headquarters | 中環 | 待製作 | 否 | 否 | 137 m | OSM way **28825127** | — |
+| `HK-B0060` | 中國建設銀行大廈 CCB Tower | 中環 | 待製作 | 否 | 否 | 135 m | OSM way **242113651** | — |
+| `HK-B0061` | iSQUARE | 尖沙咀 | 待製作 | 否 | 否 | 130 m | OSM relation **15829461** | — |
+| `HK-B0062` | 香港君悅酒店 Grand Hyatt Hong Kong | 灣仔 | 待製作 | 否 | 否 | 129 m | OSM way **107497699** | — |
+| `HK-B0063` | 海富中心一座 Admiralty Centre Tower 1 | 金鐘 | 待製作 | 否 | 否 | 126 m | OSM way **107336262** | — |
+| `HK-B0064` | 中信大廈 CITIC Tower | 金鐘 | 待製作 | 否 | 否 | 126 m | OSM way **107353963** | — |
+| `HK-B0065` | 協成行中心 Hip Shing Hong Centre | 中環 | 待製作 | 否 | 否 | 125 m | OSM way **148554937** | — |
+| `HK-B0066` | 瑞安中心 Shui On Centre | 灣仔 | 待製作 | 否 | 否 | 118 m | OSM way **241998997** | — |
+| `HK-B0067` | 港運大廈 Island Place Tower | 北角 | 待製作 | 否 | 否 | 116.2 m | OSM way **100652797** | — |
+| `HK-B0068` | 中國人民解放軍駐香港部隊大廈 Chinese People's Liberation Army Forces Hong Kong Building | 中環 | 待製作 | 否 | 否 | 113 m | OSM way **101959095** | — |
+| `HK-B0069` | 海濱廣場一座 One Harbourfront | 紅磡 | 待製作 | 否 | 否 | 110 m | OSM way **151401235** | — |
+| `HK-B0070` | 海濱廣場二座 Two Harbourfront | 紅磡 | 待製作 | 否 | 否 | 110 m | OSM way **151401236** | — |
+| `HK-B0071` | 修頓中心 Southorn Centre | 灣仔 | 待製作 | 否 | 否 | 107 m | OSM way **148858987** | — |
+| `HK-B0072` | 海富中心二座 Admiralty Centre Tower 2 | 金鐘 | 待製作 | 否 | 否 | 104 m | OSM way **107336259** | — |
+| `HK-B0073` | 海港政府大樓 Harbour Building | 中環 | 待製作 | 否 | 否 | 96 m | OSM way **26599387** | — |
+| `HK-B0074` | K11 ARTUS 寓館 K11 ARTUS | 尖沙咀 | 待製作 | 否 | 否 | 96 m | OSM way **693489169** | — |
+| `HK-B0075` | 庫務大樓 Treasury Building | 長沙灣 | 待製作 | 否 | 否 | 95.3 m | OSM way **1089354187** | — |
+| `HK-B0076` | 工業貿易大樓 Trade and Industry Tower | 啟德 | 待製作 | 否 | 否 | 93.5 m | OSM way **385568445** | — |
+| `HK-B0077` | 朗豪坊購物商場 Langham Place The Mall | 旺角 | 待製作 | 否 | 否 | 90 m | OSM way **102411832** | — |
+| `HK-B0078` | 西九龍法院大樓 West Kowloon Law Courts Building | 西九龍 | 待製作 | 否 | 否 | 88 m | OSM way **858895719** | — |
+| `HK-B0079` | 啟匯 Harbourside HQ | 啟德 | 待製作 | 否 | 否 | 85 m | OSM way **198558927** | — |
+| `HK-B0080` | 雙子匯一期 The Twins Tower 1 | 啟德 | 待製作 | 否 | 否 | 80 m | OSM relation **20599094** | — |
+| `HK-B0081` | 雙子匯二期 The Twins Tower 2 | 啟德 | 待製作 | 否 | 否 | 120 m | OSM relation **20599095** | — |
+| `HK-B0082` | 香港大會堂高座 Hong Kong City Hall High Block | 中環 | 待製作 | 否 | 否 | 57.7 m | OSM way **25608273** | — |
+| `HK-B0083` | 中電總部 CLP Headquarters | 九龍塘 | 待製作 | 否 | 否 | 57 m | OSM way **1138054767** | — |
+| `HK-B0084` | 星光行 Star House | 尖沙咀 | 待製作 | 否 | 否 | 55 m | OSM way **1169655254** | — |
+| `HK-B0085` | 馬哥孛羅香港酒店 Marco Polo Hongkong Hotel | 尖沙咀 | 待製作 | 否 | 否 | 55 m | OSM way **1443753382** | — |
+| `HK-B0086` | 海洋中心 Ocean Centre | 尖沙咀 | 待製作 | 否 | 否 | 55 m | OSM way **1443753403** | — |
+| `HK-B0087` | 香港朗廷酒店 The Langham Hong Kong | 尖沙咀 | 待製作 | 否 | 否 | 55 m | OSM way **159324344** | — |
+| `HK-B0088` | 香港會議展覽中心新翼 HKCEC New Wing | 灣仔 | 待製作 | 否 | 否 | — | OSM way **26490011** | — |
+| `HK-B0089` | 香港會議展覽中心舊翼 HKCEC Old Wing | 灣仔 | 待製作 | 否 | 否 | — | OSM way **26490161** | — |
+| `HK-B0090` | 時代廣場 Times Square | 銅鑼灣 | 待製作 | 否 | 否 | — | OSM way **26469269** | — |
+| `HK-B0091` | 美利尼依格羅酒店 The Murray, Hong Kong, A Niccolo Hotel | 中環 | 待製作 | 否 | 否 | — | OSM way **85320844** | — |
+| `HK-B0092` | 終審法院 The Court of Final Appeal | 中環 | 待製作 | 否 | 否 | — | OSM way **42293414** | — |
+| `HK-B0093` | 茶具文物館 Flagstaff House Museum of Tea Ware | 中環 | 待製作 | 否 | 否 | — | OSM way **42255475** | — |
+| `HK-B0094` | 法國外方傳道會大樓 French Mission Building | 中環 | 待製作 | 否 | 否 | — | OSM way **85320697** | — |
+| `HK-B0095` | 利園二期 Lee Garden Two | 銅鑼灣 | 待製作 | 否 | 否 | — | OSM way **199305182** | — |
+| `HK-B0096` | 東角中心 East Point Centre | 銅鑼灣 | 待製作 | 否 | 否 | — | OSM way **294141091** | — |
+| `HK-B0097` | 圓方 Elements | 西九龍 | 待製作 | 否 | 否 | 30 m | OSM way **1415166820** | — |
+| `HK-B0098` | 戲曲中心 Xiqu Centre | 西九龍 | 待製作 | 否 | 否 | — | OSM way **545997140** | — |
+| `HK-B0099` | K11人文購物藝術館 K11 MUSEA | 尖沙咀 | 待製作 | 否 | 否 | 37 m | OSM way **1044263638** | — |
+| `HK-B0100` | 香港大會堂低座 Hong Kong City Hall Low Block | 中環 | 待製作 | 否 | 否 | 21.9 m | OSM way **101959153** | — |
 
-兩座建築的造型、參考資料、碰撞及地面處理細節，統一參看 [香港手建 Landmarks](hongkong-landmarks.md)。高度及樓層等資料沿用各建築紀錄；程序化外觀尺寸不應當成實測圖則。
+首三座建築的造型、參考資料、碰撞及地面處理細節，統一參看 [香港手建 Landmarks](hongkong-landmarks.md)。程序化外觀尺寸不應當成實測圖則。
 
 ## 道路衝突紀錄
 
@@ -41,7 +147,8 @@
 
 | 日期 | 建築 ID | 道路／位置 | 衝突內容 | 處理結果 | 驗證紀錄 |
 | --- | --- | --- | --- | --- | --- |
-| — | — | — | 現有兩座暫未補回逐項歷史衝突台帳 | 由下一項建築或下一次相關改動開始逐項記錄 | — |
+| 2026-11-01 | `HK-B0003` | Two IFC OSM way **25589595** footprint 周邊 | 以道路中心線、車道半寬對 footprint 邊界作幾何檢查，並檢查街燈 clearance 後的最終位置；沒有發現道路或燈柱落入 footprint | 無需搬路、搬燈或搬歪建築；維持現有全港道路及街燈 | `tests/hongkong-two-ifc-clearance.test.cjs`；日景、冠頂及夜景瀏覽器檢查 |
+| — | — | — | 現有 HSBC／SCB 暫未補回逐項歷史衝突台帳 | 由下一次相關改動開始逐項記錄 | — |
 
 ## 新增及更新規則
 

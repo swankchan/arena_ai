@@ -1,51 +1,10 @@
 import { GEO } from '../../hk-geodata.js';
+import { minimumAreaObb, pointInFlatRing } from './landmark-site.js';
+
+export { minimumAreaObb, pointInFlatRing } from './landmark-site.js';
 
 // Pure site / proportion data for the hand-modelled HSBC Main Building. Keeping this separate from Three.js lets the
 // geographic placement and the open plaza clearance be tested without a renderer.
-export function minimumAreaObb(flat) {
-  let best = null;
-  for (let i = 0; i + 3 < flat.length; i += 2) {
-    const dx = flat[i + 2] - flat[i], dz = flat[i + 3] - flat[i + 1];
-    const length = Math.hypot(dx, dz);
-    if (length < 0.01) continue;
-    const ux = dx / length, uz = dz / length;
-    let minX = Infinity, maxX = -Infinity, minZ = Infinity, maxZ = -Infinity;
-    for (let j = 0; j + 1 < flat.length; j += 2) {
-      const lx = flat[j] * ux + flat[j + 1] * uz;
-      const lz = -flat[j] * uz + flat[j + 1] * ux;
-      minX = Math.min(minX, lx); maxX = Math.max(maxX, lx);
-      minZ = Math.min(minZ, lz); maxZ = Math.max(maxZ, lz);
-    }
-    const w = maxX - minX, d = maxZ - minZ, area = w * d;
-    if (!best || area < best.area) {
-      const lx = (minX + maxX) * 0.5, lz = (minZ + maxZ) * 0.5;
-      let ry = Math.atan2(-uz, ux);
-      // The same rectangle can be represented with both local axes reversed. Keep the canonical quarter-turn range
-      // so local -z consistently means the harbour-facing north side of this site.
-      if (ry > Math.PI * 0.5) ry -= Math.PI;
-      if (ry < -Math.PI * 0.5) ry += Math.PI;
-      best = {
-        x: ux * lx - uz * lz,
-        z: uz * lx + ux * lz,
-        w, d, area,
-        // Three.js +y rotation: local x maps to (cos ry, -sin ry) in the world's x/z plane.
-        ry
-      };
-    }
-  }
-  if (!best) throw new Error('An oriented footprint needs at least one nonzero edge');
-  return best;
-}
-
-export function pointInFlatRing(flat, x, z) {
-  let inside = false;
-  for (let i = 0, j = flat.length - 2; i + 1 < flat.length; j = i, i += 2) {
-    const xi = flat[i], zi = flat[i + 1], xj = flat[j], zj = flat[j + 1];
-    if ((zi > z) !== (zj > z) && x < ((xj - xi) * (z - zi)) / (zj - zi) + xi) inside = !inside;
-  }
-  return inside;
-}
-
 const source = GEO.landmarks['滙豐總行大廈'];
 if (!source?.ring) throw new Error('The OSM HSBC Main Building footprint is required');
 const footprint = minimumAreaObb(source.ring);

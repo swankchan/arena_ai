@@ -67,6 +67,7 @@ export const city = {
       trafficAids: world.trafficAids,
       hsbc: world.hsbc,
       standardChartered: world.standardChartered,
+      twoIfc: world.twoIfc,
       landmarks: world.landmarks,
       stats,
       teleports: TELEPORTS,

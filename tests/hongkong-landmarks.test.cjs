@@ -7,12 +7,16 @@ const root = path.join(__dirname, '..');
 let architecture;
 let scb;
 let scbLogo;
+let twoIfc;
+let terrain;
 let geo;
 
 test.before(async () => {
   architecture = await import('../js/cities/hongkong/hsbc-headquarters-architecture.js');
   scb = await import('../js/cities/hongkong/standard-chartered-architecture.js');
   scbLogo = await import('../js/cities/hongkong/standard-chartered-logo.js');
+  twoIfc = await import('../js/cities/hongkong/two-ifc-architecture.js');
+  terrain = await import('../js/cities/hongkong/terrain.js');
   geo = (await import('../js/hk-geodata.js')).GEO;
 });
 
@@ -118,15 +122,19 @@ test('unified simple mode adds only the authored landmarks and keeps generic bui
   const source = fs.readFileSync(path.join(root, 'js/cities/hongkong/simple-world.js'), 'utf8');
   assert.match(source, /buildHsbcHeadquarters\(scene, \{ groundOffset: HONG_KONG_TERRAIN_META\.hsbcPadHeight \}\)/);
   assert.match(source, /buildStandardCharteredBankBuilding\(scene, \{ groundOffset: HONG_KONG_TERRAIN_META\.scbPadHeight \}\)/);
+  assert.match(source, /buildTwoInternationalFinanceCentre\(scene, \{ groundOffset: HONG_KONG_TERRAIN_META\.twoIfcPadHeight \}\)/);
   assert.match(source, /isHsbcPlazaPoint\(x, z\)/);
+  assert.match(source, /isTwoIfcPlazaPoint\(x, z\)/);
   assert.match(source, /scbEntranceGroundHeight\(x, z, crossingGround, standardChartered\.groundOffset\)/);
   assert.match(source, /\.\.\.hsbc\.stats/);
   assert.match(source, /\.\.\.standardChartered\.stats/);
+  assert.match(source, /\.\.\.twoIfc\.stats/);
   assert.match(source, /\.\.\.hsbc\.colliders/);
   assert.match(source, /\.\.\.standardChartered\.colliders/);
-  assert.match(source, /landmarks: hsbc\.landmarks\.length \+ standardChartered\.landmarks\.length/);
+  assert.match(source, /\.\.\.twoIfc\.colliders/);
+  assert.match(source, /landmarks: hsbc\.landmarks\.length \+ standardChartered\.landmarks\.length \+ twoIfc\.landmarks\.length/);
   assert.match(source, /buildings: 0/);
-  assert.match(source, /landmarks: \[\.\.\.hsbc\.landmarks, \.\.\.standardChartered\.landmarks\]/);
+  assert.match(source, /landmarks: \[\.\.\.hsbc\.landmarks, \.\.\.standardChartered\.landmarks, \.\.\.twoIfc\.landmarks\]/);
   assert.match(source, /createHongKongTrafficAids\(scene, \{/);
   assert.match(source, /getGroundHeight, getSurfaceHeight: getRoadPaintHeight, surfaceY: FULL_WORLD_HEIGHT\.road/);
   assert.match(source, /\.\.\.trafficAids\.stats/);
@@ -343,6 +351,73 @@ test('the hand-built Standard Chartered model includes the photographed identifi
   }
 });
 
+test('Two IFC keeps its OSM site and source conventions separate from its sculpted visual tiers', () => {
+  const {
+    TWO_IFC_SITE, TWO_IFC_HEIGHT, TWO_IFC_OSM_HEIGHT, TWO_IFC_OSM_LEVELS,
+    TWO_IFC_DESIGN_HEIGHT, TWO_IFC_DESIGN_LEVELS, TWO_IFC_TIERS, TWO_IFC_CURTAIN_TIERS,
+    TWO_IFC_OPEN_CROWN, TWO_IFC_SETBACK_COUNT, TWO_IFC_LOCAL_RING,
+    TWO_IFC_BAY_WIDTH, TWO_IFC_CONVEX_PROJECTION, TWO_IFC_PLAZA_TOP,
+    twoIfcWorldToLocal, isTwoIfcPlazaPoint, twoIfcLocalCollider
+  } = twoIfc;
+  assert.equal(TWO_IFC_SITE.name, '國際金融中心二期');
+  assert.equal(TWO_IFC_SITE.osmId, 25589595);
+  assert.equal(TWO_IFC_SITE.source, geo.landmarks['國際金融中心二期']);
+  assert.equal(TWO_IFC_SITE.ring, TWO_IFC_SITE.source.ring);
+  assert.equal(TWO_IFC_HEIGHT, 415.8);
+  assert.equal(TWO_IFC_OSM_HEIGHT, 415.8);
+  assert.equal(TWO_IFC_OSM_LEVELS, 90);
+  assert.equal(TWO_IFC_DESIGN_HEIGHT, 412);
+  assert.equal(TWO_IFC_DESIGN_LEVELS, 88);
+  assert.notEqual(TWO_IFC_OSM_HEIGHT, TWO_IFC_DESIGN_HEIGHT, 'source conventions must not be silently blended');
+  assert.equal(TWO_IFC_LOCAL_RING.length, 48);
+  assert.deepEqual(twoIfcWorldToLocal(TWO_IFC_SITE.x, TWO_IFC_SITE.z), { x: 0, z: 0 });
+  for (let i = 0; i < TWO_IFC_SITE.ring.length; i += 2) {
+    const local = twoIfcWorldToLocal(TWO_IFC_SITE.ring[i], TWO_IFC_SITE.ring[i + 1]);
+    assert.ok(Math.abs(local.x) <= TWO_IFC_SITE.w * 0.5 + 1e-6);
+    assert.ok(Math.abs(local.z) <= TWO_IFC_SITE.d * 0.5 + 1e-6);
+  }
+  assert.equal(TWO_IFC_TIERS.length, 6);
+  assert.equal(TWO_IFC_CURTAIN_TIERS.length, 5);
+  assert.ok(TWO_IFC_SETBACK_COUNT >= 4);
+  for (let i = 0; i < TWO_IFC_TIERS.length; i++) {
+    const tier = TWO_IFC_TIERS[i];
+    assert.ok(tier.y1 > tier.y0 && tier.bottomScale > 0 && tier.topScale > 0);
+    if (i) assert.equal(tier.y0, TWO_IFC_TIERS[i - 1].y1);
+  }
+  assert.ok(TWO_IFC_TIERS[0].topScale > TWO_IFC_TIERS.at(-1).topScale);
+  assert.equal(TWO_IFC_OPEN_CROWN.y0, TWO_IFC_TIERS.at(-1).y1);
+  assert.equal(TWO_IFC_OPEN_CROWN.y1, TWO_IFC_HEIGHT);
+  assert.ok(TWO_IFC_OPEN_CROWN.topScale < TWO_IFC_OPEN_CROWN.bottomScale);
+  assert.ok(TWO_IFC_BAY_WIDTH < TWO_IFC_SITE.w && TWO_IFC_CONVEX_PROJECTION > 0.5);
+  assert.ok(isTwoIfcPlazaPoint(TWO_IFC_SITE.x, TWO_IFC_SITE.z));
+  assert.equal(terrain.HONG_KONG_TERRAIN_META.twoIfcPadHeight,
+    terrain.rawHongKongTerrainHeight(TWO_IFC_SITE.x, TWO_IFC_SITE.z));
+  assert.equal(terrain.hongKongTerrainHeight(TWO_IFC_SITE.x, TWO_IFC_SITE.z),
+    terrain.HONG_KONG_TERRAIN_META.twoIfcPadHeight);
+  assert.ok(TWO_IFC_PLAZA_TOP > 0);
+  const collider = twoIfcLocalCollider({ w: 20, d: 20, minY: 0, maxY: TWO_IFC_HEIGHT });
+  assert.ok(collider.obb && collider.maxY === TWO_IFC_HEIGHT);
+});
+
+test('the hand-built Two IFC model has convex curtain walls, wing mullions and an open crown without photo assets', () => {
+  const source = fs.readFileSync(path.join(root, 'js/cities/hongkong/two-ifc-world.js'), 'utf8');
+  assert.match(source, /group\.position\.set\(TWO_IFC_SITE\.x, groundOffset, TWO_IFC_SITE\.z\)/);
+  assert.match(source, /TwoIfcTaperedSetbackTowerSegments/);
+  assert.match(source, /TwoIfcFourConvexSteppedCurtainWallFields/);
+  assert.match(source, /TwoIfcWingLikeVerticalMullions/);
+  assert.match(source, /TwoIfcOpenSculpturalCrownRibs/);
+  assert.match(source, /TwoIfcOpenCrownHorizontalRails/);
+  assert.match(source, /TwoIfcRecessedCrownLanternCore/);
+  assert.match(source, /TwoIfcMechanicalAndRefugeFacadeBelts/);
+  assert.match(source, /createConvexBeltGeometry/);
+  assert.match(source, /TwoIfcHarbourEntranceGlassDoors/);
+  assert.match(source, /fritted/);
+  assert.match(source, /vision/);
+  assert.match(source, /pearl/i);
+  assert.match(source, /cityUniforms\.uInteriorGlow/);
+  assert.doesNotMatch(source, /ConeGeometry|TextureLoader|image-search|https?:\/\//);
+});
+
 test('building inventory independently tracks scene status, refinement and landmark integration', () => {
   const inventory = fs.readFileSync(path.join(root, 'docs/hongkong-building-inventory.md'), 'utf8');
   for (const heading of ['場景狀態', '精修', 'Landmark', '道路衝突紀錄']) {
@@ -351,13 +426,32 @@ test('building inventory independently tracks scene status, refinement and landm
   assert.match(inventory, /建築物優先、道路配合/);
   assert.match(inventory, /不代表已經加入場景/);
   const rows = inventory.split('\n').filter((line) => /^\| `HK-B\d{4}` /.test(line));
-  assert.deepEqual(rows.map((row) => {
+  assert.equal(rows.length, 100, 'the curated construction list contains exactly 100 buildings');
+  const parsed = rows.map((row) => {
     const cells = row.split('|').map((cell) => cell.trim());
-    return { id: cells[1], status: cells[4], refined: cells[5], landmark: cells[6] };
-  }), [
+    return { id: cells[1], status: cells[4], refined: cells[5], landmark: cells[6], source: cells[8], implementation: cells[9] };
+  });
+  assert.deepEqual(parsed.map((row) => row.id), Array.from({ length: 100 }, (_, index) =>
+    `\`HK-B${String(index + 1).padStart(4, '0')}\``));
+  assert.equal(new Set(parsed.map((row) => row.id)).size, 100);
+  assert.deepEqual(parsed.slice(0, 3).map(({ id, status, refined, landmark }) => ({ id, status, refined, landmark })), [
     { id: '`HK-B0001`', status: '已加入', refined: '**是**', landmark: '**是**' },
-    { id: '`HK-B0002`', status: '已加入', refined: '**是**', landmark: '**是**' }
+    { id: '`HK-B0002`', status: '已加入', refined: '**是**', landmark: '**是**' },
+    { id: '`HK-B0003`', status: '已加入', refined: '**是**', landmark: '**是**' }
   ]);
+  assert.ok(parsed.slice(3).every((row) => row.status === '待製作' && row.refined === '否'
+    && row.landmark === '否' && row.implementation === '—'), 'OSM candidates are not presented as integrated or refined');
+  assert.ok(parsed.every((row) => row.source && row.source !== '—'));
   assert.match(rows[0], /滙豐總行大廈 HSBC Main Building/);
   assert.match(rows[1], /渣打銀行大廈 Standard Chartered Bank Building/);
+  assert.match(rows[2], /國際金融中心二期 Two International Finance Centre/);
+  assert.match(rows[2], /two-ifc-world\.js/);
+  assert.match(inventory, /\| 施工清單總數 \| 100 \|/);
+  assert.match(inventory, /\| 已加入場景的建築物 \| 3 \|/);
+  assert.match(inventory, /\| 待製作 \| 97 \|/);
+  assert.match(inventory, /367\.4 m†/);
+  assert.match(inventory, /沒有 `height` tag/);
+  assert.match(inventory, /OSM way \*\*112284860\*\*（目前 API building/);
+  assert.match(inventory, /OSM way \*\*64897826\*\*（目前 API building/);
+  assert.doesNotMatch(inventory, /塔身 footprint 待核/);
 });

@@ -1,6 +1,7 @@
 import { HK_TERRAIN } from '../../hk-terrain-data.js';
 import { HSBC_SITE, pointInFlatRing } from './hsbc-headquarters-architecture.js';
 import { SCB_SITE, SCB_STAIR_BOTTOM_WORLD } from './standard-chartered-architecture.js';
+import { TWO_IFC_SITE } from './two-ifc-architecture.js';
 
 function decodeBytes(base64) {
   const binary = atob(base64);
@@ -32,14 +33,16 @@ export function rawHongKongTerrainHeight(x, z) {
     : d * (tx + ty - 1) + b * (1 - ty) + c * (1 - tx);
 }
 
-// The two authored landmarks need level construction pads. Their shapes and architecture stay untouched; only the
+// The authored landmarks need level construction pads. Their shapes and architecture stay untouched; only the
 // common ground datum is sampled from the DTM. This also prevents a coarse hillside triangle piercing a flat plaza.
 const HSBC_PAD_HEIGHT = rawHongKongTerrainHeight(HSBC_SITE.x, HSBC_SITE.z);
 const SCB_PAD_HEIGHT = rawHongKongTerrainHeight(SCB_STAIR_BOTTOM_WORLD.x, SCB_STAIR_BOTTOM_WORLD.z);
+const TWO_IFC_PAD_HEIGHT = rawHongKongTerrainHeight(TWO_IFC_SITE.x, TWO_IFC_SITE.z);
 
 export function hongKongTerrainHeight(x, z) {
   if (pointInFlatRing(HSBC_SITE.ring, x, z)) return HSBC_PAD_HEIGHT;
   if (pointInFlatRing(SCB_SITE.ring, x, z)) return SCB_PAD_HEIGHT;
+  if (pointInFlatRing(TWO_IFC_SITE.ring, x, z)) return TWO_IFC_PAD_HEIGHT;
   return rawHongKongTerrainHeight(x, z);
 }
 
@@ -48,6 +51,7 @@ export const HONG_KONG_TERRAIN_META = Object.freeze({
   grid,
   hsbcPadHeight: HSBC_PAD_HEIGHT,
   scbPadHeight: SCB_PAD_HEIGHT,
+  twoIfcPadHeight: TWO_IFC_PAD_HEIGHT,
   tunnelStats: HK_TERRAIN.stats
 });
 
