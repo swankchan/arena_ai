@@ -76,6 +76,7 @@ export const city = {
       cheungKong: world.cheungKong,
       k11Atelier: world.k11Atelier,
       cullinanI: world.cullinanI,
+      cullinanII: world.cullinanII,
       landmarks: world.landmarks,
       stats,
       teleports: TELEPORTS,

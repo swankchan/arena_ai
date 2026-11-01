@@ -1,6 +1,6 @@
 # 香港手建 Landmarks
 
-香港仍採用 `unified-simple` 展示：全港道路及基本地面保留，**不生成普通建築群**。手建地標會逐個加入；目前有滙豐總行大廈、渣打銀行大廈、國際金融中心二期、環球貿易廣場、中銀大廈、中環廣場、中環中心、如心廣場、長江集團中心、K11 Atelier 及天璽I。
+香港仍採用 `unified-simple` 展示：全港道路及基本地面保留，**不生成普通建築群**。手建地標會逐個加入；目前有滙豐總行大廈、渣打銀行大廈、國際金融中心二期、環球貿易廣場、中銀大廈、中環廣場、中環中心、如心廣場、長江集團中心、K11 Atelier、天璽I及天璽II。
 
 建築物進度、**精修**與 **Landmark** 獨立標記，以及道路衝突台帳，見 [香港建築物 Inventory](hongkong-building-inventory.md)。
 
@@ -256,6 +256,27 @@
 - Wong & Ouyang：雙塔約 270 m、double-glazed unitized curtain wall、西側高架道路 forecourts、北塔 Serviced Apartments 的 40 m 玻璃盒、兩塔之間的雙層高有蓋落客區；同頁官方整體日／夜景、玻璃盒及落客照片用於材料與細部核對：
   https://www.wongouyang.com/projects/international-commerce-centre/#!/cullinan
 
+## 天璽II The Cullinan II（South Tower）
+
+- 地點及來源：柯士甸道西 1 號，採目前 **OSM way 25608721 version 21** 的 15 個獨立頂點；原始 WGS84 geometry、完整 tags、版本及 ODbL attribution 保存在 `cullinan-ii-architecture.js`。minimum-area OBB 中心為 **(107.96646025342716, -2539.040799037352)**，定向尺寸 **68.26897054668052 × 42.35054879406937 m**。模型保留南塔自己的長短邊、凹口及翼部，沒有把北塔 ring 平移或把 Union Square 土地用途範圍當成塔身。
+- 高度、用途及年份分列：OSM 為 **270 m／68 levels／hotel=separate**，Wong & Ouyang 以約 **270 m** 描述雙塔；CTBUH South Tower 為 **269.9 m architectural＝269.9 m to-tip、68 above-ground／1 below-ground、2008 completed、residential／hotel、all-concrete**。OSM `start_date=2007` 和其他二手資料的 2009 表述沒有取代本項採用的 CTBUH 單幢 2008 convention。冠頂設計最高點採 **269.9 m**，沒有另加天線；金屬框架截面的厘米級渲染 bounds 外延不被當成另一個建築高度。
+- 幕牆及塔冠：依建築師的 **double-glazed unitized curtain wall** 和實際查看的雙塔日景，建立南塔自己的藍銀玻璃、spandrel、鋁製直棂／橫框、三條石墨百頁帶及兩支全高豎向 blades。視覺百頁 courses **11／35／55**、冷白 accent courses **19／37／53** 是照片導向控制，不是實測機電樓層。15 個 source-derived 冠頂高度形成折角玻璃、金屬 coping 和高低輪廓；**253.6 m** 只作主牆視覺控制，不冒充來源 roof 高度。
+- W Hotel 玻璃中庭：Wong & Ouyang 明確把南塔 **40 m** 玻璃盒歸於 W Hotel，並說明兩個玻璃盒都面向西側高架道路 forecourts。模型因此放在 source **edge 0**，而不是套用北塔的金色 C 或把 OSM 另一側門節點當成 W 中庭中心。寬 **22 m**、深 **8 m**、外伸 **2 m** 是配合官方照片和道路 clearance 的視覺尺寸，不是實測圖則。
+- 水晶 W 及落客細節：實際查看的 W&O 官方夜景顯示大型發光 **W**、密集吊掛水晶帘、暖色水平燈線、平面玻璃雨篷、幼柱、W 圖騰及修剪綠籬。模型以程序向量 W、**93 條全高中庭吊線／3,513 粒背景水晶**，以及 **348 條 W 吊線／1,881 粒 W 水晶**重建這些特徵；水晶帘延伸至大堂，不讓地面層成為黑色空洞。另有暖色石質大堂後牆／地板、玻璃門、門柄、雨篷格框／downlights、石鋪地、花槽及綠籬。雨篷寬 **26 m**、高度 **4.8 m**、front **3.4 m** 均為視覺控制；入口正中沒有支柱，沒有把北塔落客 canopy 或南塔未核實尺寸的泳池複製進來。
+- OSM 門節點：way 內另有 **node 10703681997 v2**，tags 為 `door=yes／entrance=yes／exit=yes／indoor=yes／level=1`。其原始經緯度及版本獨立保存，在 edge 12 放置雙扇玻璃門和門柄；它是 level-1 indoor door，沒有被冒稱為官方 W 外觀照片中的中庭中心。
+- 地面、碰撞及道路：raw DTM 施工地台為 **7.36966376037843 m**，plaza 面抬高 **0.12 m**，不是已核實的 podium 或入口工程標高。塔身逐邊 OBB、玻璃中庭、雨篷、幼柱、花槽及圖騰均有碰撞。精確塔身 ring **沒有道路相交**；W forecourt 也沒有地面或 elevated 車路及 clearance 後街燈衝突，因此沒有搬路、搬燈、刪隧道或改白色標線。ground query 只在未選取道路時抬高 forecourt。
+- 實際瀏覽器驗收：以日景全塔兩側、冠頂、W 中庭、落客雨篷、OSM 門，以及夜景全塔、冠頂、W 中庭及落客雨篷共 **10 個固定視角**逐張檢查。最終場景為 **12 landmarks／0 generic buildings**；本幢 **36 meshes／672,379 vertices／301,505 triangles／63 colliders**，全部 colliders 均進入世界碰撞陣列，`geometryIssues=[]`、`badColliders=0`。大廈中心、W 入口及落客處的 player ground query 均為 **7.48966376037843 m**；在南塔立面實際逐步驅動行人及車輛撞牆，碰撞後中心法線距離分別為 **0.905／2.605 m**。沒有 page error、應用程式或 shader error；只有既有外部字體 `ERR_CONNECTION_CLOSED` 及 **4 則 SwiftShader performance warnings**。完整 `node --test tests/*.test.cjs` 為 **358／358 pass**。這些都是場景驗證值，不是實地工程數據。
+- 研究照片只作造型依據，沒有打包進應用程式；實際查看的是 W&O 的 W Hotel 入口夜景及雙塔日景，CTBUH 只作上述文字資料來源。搜索錯配的無關酒店、商場及室內照片均沒有作為立面證據。
+
+### 參考資料
+
+- OSM 南塔及目前 API 幾何：https://www.openstreetmap.org/way/25608721
+  https://api.openstreetmap.org/api/0.6/way/25608721/full.json
+- CTBUH／CVU South Tower：269.9 m architectural／to-tip、68 above-ground／1 below-ground、2008、residential／hotel、all-concrete：
+  https://www.skyscrapercenter.com/building/the-cullinan-ii/676
+- Wong & Ouyang：雙塔約 270 m、double-glazed unitized curtain wall、西側高架道路 forecourts、南塔 W Hotel 40 m 玻璃中庭及獨立 landscaped guest drop-off；同頁官方 W 水晶中庭夜景與雙塔日景用於材料及細部核對：
+  https://www.wongouyang.com/projects/international-commerce-centre/#!/cullinan
+
 ## 程式入口
 
 - `hsbc-headquarters-architecture.js`：滙豐純地理位置、OBB、樓層比例及 collider 座標換算，可在 Node 測試。
@@ -282,4 +303,6 @@
 - `k11-atelier-world.js`：K11 Atelier 玻璃／石灰石／古銅幕牆、凹角斜框、百頁、退台屋面、塔冠、入口、大堂三聯畫及保安閘機、日夜材質、碰撞及 stats。
 - `cullinan-i-architecture.js`：天璽I 14 頂點 OSM 來源、OBB、高度／層數／年份 conventions、40 m 入口及有蓋落客 frames、折角冠頂、forecourt 及碰撞座標換算。
 - `cullinan-i-world.js`：天璽I 藍銀 unitized 幕牆、百頁、折角塔冠、金色 C 玻璃盒、雙層落客 canopy、日夜材質、碰撞及 stats。
-- `simple-world.js`：只整合這十一個 authored landmarks；普通 `buildings` 仍為 0。
+- `cullinan-ii-architecture.js`：天璽II 15 頂點 OSM 來源、OBB、高度／用途／年份 conventions、西側 W 中庭、level-1 door、折角冠頂、forecourt 及碰撞座標換算。
+- `cullinan-ii-world.js`：天璽II 藍銀 unitized 幕牆、百頁、折角塔冠、水晶 W 中庭、平面落客雨篷、景觀、日夜材質、碰撞及 stats。
+- `simple-world.js`：只整合這十二個 authored landmarks；普通 `buildings` 仍為 0。
