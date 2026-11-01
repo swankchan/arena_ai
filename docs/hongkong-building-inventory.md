@@ -2,7 +2,7 @@
 
 這份文件是香港場景**實際建築物進度總表及 100 幢主要大廈施工清單**，記錄建築物是否已加入、是否精修，以及是否作為 Landmark 整合。`tools/data/hongkong/landmarks.json` 及下表的待製作項目只是來源／候選資料；資料出現在該 JSON 或本清單 **不代表已經加入場景**。
 
-最後整理：**2026-11-01**。目前已實際加入 **6 幢**；其餘 **94 幢**仍是待製作項目，沒有基本體量或精修完成的意思。
+最後整理：**2026-11-01**。目前已實際加入 **7 幢**；其餘 **93 幢**仍是待製作項目，沒有基本體量或精修完成的意思。
 
 ## 標記定義
 
@@ -19,12 +19,12 @@
 | 項目 | 數量 |
 | --- | ---: |
 | 施工清單總數 | 100 |
-| 已加入場景的建築物 | 6 |
-| 已加入而且精修 | 6 |
+| 已加入場景的建築物 | 7 |
+| 已加入而且精修 | 7 |
 | 已加入但只有基本體量 | 0 |
-| 已加入並作為 Landmark 整合 | 6 |
+| 已加入並作為 Landmark 整合 | 7 |
 | 製作中 | 0 |
-| 待製作 | 94 |
+| 待製作 | 93 |
 
 目前普通建築群仍為 **0**；上表只計實際加入的建築物，不把橋樑、道路構築物或純 OSM 候選資料計算在內。
 
@@ -37,6 +37,7 @@
 - Two IFC 的 **415.8 m／90 levels** 來自本地 OSM；建築設計及幕牆資料的 **412 m／88 層** 是另一套來源表述，兩者在詳細紀錄分列，沒有混合成一個假精確規格。
 - ICC 的 **484 m／118 levels** 來自本地 OSM；KPF 同樣描述 **118-story**，另有資料採 **108 occupied floors above ground** 的計法。模型的 108 道幕牆 courses 只是視覺分層，沒有把不同層數計法合成一個假精確規格。
 - **‡ 中環廣場 373.9 m** 是外部建築高度參考；本地 OSM way **27087018** 的 **309 m** 是 roof，另有 **78 levels**。官方項目頁另採 **374 m including mast／75-storey Grade A office**，四套來源表述在詳細紀錄及程式分列，沒有把 roof 當 architectural height 或擅自取整。
+- 中環中心的 **346 m／73 levels** 來自本地 OSM，CTBUH 亦採 73 層；香港旅遊發展局頁面另寫 **79 floors**。外部 292 m roof/275 m occupied 與 346 m architectural 在詳細紀錄分列，不把不同層數 convention 合併。
 
 | 內部 ID | 建築物 | 地區 | 場景狀態 | 精修 | Landmark | 高度 | 位置／footprint 依據 | 主要實作 |
 | --- | --- | --- | --- | --- | --- | ---: | --- | --- |
@@ -46,7 +47,7 @@
 | `HK-B0004` | 環球貿易廣場 International Commerce Centre | 西九龍 | 已加入 | **是** | **是** | 484 m | OSM way **25590249** | `js/cities/hongkong/icc-world.js` |
 | `HK-B0005` | 中銀大廈 Bank of China Tower | 中環 | 已加入 | **是** | **是** | 367.4 m† | OSM way **25604760**（目前 API building；原始幾何另存於專屬來源模組） | `js/cities/hongkong/bank-of-china-world.js` |
 | `HK-B0006` | 中環廣場 Central Plaza | 灣仔 | 已加入 | **是** | **是** | 373.9 m‡ | OSM way **27087018** | `js/cities/hongkong/central-plaza-world.js` |
-| `HK-B0007` | 中環中心 The Center | 中環 | 待製作 | 否 | 否 | 346 m | OSM way **148228888** | — |
+| `HK-B0007` | 中環中心 The Center | 中環 | 已加入 | **是** | **是** | 346 m | OSM way **148228888** | `js/cities/hongkong/the-center-world.js` |
 | `HK-B0008` | 如心廣場 Nina Tower | 荃灣 | 待製作 | 否 | 否 | 318 m | OSM way **112284860**（目前 API building；本地快照未收錄） | — |
 | `HK-B0009` | 長江集團中心 Cheung Kong Center | 中環 | 待製作 | 否 | 否 | 283 m | OSM way **64897826**（目前 API building；本地快照未收錄） | — |
 | `HK-B0010` | K11 Atelier | 尖沙咀 | 待製作 | 否 | 否 | 274 m | OSM way **668219664** | — |
@@ -141,7 +142,7 @@
 | `HK-B0099` | K11人文購物藝術館 K11 MUSEA | 尖沙咀 | 待製作 | 否 | 否 | 37 m | OSM way **1044263638** | — |
 | `HK-B0100` | 香港大會堂低座 Hong Kong City Hall Low Block | 中環 | 待製作 | 否 | 否 | 21.9 m | OSM way **101959153** | — |
 
-首六座建築的造型、參考資料、碰撞及地面處理細節，統一參看 [香港手建 Landmarks](hongkong-landmarks.md)。程序化外觀尺寸不應當成實測圖則。
+首七座建築的造型、參考資料、碰撞及地面處理細節，統一參看 [香港手建 Landmarks](hongkong-landmarks.md)。程序化外觀尺寸不應當成實測圖則。
 
 ## 道路衝突紀錄
 
@@ -153,6 +154,7 @@
 | 2026-11-01 | `HK-B0004` | ICC 北側 OSM ways **51143／51157** | 兩條有 elevated flag 的無名入口坡道與 OSM tower footprint 在平面相交；不能當成普通地面道路直接刪除，亦不能讓塔身碰撞盒封死車道 | 保留道路中心線、車道、白色標線及街燈；塔樓 occupied collider 由地台上 14 m 開始，龍尾及入口在坡道車輛包絡之上，八支柱與門牆另作水平 clearance。場景最保守 canopy 底至最高渲染路面約 **8.216 m**，大於 4.5 m 車輛包絡；這是場景數值，不是實地工程標高 | `tests/hongkong-icc-clearance.test.cjs`；全塔、北立面、入口、冠頂及夜景瀏覽器檢查 |
 | 2026-11-01 | `HK-B0005` | 中銀大廈 OSM way **25604760** footprint、北面入口 canopy 及兩支華表 | 以全港道路中心線及車道半寬掃描建築邊界，另檢查 canopy 角點、華表和 clearance 後街燈；沒有發現道路或燈柱衝突 | 無需搬路、搬燈、改白色標線或搬歪建築；保留紅棉路及花園道現有幾何 | `tests/hongkong-bank-of-china-clearance.test.cjs`；全塔、北南面、入口、雙桅杆及夜景瀏覽器檢查 |
 | 2026-11-01 | `HK-B0006` | 中環廣場 OSM way **27087018** footprint 及南面入口 canopy | 以全港道路中心線及車道半寬掃描建築邊界，並檢查入口 canopy 及 clearance 後街燈；沒有發現道路或燈柱衝突 | 無需搬路、搬燈、改白色標線或搬歪建築；保留港灣道及周邊道路現有幾何 | `tests/hongkong-central-plaza-clearance.test.cjs`；全塔、南北立面、入口、冠頂及 Lightime 日夜瀏覽器檢查 |
+| 2026-11-01 | `HK-B0007` | 中環中心 OSM way **148228888** 星形 footprint、架空大堂及公共空間 | 以全港道路中心線及車道半寬掃描 16 邊建築邊界，並檢查 clearance 後街燈；沒有發現道路或燈柱衝突 | 無需搬路、搬燈、改白色標線或搬歪建築；保留皇后大道中、租庇利街及周邊道路現有幾何 | `tests/hongkong-the-center-clearance.test.cjs`；全塔、星形立面、架空入口、冠頂及彩虹霓虹日夜瀏覽器檢查 |
 | — | — | — | 現有 HSBC／SCB 暫未補回逐項歷史衝突台帳 | 由下一次相關改動開始逐項記錄 | — |
 
 ## 新增及更新規則
