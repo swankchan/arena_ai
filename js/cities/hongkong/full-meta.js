@@ -131,12 +131,19 @@ function segmentHit(x, z, way, i) {
   };
 }
 
-export function nearestFullRoad(x, z, { radius = 1800, minWidth = 0, namedOnly = false, excludeCrossings = false } = {}) {
+function isSubmergedGenericTunnel(way, x, z) {
+  return Boolean(way.flags & 4) && !CROSSING_FLAT_EXCLUSION_IDS.has(way.id) && !isTerritoryLand(x, z);
+}
+
+export function nearestFullRoad(x, z, {
+  radius = 1800, minWidth = 0, namedOnly = false, excludeCrossings = false, excludeSubmergedTunnels = false
+} = {}) {
   let best = null;
   for (const way of candidates(x, z, radius)) {
     if (way.width < minWidth || (namedOnly && !way.name) || (excludeCrossings && CROSSING_FLAT_EXCLUSION_IDS.has(way.id))) continue;
     for (let i = 2; i + 1 < way.flat.length; i += 2) {
       const hit = segmentHit(x, z, way, i);
+      if (excludeSubmergedTunnels && isSubmergedGenericTunnel(way, hit.x, hit.z)) continue;
       if (hit.distance > radius || (best && hit.distance >= best.distance)) continue;
       best = hit;
     }
@@ -154,6 +161,9 @@ export function fullRoadSurfaceAt(x, z, margin = 0.35, referenceY = 0) {
     for (let i = 2; i + 1 < way.flat.length; i += 2) {
       const hit = segmentHit(x, z, way, i);
       if (hit.distance > hit.width * 0.5 + margin) continue;
+      // A hidden submerged tube may be followed by an entity already at its level, but must not pull surface traffic
+      // or pedestrians onto an invisible road above/below the harbour. Explicit sea crossings use their own selector.
+      if (isSubmergedGenericTunnel(way, hit.x, hit.z) && Math.abs(hit.height - referenceY) > 1.1) continue;
       const score = Math.abs(hit.height - referenceY) * 20 + hit.distance;
       if (score < bestScore) { best = hit; bestScore = score; }
     }
@@ -176,7 +186,7 @@ export function nearestFullRoads(x, z, radius = 45) {
 }
 
 export function isTerritoryRoad(x, z, margin = 0) {
-  const hit = nearestFullRoad(x, z, { radius: 70 + Math.max(0, margin) });
+  const hit = nearestFullRoad(x, z, { radius: 70 + Math.max(0, margin), excludeSubmergedTunnels: true });
   if (hit && hit.distance <= hit.width * 0.5 + margin) return true;
   // Procedurally curved crossings can leave their original OSM ribbon by several metres; they are still real roads.
   return Boolean(crossingSurfaceAt(x, z, margin));
@@ -187,14 +197,14 @@ export function isFlatTerritoryRoad(x, z, margin = 0) {
   return Boolean(hit && hit.distance <= hit.width * 0.5 + margin);
 }
 
-export function spawnOnFullRoad(x, z, { minWidth = 8, laneOffset = 2.6, radius = 2500 } = {}) {
+export function spawnOnFullRoad(x, z, { minWidth = 8, laneOffset = 2.6, radius = 2500, includeGenericTunnels = false } = {}) {
   let hit = null;
   let bestScore = Infinity;
   for (const way of candidates(x, z, radius)) {
-    if (way.width < minWidth) continue;
+    if (way.width < minWidth || (!includeGenericTunnels && (way.flags & 4) && !CROSSING_FLAT_EXCLUSION_IDS.has(way.id))) continue;
     for (let i = 2; i + 1 < way.flat.length; i += 2) {
       const candidate = segmentHit(x, z, way, i);
-      if (candidate.distance > radius) continue;
+      if (candidate.distance > radius || isSubmergedGenericTunnel(way, candidate.x, candidate.z)) continue;
       const endpoint = Math.min(candidate.t * candidate.length, (1 - candidate.t) * candidate.length);
       // A five-metre stub or a segment endpoint is a poor place to arrive in a car. Prefer a nearby usable stretch,
       // while retaining every road as a fallback when a remote settlement only has short ways.

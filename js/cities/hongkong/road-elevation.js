@@ -1,4 +1,5 @@
 import { HK_FULL_ROADS } from '../../hk-full-roads-data.js';
+import { HK_VERIFIED_BRIDGES } from '../../hk-verified-bridge-data.js';
 import { HK_TERRAIN, hongKongTerrainHeight } from './terrain.js';
 import { HSBC_SITE } from './hsbc-headquarters-architecture.js';
 import { SCB_SITE } from './standard-chartered-architecture.js';
@@ -9,6 +10,7 @@ const tunnelData = HK_TERRAIN.tunnel;
 const tunnelBytes = new Uint8Array(atob(tunnelData.heights).split('').map((character) => character.charCodeAt(0)));
 const tunnelHeights = new Int16Array(tunnelBytes.buffer);
 const tunnelWays = new Map();
+const verifiedBridgeWays = new Map(HK_VERIFIED_BRIDGES.ways.map((way) => [way.wayId, way]));
 const profileCache = new Map();
 let tunnelVertexCount = 0;
 
@@ -29,6 +31,7 @@ export function surfaceRoadHeight(x, z) {
 // segmentIndex is the zero-based pair of original OSM vertices. Surface and elevated ways sample the DTM directly;
 // tunnel ways use the generated portal-connected profile stored in the same original vertex order.
 export function roadHeightAtSegment(wayId, segmentIndex, t, x, z) {
+  if (verifiedBridgeWays.has(wayId)) return roadRibbonHeightAtSegment(wayId, segmentIndex, t);
   const tunnel = tunnelWays.get(wayId);
   if (!tunnel) return surfaceRoadHeight(x, z);
   const a = tunnelHeights[tunnel.offset + segmentIndex] / tunnelData.scale;
@@ -57,10 +60,12 @@ function rawRibbonHeight(wayId, segmentIndex, t) {
 // vertical crack at bends while keeping every point across the carriageway on one level transverse plane.
 export function roadRibbonHeightAtVertex(wayId, vertexIndex) {
   const tunnel = tunnelWays.get(wayId);
+  const bridge = verifiedBridgeWays.get(wayId);
   const road = HK_FULL_ROADS.roads[wayId], flat = road?.[5];
   if (!flat) return 0;
   const count = flat.length / 2;
   const vertex = Math.max(0, Math.min(count - 1, vertexIndex));
+  if (bridge) return bridge.vertexHeights[vertex];
   if (tunnel) return tunnelHeights[tunnel.offset + vertex] / tunnelData.scale;
   const x = flat[vertex * 2], z = flat[vertex * 2 + 1];
   let height = surfaceRoadHeight(x, z);
@@ -120,6 +125,8 @@ function buildRibbonProfile(wayId, segmentIndex) {
   const road = HK_FULL_ROADS.roads[wayId], flat = road?.[5];
   const start = segmentIndex * 2;
   if (!flat || start + 3 >= flat.length) return { ts: [0, 1], heights: [0, 0] };
+  const bridge = verifiedBridgeWays.get(wayId);
+  if (bridge) return bridge.segments[segmentIndex] || { ts: [0, 1], heights: [0, 0] };
   if (tunnelWays.has(wayId)) {
     return { ts: [0, 1], heights: [roadRibbonHeightAtVertex(wayId, segmentIndex), roadRibbonHeightAtVertex(wayId, segmentIndex + 1)] };
   }
@@ -186,8 +193,19 @@ export function roadRibbonHeightAtSegment(wayId, segmentIndex, t) {
 }
 
 export function roadHeightAtVertex(wayId, vertexIndex, x, z) {
+  const bridge = verifiedBridgeWays.get(wayId);
+  if (bridge) return bridge.vertexHeights[vertexIndex];
   const tunnel = tunnelWays.get(wayId);
   return tunnel ? tunnelHeights[tunnel.offset + vertexIndex] / tunnelData.scale : surfaceRoadHeight(x, z);
+}
+
+export function verifiedBridgeProfileAtSegment(wayId, segmentIndex) {
+  return verifiedBridgeWays.get(wayId)?.segments[segmentIndex] || null;
+}
+
+export function isVerifiedBridgeRoad(wayOrId) {
+  const wayId = typeof wayOrId === 'number' ? wayOrId : wayOrId?.id;
+  return verifiedBridgeWays.has(wayId);
 }
 
 export function isTunnelRoad(wayOrId) {

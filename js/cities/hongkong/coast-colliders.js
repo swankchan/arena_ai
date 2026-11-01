@@ -10,7 +10,7 @@ export function territoryCoastHasRoadOpening(x1, z1, x2, z2) {
   // and reserve the carriageway plus a vehicle margin before adding an invisible collision wall.
   for (let step = 0; step <= steps; step++) {
     const t = step / steps;
-    const hit = nearestFullRoad(x1 + (x2 - x1) * t, z1 + (z2 - z1) * t, { radius: 60 });
+    const hit = nearestFullRoad(x1 + (x2 - x1) * t, z1 + (z2 - z1) * t, { radius: 60, excludeSubmergedTunnels: true });
     if (hit && hit.distance <= hit.width * 0.5 + 6) return true;
   }
   return false;

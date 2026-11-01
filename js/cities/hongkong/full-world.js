@@ -1,15 +1,16 @@
 import * as THREE from 'three/webgpu';
 import { HK_FULL_MAP } from '../../hk-full-map-data.js';
 import { HK_FULL_ROADS } from '../../hk-full-roads-data.js';
+import { HK_VERIFIED_BRIDGES } from '../../hk-verified-bridge-data.js';
 import { GEO } from '../../hk-geodata.js';
 import { createHongKongRoadSurfaceMaterial } from '../../tsl-materials.js';
 import { createHongKongHarbourWaterMaterial } from './harbour-water.js';
 import { buildTerritoryCoastColliders } from './coast-colliders.js';
 import { CROSSING_FLAT_EXCLUSION_IDS, CROSSING_ROUTES } from './crossings.js';
 import { buildTunnelOpeningRects, subtractTunnelOpenings } from './tunnel-openings.js';
-import { FULL_BOUNDS, isDetailedCore, territoryParkAt } from './full-meta.js';
+import { FULL_BOUNDS, isDetailedCore, isTerritoryLand, territoryParkAt } from './full-meta.js';
 import { HK_TERRAIN, HONG_KONG_TERRAIN_META, hongKongTerrainCellLand, hongKongTerrainHeight, rawHongKongTerrainHeight } from './terrain.js';
-import { roadRibbonHeightAtSegment, roadRibbonProfileAtSegment, TERRAIN_TUNNEL_OPENING_RECTS } from './road-elevation.js';
+import { roadRibbonHeightAtSegment, roadRibbonProfileAtSegment, verifiedBridgeProfileAtSegment, TERRAIN_TUNNEL_OPENING_RECTS } from './road-elevation.js';
 import { DERIVED_ROAD_MARKINGS, signedRoadLaneCount } from './derived-road-markings.js';
 
 // Territory-wide DTM terrain with roads, players and furniture sharing the same triangle-matched height field.
@@ -116,20 +117,94 @@ function addRoadJoin(positions, px, pz, x, z, qx, qz, width, y, heightAt) {
   return true;
 }
 
+function pushQuad(positions, indices, a, b, c, d) {
+  const base = positions.length / 3;
+  positions.push(...a, ...b, ...c, ...d);
+  indices.push(base, base + 1, base + 2, base, base + 2, base + 3);
+}
+
+// Concrete depth and parapets are generated only for the small set of ways with independently verified OSM bridge tags.
+// The asphalt top remains the original OSM centreline ribbon and the entity query uses the exact same profile.
+function addVerifiedBridgeQuad(positions, indices, x1, z1, y1, x2, z2, y2, width) {
+  let dx = x2 - x1, dz = z2 - z1;
+  const length = Math.hypot(dx, dz);
+  if (length < 0.05) return;
+  dx /= length; dz /= length;
+  const extension = Math.min(1.2, width * 0.12);
+  const ax = x1 - dx * extension, az = z1 - dz * extension;
+  const bx = x2 + dx * extension, bz = z2 + dz * extension;
+  const nx = dz * width * 0.5, nz = -dx * width * 0.5;
+  const a0 = [ax + nx, az + nz], a1 = [ax - nx, az - nz];
+  const b0 = [bx + nx, bz + nz], b1 = [bx - nx, bz - nz];
+  const depth = 0.72, parapet = 0.68;
+  pushQuad(positions, indices,
+    [a0[0], y1 - depth, a0[1]], [b0[0], y2 - depth, b0[1]], [b1[0], y2 - depth, b1[1]], [a1[0], y1 - depth, a1[1]]);
+  for (const [a, b] of [[a0, b0], [a1, b1]]) {
+    pushQuad(positions, indices,
+      [a[0], y1, a[1]], [b[0], y2, b[1]], [b[0], y2 - depth, b[1]], [a[0], y1 - depth, a[1]]);
+    pushQuad(positions, indices,
+      [a[0], y1 + 0.1, a[1]], [b[0], y2 + 0.1, b[1]], [b[0], y2 + parapet, b[1]], [a[0], y1 + parapet, a[1]]);
+  }
+}
+
+function addBridgePier(positions, indices, x, z, bottom, top) {
+  if (top - bottom < 1) return;
+  const hx = 0.75, hz = 0.75, base = positions.length / 3;
+  positions.push(
+    x - hx, bottom, z - hz, x + hx, bottom, z - hz, x + hx, bottom, z + hz, x - hx, bottom, z + hz,
+    x - hx, top, z - hz, x + hx, top, z - hz, x + hx, top, z + hz, x - hx, top, z + hz
+  );
+  indices.push(
+    base, base + 2, base + 1, base, base + 3, base + 2,
+    base + 4, base + 5, base + 6, base + 4, base + 6, base + 7,
+    base, base + 1, base + 5, base, base + 5, base + 4,
+    base + 1, base + 2, base + 6, base + 1, base + 6, base + 5,
+    base + 2, base + 3, base + 7, base + 2, base + 7, base + 6,
+    base + 3, base, base + 4, base + 3, base + 4, base + 7
+  );
+}
+
+function addTunnelCoastStations(stations, x1, z1, dx, dz) {
+  const length = Math.hypot(dx, dz);
+  const steps = Math.max(1, Math.ceil(length / 20));
+  let previousT = 0, previousLand = isTerritoryLand(x1, z1);
+  for (let step = 1; step <= steps; step++) {
+    const t = step / steps;
+    const land = isTerritoryLand(x1 + dx * t, z1 + dz * t);
+    if (land !== previousLand) {
+      let low = previousT, high = t;
+      for (let iteration = 0; iteration < 12; iteration++) {
+        const middle = (low + high) * 0.5;
+        if (isTerritoryLand(x1 + dx * middle, z1 + dz * middle) === previousLand) low = middle;
+        else high = middle;
+      }
+      stations.push((low + high) * 0.5);
+    }
+    if (step < steps) stations.push(t);
+    previousT = t; previousLand = land;
+  }
+}
+
 function createRoadChunks(root, includeCore) {
-  const chunks = new Map();
+  const chunks = new Map(), bridgeChunks = new Map();
   const chunkAt = (x, z) => {
     const key = `${Math.floor(x / CHUNK)},${Math.floor(z / CHUNK)}`;
     let chunk = chunks.get(key);
     if (!chunk) chunks.set(key, (chunk = { positions: [], paint: [], indices: [] }));
     return chunk;
   };
-  let segments = 0, sourceSegments = 0, joins = 0;
+  const bridgeChunkAt = (x, z) => {
+    const key = `${Math.floor(x / CHUNK)},${Math.floor(z / CHUNK)}`;
+    let chunk = bridgeChunks.get(key);
+    if (!chunk) bridgeChunks.set(key, (chunk = { positions: [], indices: [] }));
+    return chunk;
+  };
+  let segments = 0, sourceSegments = 0, joins = 0, submergedTunnelSegments = 0, verifiedBridgeSegments = 0, verifiedBridgePiers = 0;
   for (const [wayId, road] of HK_FULL_ROADS.roads.entries()) {
     if (CROSSING_FLAT_EXCLUSION_IDS.has(wayId)) continue;
     const [, width, , , , flat] = road;
     const lanes = signedRoadLaneCount(road);
-    let chainage = 0;
+    let chainage = 0, nextPierChainage = 0;
     for (let i = 2; i + 1 < flat.length; i += 2) {
       const segmentIndex = i / 2 - 1;
       const x1 = flat[i - 2], z1 = flat[i - 1], x2 = flat[i], z2 = flat[i + 1];
@@ -145,17 +220,41 @@ function createRoadChunks(root, includeCore) {
         if (!includeCore && isDetailedCore(mx, mz)) continue;
         sourceSegments++;
         const profile = roadRibbonProfileAtSegment(wayId, segmentIndex);
+        const verifiedBridge = verifiedBridgeProfileAtSegment(wayId, segmentIndex);
         const stations = [ta];
         for (const t of profile.ts) if (t > ta + 1e-7 && t < tb - 1e-7) stations.push(t);
         stations.push(tb);
+        if (road[4] & 4) {
+          addTunnelCoastStations(stations, x1, z1, dx, dz);
+          stations.sort((a, b) => a - b);
+          for (let i = stations.length - 1; i >= 0; i--) {
+            if (stations[i] < ta - 1e-7 || stations[i] > tb + 1e-7) stations.splice(i, 1);
+            else if (i > 0 && stations[i] - stations[i - 1] < 1e-7) stations.splice(i, 1);
+          }
+        }
+        const segmentLength = Math.hypot(dx, dz);
         for (let step = 0; step + 1 < stations.length; step++) {
           const t0 = stations[step], t1 = stations[step + 1];
           const ax = x1 + dx * t0, az = z1 + dz * t0, bx = x1 + dx * t1, bz = z1 + dz * t1;
+          const mx = (ax + bx) * 0.5, mz = (az + bz) * 0.5;
+          if ((road[4] & 4) && !isTerritoryLand(mx, mz)) { submergedTunnelSegments++; continue; }
           const ay = roadRibbonHeightAtSegment(wayId, segmentIndex, t0);
           const by = roadRibbonHeightAtSegment(wayId, segmentIndex, t1);
-          const chunk = chunkAt((ax + bx) * 0.5, (az + bz) * 0.5);
-          addRoadQuad(chunk.positions, chunk.paint, chunk.indices, ax, az, ay, bx, bz, by, width, chainage + Math.hypot(dx, dz) * t0, lanes);
+          const chunk = chunkAt(mx, mz);
+          addRoadQuad(chunk.positions, chunk.paint, chunk.indices, ax, az, ay, bx, bz, by, width, chainage + segmentLength * t0, lanes);
           segments++;
+          if (verifiedBridge) {
+            const concrete = bridgeChunkAt(mx, mz);
+            addVerifiedBridgeQuad(concrete.positions, concrete.indices, ax, az, ay, bx, bz, by, width);
+            verifiedBridgeSegments++;
+            const pierChainage = chainage + segmentLength * (t0 + t1) * 0.5;
+            const ground = hongKongTerrainHeight(mx, mz);
+            if (pierChainage >= nextPierChainage && isTerritoryLand(mx, mz) && (ay + by) * 0.5 - ground > 3.2) {
+              addBridgePier(concrete.positions, concrete.indices, mx, mz, ground - 0.2, (ay + by) * 0.5 - 0.72);
+              verifiedBridgePiers++;
+              nextPierChainage = pierChainage + 45;
+            }
+          }
         }
       }
       chainage += Math.hypot(dx, dz);
@@ -163,6 +262,7 @@ function createRoadChunks(root, includeCore) {
     for (let i = 2; i + 3 < flat.length; i += 2) {
       const x = flat[i], z = flat[i + 1];
       if (!includeCore && isDetailedCore(x, z)) continue;
+      if ((road[4] & 4) && !isTerritoryLand(x, z)) continue;
       const chunk = chunkAt(x, z), vertex = i / 2;
       const y = Math.max(
         roadRibbonHeightAtSegment(wayId, vertex - 1, 1),
@@ -196,7 +296,25 @@ function createRoadChunks(root, includeCore) {
     root.add(mesh);
     meshes++;
   }
-  return { segments, sourceSegments, meshes, joins };
+  const concreteMaterial = new THREE.MeshStandardMaterial({ color: 0x777b78, roughness: 0.93, metalness: 0, side: THREE.DoubleSide });
+  let verifiedBridgeMeshes = 0;
+  for (const [key, chunk] of bridgeChunks) {
+    if (!chunk.positions.length) continue;
+    const geometry = new THREE.BufferGeometry();
+    geometry.setAttribute('position', new THREE.Float32BufferAttribute(chunk.positions, 3));
+    geometry.setIndex(chunk.indices);
+    geometry.computeVertexNormals();
+    geometry.computeBoundingBox();
+    geometry.computeBoundingSphere();
+    const mesh = new THREE.Mesh(geometry, concreteMaterial);
+    mesh.name = `HongKongVerifiedBridge:${key}`;
+    mesh.receiveShadow = true;
+    mesh.castShadow = true;
+    mesh.userData.verifiedBridgeChunk = true;
+    root.add(mesh);
+    verifiedBridgeMeshes++;
+  }
+  return { segments, sourceSegments, meshes, joins, submergedTunnelSegments, verifiedBridgeSegments, verifiedBridgePiers, verifiedBridgeMeshes };
 }
 
 const TERRAIN_COLOURS = {
@@ -361,6 +479,12 @@ export function buildFullHongKongWorld(root, { waterLevel = -2.2, includeCore = 
       fullRoadChunks: roads.meshes,
       fullRoadDerivedPaint: 'in-asphalt-shader',
       fullRoadDerivedPaintExtraTriangles: 0,
+      fullSubmergedTunnelSegmentsHidden: roads.submergedTunnelSegments,
+      verifiedBridgeWays: HK_VERIFIED_BRIDGES.ways.length,
+      verifiedBridgeSegments: roads.verifiedBridgeSegments,
+      verifiedBridgePiers: roads.verifiedBridgePiers,
+      verifiedBridgeMeshes: roads.verifiedBridgeMeshes,
+      verifiedBridgeHeightSource: 'OSM bridge/layer; procedural decks, not surveyed engineering elevations',
       fullLandRings: HK_FULL_MAP.land.length,
       fullParks: HK_FULL_MAP.parks.length,
       fullSeawallColliders: colliders.length,

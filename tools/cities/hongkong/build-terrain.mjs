@@ -22,6 +22,7 @@ const SCALE = 4; // 0.25 m quantisation; the source itself is only accurate to a
 const ROAD_TOP = 0.025;
 const TUNNEL_COVER = 4;
 const TUNNEL_TUBE_HEIGHT = 5.5;
+const TUNNEL_PORTAL_CUTTING = 180;
 const SOURCE_REPO_COMMIT = '5777bc98fb354c369ee6234d08c64a38279e3a27';
 
 proj4.defs('EPSG:2326', '+proj=tmerc +lat_0=22.31213333333334 +lon_0=114.1785555555556 +k=1 +x_0=836694.05 +y_0=819069.8 +ellps=intl +towgs84=-162.619,-276.959,-161.764,0.067753,-2.24365,-1.15883,-1.09425 +units=m +no_defs');
@@ -278,6 +279,7 @@ function buildTunnelProfiles(roads, terrainAt) {
     }
     for (const id of component) {
       const node = nodes[id];
+      node.portalDistance = Math.min(...portals.map((portal) => distances.get(portal).get(id) ?? Infinity));
       if (node.portal) continue;
       let weighted = 0, weights = 0;
       for (const portal of portals) {
@@ -300,7 +302,7 @@ function buildTunnelProfiles(roads, terrainAt) {
     for (let i = 1; i < way.ids.length; i++) {
       const a = nodes[way.ids[i - 1]], b = nodes[way.ids[i]];
       const dx = b.x - a.x, dz = b.z - a.z, length = Math.hypot(dx, dz);
-      if (length < 0.01) continue;
+      if (length < 0.01 || Math.min(a.portalDistance, b.portalDistance) > TUNNEL_PORTAL_CUTTING) continue;
       const steps = Math.max(1, Math.ceil(length / 20));
       for (let step = 0; step < steps; step++) {
         const t0 = step / steps, t1 = (step + 1) / steps;
@@ -326,8 +328,9 @@ function buildTunnelProfiles(roads, terrainAt) {
     tunnelWays: ways.length, tunnelNodes: nodes.length, tunnelComponents: componentCount,
     tunnelPortals: nodes.filter((node) => node.portal).length,
     tunnelOpeningRects: openingRects.length,
+    tunnelPortalCuttingLength: TUNNEL_PORTAL_CUTTING,
     tunnelMinHeight: minHeight, tunnelMaxHeight: maxHeight,
-    tunnelProfile: 'procedural portal-distance blend with 4 m minimum DTM-relative cover; not surveyed engineering depth'
+    tunnelProfile: `procedural portal-distance blend with 4 m minimum DTM-relative cover; terrain openings limited to ${TUNNEL_PORTAL_CUTTING} m portal cuttings; not surveyed engineering depth`
   } };
 }
 

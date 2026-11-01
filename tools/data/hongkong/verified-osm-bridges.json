@@ -1,0 +1,266 @@
+{
+  "version": 1,
+  "retrievedOn": "2026-11-01",
+  "attribution": "© OpenStreetMap contributors, ODbL 1.0",
+  "matchMethod": "Nominatim reverse/lookup candidates verified against the checked-in road geometry bounding box; maximum permitted delta is 0.000001 degrees per edge.",
+  "heightStatus": "OSM bridge and layer tags verified; rendered deck elevations remain procedural and are not surveyed engineering elevations.",
+  "ways": [
+    {
+      "sourceRecordIndex": 3912,
+      "osmWayId": 111905259,
+      "osmVersion": 24,
+      "osmTimestamp": "2026-05-29T11:34:22Z",
+      "bridge": "viaduct",
+      "layer": 2,
+      "highway": "motorway_link",
+      "boundingBox": [
+        22.3541369,
+        22.3557121,
+        114.0830004,
+        114.0833013
+      ],
+      "reverseUrl": "https://nominatim.openstreetmap.org/reverse?format=json&lat=22.3549109&lon=114.0832159&zoom=17&layer=address&addressdetails=0",
+      "osmUrl": "https://api.openstreetmap.org/api/0.6/way/111905259.json"
+    },
+    {
+      "sourceRecordIndex": 4136,
+      "osmWayId": 114437337,
+      "osmVersion": 42,
+      "osmTimestamp": "2026-10-11T14:20:25Z",
+      "bridge": "yes",
+      "layer": 1,
+      "highway": "motorway",
+      "boundingBox": [
+        22.3529593,
+        22.3535387,
+        114.0847078,
+        114.0856803
+      ],
+      "reverseUrl": "https://nominatim.openstreetmap.org/reverse?format=json&lat=22.3532836&lon=114.0852177&zoom=17&layer=address&addressdetails=0",
+      "osmUrl": "https://api.openstreetmap.org/api/0.6/way/114437337.json"
+    },
+    {
+      "sourceRecordIndex": 4172,
+      "osmWayId": 114437458,
+      "osmVersion": 26,
+      "osmTimestamp": "2026-10-11T14:20:25Z",
+      "bridge": "viaduct",
+      "layer": 1,
+      "highway": "motorway_link",
+      "boundingBox": [
+        22.3525733,
+        22.353417,
+        114.0846603,
+        114.0855228
+      ],
+      "reverseUrl": "https://nominatim.openstreetmap.org/reverse?format=json&lat=22.353019&lon=114.0851178&zoom=17&layer=address&addressdetails=0",
+      "osmUrl": "https://api.openstreetmap.org/api/0.6/way/114437458.json"
+    },
+    {
+      "sourceRecordIndex": 5990,
+      "osmWayId": 157812273,
+      "osmVersion": 27,
+      "osmTimestamp": "2026-10-11T14:20:25Z",
+      "bridge": "viaduct",
+      "layer": 3,
+      "highway": "motorway_link",
+      "boundingBox": [
+        22.353425,
+        22.3544642,
+        114.0838473,
+        114.08527
+      ],
+      "reverseUrl": "https://nominatim.openstreetmap.org/reverse?format=json&lat=22.3538173&lon=114.0846714&zoom=17&layer=address&addressdetails=0",
+      "osmUrl": "https://api.openstreetmap.org/api/0.6/way/157812273.json"
+    },
+    {
+      "sourceRecordIndex": 5994,
+      "osmWayId": 157812277,
+      "osmVersion": 40,
+      "osmTimestamp": "2026-10-11T14:20:25Z",
+      "bridge": "viaduct",
+      "layer": 1,
+      "highway": "motorway",
+      "boundingBox": [
+        22.3519841,
+        22.3533361,
+        114.0854187,
+        114.0863939
+      ],
+      "reverseUrl": "https://nominatim.openstreetmap.org/reverse?format=json&lat=22.3527038&lon=114.0859746&zoom=17&layer=address&addressdetails=0",
+      "osmUrl": "https://api.openstreetmap.org/api/0.6/way/157812277.json"
+    },
+    {
+      "sourceRecordIndex": 9524,
+      "osmWayId": 304331846,
+      "osmVersion": 29,
+      "osmTimestamp": "2026-10-11T14:20:25Z",
+      "bridge": "viaduct",
+      "layer": 3,
+      "highway": "motorway_link",
+      "boundingBox": [
+        22.3533007,
+        22.353425,
+        114.0825373,
+        114.0838473
+      ],
+      "reverseUrl": "https://nominatim.openstreetmap.org/reverse?format=json&lat=22.3533595&lon=114.0831936&zoom=17&layer=address&addressdetails=0",
+      "osmUrl": "https://api.openstreetmap.org/api/0.6/way/304331846.json"
+    },
+    {
+      "sourceRecordIndex": 9525,
+      "osmWayId": 304331847,
+      "osmVersion": 19,
+      "osmTimestamp": "2026-05-29T11:34:22Z",
+      "bridge": "viaduct",
+      "layer": 2,
+      "highway": "motorway_link",
+      "boundingBox": [
+        22.3540946,
+        22.3556267,
+        114.0830469,
+        114.0836546
+      ],
+      "reverseUrl": "https://nominatim.openstreetmap.org/reverse?format=json&lat=22.3548297&lon=114.0834391&zoom=17&layer=address&addressdetails=0",
+      "osmUrl": "https://api.openstreetmap.org/api/0.6/way/304331847.json"
+    },
+    {
+      "sourceRecordIndex": 9529,
+      "osmWayId": 304331851,
+      "osmVersion": 24,
+      "osmTimestamp": "2026-05-29T11:34:22Z",
+      "bridge": "yes",
+      "layer": 3,
+      "highway": "motorway",
+      "boundingBox": [
+        22.3534103,
+        22.3536802,
+        114.0820572,
+        114.0831486
+      ],
+      "reverseUrl": "https://nominatim.openstreetmap.org/reverse?format=json&lat=22.3535491&lon=114.0826017&zoom=17&layer=address&addressdetails=0",
+      "osmUrl": "https://api.openstreetmap.org/api/0.6/way/304331851.json"
+    },
+    {
+      "sourceRecordIndex": 12861,
+      "osmWayId": 636356920,
+      "osmVersion": 13,
+      "osmTimestamp": "2026-05-29T11:34:22Z",
+      "bridge": "yes",
+      "layer": 2,
+      "highway": "motorway",
+      "boundingBox": [
+        22.3537387,
+        22.353783,
+        114.0834327,
+        114.0845016
+      ],
+      "reverseUrl": "https://nominatim.openstreetmap.org/reverse?format=json&lat=22.3537668&lon=114.083967&zoom=17&layer=address&addressdetails=0",
+      "osmUrl": "https://api.openstreetmap.org/api/0.6/way/636356920.json"
+    },
+    {
+      "sourceRecordIndex": 16042,
+      "osmWayId": 829932527,
+      "osmVersion": 18,
+      "osmTimestamp": "2026-10-11T14:20:25Z",
+      "bridge": "viaduct",
+      "layer": 1,
+      "highway": "motorway",
+      "boundingBox": [
+        22.351952,
+        22.3529593,
+        114.0856803,
+        114.0862955
+      ],
+      "reverseUrl": "https://nominatim.openstreetmap.org/reverse?format=json&lat=22.3524754&lon=114.0860241&zoom=17&layer=address&addressdetails=0",
+      "osmUrl": "https://api.openstreetmap.org/api/0.6/way/829932527.json"
+    },
+    {
+      "sourceRecordIndex": 1598,
+      "osmWayId": 46765762,
+      "osmVersion": 34,
+      "osmTimestamp": "2026-04-10T15:08:58Z",
+      "bridge": "viaduct",
+      "layer": 3,
+      "highway": "motorway",
+      "boundingBox": [
+        22.2841497,
+        22.2850789,
+        114.1871009,
+        114.1889121
+      ],
+      "reverseUrl": "https://nominatim.openstreetmap.org/lookup?format=json&osm_ids=W46765762,W87081202,W909080866,W909080867&addressdetails=0",
+      "osmUrl": "https://api.openstreetmap.org/api/0.6/way/46765762.json"
+    },
+    {
+      "sourceRecordIndex": 2556,
+      "osmWayId": 87081202,
+      "osmVersion": 27,
+      "osmTimestamp": "2026-04-10T15:08:58Z",
+      "bridge": "viaduct",
+      "layer": 3,
+      "highway": "motorway",
+      "boundingBox": [
+        22.2844878,
+        22.2869949,
+        114.1884739,
+        114.1894349
+      ],
+      "reverseUrl": "https://nominatim.openstreetmap.org/lookup?format=json&osm_ids=W46765762,W87081202,W909080866,W909080867&addressdetails=0",
+      "osmUrl": "https://api.openstreetmap.org/api/0.6/way/87081202.json"
+    },
+    {
+      "sourceRecordIndex": 18153,
+      "osmWayId": 909080866,
+      "osmVersion": 6,
+      "osmTimestamp": "2026-04-10T15:08:58Z",
+      "bridge": "viaduct",
+      "layer": 3,
+      "highway": "motorway",
+      "boundingBox": [
+        22.2850789,
+        22.2853337,
+        114.1889121,
+        114.1890541
+      ],
+      "reverseUrl": "https://nominatim.openstreetmap.org/lookup?format=json&osm_ids=W46765762,W87081202,W909080866,W909080867&addressdetails=0",
+      "osmUrl": "https://api.openstreetmap.org/api/0.6/way/909080866.json"
+    },
+    {
+      "sourceRecordIndex": 18154,
+      "osmWayId": 909080867,
+      "osmVersion": 9,
+      "osmTimestamp": "2026-04-10T15:08:58Z",
+      "bridge": "viaduct",
+      "layer": 3,
+      "highway": "motorway",
+      "boundingBox": [
+        22.2853337,
+        22.2866604,
+        114.1890541,
+        114.1892386
+      ],
+      "reverseUrl": "https://nominatim.openstreetmap.org/lookup?format=json&osm_ids=W46765762,W87081202,W909080866,W909080867&addressdetails=0",
+      "osmUrl": "https://api.openstreetmap.org/api/0.6/way/909080867.json"
+    }
+  ],
+  "reviewedExclusions": [
+    {
+      "sourceRecordIndex": 1889,
+      "osmWayId": 51189379,
+      "osmVersion": 22,
+      "osmTimestamp": "2026-05-29T11:34:22Z",
+      "bridge": "covered",
+      "layer": 2,
+      "reason": "Special covered bridge tag; not eligible for the generic open-viaduct profile.",
+      "boundingBox": [
+        22.3516836,
+        22.3535297,
+        114.0852192,
+        114.0866155
+      ],
+      "reverseUrl": "https://nominatim.openstreetmap.org/reverse?format=json&lat=22.3524094&lon=114.0866102&zoom=17&layer=address&addressdetails=0",
+      "osmUrl": "https://api.openstreetmap.org/api/0.6/way/51189379.json"
+    }
+  ]
+}
