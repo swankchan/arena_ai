@@ -14,6 +14,8 @@ import { buildTwoInternationalFinanceCentre } from './two-ifc-world.js';
 import { isTwoIfcPlazaPoint } from './two-ifc-architecture.js';
 import { buildInternationalCommerceCentre } from './icc-world.js';
 import { isIccPlazaPoint } from './icc-architecture.js';
+import { buildBankOfChinaTower } from './bank-of-china-world.js';
+import { isBankOfChinaPlazaPoint } from './bank-of-china-architecture.js';
 import { createHongKongTrafficAids } from './traffic-aids.js';
 
 const WATER_LEVEL = -2.2;
@@ -31,6 +33,8 @@ export function buildSimpleHongKongWorld(scene, { setStatus = () => {} } = {}) {
   const twoIfc = buildTwoInternationalFinanceCentre(scene, { groundOffset: HONG_KONG_TERRAIN_META.twoIfcPadHeight });
   setStatus('Building the International Commerce Centre...');
   const icc = buildInternationalCommerceCentre(scene, { groundOffset: HONG_KONG_TERRAIN_META.iccPadHeight });
+  setStatus('Building the Bank of China Tower...');
+  const bankOfChina = buildBankOfChinaTower(scene, { groundOffset: HONG_KONG_TERRAIN_META.bankOfChinaPadHeight });
   setStatus('Building drivable harbour bridges and tunnels...');
   const crossings = buildHongKongCrossings(scene);
   setStatus('Placing 144,995 lamp posts across Hong Kong...');
@@ -60,7 +64,8 @@ export function buildSimpleHongKongWorld(scene, { setStatus = () => {} } = {}) {
     const ground = scbEntranceGroundHeight(x, z, crossingGround, standardChartered.groundOffset);
     const twoIfcGround = isTwoIfcPlazaPoint(x, z) ? Math.max(ground, twoIfc.plazaTop) : ground;
     const iccGround = isIccPlazaPoint(x, z) ? Math.max(twoIfcGround, icc.plazaTop) : twoIfcGround;
-    return isHsbcPlazaPoint(x, z) ? Math.max(iccGround, hsbc.plazaTop) : iccGround;
+    const bocGround = isBankOfChinaPlazaPoint(x, z) ? Math.max(iccGround, bankOfChina.plazaTop) : iccGround;
+    return isHsbcPlazaPoint(x, z) ? Math.max(bocGround, hsbc.plazaTop) : bocGround;
   }
 
   const stats = {
@@ -72,11 +77,12 @@ export function buildSimpleHongKongWorld(scene, { setStatus = () => {} } = {}) {
     ...standardChartered.stats,
     ...twoIfc.stats,
     ...icc.stats,
+    ...bankOfChina.stats,
     presentation: 'unified-simple',
     landMeshes: full.stats.fullLandRings,
     blocks: 0,
     parks: full.stats.fullParks,
-    landmarks: hsbc.landmarks.length + standardChartered.landmarks.length + twoIfc.landmarks.length + icc.landmarks.length,
+    landmarks: hsbc.landmarks.length + standardChartered.landmarks.length + twoIfc.landmarks.length + icc.landmarks.length + bankOfChina.landmarks.length,
     lots: 0,
     buildings: 0,
     skippedLots: 0,
@@ -88,7 +94,7 @@ export function buildSimpleHongKongWorld(scene, { setStatus = () => {} } = {}) {
 
   return {
     root: scene,
-    colliders: [...full.colliders, ...crossings.colliders, ...hsbc.colliders, ...standardChartered.colliders, ...twoIfc.colliders, ...icc.colliders],
+    colliders: [...full.colliders, ...crossings.colliders, ...hsbc.colliders, ...standardChartered.colliders, ...twoIfc.colliders, ...icc.colliders, ...bankOfChina.colliders],
     bounds: full.bounds,
     stats,
     personSpawn: { ...SPAWN.person },
@@ -104,8 +110,9 @@ export function buildSimpleHongKongWorld(scene, { setStatus = () => {} } = {}) {
     standardChartered,
     twoIfc,
     icc,
+    bankOfChina,
     treeField: null,
-    landmarks: [...hsbc.landmarks, ...standardChartered.landmarks, ...twoIfc.landmarks, ...icc.landmarks],
+    landmarks: [...hsbc.landmarks, ...standardChartered.landmarks, ...twoIfc.landmarks, ...icc.landmarks, ...bankOfChina.landmarks],
     trafficAids
   };
 }

@@ -69,6 +69,7 @@ export const city = {
       standardChartered: world.standardChartered,
       twoIfc: world.twoIfc,
       icc: world.icc,
+      bankOfChina: world.bankOfChina,
       landmarks: world.landmarks,
       stats,
       teleports: TELEPORTS,
