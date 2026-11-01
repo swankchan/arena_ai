@@ -277,6 +277,34 @@
 - Wong & Ouyang：雙塔約 270 m、double-glazed unitized curtain wall、西側高架道路 forecourts、南塔 W Hotel 40 m 玻璃中庭及獨立 landscaped guest drop-off；同頁官方 W 水晶中庭夜景與雙塔日景用於材料及細部核對：
   https://www.wongouyang.com/projects/international-commerce-centre/#!/cullinan
 
+## 名鑄 The Masterpiece
+
+- 地點及來源：河內道 18 號，採目前 **OSM way 124697429 version 6** 的 **44 個獨立頂點**；原始 WGS84 geometry、完整 tags、版本、changeset 及 ODbL attribution 保存在 `masterpiece-architecture.js`。minimum-area OBB 中心為 **(1467.4534154961186, -1735.245184758726)**，定向尺寸 **80.18536265601915 × 26.90738567586004 m**，`ry=-0.7300713453042845`。這是 OSM 的上蓋塔身 ring，不是整個 K11 發展界線、商場基座或土地用途範圍；模型保留長向圓角及中央突出部位，沒有改成矩形盒。
+- 高度、用途及年份分列：OSM 為 **261 m／64 levels／building:min_level=8／layer=2／location=podium／hotel=separate**。CTBUH 單幢資料為 **257 m architectural＝257 m to-tip、241.7 m occupied、64 above-ground／4 below-ground、345 apartments、384 hotel rooms、177 parking、28 elevators、residential／hotel、all-concrete、2000 construction start／2009 completed**；design architect 為 **Dennis Lau & Ng Chun Man (DLN)**，structural engineer 為 **Arup**。Wikipedia 另採 **261 m antenna spire／241.7 m roof、381-room Hyatt、2002 start／2007 completed**，以及低層六層 K11、酒店 Level 3–24、住宅標號 27–67 的另一套描述。所有數值分欄保存，沒有平均或把 OSM／Wikipedia 的 261 m 冒充 CTBUH architectural；模型最高點採 **257 m**。
+- 低層與住宅立面：依實際查看的全塔、弧形住宅立面及街道照片，建立低層古銅色酒店／商場玻璃、較深 spandrel、上部連續弧形白色住宅阳台帶、玻璃欄杆、中央深藍玻璃豎槽、幼鋁直棂及兩道較厚的雙層高空中花園帶。視覺 podium 頂 **30 m**、hotel 頂 **96 m** 及住宅 courses 是配合來源高度和照片比例的模型控制，不是實測樓層工程標高。次要 layout 的 **26F refuge／47F sky garden + refuge** 獨立保存，沒有直接硬稱為兩道照片厚帶的精準樓層。
+- 空中花園及材料：兩道厚帶把玻璃後退、保留外側白色樓板及玻璃欄杆，並有低矮綠化；它們不是整座塔通用的黑色機電腰線。日間玻璃按酒店、住宅及中央豎槽分色，夜間只保留低量暖色室內窗、兩道厚帶的細暖色線光及冷色玻璃反射，沒有把整座塔變成均勻發光格網。
+- 百頁冠頂及門架：主牆在 **241.7 m occupied** 收束，上方為深色百頁、屋面、機房及維修吊臂；四道白色開敞矩形門架位於兩側長邊，框架最高點為 **257 m**。門架中間保持真正開空，沒有用一塊實心冠頂牆封死。**250.5 m** 只是百頁頂的視覺控制，不是另一個來源 roof 高度。
+- 河內道住宅入口：次要 layout 支持 G/F 河內道住宅入口，因此選 source **edge 25**；其 world midpoint 為 **(1460.000781180954, -1754.8253703821033)**，outward normal 為 **(0.6690464071908454, -0.7432206301126345)**。這是 layout／道路方向導向的設計定位，**不是已測量 OSM 門節點**。依入口照片建立暖色玻璃盒、玻璃門及門柄、薄平面玻璃雨篷、古銅格框、四支偏側幼柱、暖色石質大堂、側牆燈條、古銅幾何飾屏、花槽及程序向量 `THE MASTERPIECE` 標誌；雨篷寬 **12 m**、高 **4.8 m**、front **3.2 m** 均為視覺控制，不是實測圖則，正中門口保持無柱。
+- 地面、碰撞及道路：raw DTM 施工地台為 **5.75 m**，plaza 面抬高 **0.12 m**；OSM `location=podium` 不被用來假稱這個 DTM 數值是已知 podium 頂面或入口工程標高。塔身以 **44 條逐邊 OBB** 分段碰撞，百頁冠頂、門架、雨篷、幼柱及花槽另有碰撞。精確塔身 ring 與道路及 clearance 後街燈均沒有衝突；河內道 way **39492** 的最近中心線距離為 **9.29499389795847 m**（寬 5.2 m），麼地道 way **5544** 為 **16.558616656894703 m**（寬 8.4 m）。edge 25 入口前庭測試 ring 同樣無道路／街燈衝突，因此沒有搬路、搬燈或改白色標線；ground query 只在未選取道路時抬高前庭。
+- 實際瀏覽器驗收：以日景河內道／麼地道兩側全塔、冠頂、空中花園、入口及入口近景，以及夜景全塔、冠頂、住宅厚帶及入口共 **10 個固定視角**逐張檢查。最終場景為 **13 landmarks／0 generic buildings**；本幢 **29 meshes／439,742 vertices／211,252 triangles／113 colliders**，全部 colliders 均進入世界碰撞陣列，`geometryIssues=[]`、`badColliders=0`。最高渲染點為世界 **262.75 m**，扣 **5.75 m** 施工地台後為 **257 m**。大廈中心、入口及前庭的 player ground query 均為 **5.87 m**，河內道抽樣車路為 **5.80409958759363 m**，沒有被前庭覆蓋。在長立面實際逐步驅動行人及車輛撞牆，碰撞後中心法線距離分別為 **0.905／2.605 m**。沒有 page error、應用程式或 shader error；只有既有外部字體 `ERR_CONNECTION_CLOSED` 及 **4 則 SwiftShader performance warnings**。完整 `node --test tests/*.test.cjs` 為 **363／363 pass**。這些都是場景驗證值，不是實地工程數據。
+- 日夜及資產：日夜材質分別處理低反射住宅玻璃、中央藍玻璃、白色阳台、古銅低層、深色冠頂和暖色入口；研究照片只作造型依據，沒有打包進應用程式，模型不使用照片貼圖或下載 GLTF。Richitt 頁面本身曾回 508，只有經圖片搜索實際取得的候選圖被用作次要視覺參考；搜索中錯配的其他建築及室內圖均沒有當成立面證據。
+
+### 參考資料
+
+- OSM 上蓋塔身及目前 API 幾何：https://www.openstreetmap.org/way/124697429
+  https://api.openstreetmap.org/api/0.6/way/124697429/full.json
+- CTBUH／CVU：257 m architectural／to-tip、241.7 m occupied、64 above-ground／4 below-ground、345 apartments、384 hotel rooms、2000／2009、DLN、Arup、Meinhardt、Hip Hing 及 all-concrete：
+  https://www.skyscrapercenter.com/building/the-masterpiece/747
+- Wikipedia 次要 convention：261 m antenna spire／241.7 m roof、381-room hotel、2002／2007，以及 K11／Hyatt／住宅樓層描述；沒有取代 CTBUH 模型高度：
+  https://en.wikipedia.org/wiki/The_Masterpiece_(Hong_Kong)
+- 市建局 Hanoi Road Project：8,299 m² site、102,625 m² total GFA、31,209 m² commercial GFA、1,219 m² open space、345 flats；頁面的 2018-19 是 URA 項目狀態，沒有取代塔樓完成年份：
+  https://www.ura.org.hk/en/project/redevelopment/hanoi-road-project-the-masterpiece
+- Wikimedia Commons 外觀分類；實際查看 `18_Hanoi_Road_viewed_from_Tsim_Sha_Tsui_Promenade.jpg` 及 `HK_TST_East_Mody_Road_Masterpriece_K11_Hotel_Paronama_facades_Empress_Plaza_Nov-2012.JPG`，用於全塔比例、圓角、兩道厚帶及街道 context：
+  https://commons.wikimedia.org/wiki/Category:Exterior_of_The_Masterpiece,_Hong_Kong
+- Richitt／OneDay 的次要外觀及入口照片、住宅 layout：只用於弧形阳台、冠頂、暖色玻璃入口和河內道入口方向，不作精準尺寸或結構依據：
+  https://www.richitt.com/名鑄-themasterpiece/
+  https://www.oneday.com.hk/zh_HK/buildings/the-masterpiece/
+
 ## 程式入口
 
 - `hsbc-headquarters-architecture.js`：滙豐純地理位置、OBB、樓層比例及 collider 座標換算，可在 Node 測試。
@@ -305,4 +333,6 @@
 - `cullinan-i-world.js`：天璽I 藍銀 unitized 幕牆、百頁、折角塔冠、金色 C 玻璃盒、雙層落客 canopy、日夜材質、碰撞及 stats。
 - `cullinan-ii-architecture.js`：天璽II 15 頂點 OSM 來源、OBB、高度／用途／年份 conventions、西側 W 中庭、level-1 door、折角冠頂、forecourt 及碰撞座標換算。
 - `cullinan-ii-world.js`：天璽II 藍銀 unitized 幕牆、百頁、折角塔冠、水晶 W 中庭、平面落客雨篷、景觀、日夜材質、碰撞及 stats。
-- `simple-world.js`：只整合這十二個 authored landmarks；普通 `buildings` 仍為 0。
+- `masterpiece-architecture.js`：名鑄 44 頂點 OSM 來源、OBB、高度／用途／年份 conventions、照片導向樓層控制、河內道入口、前庭及逐邊碰撞座標換算。
+- `masterpiece-world.js`：名鑄圓角酒店／住宅立面、連續弧形白色阳台帶、中央藍玻璃、雙層高空中花園、百頁冠頂、四道開敞門架、維修吊臂、河內道暖色玻璃入口、日夜材質、碰撞及 stats。
+- `simple-world.js`：只整合這十三個 authored landmarks；普通 `buildings` 仍為 0。

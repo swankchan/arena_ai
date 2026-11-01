@@ -2,7 +2,7 @@
 
 這份文件是香港場景**實際建築物進度總表及 100 幢主要大廈施工清單**，記錄建築物是否已加入、是否精修，以及是否作為 Landmark 整合。`tools/data/hongkong/landmarks.json` 及下表的待製作項目只是來源／候選資料；資料出現在該 JSON 或本清單 **不代表已經加入場景**。
 
-最後整理：**2026-11-01**。目前已實際加入 **12 幢**；其餘 **88 幢**仍是待製作項目，沒有基本體量或精修完成的意思。
+最後整理：**2026-11-01**。目前已實際加入 **13 幢**；其餘 **87 幢**仍是待製作項目，沒有基本體量或精修完成的意思。
 
 ## 標記定義
 
@@ -19,12 +19,12 @@
 | 項目 | 數量 |
 | --- | ---: |
 | 施工清單總數 | 100 |
-| 已加入場景的建築物 | 12 |
-| 已加入而且精修 | 12 |
+| 已加入場景的建築物 | 13 |
+| 已加入而且精修 | 13 |
 | 已加入但只有基本體量 | 0 |
-| 已加入並作為 Landmark 整合 | 12 |
+| 已加入並作為 Landmark 整合 | 13 |
 | 製作中 | 0 |
-| 待製作 | 88 |
+| 待製作 | 87 |
 
 目前普通建築群仍為 **0**；上表只計實際加入的建築物，不把橋樑、道路構築物或純 OSM 候選資料計算在內。
 
@@ -43,6 +43,7 @@
 - K11 Atelier OSM way **668219664** 採 **274 m／66 levels**；CVU 另列 **272.5 m architectural／277.3 m to-tip／255.1 m occupied、66 above-ground／5 below-ground**。官方約 **273 m** 及 **62 層（排除兩層避火及兩層機電）**、設計報道 **280 m** 與 Wikipedia **284 m** 均在詳細紀錄及程式分列，沒有混合、平均或擅自取整。
 - 天璽I OSM way **200726114** 採 **270 m／68 levels**，Wong & Ouyang 亦以約 **270 m** 描述雙塔；CTBUH 單幢 North Tower 資料為 **269.9 m architectural＝269.9 m to-tip、68 above-ground／1 below-ground、2008 completed**。OSM `start_date=2007` 與 CTBUH 完成年份分開保存；`location=podium` 也不被當成已知 podium 工程標高。
 - 天璽II 目前 **OSM way 25608721 version 21** 採 **270 m／68 levels／hotel=separate**；CTBUH South Tower 為 **269.9 m architectural＝269.9 m to-tip、68 above-ground／1 below-ground、2008 completed、residential／hotel、all-concrete**。Wong & Ouyang 的 W Hotel 玻璃中庭與 OSM level-1 indoor door 分開保存，沒有把酒店用途或入口位置套到北塔。
+- 名鑄目前 **OSM way 124697429 version 6** 採 **261 m／64 levels／building:min_level=8／layer=2／location=podium／hotel=separate**；CTBUH 為 **257 m architectural＝257 m to-tip／241.7 m occupied／64 above-ground／4 below-ground、384 hotel rooms、2000 construction start／2009 completed**。Wikipedia 另採 **261 m antenna spire／241.7 m roof、381 hotel rooms、2002 start／2007 completed**；所有 convention 均分開保存，模型最高點採 CTBUH **257 m**，沒有平均、取整或另加一支把不同來源混合的假天線。
 
 | 內部 ID | 建築物 | 地區 | 場景狀態 | 精修 | Landmark | 高度 | 位置／footprint 依據 | 主要實作 |
 | --- | --- | --- | --- | --- | --- | ---: | --- | --- |
@@ -58,7 +59,7 @@
 | `HK-B0010` | K11 Atelier（Victoria Dockside） | 尖沙咀 | 已加入 | **是** | **是** | OSM 274 m；外部 272.5 m | OSM way **668219664**（目前 API building；原始幾何另存於專屬來源模組） | `js/cities/hongkong/k11-atelier-world.js` |
 | `HK-B0011` | 天璽I The Cullinan I | 西九龍 | 已加入 | **是** | **是** | OSM 270 m；CTBUH 269.9 m | OSM way **200726114**（version 14；原始幾何及 tags 另存於專屬來源模組） | `js/cities/hongkong/cullinan-i-world.js` |
 | `HK-B0012` | 天璽II The Cullinan II | 西九龍 | 已加入 | **是** | **是** | OSM 270 m；CTBUH 269.9 m | OSM way **25608721**（version 21；原始幾何、tags 及入口 node 另存於專屬來源模組） | `js/cities/hongkong/cullinan-ii-world.js` |
-| `HK-B0013` | 名鑄 The Masterpiece | 尖沙咀 | 待製作 | 否 | 否 | 261 m | OSM way **124697429** | — |
+| `HK-B0013` | 名鑄 The Masterpiece | 尖沙咀 | 已加入 | **是** | **是** | OSM 261 m；CTBUH 257 m | OSM way **124697429**（version 6；原始幾何及 tags 另存於專屬來源模組） | `js/cities/hongkong/masterpiece-world.js` |
 | `HK-B0014` | 朗豪坊辦公大樓 Langham Place Office Tower | 旺角 | 待製作 | 否 | 否 | 255 m | OSM way **65259283** | — |
 | `HK-B0015` | 御峰 The Summit | 半山區 | 待製作 | 否 | 否 | 220 m | OSM way **65257281** | — |
 | `HK-B0016` | 合和中心 Hopewell Centre | 灣仔 | 待製作 | 否 | 否 | 216 m | OSM way **88391069** | — |
@@ -165,6 +166,7 @@
 | 2026-11-01 | `HK-B0010` | K11 Atelier OSM way **668219664**、地面服務道路 ways **44075／50914**、隧道 ways **44081／50542** 及 Salisbury Road 入口雨篷 | 精確塔身 ring 與 4 個道路 segment 相交：2 個地面、2 個隧道；地面道路涉及 7 條外牆邊。原始 ring 及入口雨篷均沒有 clearance 後街燈，雨篷亦沒有地面道路衝突 | 不搬路、不刪隧道、不改白色標線或搬歪建築。7 條地面相交邊保留車輛開口，地面大堂維持 **9 m soffit**；最低 portal lintel 對實際渲染道路剖面仍超過 **4.5 m** 車輛淨空，ground query 不把道路覆蓋成 plaza | `tests/hongkong-k11-atelier-clearance.test.cjs`；全塔、退台、入口、塔冠及日夜瀏覽器檢查 |
 | 2026-11-01 | `HK-B0011` | 天璽I OSM way **200726114**、隧道 ways **48321／51074**、西側 40 m 入口玻璃盒及兩幢之間的有蓋落客區 | 精確塔身 ring 與 **2 個 tunnel road segments** 相交，沒有地面車路穿過塔身；入口及落客 forecourts 亦沒有地面道路或 clearance 後街燈衝突 | 不搬路、不刪隧道、不改白色標線或搬歪建築。地下道路保持原有道路選擇，非道路 forecourt 才採施工地台；入口玻璃盒外伸 **3.2 m**，沒有佔用雅翔道車道 | `tests/hongkong-cullinan-i-clearance.test.cjs`；全塔、入口、冠頂及日夜瀏覽器、玩家／車輛碰撞與隧道分層檢查 |
 | 2026-11-01 | `HK-B0012` | 天璽II OSM way **25608721**、西側 W Hotel 玻璃中庭／落客 forecourt、雅翔道及 elevated way **51139** | 精確塔身 ring 與道路沒有相交；W forecourt 經道路中心線及車道半寬掃描後，亦無地面或 elevated 車路衝突，兩個檢查範圍均沒有 clearance 後街燈 | 不搬路、不搬燈、不改白色標線或搬歪建築。W 中庭按建築師所述放在西側高架道路 forecourt，入口雨篷及景觀花槽留在無車路範圍；OSM edge 12 的 level-1 indoor door 獨立保留，沒有拿來取代 W 落客位置 | `tests/hongkong-cullinan-ii-clearance.test.cjs`；全塔、W 中庭、冠頂及日夜瀏覽器、行人／車輛碰撞檢查 |
+| 2026-11-01 | `HK-B0013` | 名鑄 OSM way **124697429**、河內道住宅入口 forecourt、河內道 way **39492** 及麼地道 way **5544** | 精確 44 頂點塔身 ring 沒有道路相交；edge 25 的 **16 m 寬、back −1 m／front 4 m** 入口測試範圍亦無地面或 elevated 車路及 clearance 後街燈衝突 | 不搬路、不搬燈、不改白色標線或搬歪建築。入口按河內道住宅入口 layout 定向，但不是假裝成 OSM 門節點或實測雨篷；ground query 只在未選取道路時抬高前庭 | `tests/hongkong-masterpiece-clearance.test.cjs`；全塔、弧形住宅立面、河內道入口、冠頂及日夜瀏覽器、行人／車輛碰撞檢查 |
 | — | — | — | 現有 HSBC／SCB 暫未補回逐項歷史衝突台帳 | 由下一次相關改動開始逐項記錄 | — |
 
 ## 新增及更新規則

@@ -77,6 +77,7 @@ export const city = {
       k11Atelier: world.k11Atelier,
       cullinanI: world.cullinanI,
       cullinanII: world.cullinanII,
+      masterpiece: world.masterpiece,
       landmarks: world.landmarks,
       stats,
       teleports: TELEPORTS,
