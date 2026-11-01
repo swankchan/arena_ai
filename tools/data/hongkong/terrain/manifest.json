@@ -9,7 +9,7 @@
   "sourceGrid": "HK1980 Grid / EPSG:2326, 70 m resampling of the official 5 m DTM",
   "outputGrid": "Application local tangent plane, 70 m reprojection, triangle-matched sampling, 0.25 m quantisation",
   "output": "js/hk-terrain-data.js",
-  "bytes": 3837599,
+  "bytes": 6311897,
   "grid": {
     "w": 961,
     "h": 716,
@@ -31,6 +31,11 @@
     "tunnelMinHeight": -3.975,
     "tunnelMaxHeight": 408.79571428571415,
     "tunnelProfile": "procedural portal-distance blend with 4 m minimum DTM-relative cover; not surveyed engineering depth"
+  },
+  "coast": {
+    "mixedCells": 23546,
+    "clippedTriangles": 87214,
+    "source": "OSM land polygons clipped against each DTM source triangle"
   },
   "checks": [
     {

@@ -10,7 +10,9 @@
     "build:hk-terrain": "node tools/cities/hongkong/build-terrain.mjs"
   },
   "devDependencies": {
+    "earcut": "^3.0.2",
     "esbuild": "0.28.2",
+    "polygon-clipping": "^0.15.7",
     "proj4": "^2.19.10"
   }
 }

@@ -36,6 +36,31 @@ test('the local DTM retains its official provenance, accuracy limits and complet
   assert.equal(fullMeta.isTerritoryLand(0, -1500), false);
 });
 
+test('coast cells are exact upward land-only clippings rather than whole 70 m water wedges', () => {
+  const { HK_TERRAIN } = terrain;
+  const { grid, coast } = HK_TERRAIN;
+  const cols = grid.w - 1;
+  assert.equal(Object.keys(coast.cells).length, coast.mixedCells);
+  assert.equal(Buffer.from(coast.landBits, 'base64').length, Math.ceil(cols * (grid.h - 1) / 8));
+  let triangles = 0;
+  for (const [key, flat] of Object.entries(coast.cells)) {
+    const index = Number(key), row = Math.floor(index / cols), col = index % cols;
+    const x0 = grid.minX + col * grid.cell, z0 = grid.minZ + row * grid.cell;
+    assert.equal(flat.length % 6, 0);
+    for (let i = 0; i < flat.length; i += 6) {
+      const a = [flat[i], flat[i + 1]], b = [flat[i + 2], flat[i + 3]], c = [flat[i + 4], flat[i + 5]];
+      const normalY = (b[1] - a[1]) * (c[0] - a[0]) - (b[0] - a[0]) * (c[1] - a[1]);
+      assert.ok(normalY > 0, `coast triangle ${key}:${i} faces upward`);
+      for (const value of [...a, ...b, ...c]) assert.ok(value >= -0.001 && value <= grid.cell + 0.001);
+      const x = x0 + (a[0] + b[0] + c[0]) / 3, z = z0 + (a[1] + b[1] + c[1]) / 3;
+      assert.equal(fullMeta.isTerritoryLand(x, z), true, `coast triangle ${key}:${i} stays on land`);
+      triangles++;
+    }
+  }
+  assert.equal(triangles, coast.triangleCount);
+  assert.ok(triangles > 80000);
+});
+
 test('Tai Mo Shan, Victoria Peak, Lantau Peak and Central align with the reprojected source checks', () => {
   const expectedRanges = new Map([
     ['大帽山 Tai Mo Shan', [900, 1000]],

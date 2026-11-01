@@ -7,8 +7,8 @@ import { createHongKongHarbourWaterMaterial } from './harbour-water.js';
 import { buildTerritoryCoastColliders } from './coast-colliders.js';
 import { CROSSING_FLAT_EXCLUSION_IDS, CROSSING_ROUTES } from './crossings.js';
 import { buildTunnelOpeningRects, subtractTunnelOpenings } from './tunnel-openings.js';
-import { FULL_BOUNDS, isDetailedCore, isTerritoryLand, territoryParkAt } from './full-meta.js';
-import { HONG_KONG_TERRAIN_META, hongKongTerrainHeight } from './terrain.js';
+import { FULL_BOUNDS, isDetailedCore, territoryParkAt } from './full-meta.js';
+import { HK_TERRAIN, HONG_KONG_TERRAIN_META, hongKongTerrainCellLand, hongKongTerrainHeight, rawHongKongTerrainHeight } from './terrain.js';
 import { roadHeightAtSegment, roadHeightAtVertex, TERRAIN_TUNNEL_OPENING_RECTS } from './road-elevation.js';
 
 // Territory-wide DTM terrain with roads, players and furniture sharing the same triangle-matched height field.
@@ -184,21 +184,29 @@ const TERRAIN_COLOURS = {
   woods: new THREE.Color(0x294c32)
 };
 
+function setTerrainSmoothNormals(geometry) {
+  const position = geometry.getAttribute('position'), normals = [];
+  const epsilon = 2;
+  for (let i = 0; i < position.count; i++) {
+    const x = position.getX(i), z = position.getZ(i);
+    // Analytic DTM normals match at shared vertices and across chunk boundaries; the non-indexed
+    // portal geometry therefore shades as one continuous hillside instead of flat 70 m facets.
+    const nx = rawHongKongTerrainHeight(x - epsilon, z) - rawHongKongTerrainHeight(x + epsilon, z);
+    const nz = rawHongKongTerrainHeight(x, z - epsilon) - rawHongKongTerrainHeight(x, z + epsilon);
+    const inverse = 1 / Math.hypot(nx, epsilon * 2, nz);
+    normals.push(nx * inverse, epsilon * 2 * inverse, nz * inverse);
+  }
+  geometry.setAttribute('normal', new THREE.Float32BufferAttribute(normals, 3));
+}
+
 function createTerrainChunks(root, includeCore) {
   const grid = HONG_KONG_TERRAIN_META.grid;
   const chunks = new Map();
-  const landMask = new Uint8Array(grid.w * grid.h);
   const parkMask = new Uint8Array((grid.w - 1) * (grid.h - 1));
-  // Coast and land-use polygons are much more expensive than the DTM lookup. Cache them once
-  // per source vertex / cell instead of repeating identical point-in-polygon work after clipping.
-  for (let row = 0; row < grid.h; row++) {
-    for (let col = 0; col < grid.w; col++) {
-      const x = grid.minX + col * grid.cell, z = grid.minZ + row * grid.cell;
-      landMask[row * grid.w + col] = isTerritoryLand(x, z) ? 1 : 0;
-      if (row < grid.h - 1 && col < grid.w - 1) {
-        const park = territoryParkAt(x + grid.cell * 0.5, z + grid.cell * 0.5);
-        parkMask[row * (grid.w - 1) + col] = park ? park.cat + 1 : 0;
-      }
+  for (let row = 0; row < grid.h - 1; row++) {
+    for (let col = 0; col < grid.w - 1; col++) {
+      const park = territoryParkAt(grid.minX + (col + 0.5) * grid.cell, grid.minZ + (row + 0.5) * grid.cell);
+      parkMask[row * (grid.w - 1) + col] = park ? park.cat + 1 : 0;
     }
   }
   const chunkRects = new Map();
@@ -212,11 +220,10 @@ function createTerrainChunks(root, includeCore) {
     }
   }
   let sourceTriangles = 0;
-  const append = (points, ids) => {
+  const append = (points) => {
     const cx = (points[0][0] + points[1][0] + points[2][0]) / 3;
     const cz = (points[0][1] + points[1][1] + points[2][1]) / 3;
     if (!includeCore && isDetailedCore(cx, cz)) return;
-    if (landMask[ids[0]] + landMask[ids[1]] + landMask[ids[2]] === 0) return;
     const key = `${Math.floor(cx / TERRAIN_CHUNK)},${Math.floor(cz / TERRAIN_CHUNK)}`;
     let chunk = chunks.get(key);
     if (!chunk) chunks.set(key, (chunk = { positions: [], minX: Infinity, maxX: -Infinity, minZ: Infinity, maxZ: -Infinity }));
@@ -227,14 +234,26 @@ function createTerrainChunks(root, includeCore) {
     }
     sourceTriangles++;
   };
+  const coastCells = HK_TERRAIN.coast.cells;
   for (let row = 0; row < grid.h - 1; row++) {
     const z0 = grid.minZ + row * grid.cell, z1 = z0 + grid.cell;
     for (let col = 0; col < grid.w - 1; col++) {
       const x0 = grid.minX + col * grid.cell, x1 = x0 + grid.cell;
-      const a = [x0, z0], b = [x1, z0], d = [x0, z1], e = [x1, z1];
-      const ia = row * grid.w + col, ib = ia + 1, id = ia + grid.w, ie = id + 1;
-      append([a, d, b], [ia, id, ib]);
-      append([b, d, e], [ib, id, ie]);
+      const cellIndex = row * (grid.w - 1) + col;
+      const clipped = coastCells[cellIndex];
+      if (clipped) {
+        for (let i = 0; i + 5 < clipped.length; i += 6) {
+          append([
+            [x0 + clipped[i], z0 + clipped[i + 1]],
+            [x0 + clipped[i + 2], z0 + clipped[i + 3]],
+            [x0 + clipped[i + 4], z0 + clipped[i + 5]]
+          ]);
+        }
+      } else if (hongKongTerrainCellLand(cellIndex)) {
+        const a = [x0, z0], b = [x1, z0], d = [x0, z1], e = [x1, z1];
+        append([a, d, b]);
+        append([b, d, e]);
+      }
     }
   }
   const material = new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 1, metalness: 0 });
@@ -245,17 +264,16 @@ function createTerrainChunks(root, includeCore) {
     const rects = chunkRects.get(key) || [];
     if (rects.length) geometry = cutTunnelOpenings(geometry, (x, z) => hongKongTerrainHeight(x, z) + LAND_TOP, rects);
     const position = geometry.getAttribute('position'), colors = [];
-    for (let i = 0; i + 2 < position.count; i += 3) {
-      const cx = (position.getX(i) + position.getX(i + 1) + position.getX(i + 2)) / 3;
-      const cz = (position.getZ(i) + position.getZ(i + 1) + position.getZ(i + 2)) / 3;
-      const col = Math.max(0, Math.min(grid.w - 2, Math.floor((cx - grid.minX) / grid.cell)));
-      const row = Math.max(0, Math.min(grid.h - 2, Math.floor((cz - grid.minZ) / grid.cell)));
+    for (let i = 0; i < position.count; i++) {
+      const x = position.getX(i), z = position.getZ(i);
+      const col = Math.max(0, Math.min(grid.w - 2, Math.floor((x - grid.minX) / grid.cell)));
+      const row = Math.max(0, Math.min(grid.h - 2, Math.floor((z - grid.minZ) / grid.cell)));
       const park = parkMask[row * (grid.w - 1) + col];
       const colour = park === 2 ? TERRAIN_COLOURS.woods : park ? TERRAIN_COLOURS.park : TERRAIN_COLOURS.land;
-      for (let vertex = 0; vertex < 3; vertex++) colors.push(colour.r, colour.g, colour.b);
+      colors.push(colour.r, colour.g, colour.b);
     }
     geometry.setAttribute('color', new THREE.Float32BufferAttribute(colors, 3));
-    geometry.computeVertexNormals();
+    setTerrainSmoothNormals(geometry);
     geometry.computeBoundingBox();
     geometry.computeBoundingSphere();
     const mesh = new THREE.Mesh(geometry, material);
@@ -332,6 +350,8 @@ export function buildFullHongKongWorld(root, { waterLevel = -2.2, includeCore = 
       terrainSourceTriangles: terrain.sourceTriangles,
       terrainGridW: HONG_KONG_TERRAIN_META.grid.w,
       terrainGridH: HONG_KONG_TERRAIN_META.grid.h,
+      terrainCoastCells: HK_TERRAIN.coast.mixedCells,
+      terrainCoastTriangles: HK_TERRAIN.coast.triangleCount,
       terrainMaxElevation: HONG_KONG_TERRAIN_META.grid.maxElevation
     }
   };

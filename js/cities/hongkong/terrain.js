@@ -12,7 +12,12 @@ function decodeBytes(base64) {
 const grid = HK_TERRAIN.grid;
 const elevationBytes = decodeBytes(HK_TERRAIN.elevations);
 const elevations = new Uint16Array(elevationBytes.buffer);
+const coastLandBits = decodeBytes(HK_TERRAIN.coast.landBits);
 const valueAt = (col, row) => elevations[row * grid.w + col] / grid.scale;
+
+export function hongKongTerrainCellLand(index) {
+  return Boolean(coastLandBits[index >> 3] & (1 << (index & 7)));
+}
 
 // Reprojection into the app grid used bilinear source sampling. Runtime height queries reproduce the exact two
 // triangles rendered for each cell, avoiding vehicles floating above or sinking into a coarse sloping triangle.

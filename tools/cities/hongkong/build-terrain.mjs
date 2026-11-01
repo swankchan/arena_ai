@@ -6,9 +6,12 @@ import path from 'node:path';
 import crypto from 'node:crypto';
 import { fileURLToPath } from 'node:url';
 import proj4 from 'proj4';
+import polygonClipping from 'polygon-clipping';
+import earcut from 'earcut';
 import { makeFrame } from '../../geo/frame.mjs';
 import cfg from './config.mjs';
 import { HK_FULL_ROADS } from '../../../js/hk-full-roads-data.js';
+import { HK_FULL_MAP } from '../../../js/hk-full-map-data.js';
 
 const HERE = fileURLToPath(new URL('.', import.meta.url));
 const DATA_DIR = path.resolve(HERE, '../../data/hongkong/terrain');
@@ -26,6 +29,135 @@ const toHk1980 = proj4('EPSG:4326', 'EPSG:2326');
 const readJson = (file) => JSON.parse(fs.readFileSync(file, 'utf8'));
 const keyFor = (x, z) => `${(Math.round(x * 10) / 10).toFixed(1)},${(Math.round(z * 10) / 10).toFixed(1)}`;
 const clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
+
+function pointInRing(flat, x, z) {
+  let inside = false;
+  for (let i = 0, j = flat.length - 2; i < flat.length; j = i, i += 2) {
+    const xi = flat[i], zi = flat[i + 1], xj = flat[j], zj = flat[j + 1];
+    if ((zi > z) !== (zj > z) && x < ((xj - xi) * (z - zi)) / (zj - zi) + xi) inside = !inside;
+  }
+  return inside;
+}
+
+// Clip only cells crossed by an OSM coastline edge. Cells without an edge are wholly land or water,
+// so the runtime needs only a bit per cell plus a small set of exact coast-clipped source triangles.
+function buildCoastCells(minX, minZ, w, h, cell) {
+  const cols = w - 1, rows = h - 1, regionCell = 1000, regionStride = 100003;
+  const rings = HK_FULL_MAP.land.map((flat) => {
+    const points = [];
+    let minRingX = Infinity, maxRingX = -Infinity, minRingZ = Infinity, maxRingZ = -Infinity;
+    for (let i = 0; i + 1 < flat.length; i += 2) {
+      const x = flat[i], z = flat[i + 1];
+      points.push([x, z]);
+      minRingX = Math.min(minRingX, x); maxRingX = Math.max(maxRingX, x);
+      minRingZ = Math.min(minRingZ, z); maxRingZ = Math.max(maxRingZ, z);
+    }
+    if (points.length && (points[0][0] !== points.at(-1)[0] || points[0][1] !== points.at(-1)[1])) points.push([...points[0]]);
+    return { flat, points, polygon: [points], bounds: { minRingX, maxRingX, minRingZ, maxRingZ } };
+  });
+  const regions = new Map();
+  const addRegion = (key, id) => {
+    if (!regions.has(key)) regions.set(key, []);
+    regions.get(key).push(id);
+  };
+  for (const [id, ring] of rings.entries()) {
+    const b = ring.bounds;
+    for (let ix = Math.floor(b.minRingX / regionCell); ix <= Math.floor(b.maxRingX / regionCell); ix++) {
+      for (let iz = Math.floor(b.minRingZ / regionCell); iz <= Math.floor(b.maxRingZ / regionCell); iz++) addRegion(ix * regionStride + iz, id);
+    }
+  }
+  const regionAt = (x, z) => regions.get(Math.floor(x / regionCell) * regionStride + Math.floor(z / regionCell)) || [];
+  const landAt = (x, z) => regionAt(x, z).some((id) => pointInRing(rings[id].flat, x, z));
+  const landBits = Buffer.alloc(Math.ceil(cols * rows / 8));
+  for (let row = 0; row < rows; row++) for (let col = 0; col < cols; col++) {
+    if (!landAt(minX + (col + 0.5) * cell, minZ + (row + 0.5) * cell)) continue;
+    const index = row * cols + col;
+    landBits[index >> 3] |= 1 << (index & 7);
+  }
+
+  const edgeCells = new Map();
+  for (const [id, ring] of rings.entries()) {
+    for (let i = 0, j = ring.points.length - 1; i < ring.points.length; j = i++) {
+      const a = ring.points[j], b = ring.points[i];
+      if (Math.max(a[0], b[0]) < minX || Math.min(a[0], b[0]) > minX + cols * cell
+        || Math.max(a[1], b[1]) < minZ || Math.min(a[1], b[1]) > minZ + rows * cell) continue;
+      const minCol = clamp(Math.floor((Math.min(a[0], b[0]) - minX) / cell), 0, cols - 1);
+      const maxCol = clamp(Math.floor((Math.max(a[0], b[0]) - minX) / cell), 0, cols - 1);
+      const minRow = clamp(Math.floor((Math.min(a[1], b[1]) - minZ) / cell), 0, rows - 1);
+      const maxRow = clamp(Math.floor((Math.max(a[1], b[1]) - minZ) / cell), 0, rows - 1);
+      for (let row = minRow; row <= maxRow; row++) for (let col = minCol; col <= maxCol; col++) {
+        const index = row * cols + col;
+        if (!edgeCells.has(index)) edgeCells.set(index, new Set());
+        edgeCells.get(index).add(id);
+      }
+    }
+  }
+
+  // Crop large rings once per aligned 700 m block, not once per 70 m cell. Each block contains
+  // exactly 10x10 cells, so no source triangle straddles the cropped polygon boundary.
+  const blockCells = 10, blockLandCache = new Map();
+  const landForBlock = (blockCol, blockRow) => {
+    const key = `${blockCol},${blockRow}`;
+    if (blockLandCache.has(key)) return blockLandCache.get(key);
+    const x0 = minX + blockCol * blockCells * cell, z0 = minZ + blockRow * blockCells * cell;
+    const x1 = x0 + blockCells * cell, z1 = z0 + blockCells * cell;
+    const blockPolygon = [[[x0, z0], [x0, z1], [x1, z1], [x1, z0], [x0, z0]]];
+    const inputs = [];
+    for (const ring of rings) {
+      const b = ring.bounds;
+      if (b.maxRingX < x0 || b.minRingX > x1 || b.maxRingZ < z0 || b.minRingZ > z1) continue;
+      const cropped = polygonClipping.intersection(ring.polygon, blockPolygon);
+      if (cropped.length) inputs.push(cropped);
+    }
+    const land = !inputs.length ? [] : inputs.length === 1 ? inputs[0] : polygonClipping.union(...inputs);
+    blockLandCache.set(key, land);
+    return land;
+  };
+
+  const cells = {};
+  let triangleCount = 0;
+  for (const index of edgeCells.keys()) {
+    const row = Math.floor(index / cols), col = index % cols;
+    const x0 = minX + col * cell, z0 = minZ + row * cell, x1 = x0 + cell, z1 = z0 + cell;
+    const land = landForBlock(Math.floor(col / blockCells), Math.floor(row / blockCells));
+    if (!land.length) continue;
+    const sourceTriangles = [
+      [[x0, z0], [x0, z1], [x1, z0]],
+      [[x1, z0], [x0, z1], [x1, z1]]
+    ];
+    const output = [];
+    for (const source of sourceTriangles) {
+      const sourcePolygon = [[...source, [...source[0]]]];
+      const clipped = polygonClipping.intersection(sourcePolygon, land);
+      for (const polygon of clipped) {
+        const flat = [], holes = [];
+        for (const [ringIndex, sourceRing] of polygon.entries()) {
+          const ring = sourceRing.length > 1
+            && sourceRing[0][0] === sourceRing.at(-1)[0] && sourceRing[0][1] === sourceRing.at(-1)[1]
+            ? sourceRing.slice(0, -1) : sourceRing;
+          if (ring.length < 3) continue;
+          if (ringIndex > 0) holes.push(flat.length / 2);
+          for (const [x, z] of ring) flat.push(x - x0, z - z0);
+        }
+        const indices = earcut(flat, holes, 2);
+        for (let i = 0; i + 2 < indices.length; i += 3) {
+          let a = [flat[indices[i] * 2], flat[indices[i] * 2 + 1]];
+          let b = [flat[indices[i + 1] * 2], flat[indices[i + 1] * 2 + 1]];
+          let c = [flat[indices[i + 2] * 2], flat[indices[i + 2] * 2 + 1]];
+          let normalY = (b[1] - a[1]) * (c[0] - a[0]) - (b[0] - a[0]) * (c[1] - a[1]);
+          if (normalY < 0) { [b, c] = [c, b]; normalY = -normalY; }
+          if (normalY < 1e-7) continue;
+          for (const point of [a, b, c]) output.push(Math.round(point[0] * 1000) / 1000, Math.round(point[1] * 1000) / 1000);
+        }
+      }
+    }
+    if (output.length) {
+      cells[index] = output;
+      triangleCount += output.length / 6;
+    }
+  }
+  return { landBits: landBits.toString('base64'), cells, mixedCells: Object.keys(cells).length, triangleCount };
+}
 
 function sourceSampler(source, georef) {
   const at = (col, row) => source.elev[row * source.w + col] || 0;
@@ -215,6 +347,7 @@ export async function buildHongKongTerrain({ outFile = DEFAULT_OUT, manifestFile
   const minZ = Math.floor((bounds.minZ - CELL) / CELL) * CELL;
   const maxZ = Math.ceil((bounds.maxZ + CELL) / CELL) * CELL;
   const w = Math.round((maxX - minX) / CELL) + 1, h = Math.round((maxZ - minZ) / CELL) + 1;
+  const coast = buildCoastCells(minX, minZ, w, h, CELL);
   const elevationBytes = Buffer.alloc(w * h * 2);
   let minElevation = Infinity, maxElevation = -Infinity;
   for (let row = 0; row < h; row++) {
@@ -263,6 +396,7 @@ export async function buildHongKongTerrain({ outFile = DEFAULT_OUT, manifestFile
     },
     grid: { w, h, cell: CELL, minX, minZ, maxX, maxZ, scale: SCALE, minElevation, maxElevation },
     elevations: elevationBytes.toString('base64'),
+    coast,
     tunnel: { wayCount: tunnels.profiles.length, scale: SCALE, heights: tunnelBytes.toString('base64'), openingRects: tunnels.openingRects },
     stats: tunnels.stats
   };
@@ -282,12 +416,15 @@ export async function buildHongKongTerrain({ outFile = DEFAULT_OUT, manifestFile
   const manifest = {
     ...data.source,
     output: path.relative(process.cwd(), outFile), bytes: Buffer.byteLength(output),
-    grid: data.grid, stats: data.stats, checks,
+    grid: data.grid, stats: data.stats,
+    coast: { mixedCells: coast.mixedCells, clippedTriangles: coast.triangleCount, source: 'OSM land polygons clipped against each DTM source triangle' },
+    checks,
     sourceFiles: [path.relative(process.cwd(), sourceFile), path.relative(process.cwd(), georefFile)]
   };
   fs.writeFileSync(manifestFile, `${JSON.stringify(manifest, null, 2)}\n`);
   console.log(`[hk-terrain] ${w}x${h} grid, ${minElevation.toFixed(2)}..${maxElevation.toFixed(2)} m, ${manifest.bytes} bytes`);
   console.log(`[hk-terrain] ${tunnels.stats.tunnelWays} tunnel ways / ${tunnels.stats.tunnelComponents} components / ${tunnels.stats.tunnelOpeningRects} opening rects`);
+  console.log(`[hk-terrain] ${coast.mixedCells} coast cells / ${coast.triangleCount} exact clipped triangles`);
   console.log(`[hk-terrain] ${checks.map((check) => `${check.name} ${check.elevation.toFixed(2)}m`).join(', ')}`);
   return data;
 }
