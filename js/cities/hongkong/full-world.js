@@ -9,7 +9,8 @@ import { CROSSING_FLAT_EXCLUSION_IDS, CROSSING_ROUTES } from './crossings.js';
 import { buildTunnelOpeningRects, subtractTunnelOpenings } from './tunnel-openings.js';
 import { FULL_BOUNDS, isDetailedCore, territoryParkAt } from './full-meta.js';
 import { HK_TERRAIN, HONG_KONG_TERRAIN_META, hongKongTerrainCellLand, hongKongTerrainHeight, rawHongKongTerrainHeight } from './terrain.js';
-import { roadHeightAtSegment, roadHeightAtVertex, TERRAIN_TUNNEL_OPENING_RECTS } from './road-elevation.js';
+import { roadRibbonHeightAtSegment, roadRibbonProfileAtSegment, TERRAIN_TUNNEL_OPENING_RECTS } from './road-elevation.js';
+import { DERIVED_ROAD_MARKINGS, signedRoadLaneCount } from './derived-road-markings.js';
 
 // Territory-wide DTM terrain with roads, players and furniture sharing the same triangle-matched height field.
 // The legacy detailed builder can exclude its original core; unified mode includes every road and all terrain.
@@ -18,7 +19,6 @@ const LAND_TOP = -0.08;
 const PARK_TOP = -0.045;
 const CHUNK = 2000;
 const TERRAIN_CHUNK = 4000;
-const ROAD_STEP = 20;
 const EXPLICIT_TUNNEL_RECTS = buildTunnelOpeningRects();
 const GENERIC_TUNNEL_RECTS = TERRAIN_TUNNEL_OPENING_RECTS.filter((rect) =>
   !CROSSING_FLAT_EXCLUSION_IDS.has(Number(rect.routeId.split(':')[1])));
@@ -77,7 +77,7 @@ function cutTunnelOpenings(geometry, yOrSampler, rects) {
   return cut;
 }
 
-function addRoadQuad(positions, x1, z1, y1, x2, z2, y2, width) {
+function addRoadQuad(positions, paint, indices, x1, z1, y1, x2, z2, y2, width, chainage, lanes) {
   let dx = x2 - x1, dz = z2 - z1;
   const length = Math.hypot(dx, dz);
   if (length < 0.05) return;
@@ -88,9 +88,14 @@ function addRoadQuad(positions, x1, z1, y1, x2, z2, y2, width) {
   const nx = dz * width * 0.5, nz = -dx * width * 0.5;
   const a0 = [ax + nx, az + nz], a1 = [ax - nx, az - nz];
   const b0 = [bx + nx, bz + nz], b1 = [bx - nx, bz - nz];
-  positions.push(
-    a0[0], y1, a0[1], b1[0], y2, b1[1], b0[0], y2, b0[1],
-    a0[0], y1, a0[1], a1[0], y1, a1[1], b1[0], y2, b1[1]
+  const base = positions.length / 3;
+  positions.push(a0[0], y1, a0[1], a1[0], y1, a1[1], b0[0], y2, b0[1], b1[0], y2, b1[1]);
+  indices.push(base, base + 3, base + 2, base, base + 1, base + 3);
+  const half = width * 0.5, s1 = chainage + length;
+  // roadPaint = lateral metres, chainage metres, signed lane count (negative = two-way), carriageway width.
+  paint.push(
+    half, chainage, lanes, width, -half, chainage, lanes, width,
+    half, s1, lanes, width, -half, s1, lanes, width
   );
 }
 
@@ -116,13 +121,15 @@ function createRoadChunks(root, includeCore) {
   const chunkAt = (x, z) => {
     const key = `${Math.floor(x / CHUNK)},${Math.floor(z / CHUNK)}`;
     let chunk = chunks.get(key);
-    if (!chunk) chunks.set(key, (chunk = { positions: [] }));
+    if (!chunk) chunks.set(key, (chunk = { positions: [], paint: [], indices: [] }));
     return chunk;
   };
   let segments = 0, sourceSegments = 0, joins = 0;
   for (const [wayId, road] of HK_FULL_ROADS.roads.entries()) {
     if (CROSSING_FLAT_EXCLUSION_IDS.has(wayId)) continue;
     const [, width, , , , flat] = road;
+    const lanes = signedRoadLaneCount(road);
+    let chainage = 0;
     for (let i = 2; i + 1 < flat.length; i += 2) {
       const segmentIndex = i / 2 - 1;
       const x1 = flat[i - 2], z1 = flat[i - 1], x2 = flat[i], z2 = flat[i + 1];
@@ -137,32 +144,46 @@ function createRoadChunks(root, includeCore) {
         const mx = x1 + dx * (ta + tb) * 0.5, mz = z1 + dz * (ta + tb) * 0.5;
         if (!includeCore && isDetailedCore(mx, mz)) continue;
         sourceSegments++;
-        const steps = Math.max(1, Math.ceil(Math.hypot(dx, dz) * (tb - ta) / ROAD_STEP));
-        for (let step = 0; step < steps; step++) {
-          const t0 = ta + (tb - ta) * step / steps, t1 = ta + (tb - ta) * (step + 1) / steps;
+        const profile = roadRibbonProfileAtSegment(wayId, segmentIndex);
+        const stations = [ta];
+        for (const t of profile.ts) if (t > ta + 1e-7 && t < tb - 1e-7) stations.push(t);
+        stations.push(tb);
+        for (let step = 0; step + 1 < stations.length; step++) {
+          const t0 = stations[step], t1 = stations[step + 1];
           const ax = x1 + dx * t0, az = z1 + dz * t0, bx = x1 + dx * t1, bz = z1 + dz * t1;
-          const ay = roadHeightAtSegment(wayId, segmentIndex, t0, ax, az);
-          const by = roadHeightAtSegment(wayId, segmentIndex, t1, bx, bz);
+          const ay = roadRibbonHeightAtSegment(wayId, segmentIndex, t0);
+          const by = roadRibbonHeightAtSegment(wayId, segmentIndex, t1);
           const chunk = chunkAt((ax + bx) * 0.5, (az + bz) * 0.5);
-          addRoadQuad(chunk.positions, ax, az, ay, bx, bz, by, width);
+          addRoadQuad(chunk.positions, chunk.paint, chunk.indices, ax, az, ay, bx, bz, by, width, chainage + Math.hypot(dx, dz) * t0, lanes);
           segments++;
         }
       }
+      chainage += Math.hypot(dx, dz);
     }
     for (let i = 2; i + 3 < flat.length; i += 2) {
       const x = flat[i], z = flat[i + 1];
       if (!includeCore && isDetailedCore(x, z)) continue;
-      const chunk = chunkAt(x, z), y = roadHeightAtVertex(wayId, i / 2, x, z);
-      const heightAt = (hx, hz) => roadHeightAtVertex(wayId, i / 2, hx, hz);
-      if (addRoadJoin(chunk.positions, flat[i - 2], flat[i - 1], x, z, flat[i + 2], flat[i + 3], width, y, heightAt)) joins++;
+      const chunk = chunkAt(x, z), vertex = i / 2;
+      const y = Math.max(
+        roadRibbonHeightAtSegment(wayId, vertex - 1, 1),
+        roadRibbonHeightAtSegment(wayId, vertex, 0)
+      );
+      const base = chunk.positions.length / 3;
+      if (addRoadJoin(chunk.positions, flat[i - 2], flat[i - 1], x, z, flat[i + 2], flat[i + 3], width, y, () => y)) {
+        chunk.paint.push(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0);
+        chunk.indices.push(base, base + 1, base + 2);
+        joins++;
+      }
     }
   }
-  const material = createHongKongRoadSurfaceMaterial();
+  const material = createHongKongRoadSurfaceMaterial({ dry: true, derivedMarkings: DERIVED_ROAD_MARKINGS });
   let meshes = 0;
   for (const [key, chunk] of chunks) {
     if (!chunk.positions.length) continue;
     const geometry = new THREE.BufferGeometry();
     geometry.setAttribute('position', new THREE.Float32BufferAttribute(chunk.positions, 3));
+    geometry.setAttribute('roadPaint', new THREE.Float32BufferAttribute(chunk.paint, 4));
+    geometry.setIndex(chunk.indices);
     geometry.computeVertexNormals();
     geometry.computeBoundingBox();
     geometry.computeBoundingSphere();
@@ -338,6 +359,8 @@ export function buildFullHongKongWorld(root, { waterLevel = -2.2, includeCore = 
       fullRoadSourceSegments: roads.sourceSegments,
       fullRoadJoins: roads.joins,
       fullRoadChunks: roads.meshes,
+      fullRoadDerivedPaint: 'in-asphalt-shader',
+      fullRoadDerivedPaintExtraTriangles: 0,
       fullLandRings: HK_FULL_MAP.land.length,
       fullParks: HK_FULL_MAP.parks.length,
       fullSeawallColliders: colliders.length,

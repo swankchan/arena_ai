@@ -1682,18 +1682,18 @@ function createRoadSurfaceMaterial({ dry = false } = {}) {
 }
 
 // Hong Kong keeps the same aggregate/wetness technology without inheriting Manhattan-only placement or neon.
-function createHongKongRoadSurfaceMaterial({ dry = false, structure = 'street' } = {}) {
-  return createRoadSurfaceMaterialProfile({ dry, hongKong: true, structure });
+function createHongKongRoadSurfaceMaterial({ dry = false, structure = 'street', derivedMarkings = null } = {}) {
+  return createRoadSurfaceMaterialProfile({ dry, hongKong: true, structure, derivedMarkings });
 }
 
-function createRoadSurfaceMaterialProfile({ dry = false, hongKong = false, structure = 'street' } = {}) {
+function createRoadSurfaceMaterialProfile({ dry = false, hongKong = false, structure = 'street', derivedMarkings = null } = {}) {
   const mat = new THREE.MeshStandardNodeMaterial({
     metalness: 0.24,
     roughness: 0.48
   });
 
-  const cAsphaltDark = color(hongKong ? 0x1d2630 : 0x2b2e33);
-  const cAsphaltLight = color(hongKong ? 0x35414c : 0x464a51);
+  const cAsphaltDark = color(hongKong ? (dry ? 0x25282b : 0x1d2630) : 0x2b2e33);
+  const cAsphaltLight = color(hongKong ? (dry ? 0x3b3e42 : 0x35414c) : 0x464a51);
   const cManhole = color(hongKong ? 0x3d4142 : 0x4a433c);
 
   // Puddle field & wetness masks shared by every channel below (each node is generated once per fragment)
@@ -1710,6 +1710,40 @@ function createRoadSurfaceMaterialProfile({ dry = false, hongKong = false, struc
 
   mat.aoNode = canyonSkyAONode();
 
+  // Territory roads carry their own metre-based paint coordinates. Evaluating auxiliary white lines in this asphalt
+  // shader avoids millions of coincident paint triangles and keeps every pixel on the exact rendered road chord.
+  const derivedPaintMask = derivedMarkings ? Fn(() => {
+    const data = attribute('roadPaint', 'vec4');
+    const lateral = data.x, chainage = data.y, signedLanes = data.z, roadWidth = data.w;
+    const lanes = abs(signedLanes), halfWidth = roadWidth.mul(0.5);
+    const lineHalf = float(derivedMarkings.lineWidth * 0.5);
+    const footprint = max(fwidth(lateral), 0.001);
+    const coverage = (distance) => clamp(
+      min(lineHalf, distance.add(footprint.mul(0.5)))
+        .sub(max(lineHalf.negate(), distance.sub(footprint.mul(0.5)))).div(footprint),
+      0.0, 1.0
+    );
+    const edgeDistance = abs(abs(lateral).sub(halfWidth.sub(derivedMarkings.edgeInset)));
+    const edgePaint = coverage(edgeDistance);
+    const laneWidth = roadWidth.div(max(lanes, 1.0));
+    const laneCoordinate = lateral.add(halfWidth).div(max(roadWidth, 0.001)).mul(lanes);
+    const laneDistance = abs(fract(laneCoordinate.add(0.5)).sub(0.5)).mul(laneWidth);
+    const insideCarriageway = step(0.02, laneCoordinate).mul(step(laneCoordinate, lanes.sub(0.02)));
+    const twoWay = float(1.0).sub(step(0.0, signedLanes));
+    const centreLine = twoWay.mul(float(1.0).sub(smoothstep(0.02, 0.08, abs(laneCoordinate.sub(lanes.mul(0.5))))));
+    const period = derivedMarkings.dashMark + derivedMarkings.dashGap;
+    const dash = float(1.0).sub(step(derivedMarkings.dashMark / period, fract(chainage.div(period))));
+    const lanePaint = coverage(laneDistance).mul(insideCarriageway).mul(mix(dash, float(1.0), centreLine));
+    let guard = float(1.0);
+    if (derivedMarkings.guard) {
+      const b = derivedMarkings.guard;
+      const inside = step(b.minX, positionWorld.x).mul(step(positionWorld.x, b.maxX))
+        .mul(step(b.minZ, positionWorld.z)).mul(step(positionWorld.z, b.maxZ));
+      guard = float(1.0).sub(inside);
+    }
+    return max(edgePaint, lanePaint).mul(step(0.01, roadWidth)).mul(guard);
+  })() : null;
+
   mat.colorNode = Fn(() => {
     const wx = positionWorld.x;
     const wz = positionWorld.z;
@@ -1720,13 +1754,13 @@ function createRoadSurfaceMaterialProfile({ dry = false, hongKong = false, struc
     const microAggregate = mix(float(0.5), noise2D(vec2(wx.mul(16.0), wz.mul(16.0))), smoothstep(0.06, 0.02, pixelSize));
     const fineGrain = mix(float(0.5), noise2D(vec2(wx.mul(3.2), wz.mul(3.2))), smoothstep(0.4, 0.12, pixelSize));
     const patchNoise = noise2D(vec2(wx.mul(0.18), wz.mul(0.18)));
-    const oilyStain = smoothstep(0.52, 0.84, noise2D(vec2(wx.mul(0.42), wz.mul(0.42)))).mul(detail);
-    const tarSeam = float(1.0).sub(smoothstep(0.0, 0.04, abs(patchNoise.sub(0.52)))).mul(0.42).mul(detail);
+    const oilyStain = dry ? float(0.0) : smoothstep(0.52, 0.84, noise2D(vec2(wx.mul(0.42), wz.mul(0.42)))).mul(detail);
+    const tarSeam = dry ? float(0.0) : float(1.0).sub(smoothstep(0.0, 0.04, abs(patchNoise.sub(0.52)))).mul(0.42).mul(detail);
 
     const baseAsphalt = mix(
       cAsphaltDark,
       cAsphaltLight,
-      fineGrain.mul(0.36).add(microAggregate.mul(0.22)).add(patchNoise.mul(0.26))
+      fineGrain.mul(0.36).add(microAggregate.mul(0.22)).add(patchNoise.mul(dry ? 0.08 : 0.26))
     )
       .mul(float(1.0).sub(oilyStain.mul(0.32)))
       .mul(float(1.0).sub(tarSeam));
@@ -1745,13 +1779,16 @@ function createRoadSurfaceMaterialProfile({ dry = false, hongKong = false, struc
 
     // Water filling the pores darkens the surface: damp stains & pools most, the overall wet film a little
     const wetDarkening = mix(mix(float(1.0), float(0.72), damp), float(0.6), puddle).mul(mix(float(1.0), float(0.8), film));
-    return mix(baseAsphalt, cManhole.mul(mhRings), isManhole).mul(wetDarkening);
+    const surface = mix(baseAsphalt, cManhole.mul(mhRings), isManhole);
+    const painted = derivedPaintMask ? mix(surface, color(0xf1f0e9), derivedPaintMask) : surface;
+    return painted.mul(wetDarkening);
   })();
 
   mat.roughnessNode = Fn(() => {
     const microRough = mix(float(0.04), noise2D(positionWorld.xz.mul(12.0)).mul(0.08), smoothstep(0.08, 0.03, pixelSize));
     const wetRough = mix(float(0.90).add(microRough), float(0.38), max(film.mul(0.9), damp.mul(0.8)));
-    return mix(wetRough, float(0.1), puddle);
+    const rough = mix(wetRough, float(0.1), puddle);
+    return derivedPaintMask ? mix(rough, float(0.78), derivedPaintMask) : rough;
   })();
 
   // Water's Fresnel (F0 = 0.02): weights SSR & trades diffuse for reflection in pools (fully) and the wet film (partly)

@@ -1,5 +1,5 @@
 import { HK_FULL_ROADS } from '../../hk-full-roads-data.js';
-import { surfaceRoadHeight } from './road-elevation.js';
+import { roadRibbonHeightAtVertex } from './road-elevation.js';
 
 // First-stage, drivable crossing profiles. Heights are deliberately procedural presentation levels, not surveyed
 // engineering elevations. Every route is resampled before profiling so long two-node OSM ways still form real ramps.
@@ -44,7 +44,7 @@ function rawRoute(definition, wayIds) {
     if (!way) throw new Error(`Missing OSM way ${wayId} for ${definition.name}`);
     const flat = way[5];
     for (let i = 0; i + 1 < flat.length; i += 2) {
-      const point = { x: flat[i], z: flat[i + 1], width: way[1], wayId, s: 0 };
+      const point = { x: flat[i], z: flat[i + 1], width: way[1], wayId, vertexIndex: i / 2, s: 0 };
       const previous = points[points.length - 1];
       if (previous) {
         const gap = Math.hypot(point.x - previous.x, point.z - previous.z);
@@ -52,6 +52,7 @@ function rawRoute(definition, wayIds) {
         if (gap < 0.05) {
           previous.width = point.width;
           previous.wayId = wayId;
+          previous.vertexIndex = point.vertexIndex;
           continue;
         }
         point.s = previous.s + gap;
@@ -66,12 +67,22 @@ function buildRoute(definition, wayIds, direction) {
   const raw = rawRoute(definition, wayIds);
   const length = raw[raw.length - 1]?.s || 0;
   if (length < 100) throw new Error(`Crossing route too short: ${definition.name}`);
-  const startHeight = surfaceRoadHeight(raw[0].x, raw[0].z);
-  const endHeight = surfaceRoadHeight(raw[raw.length - 1].x, raw[raw.length - 1].z);
+  const firstRaw = raw[0], lastRaw = raw[raw.length - 1];
+  const startHeight = roadRibbonHeightAtVertex(firstRaw.wayId, firstRaw.vertexIndex);
+  const endHeight = roadRibbonHeightAtVertex(lastRaw.wayId, lastRaw.vertexIndex);
   // Smoothstep's greatest grade is 1.5 * height difference / ramp. Allow up to roughly
   // 2.5 m per 20 m sample on high DTM approaches instead of introducing a sudden vertical jump.
-  const heightDifference = Math.max(Math.abs(definition.level - startHeight), Math.abs(definition.level - endHeight));
-  const ramp = Math.min(length * 0.45, Math.max(definition.ramp, heightDifference * 12));
+  const pairedHeightDifference = Math.max(...definition.routes.flatMap((routeWayIds) => {
+    const route = rawRoute(definition, routeWayIds);
+    const firstPoint = route[0], lastPoint = route[route.length - 1];
+    return [
+      Math.abs(definition.level - roadRibbonHeightAtVertex(firstPoint.wayId, firstPoint.vertexIndex)),
+      Math.abs(definition.level - roadRibbonHeightAtVertex(lastPoint.wayId, lastPoint.vertexIndex))
+    ];
+  }));
+  // Both carriageways must use the same vertical ramp parameter: the Western Harbour S-bend is derived from it, and
+  // independent rounding/shoulder heights would otherwise pull the paired tubes sideways away from one another.
+  const ramp = Math.min(length * 0.45, Math.max(definition.ramp, pairedHeightDifference * 12));
   let curveFrame = null;
   if (definition.curveAmplitude) {
     // Both carriageways use one world-space reference axis. At a given station they receive exactly the same displacement,

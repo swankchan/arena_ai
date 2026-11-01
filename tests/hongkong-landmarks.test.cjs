@@ -128,7 +128,7 @@ test('unified simple mode adds only the authored landmarks and keeps generic bui
   assert.match(source, /buildings: 0/);
   assert.match(source, /landmarks: \[\.\.\.hsbc\.landmarks, \.\.\.standardChartered\.landmarks\]/);
   assert.match(source, /createHongKongTrafficAids\(scene, \{/);
-  assert.match(source, /getGroundHeight, getSurfaceHeight: surfaceRoadHeight, surfaceY: FULL_WORLD_HEIGHT\.road/);
+  assert.match(source, /getGroundHeight, getSurfaceHeight: getRoadPaintHeight, surfaceY: FULL_WORLD_HEIGHT\.road/);
   assert.match(source, /\.\.\.trafficAids\.stats/);
   assert.doesNotMatch(source, /trafficAids: null/);
   const pack = fs.readFileSync(path.join(root, 'js/cities/hongkong/index.js'), 'utf8');

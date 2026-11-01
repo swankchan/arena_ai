@@ -2,7 +2,7 @@ import { GEO } from '../../hk-geodata.js';
 import { HK_FULL_MAP } from '../../hk-full-map-data.js';
 import { HK_FULL_ROADS } from '../../hk-full-roads-data.js';
 import { CROSSING_FLAT_EXCLUSION_IDS, crossingSurfaceAt } from './crossings.js';
-import { roadHeightAtSegment } from './road-elevation.js';
+import { roadRibbonHeightAtSegment } from './road-elevation.js';
 
 // Spatial queries for the territory-wide 3D road layer. The detailed core keeps its original graph; outside it, these
 // way/segment indexes provide safe road spawns, HUD labels and ground heights without scanning 77,000 ways per query.
@@ -125,7 +125,7 @@ function segmentHit(x, z, way, i) {
   const segmentIndex = i / 2 - 1;
   return {
     x: px, z: pz, distance: Math.hypot(x - px, z - pz), way, length, t, segmentIndex,
-    height: roadHeightAtSegment(way.id, segmentIndex, t, px, pz),
+    height: roadRibbonHeightAtSegment(way.id, segmentIndex, t, px, pz),
     name: way.name, width: way.width, dir: way.dir, lanes: way.lanes, flags: way.flags,
     heading: Math.atan2(dirX, dirZ), leftX: dirZ, leftZ: -dirX
   };

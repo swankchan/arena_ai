@@ -6,11 +6,13 @@ const test = require('node:test');
 let crossings;
 let fullMeta;
 let roadElevation;
+let fullRoads;
 
 test.before(async () => {
   crossings = await import('../js/cities/hongkong/crossings.js');
   fullMeta = await import('../js/cities/hongkong/full-meta.js');
   roadElevation = await import('../js/cities/hongkong/road-elevation.js');
+  fullRoads = await import('../js/hk-full-roads-data.js');
 });
 
 test('seven named sea crossings provide fourteen directional OSM routes', () => {
@@ -38,13 +40,16 @@ test('seven named sea crossings provide fourteen directional OSM routes', () => 
 
 test('every crossing profile is continuous, finely sampled and connected at both ends', () => {
   const { CROSSING_ROUTES } = crossings;
-  const { surfaceRoadHeight } = roadElevation;
+  const { roadRibbonHeightAtVertex } = roadElevation;
   for (const route of CROSSING_ROUTES) {
     assert.ok(route.length > 700, `${route.id} is a complete crossing`);
     assert.ok(route.points.length >= 39, `${route.id} has an actual ramp profile`);
     const first = route.points[0], last = route.points.at(-1);
-    assert.ok(Math.abs(first.y - surfaceRoadHeight(first.x, first.z)) < 0.001, `${route.id} starts on the DTM road`);
-    assert.ok(Math.abs(last.y - surfaceRoadHeight(last.x, last.z)) < 0.001, `${route.id} ends on the DTM road`);
+    const lastWay = fullRoads.HK_FULL_ROADS.roads[route.wayIds.at(-1)];
+    const expectedStart = roadRibbonHeightAtVertex(route.wayIds[0], 0);
+    const expectedEnd = roadRibbonHeightAtVertex(route.wayIds.at(-1), lastWay[5].length / 2 - 1);
+    assert.ok(Math.abs(first.y - expectedStart) < 0.001, `${route.id} starts on the shoulder-aware DTM road`);
+    assert.ok(Math.abs(last.y - expectedEnd) < 0.001, `${route.id} ends on the shoulder-aware DTM road`);
     assert.ok(Math.abs(route.points[Math.floor(route.points.length / 2)].y - route.level) < 0.001);
     for (let i = 1; i < route.points.length; i++) {
       const a = route.points[i - 1], b = route.points[i];

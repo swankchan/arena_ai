@@ -28,8 +28,12 @@ export function buildSimpleHongKongWorld(scene, { setStatus = () => {} } = {}) {
   setStatus('Placing 144,995 lamp posts across Hong Kong...');
   const streetLighting = createHongKongStreetLighting(scene);
   setStatus('Restoring surveyed Hong Kong road markings and crossings...');
+  const getRoadPaintHeight = (x, z) => {
+    const fallback = surfaceRoadHeight(x, z);
+    return fullRoadSurfaceAt(x, z, 8, fallback)?.height ?? fallback;
+  };
   const trafficAids = createHongKongTrafficAids(scene, {
-    getGroundHeight, getSurfaceHeight: surfaceRoadHeight, surfaceY: FULL_WORLD_HEIGHT.road
+    getGroundHeight, getSurfaceHeight: getRoadPaintHeight, surfaceY: FULL_WORLD_HEIGHT.road
   });
 
   const isPointOnLand = (x, z) => isTerritoryLand(x, z) || isTerritoryRoad(x, z, 0.35);
