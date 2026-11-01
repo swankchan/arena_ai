@@ -20,6 +20,8 @@ import { buildCentralPlaza } from './central-plaza-world.js';
 import { isCentralPlazaPlazaPoint } from './central-plaza-architecture.js';
 import { buildTheCenter } from './the-center-world.js';
 import { isTheCenterPlazaPoint } from './the-center-architecture.js';
+import { buildNinaTower } from './nina-tower-world.js';
+import { isNinaTowerPlazaPoint } from './nina-tower-architecture.js';
 import { createHongKongTrafficAids } from './traffic-aids.js';
 
 const WATER_LEVEL = -2.2;
@@ -43,6 +45,8 @@ export function buildSimpleHongKongWorld(scene, { setStatus = () => {} } = {}) {
   const centralPlaza = buildCentralPlaza(scene, { groundOffset: HONG_KONG_TERRAIN_META.centralPlazaPadHeight });
   setStatus('Building The Center and its rainbow neon facade...');
   const theCenter = buildTheCenter(scene, { groundOffset: HONG_KONG_TERRAIN_META.theCenterPadHeight });
+  setStatus('Building Nina Tower, its crescent hotel and glass skybridge...');
+  const ninaTower = buildNinaTower(scene, { groundOffset: HONG_KONG_TERRAIN_META.ninaTowerPadHeight });
   setStatus('Building drivable harbour bridges and tunnels...');
   const crossings = buildHongKongCrossings(scene);
   setStatus('Placing 144,995 lamp posts across Hong Kong...');
@@ -75,7 +79,9 @@ export function buildSimpleHongKongWorld(scene, { setStatus = () => {} } = {}) {
     const bocGround = isBankOfChinaPlazaPoint(x, z) ? Math.max(iccGround, bankOfChina.plazaTop) : iccGround;
     const centralPlazaGround = isCentralPlazaPlazaPoint(x, z) ? Math.max(bocGround, centralPlaza.plazaTop) : bocGround;
     const theCenterGround = isTheCenterPlazaPoint(x, z) ? Math.max(centralPlazaGround, theCenter.plazaTop) : centralPlazaGround;
-    return isHsbcPlazaPoint(x, z) ? Math.max(theCenterGround, hsbc.plazaTop) : theCenterGround;
+    // Nina Tower's ground-level service roads and tunnels remain roads; only the non-road mall floor is raised.
+    const ninaGround = !road && isNinaTowerPlazaPoint(x, z) ? Math.max(theCenterGround, ninaTower.plazaTop) : theCenterGround;
+    return isHsbcPlazaPoint(x, z) ? Math.max(ninaGround, hsbc.plazaTop) : ninaGround;
   }
 
   const stats = {
@@ -90,11 +96,12 @@ export function buildSimpleHongKongWorld(scene, { setStatus = () => {} } = {}) {
     ...bankOfChina.stats,
     ...centralPlaza.stats,
     ...theCenter.stats,
+    ...ninaTower.stats,
     presentation: 'unified-simple',
     landMeshes: full.stats.fullLandRings,
     blocks: 0,
     parks: full.stats.fullParks,
-    landmarks: hsbc.landmarks.length + standardChartered.landmarks.length + twoIfc.landmarks.length + icc.landmarks.length + bankOfChina.landmarks.length + centralPlaza.landmarks.length + theCenter.landmarks.length,
+    landmarks: hsbc.landmarks.length + standardChartered.landmarks.length + twoIfc.landmarks.length + icc.landmarks.length + bankOfChina.landmarks.length + centralPlaza.landmarks.length + theCenter.landmarks.length + ninaTower.landmarks.length,
     lots: 0,
     buildings: 0,
     skippedLots: 0,
@@ -106,7 +113,7 @@ export function buildSimpleHongKongWorld(scene, { setStatus = () => {} } = {}) {
 
   return {
     root: scene,
-    colliders: [...full.colliders, ...crossings.colliders, ...hsbc.colliders, ...standardChartered.colliders, ...twoIfc.colliders, ...icc.colliders, ...bankOfChina.colliders, ...centralPlaza.colliders, ...theCenter.colliders],
+    colliders: [...full.colliders, ...crossings.colliders, ...hsbc.colliders, ...standardChartered.colliders, ...twoIfc.colliders, ...icc.colliders, ...bankOfChina.colliders, ...centralPlaza.colliders, ...theCenter.colliders, ...ninaTower.colliders],
     bounds: full.bounds,
     stats,
     personSpawn: { ...SPAWN.person },
@@ -127,8 +134,9 @@ export function buildSimpleHongKongWorld(scene, { setStatus = () => {} } = {}) {
     bankOfChina,
     centralPlaza,
     theCenter,
+    ninaTower,
     treeField: null,
-    landmarks: [...hsbc.landmarks, ...standardChartered.landmarks, ...twoIfc.landmarks, ...icc.landmarks, ...bankOfChina.landmarks, ...centralPlaza.landmarks, ...theCenter.landmarks],
+    landmarks: [...hsbc.landmarks, ...standardChartered.landmarks, ...twoIfc.landmarks, ...icc.landmarks, ...bankOfChina.landmarks, ...centralPlaza.landmarks, ...theCenter.landmarks, ...ninaTower.landmarks],
     trafficAids
   };
 }

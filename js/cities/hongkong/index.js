@@ -72,6 +72,7 @@ export const city = {
       bankOfChina: world.bankOfChina,
       centralPlaza: world.centralPlaza,
       theCenter: world.theCenter,
+      ninaTower: world.ninaTower,
       landmarks: world.landmarks,
       stats,
       teleports: TELEPORTS,
