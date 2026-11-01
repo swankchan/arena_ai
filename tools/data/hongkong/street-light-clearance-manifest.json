@@ -1,0 +1,20 @@
+{
+  "version": 1,
+  "source": {
+    "sha256": "c82d05cb082e7f9cda514983da90f01f1ad095be77127cfe04d472f7d6e65c0d",
+    "records": 144995
+  },
+  "derivation": {
+    "algorithm": "segment-normal-then-radial-v1",
+    "carriagewayMargin": 0.22,
+    "heightTolerance": 2,
+    "maxRelocation": 24,
+    "radialDirections": 16
+  },
+  "counts": {
+    "relocated": 38486,
+    "suppressed": 80,
+    "rendered": 144915,
+    "remainingCarriagewayConflicts": 0
+  }
+}

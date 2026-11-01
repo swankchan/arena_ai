@@ -15,6 +15,9 @@ import {
   createBusWheelMaterial
 } from '../../actor-models.js';
 import { DEFAULT_TAXI_STYLE, getTaxiStyle } from '../../taxi-styles.js';
+import { buildCircularTurn, buildCubicTurn, buildCubicBetween, buildSemicircularUturn, samplePlannedTurn, wrapTrafficAngle } from './traffic-geometry.js';
+import { buildTrafficRouteGeometry } from './traffic-paths.js';
+import { roadRibbonHeightAtSegment } from './road-elevation.js';
 
 // Hong Kong road traffic. Cars follow the generated drivable graph, keep left, and are restaged around the player when
 // they drift beyond the visible halo. Private cars and taxis each have an instanced body mesh with shared wheels;
@@ -48,18 +51,6 @@ function createHongKongBusDestinationTexture() {
   const texture = new THREE.CanvasTexture(canvas);
   texture.colorSpace = THREE.SRGBColorSpace;
   return texture;
-}
-
-function wrapAngle(a) {
-  return a - Math.round(a / (Math.PI * 2)) * Math.PI * 2;
-}
-
-function linkPoints(link) {
-  const nodes = GEO.roadGraph.nodes;
-  const points = [[nodes[link[0] * 2], nodes[link[0] * 2 + 1]]];
-  for (let i = 0; i + 1 < link[6].length; i += 2) points.push([link[6][i], link[6][i + 1]]);
-  points.push([nodes[link[1] * 2], nodes[link[1] * 2 + 1]]);
-  return points;
 }
 
 function cumulative(points) {
@@ -99,7 +90,7 @@ export function createHongKongTraffic(scene, { getFocus, taxiStyle, getGroundHei
 
   const nodes = GEO.roadGraph.nodes;
   const graph = GEO.roadGraph.links;
-  const paths = graph.map(linkPoints);
+  const { paths, routes } = buildTrafficRouteGeometry(graph, nodes);
   const lengths = paths.map(cumulative);
   const total = paths.map((points, i) => lengths[i][lengths[i].length - 1]);
   const onLand = paths.map((points, i) => isTrafficPathOnLand(points, graph[i][3]));
@@ -117,6 +108,130 @@ export function createHongKongTraffic(scene, { getFocus, taxiStyle, getGroundHei
   const drivable = [];
   for (let i = 0; i < graph.length; i++) {
     if (onLand[i] && graph[i][3] >= 7.4 && total[i] >= 100) drivable.push(i);
+  }
+
+  function laneSample(link, travelS, dir, isBus = false) {
+    const pathS = dir > 0 ? travelS : total[link] - travelS;
+    const p = samplePath(paths[link], lengths[link], pathS);
+    const laneOffset = Math.min(4.2, Math.max(1.7, graph[link][3] * 0.23)) * (isBus ? 1.12 : 1);
+    const dx = p.dx * dir, dz = p.dz * dir;
+    return { x: p.x + p.dz * dir * laneOffset, z: p.z - p.dx * dir * laneOffset,
+      dx, dz, heading: Math.atan2(dx, dz) };
+  }
+  const getTravelS = (vehicle) => vehicle.dir > 0 ? vehicle.s : total[vehicle.link] - vehicle.s;
+  const setTravelS = (vehicle, travelS) => { vehicle.s = vehicle.dir > 0 ? travelS : total[vehicle.link] - travelS; };
+  const initialChainage = (link, salt) => {
+    const margin = Math.min(28, total[link] * 0.2);
+    return margin + hash(salt) * Math.max(0, total[link] - margin * 2);
+  };
+
+  function refineTurnOnCurvedLinks(turn, fromLink, fromDir, option, isBus) {
+    if (!turn || turn.radius < (isBus ? 6 : 3)) return null;
+    const start = laneSample(fromLink, turn.startTravelS, fromDir, isBus);
+    const end = laneSample(option.link, turn.endTravelS, option.dir, isBus);
+    const positionError = Math.max(Math.hypot(turn.startX - start.x, turn.startZ - start.z),
+      Math.hypot(turn.endX - end.x, turn.endZ - end.z));
+    const tangentError = Math.max(Math.abs(wrapTrafficAngle(start.heading - turn.fromHeading)),
+      Math.abs(wrapTrafficAngle(end.heading - turn.toHeading)));
+    if (positionError <= 0.005 && tangentError <= 0.005) return turn;
+    const refined = buildCubicBetween({
+      startPoint: start, startDirection: { x: start.dx, z: start.dz }, startTravelS: turn.startTravelS,
+      endPoint: end, endDirection: { x: end.dx, z: end.dz }, endTravelS: turn.endTravelS,
+      radius: turn.radius
+    });
+    return refined;
+  }
+
+  function planNext(vehicle, isBus) {
+    const link = vehicle.link, dir = vehicle.dir;
+    const node = dir > 0 ? graph[link][1] : graph[link][0];
+    const available = (outgoing[node] || []).filter((option) => onLand[option.link] && graph[option.link][3] >= (isBus ? 7.4 : 5.2) && total[option.link] > 4);
+    const options = available.length ? available : [{ link, dir: -dir }];
+    const currentTravelS = getTravelS(vehicle);
+    const fromPoint = laneSample(link, total[link], dir, isBus);
+    if (options.length === 1 && options[0].link === link && options[0].dir === -dir) {
+      const option = options[0], toPoint = laneSample(option.link, 0, option.dir, isBus);
+      const turn = buildSemicircularUturn({ fromPoint, fromDirection: { x: fromPoint.dx, z: fromPoint.dz },
+        toPoint, startTravelS: total[link] });
+      if (turn) {
+        vehicle.next = option;
+        vehicle.turn = turn;
+        vehicle.turnActive = false;
+        vehicle.turnDistance = 0;
+        vehicle.signalDirection = turn.blink;
+        vehicle.waitingForTurn = false;
+        return;
+      }
+    }
+    let best = null, bestScore = -Infinity, fallback = null, fallbackScore = -Infinity;
+    for (const option of options) {
+      if (option.link === link && options.length > 1) continue;
+      const toPoint = laneSample(option.link, 0, option.dir, isBus);
+      const angle = wrapTrafficAngle(toPoint.heading - fromPoint.heading);
+      const score = graph[option.link][3] + hash(vehicle.index + option.link * 0.13) * 4 - Math.abs(angle) * 5;
+      const turn = refineTurnOnCurvedLinks(buildCircularTurn({
+        fromPoint, fromDirection: { x: fromPoint.dx, z: fromPoint.dz }, fromTotal: total[link],
+        toPoint, toDirection: { x: toPoint.dx, z: toPoint.dz }, toTotal: total[option.link],
+        radius: Math.max(isBus ? 17 : 10, vehicle.halfL * 3.1),
+        minimumRadius: isBus ? 7 : 3.5, earliestStart: currentTravelS
+      }), link, dir, option, isBus);
+      if (score > fallbackScore) { fallbackScore = score; fallback = { option, turn: null }; }
+      if (Math.abs(angle) >= 0.055 && (!turn || turn.startTravelS < currentTravelS - 0.05)) continue;
+      if (score > bestScore) { bestScore = score; best = { option, turn }; }
+    }
+    if (!best) {
+      let constrainedScore = -Infinity;
+      for (const option of options) {
+        if (option.link === link && options.length > 1) continue;
+        const toPoint = laneSample(option.link, 0, option.dir, isBus);
+        const parameters = {
+          fromPoint, fromDirection: { x: fromPoint.dx, z: fromPoint.dz }, fromTotal: total[link],
+          toPoint, toDirection: { x: toPoint.dx, z: toPoint.dz }, toTotal: total[option.link],
+          radius: Math.max(isBus ? 17 : 10, vehicle.halfL * 3.1), earliestStart: currentTravelS
+        };
+        const turn = refineTurnOnCurvedLinks(buildCircularTurn({ ...parameters, minimumRadius: isBus ? 7 : 3.5 }) || buildCubicTurn(parameters), link, dir, option, isBus);
+        if (!turn || turn.startTravelS < currentTravelS - 0.05) continue;
+        const angle = Math.abs(wrapTrafficAngle(toPoint.heading - fromPoint.heading));
+        const score = graph[option.link][3] + hash(vehicle.index + option.link * 0.13) * 4 - angle * 5;
+        if (score > constrainedScore) { constrainedScore = score; best = { option, turn }; }
+      }
+    }
+    if (!best) {
+      let emergencyScore = -Infinity;
+      for (const option of options) {
+        if (option.link === link && options.length > 1) continue;
+        const toPoint = laneSample(option.link, 0, option.dir, isBus);
+        const angle = Math.abs(wrapTrafficAngle(toPoint.heading - fromPoint.heading));
+        if (angle < 0.055) continue;
+        let emergency = null;
+        for (const distance of [24, 18, 12, 8, 5, 3, 1.5]) {
+          const endTravelS = Math.min(distance, total[option.link] * 0.45);
+          if (endTravelS < 0.35) continue;
+          const end = laneSample(option.link, endTravelS, option.dir, isBus);
+          const turn = buildCubicBetween({
+            startPoint: fromPoint, startDirection: { x: fromPoint.dx, z: fromPoint.dz }, startTravelS: total[link],
+            endPoint: end, endDirection: { x: end.dx, z: end.dz }, endTravelS,
+            radius: Math.max(isBus ? 17 : 10, vehicle.halfL * 3.1)
+          });
+          if (turn && turn.radius >= (angle < 0.25 ? 2 : (isBus ? 6 : 3)) && (!emergency || turn.radius > emergency.radius)) emergency = turn;
+        }
+        const minimumRadius = angle < 0.25 ? 2 : (isBus ? 6 : 3);
+        if (emergency && emergency.radius < minimumRadius) emergency = null;
+        const score = graph[option.link][3] + hash(vehicle.index + option.link * 0.13) * 4 - angle * 5;
+        if (emergency && score > emergencyScore) { emergencyScore = score; best = { option, turn: emergency }; }
+      }
+    }
+    let selected = best;
+    if (!selected && fallback?.option) {
+      const toPoint = laneSample(fallback.option.link, 0, fallback.option.dir, isBus);
+      if (Math.abs(wrapTrafficAngle(toPoint.heading - fromPoint.heading)) < 0.055) selected = fallback;
+    }
+    vehicle.next = selected?.option || null;
+    vehicle.turn = selected?.turn || null;
+    vehicle.turnActive = false;
+    vehicle.turnDistance = 0;
+    vehicle.signalDirection = vehicle.turn ? vehicle.turn.blink : 0;
+    vehicle.waitingForTurn = !selected;
   }
 
   // Spatial index over link midpoints so a restaged car can appear on a street near the player.
@@ -163,7 +278,7 @@ export function createHongKongTraffic(scene, { getFocus, taxiStyle, getGroundHei
     const nearLinks = linksNear(focus().x, focus().z);
     const link = drivable[Math.floor(hash(index + (kind === 'bus' ? 501 : 0)) * drivable.length)] ?? 0;
     const startLink = nearLinks[Math.floor(hash(index + (kind === 'bus' ? 733 : 91)) * nearLinks.length)] ?? link;
-    const s = total[startLink] * hash(index * 3.7);
+    const s = initialChainage(startLink, index * 3.7);
     const point = samplePath(paths[startLink], lengths[startLink], s);
     return {
       kind, index, link: startLink,
@@ -183,6 +298,9 @@ export function createHongKongTraffic(scene, { getFocus, taxiStyle, getGroundHei
       privateSlot: -1,
       paint: taxi ? taxiPaint : PRIVATE_PALETTE[index % PRIVATE_PALETTE.length],
       wheelSpin: 0,
+      turn: null, next: null, turnActive: false, turnDistance: 0,
+      blink: 0, signalDirection: 0, signalTimer: 0, brake: 0,
+      roadHeading: point.heading, pitch: 0, steering: 0,
       restage: 0
     };
   };
@@ -192,12 +310,14 @@ export function createHongKongTraffic(scene, { getFocus, taxiStyle, getGroundHei
     const car = createVehicle(i, 'car', taxi);
     car.dir = graph[car.link][5] === -1 ? -1 : 1;
     if (graph[car.link][5] === 0 && hash(i + 17) < 0.5) car.dir = -1;
+    if (car.dir < 0) car.s = total[car.link] - car.s;
     cars.push(car);
   }
   for (let i = 0; i < BUS_COUNT; i++) {
     const bus = createVehicle(i, 'bus');
     bus.dir = graph[bus.link][5] === -1 ? -1 : 1;
     if (graph[bus.link][5] === 0 && hash(i + 29) < 0.5) bus.dir = -1;
+    if (bus.dir < 0) bus.s = total[bus.link] - bus.s;
     buses.push(bus);
   }
 
@@ -212,8 +332,9 @@ export function createHongKongTraffic(scene, { getFocus, taxiStyle, getGroundHei
     const link = near[Math.floor(hash(i * 3.1 + 7) * near.length)];
     if (link === undefined) continue;
     cars[i].link = link;
-    cars[i].s = total[link] * hash(i * 5.7);
+    cars[i].s = initialChainage(link, i * 5.7);
     cars[i].dir = graph[link][5] === -1 ? -1 : (graph[link][5] === 0 && hash(i) < 0.5 ? -1 : 1);
+    if (cars[i].dir < 0) cars[i].s = total[link] - cars[i].s;
   }
 
   // Compact, stable instance slots keep class changes out of the render loop: a car's taxi/private role is fixed.
@@ -279,6 +400,8 @@ export function createHongKongTraffic(scene, { getFocus, taxiStyle, getGroundHei
   const busBodyGeo = buildHongKongBusBodyGeometry();
   const busPaint = new THREE.InstancedBufferAttribute(new Float32Array(BUS_COUNT * 3), 3);
   busBodyGeo.setAttribute('busPaint', busPaint);
+  const busState = new THREE.InstancedBufferAttribute(new Float32Array(BUS_COUNT * 4), 4);
+  busBodyGeo.setAttribute('busState', busState);
   const busBody = new THREE.InstancedMesh(busBodyGeo, createHongKongBusMaterial(), BUS_COUNT);
   const busSign = new THREE.InstancedMesh(
     buildHongKongBusSignGeometry(),
@@ -317,69 +440,127 @@ export function createHongKongTraffic(scene, { getFocus, taxiStyle, getGroundHei
   const scaleOne = new THREE.Vector3(1, 1, 1);
   const wheelQuat = new THREE.Quaternion();
   const spinQuat = new THREE.Quaternion();
+  const pitchQuat = new THREE.Quaternion();
+  const rollQuat = new THREE.Quaternion();
+  const steerQuat = new THREE.Quaternion();
   const xAxis = new THREE.Vector3(1, 0, 0);
+  const zAxis = new THREE.Vector3(0, 0, 1);
   const wheelMatrix = new THREE.Matrix4();
   const pos = new THREE.Vector3();
 
+  function vehicleGroundHeight(vehicle, x, z, referenceY) {
+    const route = routes[vehicle.link];
+    if (!route || (route.flags & 6)) return getGroundHeight(x, z, 'car', referenceY);
+    const flat = route.flat;
+    let bestDistanceSq = Infinity, height = null;
+    for (let i = 2; i < flat.length; i += 2) {
+      const ax = flat[i - 2], az = flat[i - 1], dx = flat[i] - ax, dz = flat[i + 1] - az;
+      const lengthSq = dx * dx + dz * dz;
+      const t = lengthSq > 1e-8 ? Math.max(0, Math.min(1, ((x - ax) * dx + (z - az) * dz) / lengthSq)) : 0;
+      const px = ax + dx * t, pz = az + dz * t, distanceSq = (x - px) ** 2 + (z - pz) ** 2;
+      if (distanceSq < bestDistanceSq) {
+        bestDistanceSq = distanceSq;
+        height = roadRibbonHeightAtSegment(route.wayId, i / 2 - 1, t);
+      }
+    }
+    return height ?? getGroundHeight(x, z, 'car', referenceY);
+  }
+
   function advance(vehicle, dt, isBus) {
-    const link = vehicle.link;
-    const length = total[link];
+    const link = vehicle.link, length = total[link];
     if (!length) return;
     vehicle.prevX = vehicle.x;
     vehicle.prevZ = vehicle.z;
     vehicle.prevHeading = vehicle.heading;
+    vehicle.signalTimer = Math.max(0, vehicle.signalTimer - dt);
+
+    let travelS = getTravelS(vehicle);
+    if (!vehicle.next && length - travelS < 55) planNext(vehicle, isBus);
+    vehicle.blink = vehicle.turn ? vehicle.signalDirection : (vehicle.signalTimer > 0 ? vehicle.signalDirection : 0);
+
     const cruise = vehicle.targetSpeed * (isBus ? 0.72 : 1);
-    const want = Math.min(cruise, vehicle.followCap);
-    // Braking behind a leader is firmer than the lazy throttle response.
+    let turnCap = Infinity;
+    if (vehicle.turn) {
+      turnCap = vehicle.turnActive ? vehicle.turn.speed : Math.sqrt(vehicle.turn.speed ** 2
+        + 6 * Math.max(0, vehicle.turn.startTravelS - travelS));
+    }
+    let want = Math.min(cruise, vehicle.followCap, turnCap);
+    if (!vehicle.next && length - travelS < 8) want = 0;
+    vehicle.brake = want < vehicle.speed - 0.2 ? 1 : 0;
     const response = want < vehicle.speed ? 4.5 : 1.5;
     vehicle.speed += (want - vehicle.speed) * (1 - Math.exp(-dt * response));
-    let step = vehicle.speed * dt;
-    vehicle.s += step * vehicle.dir;
-    if (vehicle.s > length || vehicle.s < 0) {
-      const node = vehicle.dir > 0 ? graph[link][1] : graph[link][0];
-      const options = outgoing[node] || [];
-      let next = null;
-      if (options.length) {
-        // Prefer wide roads and avoid a U-turn unless there is no other way out.
-        let bestScore = -Infinity;
-        for (const option of options) {
-          if (option.link === link && options.length > 1) continue;
-          const width = graph[option.link][3];
-          const score = width + hash(vehicle.index + option.link * 0.13) * 8;
-          if (score > bestScore) { bestScore = score; next = option; }
+    const step = vehicle.speed * dt;
+    let p = null;
+
+    if (vehicle.turnActive && vehicle.turn) {
+      vehicle.turnDistance += step;
+    } else {
+      travelS += step;
+      if (!vehicle.next) travelS = Math.min(travelS, length);
+      setTravelS(vehicle, travelS);
+      if (vehicle.turn && travelS >= vehicle.turn.startTravelS) {
+        vehicle.turnActive = true;
+        vehicle.turnDistance = Math.max(0, travelS - vehicle.turn.startTravelS);
+        setTravelS(vehicle, vehicle.turn.startTravelS);
+      } else if (!vehicle.turn && travelS >= length) {
+        const overflow = travelS - length;
+        if (vehicle.next) {
+          const candidate = laneSample(vehicle.next.link, overflow, vehicle.next.dir, isBus);
+          const current = laneSample(link, length, vehicle.dir, isBus);
+          if (Math.abs(wrapTrafficAngle(candidate.heading - current.heading)) > 0.35) {
+            vehicle.next = null;
+            vehicle.waitingForTurn = true;
+            vehicle.speed = 0;
+            setTravelS(vehicle, length);
+          } else {
+            vehicle.link = vehicle.next.link;
+            vehicle.dir = vehicle.next.dir;
+            vehicle.next = null;
+            setTravelS(vehicle, overflow);
+          }
+        } else {
+          setTravelS(vehicle, length);
         }
-        if (!next) next = options[Math.floor(hash(vehicle.index + vehicle.s) * options.length)];
-      }
-      if (next) {
-        vehicle.link = next.link;
-        vehicle.dir = next.dir;
-        vehicle.s = next.dir > 0 ? 0.2 : total[next.link] - 0.2;
-      } else {
-        vehicle.dir *= -1;
-        vehicle.s = Math.max(0.2, Math.min(length - 0.2, vehicle.s));
       }
     }
 
-    const p = samplePath(paths[vehicle.link], lengths[vehicle.link], vehicle.s);
-    const laneOffset = Math.min(4.2, Math.max(1.7, graph[vehicle.link][3] * 0.23)) * (isBus ? 1.12 : 1);
-    // Travelling on the left: for direction vector (dx, dz), left is (dz, -dx).
-    const leftX = p.dz * vehicle.dir, leftZ = -p.dx * vehicle.dir;
+    if (vehicle.turnActive && vehicle.turn) {
+      if (vehicle.turnDistance >= vehicle.turn.length) {
+        const overflow = vehicle.turnDistance - vehicle.turn.length;
+        const finished = vehicle.turn;
+        vehicle.link = vehicle.next.link;
+        vehicle.dir = vehicle.next.dir;
+        vehicle.next = null;
+        setTravelS(vehicle, finished.endTravelS + overflow);
+        vehicle.turn = null;
+        vehicle.turnActive = false;
+        vehicle.turnDistance = 0;
+        vehicle.signalDirection = finished.blink;
+        vehicle.signalTimer = 1.1;
+        vehicle.blink = finished.blink;
+        p = laneSample(vehicle.link, getTravelS(vehicle), vehicle.dir, isBus);
+      } else {
+        p = samplePlannedTurn(vehicle.turn, vehicle.turnDistance);
+      }
+    }
+    if (!p) p = laneSample(vehicle.link, getTravelS(vehicle), vehicle.dir, isBus);
+
     const shoveDecay = Math.exp(-dt * 3.5);
     vehicle.pushX *= shoveDecay;
     vehicle.pushZ *= shoveDecay;
-    vehicle.x = p.x + leftX * laneOffset + vehicle.pushX;
-    vehicle.z = p.z + leftZ * laneOffset + vehicle.pushZ;
-    // A restaged car jumps across the city; forgetting the old footprint avoids a bogus swept contact.
+    vehicle.x = p.x + vehicle.pushX;
+    vehicle.z = p.z + vehicle.pushZ;
     if (Math.hypot(vehicle.x - vehicle.prevX, vehicle.z - vehicle.prevZ) > 50) {
       vehicle.prevX = vehicle.x;
       vehicle.prevZ = vehicle.z;
     }
-    const targetHeading = Math.atan2(p.dx * vehicle.dir, p.dz * vehicle.dir);
-    vehicle.heading += wrapAngle(targetHeading - vehicle.heading) * (1 - Math.exp(-dt * 7));
+    vehicle.roadHeading = p.heading;
+    vehicle.heading = p.heading;
+    const wheelbase = isBus ? 7.1 : (vehicle.taxi ? taxiSpec.wheelZ * 2 : 2.76);
+    vehicle.steeringTarget = vehicle.turnActive && vehicle.turn
+      ? vehicle.turn.sign * Math.min(0.65, Math.atan(wheelbase / vehicle.turn.radius)) : 0;
     vehicle.wheelSpin = (vehicle.wheelSpin + step / (isBus ? HK_BUS_SPEC.wheelRadius : 0.34)) % (Math.PI * 2);
 
-    // Restage vehicles that are far behind the player onto a nearby street. Off-screen here means "beyond the halo";
-    // the game camera rarely sees a full 600 m radius in street canyons anyway.
     const f = focus();
     if (Math.hypot(vehicle.x - f.x, vehicle.z - f.z) > restageRadius) {
       vehicle.restage += dt;
@@ -389,8 +570,16 @@ export function createHongKongTraffic(scene, { getFocus, taxiStyle, getGroundHei
         const candidate = near[Math.floor(hash(vehicle.index + performance.now() * 0.0001) * near.length)];
         if (candidate !== undefined) {
           vehicle.link = candidate;
-          vehicle.s = total[candidate] * (0.15 + hash(vehicle.index + vehicle.s) * 0.7);
+          vehicle.s = initialChainage(candidate, vehicle.index + vehicle.s);
           vehicle.dir = graph[candidate][5] === -1 ? -1 : (graph[candidate][5] === 0 && hash(vehicle.index) < 0.5 ? -1 : 1);
+          if (vehicle.dir < 0) vehicle.s = total[candidate] - vehicle.s;
+          vehicle.turn = null;
+          vehicle.next = null;
+          vehicle.turnActive = false;
+          vehicle.turnDistance = 0;
+          vehicle.blink = 0;
+          vehicle.signalTimer = 0;
+          vehicle.waitingForTurn = false;
         }
       }
     } else {
@@ -398,60 +587,95 @@ export function createHongKongTraffic(scene, { getFocus, taxiStyle, getGroundHei
     }
   }
 
-  function renderVehicle(vehicle, slot, isBus) {
-    const s = Math.sin(vehicle.heading), c = Math.cos(vehicle.heading);
-    vehicle.y = getGroundHeight ? getGroundHeight(vehicle.x, vehicle.z, 'car', vehicle.y) : 0;
+  function writeVehicleState(geometry, slot, vehicle) {
+    const state = geometry.attributes.carState || geometry.attributes.busState;
+    if (!state) return;
+    const on = ((clock + hash(vehicle.index + 2.7) * 0.8) % 0.8) < 0.4;
+    const offset = slot * 4;
+    state.array[offset] = vehicle.brake;
+    state.array[offset + 1] = on && vehicle.blink < 0 ? 1 : 0;
+    state.array[offset + 2] = on && vehicle.blink > 0 ? 1 : 0;
+    state.array[offset + 3] = 0;
+  }
+
+  function renderVehicle(vehicle, slot, isBus, dt) {
+    const poseHeading = vehicle.heading;
+    const groundSin = Math.sin(poseHeading), groundCos = Math.cos(poseHeading);
+    const wheelbase = isBus ? 7.1 : (vehicle.taxi ? taxiSpec.wheelZ * 2 : 2.76);
+    let targetPitch = 0, targetRoll = 0;
+    if (getGroundHeight) {
+      const centreY = vehicleGroundHeight(vehicle, vehicle.x, vehicle.z, vehicle.y);
+      const track = isBus ? HK_BUS_SPEC.wheelX : (vehicle.taxi ? taxiSpec.wheelX : 0.79);
+      const axleHeight = (longitudinal) => {
+        const x = vehicle.x + groundSin * longitudinal, z = vehicle.z + groundCos * longitudinal;
+        const left = vehicleGroundHeight(vehicle, x + groundCos * track, z - groundSin * track, centreY);
+        const right = vehicleGroundHeight(vehicle, x - groundCos * track, z + groundSin * track, centreY);
+        return { left, right, mean: (left + right) * 0.5 };
+      };
+      const front = axleHeight(wheelbase * 0.5);
+      const rear = axleHeight(-wheelbase * 0.5);
+      vehicle.y = (front.mean + rear.mean) * 0.5;
+      targetPitch = Math.atan2(front.mean - rear.mean, wheelbase);
+      targetRoll = Math.atan2((front.left + rear.left) - (front.right + rear.right), 4 * track);
+    } else {
+      vehicle.y = 0;
+    }
+    vehicle.pitch = targetPitch;
+    vehicle.roll = targetRoll;
+    vehicle.steering += ((vehicle.steeringTarget || 0) - vehicle.steering) * (1 - Math.exp(-dt * 10));
     quat.setFromAxisAngle(up, vehicle.heading);
+    pitchQuat.setFromAxisAngle(xAxis, -vehicle.pitch);
+    rollQuat.setFromAxisAngle(zAxis, vehicle.roll);
+    quat.multiply(pitchQuat).multiply(rollQuat);
     matrix.compose(pos.set(vehicle.x, vehicle.y, vehicle.z), quat, scaleOne);
     if (isBus) {
       busBody.setMatrixAt(slot, matrix);
       busSign.setMatrixAt(slot, matrix);
-      spinQuat.setFromAxisAngle(xAxis, vehicle.wheelSpin);
-      wheelQuat.copy(quat).multiply(spinQuat);
+      writeVehicleState(busBodyGeo, slot, vehicle);
       for (const side of [-1, 1]) {
         const wheels = side < 0 ? busWheelLeft : busWheelRight;
         for (const [axleIndex, lz] of HK_BUS_SPEC.axleZ.entries()) {
           const lx = side * HK_BUS_SPEC.wheelX;
-          const wx = vehicle.x + c * lx + s * lz;
-          const wz = vehicle.z - s * lx + c * lz;
-          wheelMatrix.compose(pos.set(wx, vehicle.y + HK_BUS_SPEC.wheelRadius, wz), wheelQuat, scaleOne);
+          steerQuat.setFromAxisAngle(up, lz > 0 ? vehicle.steering : 0);
+          spinQuat.setFromAxisAngle(xAxis, vehicle.wheelSpin);
+          wheelQuat.copy(steerQuat).multiply(spinQuat);
+          wheelMatrix.compose(pos.set(lx, HK_BUS_SPEC.wheelRadius, lz), wheelQuat, scaleOne).premultiply(matrix);
           wheels.setMatrixAt(slot * HK_BUS_SPEC.axleZ.length + axleIndex, wheelMatrix);
         }
       }
     } else {
       if (vehicle.taxi) {
         taxiMesh.setMatrixAt(vehicle.taxiSlot, matrix);
+        writeVehicleState(taxiGeo, vehicle.taxiSlot, vehicle);
       } else {
         carMesh.setMatrixAt(vehicle.privateSlot, matrix);
+        writeVehicleState(carGeo, vehicle.privateSlot, vehicle);
         const paint = carMesh.geometry.attributes.paintColor.array;
         paint[vehicle.privateSlot * 3] = vehicle.paint.r;
         paint[vehicle.privateSlot * 3 + 1] = vehicle.paint.g;
         paint[vehicle.privateSlot * 3 + 2] = vehicle.paint.b;
       }
-      // Wheels are children of the body in spirit. Private cars keep the cheap shared cylinder; taxis use the Crown Comfort rims.
-      wheelQuat.setFromAxisAngle(up, vehicle.heading);
       if (vehicle.taxi) {
-        spinQuat.setFromAxisAngle(xAxis, vehicle.wheelSpin);
-        wheelQuat.multiply(spinQuat);
         for (const side of [-1, 1]) {
           const wheels = side < 0 ? taxiWheelLeft : taxiWheelRight;
           for (let axleIndex = 0; axleIndex < 2; axleIndex++) {
             const lx = side * taxiSpec.wheelX;
             const lz = axleIndex === 0 ? taxiSpec.wheelZ : -taxiSpec.wheelZ;
-            const wx = vehicle.x + c * lx + s * lz;
-            const wz = vehicle.z - s * lx + c * lz;
-            wheelMatrix.compose(pos.set(wx, vehicle.y + taxiSpec.wheelRadius, wz), wheelQuat, scaleOne);
+            steerQuat.setFromAxisAngle(up, lz > 0 ? vehicle.steering : 0);
+            spinQuat.setFromAxisAngle(xAxis, vehicle.wheelSpin);
+            wheelQuat.copy(steerQuat).multiply(spinQuat);
+            wheelMatrix.compose(pos.set(lx, taxiSpec.wheelRadius, lz), wheelQuat, scaleOne).premultiply(matrix);
             wheels.setMatrixAt(vehicle.taxiSlot * 2 + axleIndex, wheelMatrix);
           }
         }
       } else {
         for (let k = 0; k < 4; k++) {
           const side = k < 2 ? 1 : -1;
-          const axle = k % 2 === 0 ? 1.38 : -1.38;
-          const lx = side * 0.79, lz = axle;
-          const wx = vehicle.x + c * lx + s * lz;
-          const wz = vehicle.z - s * lx + c * lz;
-          wheelMatrix.compose(pos.set(wx, vehicle.y + 0.34, wz), wheelQuat, scaleOne);
+          const lx = side * 0.79, lz = k % 2 === 0 ? 1.38 : -1.38;
+          steerQuat.setFromAxisAngle(up, lz > 0 ? vehicle.steering : 0);
+          spinQuat.setFromAxisAngle(xAxis, vehicle.wheelSpin);
+          wheelQuat.copy(steerQuat).multiply(spinQuat);
+          wheelMatrix.compose(pos.set(lx, 0.34, lz), wheelQuat, scaleOne).premultiply(matrix);
           wheelMesh.setMatrixAt(vehicle.privateSlot * 4 + k, wheelMatrix);
         }
       }
@@ -460,8 +684,10 @@ export function createHongKongTraffic(scene, { getFocus, taxiStyle, getGroundHei
 
   const all = [...cars, ...buses];
   const near = [];
+  let clock = 0;
 
   function update(dt, controllerManager) {
+    clock += dt;
     const f = focus();
     near.length = 0;
     for (const v of all) {
@@ -473,8 +699,8 @@ export function createHongKongTraffic(scene, { getFocus, taxiStyle, getGroundHei
     for (let i = 0; i < buses.length; i++) advance(buses[i], dt, true);
     collideTraffic(near, dt);
     collidePlayer(near, dt, controllerManager);
-    for (let i = 0; i < cars.length; i++) renderVehicle(cars[i], i, false);
-    for (let i = 0; i < buses.length; i++) renderVehicle(buses[i], i, true);
+    for (let i = 0; i < cars.length; i++) renderVehicle(cars[i], i, false, dt);
+    for (let i = 0; i < buses.length; i++) renderVehicle(buses[i], i, true, dt);
     carMesh.instanceMatrix.needsUpdate = true;
     taxiMesh.instanceMatrix.needsUpdate = true;
     wheelMesh.instanceMatrix.needsUpdate = true;
@@ -485,7 +711,10 @@ export function createHongKongTraffic(scene, { getFocus, taxiStyle, getGroundHei
     busWheelLeft.instanceMatrix.needsUpdate = true;
     busWheelRight.instanceMatrix.needsUpdate = true;
     carMesh.geometry.attributes.paintColor.needsUpdate = true;
+    carMesh.geometry.attributes.carState.needsUpdate = true;
+    taxiMesh.geometry.attributes.carState.needsUpdate = true;
+    busState.needsUpdate = true;
   }
 
-  return { group, cars, buses, update };
+  return { group, cars, buses, update, sampleGround: vehicleGroundHeight };
 }

@@ -8,7 +8,7 @@ import { vehicleContact, resolveVehicleContact, sweptVehicleContact } from '../.
 
 const FOLLOW_MARGIN = 2;
 const FOLLOW_DECEL = 5;
-const SHOVE_LIMIT = 4;
+const SHOVE_LIMIT = 0.75;
 
 const contactA = { x: 0, z: 0, prevX: 0, prevZ: 0, sin: 0, cos: 1, halfW: 0, halfL: 0,
   mass: 0, vx: 0, vz: 0, angularVel: 0 };

@@ -3,6 +3,7 @@ import { HK_VERIFIED_BRIDGES } from '../../hk-verified-bridge-data.js';
 import { HK_TERRAIN, hongKongTerrainHeight } from './terrain.js';
 import { HSBC_SITE } from './hsbc-headquarters-architecture.js';
 import { SCB_SITE } from './standard-chartered-architecture.js';
+import { smoothConstrainedProfileHeights } from './road-profile-smoothing.js';
 
 export const ROAD_SURFACE_OFFSET = 0.025;
 export const ROAD_PROFILE_STEP = 20;
@@ -12,6 +13,7 @@ const tunnelHeights = new Int16Array(tunnelBytes.buffer);
 const tunnelWays = new Map();
 const verifiedBridgeWays = new Map(HK_VERIFIED_BRIDGES.ways.map((way) => [way.wayId, way]));
 const profileCache = new Map();
+const smoothedWayCache = new Map();
 let tunnelVertexCount = 0;
 
 for (const [wayId, road] of HK_FULL_ROADS.roads.entries()) {
@@ -58,7 +60,7 @@ function rawRibbonHeight(wayId, segmentIndex, t) {
 
 // Adjacent ways segments must agree at their shared OSM vertex. Taking the higher of both cross-sections avoids a
 // vertical crack at bends while keeping every point across the carriageway on one level transverse plane.
-export function roadRibbonHeightAtVertex(wayId, vertexIndex) {
+function rawRoadRibbonHeightAtVertex(wayId, vertexIndex) {
   const tunnel = tunnelWays.get(wayId);
   const bridge = verifiedBridgeWays.get(wayId);
   const road = HK_FULL_ROADS.roads[wayId], flat = road?.[5];
@@ -81,6 +83,25 @@ export function roadRibbonHeightAtVertex(wayId, vertexIndex) {
       surfaceRoadHeight(x - offsetX, z - offsetZ));
   }
   return height;
+}
+
+export function roadRibbonHeightAtVertex(wayId, vertexIndex) {
+  const road = HK_FULL_ROADS.roads[wayId];
+  // Elevated ways keep their original bridge profile as well: only verified examples have surveyed replacement
+  // heights, but none of them should be lifted towards a terrain chord as if they were ordinary surface streets.
+  if ((road?.[4] & 2) || verifiedBridgeWays.has(wayId) || tunnelWays.has(wayId)) {
+    return rawRoadRibbonHeightAtVertex(wayId, vertexIndex);
+  }
+  let heights = smoothedWayCache.get(wayId);
+  if (!heights) {
+    const flat = HK_FULL_ROADS.roads[wayId]?.[5] || [];
+    const nodes = [];
+    for (let i = 0; i < flat.length; i += 2) nodes.push({ x: flat[i], z: flat[i + 1],
+      height: rawRoadRibbonHeightAtVertex(wayId, i / 2) });
+    heights = smoothConstrainedProfileHeights(nodes);
+    smoothedWayCache.set(wayId, heights);
+  }
+  return heights[Math.max(0, Math.min(heights.length - 1, vertexIndex))] ?? 0;
 }
 
 function addTerrainStations(stations, ax, az, dx, dz, offsetX, offsetZ) {

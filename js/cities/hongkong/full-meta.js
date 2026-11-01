@@ -135,6 +135,12 @@ function isSubmergedGenericTunnel(way, x, z) {
   return Boolean(way.flags & 4) && !CROSSING_FLAT_EXCLUSION_IDS.has(way.id) && !isTerritoryLand(x, z);
 }
 
+// Geometry-only consumers can inspect all overlapping ways instead of letting a nearest-height gameplay query choose
+// a different carriageway.
+export function fullRoadWaysNear(x, z, radius = 100) {
+  return candidates(x, z, radius);
+}
+
 export function nearestFullRoad(x, z, {
   radius = 1800, minWidth = 0, namedOnly = false, excludeCrossings = false, excludeSubmergedTunnels = false
 } = {}) {

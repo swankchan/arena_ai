@@ -30,12 +30,18 @@ CSV 只有 `Lamp Post Number / District / Location / Latitude / Longitude`，**�
 
 夜間由暖黃 emissive 燈頭、加法混合光暈及地面光池構成；日間不發光。地面光池直徑 **18 m**，以外圍低能量散射配合柔和核心，不畫硬邊集中光斑。此系統的實時 PointLight 數目為 **0**。原本已手建的橋樑及隧道照明保留；66 個位於現有跨海橋面的記錄會使用橋面高度，其餘維持現行平面道路展示。
 
+## 行車路面淨空
+
+- `npm run build:hk-street-light-clearance` 會逐支檢查燈柱底座，先沿實際衝突路段法線搬移，再以固定 radial fallback 搜尋合理路旁位置；最大搬移 **24 m**。
+- 每次搬移都重新計算地面高度並覆核平行／重疊車路，不是只在畫面隱藏燈柱。現行表格搬移 **38,486** 支、壓抑 **80** 支無法安全安置的記錄，保留 **144,915** 支，覆核車路衝突 **0**。
+- Runtime 表格：`js/hk-street-light-clearance-data.js`；可重現審計：`tools/data/hongkong/street-light-clearance-manifest.json`。
+
 ## 效能
 
-- 1 km 空間分區，共 **892 個燈組**。
+- 1 km 空間分區，共 **893 個燈組**。
 - 燈桿／燈臂／燈頭在約 800 m 內繪製。
 - 地面光池限制在約 260 m；夜間遠距光暈可延伸至約 1.8 km。
 - 各分區使用 InstancedMesh，共享幾何、材質及 shader pipeline；離開範圍的整組不提交繪製。
-- 全港共有 **164,127 個燈頭**，但不會同時全部出現在鏡頭或陰影 pass。
+- 原始資料共有 **164,127 個燈頭**；最終淨空表格保留 **163,980 個 runtime 燈頭**，但不會同時全部出現在鏡頭或陰影 pass。
 
 主要實作：`js/cities/hongkong/street-lighting.js`；由所選 `simple_replace` 全港世界在 `js/cities/hongkong/simple-world.js` 建立及更新。

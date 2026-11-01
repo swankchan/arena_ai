@@ -8,7 +8,8 @@
     "build:hk-viaduct-inventory": "node tools/cities/hongkong/build-viaduct-inventory.mjs",
     "build:hk-verified-bridges": "node tools/cities/hongkong/build-verified-bridges.mjs",
     "build:hk-street-lights": "node tools/cities/hongkong/build-street-lights.mjs",
-    "build:hk-terrain": "node tools/cities/hongkong/build-terrain.mjs"
+    "build:hk-terrain": "node tools/cities/hongkong/build-terrain.mjs",
+    "build:hk-street-light-clearance": "node tools/cities/hongkong/build-street-light-clearance.mjs"
   },
   "devDependencies": {
     "earcut": "^3.0.2",

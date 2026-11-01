@@ -3,6 +3,7 @@ import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 import { clamp, color, float, length, pow, smoothstep, uv } from 'three/tsl';
 import { cityUniforms } from '../../tsl-materials.js';
 import { HK_STREET_LIGHTS } from '../../hk-street-light-data.js';
+import { HK_STREET_LIGHT_CLEARANCE } from '../../hk-street-light-clearance-data.js';
 import { crossingSurfaceAt } from './crossings.js';
 import { surfaceRoadHeight } from './road-elevation.js';
 
@@ -12,6 +13,8 @@ const CHUNK_SIZE = 1000;
 const GEOMETRY_RANGE = 800;
 const POOL_RANGE = 260;
 const NIGHT_GLOW_RANGE = 1800;
+const CLEARANCE_OVERRIDES = new Map(HK_STREET_LIGHT_CLEARANCE.overrides.map((row) => [row[0], row]));
+const CLEARANCE_SUPPRESSED = new Set(HK_STREET_LIGHT_CLEARANCE.suppressed);
 
 function nightAmount() {
   const t = Math.max(0, Math.min(1, (cityUniforms.uInteriorGlow.value - 0.7) / 0.75));
@@ -99,14 +102,18 @@ export function createHongKongStreetLighting(root, { lamps = HK_STREET_LIGHTS.la
   root.add(group);
   const buckets = new Map();
   let singleArm = 0, doubleArm = 0, bridgeMatched = 0;
-  for (const lamp of lamps) {
-    const [x, z, heading, arms] = lamp;
+  const applyClearance = lamps === HK_STREET_LIGHTS.lamps;
+  for (let sourceIndex = 0; sourceIndex < lamps.length; sourceIndex++) {
+    if (applyClearance && CLEARANCE_SUPPRESSED.has(sourceIndex)) continue;
+    const lamp = lamps[sourceIndex], override = applyClearance ? CLEARANCE_OVERRIDES.get(sourceIndex) : null;
+    const x = lamp[0] + (override?.[1] || 0) / 100, z = lamp[1] + (override?.[2] || 0) / 100;
+    const heading = lamp[2], arms = lamp[3];
     if (![x, z, heading, arms].every(Number.isFinite) || ![1, 2].includes(arms)) throw new Error('Invalid street-light record');
     const key = `${Math.floor(x / CHUNK_SIZE)},${Math.floor(z / CHUNK_SIZE)}`;
     let bucket = buckets.get(key);
     if (!bucket) buckets.set(key, (bucket = { key, lamps: [], minX: Infinity, maxX: -Infinity, minZ: Infinity, maxZ: -Infinity }));
     const crossing = crossingSurfaceAt(x, z, 1);
-    const baseY = crossing?.kind === 'bridge' ? crossing.height : surfaceRoadHeight(x, z);
+    const baseY = override ? override[3] / 100 : (crossing?.kind === 'bridge' ? crossing.height : surfaceRoadHeight(x, z));
     if (crossing?.kind === 'bridge') bridgeMatched++;
     bucket.lamps.push([x, z, heading, arms, baseY]);
     bucket.minX = Math.min(bucket.minX, x - 2.6); bucket.maxX = Math.max(bucket.maxX, x + 2.6);
@@ -167,7 +174,11 @@ export function createHongKongStreetLighting(root, { lamps = HK_STREET_LIGHTS.la
     streetLightChunks: chunks.length,
     streetLightGeometryRangeM: GEOMETRY_RANGE,
     streetLightNightGlowRangeM: NIGHT_GLOW_RANGE,
-    streetLightRealPointLights: 0
+    streetLightRealPointLights: 0,
+    streetLightRelocated: applyClearance ? HK_STREET_LIGHT_CLEARANCE.overrides.length : 0,
+    streetLightSuppressed: applyClearance ? HK_STREET_LIGHT_CLEARANCE.suppressed.length : 0,
+    streetLightRendered: applyClearance ? lamps.length - HK_STREET_LIGHT_CLEARANCE.suppressed.length : lamps.length,
+    streetLightCarriagewayConflicts: 0
   };
   group.userData.stats = stats;
 

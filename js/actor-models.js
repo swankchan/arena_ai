@@ -2303,6 +2303,7 @@ function createHongKongBusMaterial() {
   const n = attribute('normal', 'vec3');
   const partId = attribute('partId', 'float');
   const paint = attribute('busPaint', 'vec3');
+  const state = attribute('busState', 'vec4');
   const isBody = step(abs(partId.sub(BUS_PARTS.BODY)), 0.25);
   const isTrim = step(abs(partId.sub(BUS_PARTS.TRIM)), 0.25);
   const isPod = step(abs(partId.sub(BUS_PARTS.POD)), 0.25);
@@ -2432,9 +2433,12 @@ function createHongKongBusMaterial() {
   mat.colorNode = col;
   mat.roughnessNode = mix(mix(mix(float(0.3), float(0.16), max(glass, max(headLamp, tailCol))), float(0.68), max(isTrim, seal.mul(one.sub(glass)))), float(0.45), isPod);
   mat.metalnessNode = mix(mix(float(0.2), float(0.58), glass), float(0.06), max(isTrim, isPod));
+  const brake = state.x;
+  const blink = max(state.y.mul(step(0.0, p.x)), state.z.mul(step(p.x, 0.0)));
   const nightHeadlamp = smoothstep(0.60, 1.15, cityUniforms.uInteriorGlow);
   mat.emissiveNode = color(0xd9efff).mul(headLamp.mul(1.3)).mul(nightHeadlamp)
-    .add(color(0xff0a12).mul(tailLamp.mul(0.45)));
+    .add(color(0xff9a14).mul(max(turnFront, turnRear).mul(blink).mul(2.4)))
+    .add(color(0xff0a12).mul(tailLamp.mul(brake.mul(1.5).add(0.45))));
   _hkBusLoftedMat = mat;
   return mat;
 }
