@@ -305,6 +305,30 @@
   https://www.richitt.com/名鑄-themasterpiece/
   https://www.oneday.com.hk/zh_HK/buildings/the-masterpiece/
 
+## 朗豪坊辦公大樓 Langham Place Office Tower
+
+- 地點及來源：亞皆老街 8 號，採目前 **OSM way 65259283 version 10** 的 **49 個獨立頂點**；原始 WGS84 geometry、完整 tags、版本、changeset 及 ODbL attribution 保存在 `langham-place-architecture.js`。minimum-area OBB 中心為 **(916.7048484092081, -4089.400066604031)**，定向尺寸 **44.270143917100995 × 44.11146237165258 m**，`ry=0.19350471089742882`。模型保留圓角多瓣平面、凹口及突出翼部，沒有把整個朗豪坊發展、商場、酒店或土地用途範圍當成辦公塔身。
+- 高度、層數及用途分列：OSM 為 **255 m／59 levels／layer=1**。CTBUH 為 **255.1 m architectural＝255.1 m to-tip、59 above-ground／5 below-ground、65,868 m² Tower GFA、2004 completed、office、all-concrete**；design architect 為 **Wong & Ouyang**，structural engineer 為 **Arup**，façade consultant 為 **Far East Aluminum Works**。Wong & Ouyang 項目頁另以 **57 storeys office above 2 retail floors／3 basement carpark levels、約 66,000 m² office GFA、10-storey grand atrium** 描述發展組合；Wikipedia 採 **255.1 m roof、59＋5、1999 construction start／2004 completed**。各來源分開保存，模型最高點採 CTBUH **255.1 m**，沒有把 OSM 255 m 擅自取整成另一個頂點。
+- 弧形藍玻璃及灰色帶：依 Wong & Ouyang 官方全塔、街道及高空照片，建立多瓣弧形藍色反光玻璃、細鋁直棂／橫框、較深凹口及兩道灰色玻璃厚帶。視覺灰色 courses **18–19／38–39** 是照片導向控制，不是實測避火或機電樓層；厚帶有外挑 cornice、局部交叉撐及細暖色夜間線光，沒有把整座塔做成均勻盒體格網。
+- 分段冠頂及圓頂：主牆頂採四個照片導向屋面區 **239／230／226／233 m**，有逐邊百頁、弧形 coping、水平屋面及高差封邊；這些只是模型造型控制，不是四個來源 roof 高度。北側主瓣上方為橢圓玻璃圓頂，base **239 m**、高 **16.1 m**、兩軸半徑 **8.2／7.2 m**，最高點為 **255.1 m**；有實際環向及縱向金屬肋、底環和屋面，不是一個無細節半球。夜間只作低量冷色肋線及玻璃補光，沒有假稱已重現官方周末／假期變色燈光時序。
+- 基座及真實入口：低層採深色多層玻璃及七支向內傾斜的銀色圓柱，呼應官方街景中的厚帶和高柱。OSM **node 10199055644 v1** 標有 `entrance=yes`，位於 source edges **30／31** 的共同頂點，world 座標 **(925.1101339689501, -4106.252831228634)**；入口 frame 採兩邊平均外法線 **(0.5515105172878662, -0.8341679383198987)**。模型在此設高玻璃辦公大堂、門及門柄、薄玻璃雨篷、銀框、暖色內牆及 `LANGHAM PLACE / OFFICE TOWER` 標誌；雨篷寬 **12 m**、高 **5.4 m**、front **2.4 m** 是視覺控制，不是實測圖則。沒有把商場 grand atrium、酒店 drop-off 或搜索錯配的其他大廈入口套進來。
+- 地面、碰撞及道路：raw DTM 施工地台為 **5.436054588567316 m**，plaza 面抬高 **0.12 m**，不是已核實的入口工程標高。**49 條塔身邊**各自按所屬屋面高度設 OBB collider，圓頂、基座柱、雨篷及入口框架另有碰撞，避免在較低屋面之上留下全高隱形牆。精確塔身 ring 沒有道路或 clearance 後街燈衝突；砵蘭街 way **39362** 最近中心線距離 **7.0461498511359855 m**（寬 5.2 m），上海街 ways **24913／24915** 分別為 **9.443641685155102／9.463253287955508 m**（寬 11.6 m），亞皆老街 way **9596** 為 **13.364284747120166 m**（寬 18 m）。真實入口前庭同樣無道路／街燈衝突，因此沒有搬路、搬燈或改白色標線。
+- 研究照片及資產：實際查看 Wong & Ouyang 官方辦公塔外觀、Value Properties 街景、高空照片及 Wikimedia／PBase 日夜候選圖；只用可確認為辦公塔的內容研究弧形立面、兩道灰帶、圓頂、基座柱及夜間水平線光。研究照片沒有打包進應用程式，模型不使用照片貼圖或下載 GLTF；AIA、其他旺角大廈、商場內部及酒店入口的錯配圖均不作本幢立面證據。
+- 實際驗證：最終 Chromium／WebGL build 在 **960×640** 實看上海街及砵蘭街方向全塔、冠頂、灰色帶、基座、精確入口的日景，以及全塔、冠頂、灰色帶、入口夜景，共 **10 views**。scene 為 **14 landmarks／0 generic buildings**；本幢 **26 meshes、345,023 vertices、166,439 triangles、62 colliders、5,227 塊藍玻璃、396 塊灰色玻璃、40 段圓頂及 7 支基座柱**，全部 collider 已接入 world。raw 前庭及入口的 person ground 均為 **5.556054588567316 m**，所選亞皆老街車路取樣為 **5.757903275043126 m**，道路沒有被 plaza 覆蓋。`controllerManager` 實際行人及車輛撞向 source edge 36，最終離立面 clearance 分別 **0.905／2.605 m**；`geometryIssues=0`、`badColliders=0`、page exception／Three.js shader error 均為 **0**。只有已知的 Google Fonts 外部 request 失敗及 4 個 GL performance warnings；日夜材質、完整 14-landmark 場景、地形及碰撞均通過。專用 Node 測試 **15／15**，全套 **368／368 pass**。
+
+### 參考資料
+
+- OSM 辦公塔、目前 API 幾何及入口 node：https://www.openstreetmap.org/way/65259283
+  https://api.openstreetmap.org/api/0.6/way/65259283/full.json
+- CTBUH／CVU：255.1 m architectural／to-tip、59 above-ground／5 below-ground、65,868 m²、2004、office、all-concrete、Wong & Ouyang、Arup 及 façade／elevator 團隊：
+  https://www.skyscrapercenter.com/building/langham-place-office-tower/809
+- Wong & Ouyang 官方項目及辦公塔照片；57-storey office 的另一種發展描述、約 66,000 m²、10-storey grand atrium，以及本幢採用的外觀依據：
+  https://www.wongouyang.com/projects/langham-place-hong-kong/
+- Wikipedia 次要 convention：255.1 m roof、59＋5、1999／2004、Jerde＋Wong & Ouyang，以及藍玻璃、兩道灰色間隔和圓頂夜燈描述：
+  https://en.wikipedia.org/wiki/Langham_Place_(Hong_Kong)
+- Wikimedia Commons 外觀分類及實際查看的上海街／夜間候選圖，只作外觀研究，沒有打包：
+  https://commons.wikimedia.org/wiki/Category:Exterior_of_Langham_Place,_Hong_Kong
+
 ## 程式入口
 
 - `hsbc-headquarters-architecture.js`：滙豐純地理位置、OBB、樓層比例及 collider 座標換算，可在 Node 測試。
@@ -335,4 +359,6 @@
 - `cullinan-ii-world.js`：天璽II 藍銀 unitized 幕牆、百頁、折角塔冠、水晶 W 中庭、平面落客雨篷、景觀、日夜材質、碰撞及 stats。
 - `masterpiece-architecture.js`：名鑄 44 頂點 OSM 來源、OBB、高度／用途／年份 conventions、照片導向樓層控制、河內道入口、前庭及逐邊碰撞座標換算。
 - `masterpiece-world.js`：名鑄圓角酒店／住宅立面、連續弧形白色阳台帶、中央藍玻璃、雙層高空中花園、百頁冠頂、四道開敞門架、維修吊臂、河內道暖色玻璃入口、日夜材質、碰撞及 stats。
-- `simple-world.js`：只整合這十三個 authored landmarks；普通 `buildings` 仍為 0。
+- `langham-place-architecture.js`：朗豪坊辦公大樓 49 頂點 OSM 來源、OBB、高度／層數 conventions、四區屋面、橢圓圓頂、真實入口、前庭及逐邊碰撞座標換算。
+- `langham-place-world.js`：朗豪坊辦公大樓多瓣藍玻璃、兩道灰色厚帶、交叉撐、四區階梯屋面、肋架圓頂、傾斜銀柱、辦公入口、日夜材質、碰撞及 stats。
+- `simple-world.js`：只整合這十四個 authored landmarks；普通 `buildings` 仍為 0。

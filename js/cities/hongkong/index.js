@@ -78,6 +78,7 @@ export const city = {
       cullinanI: world.cullinanI,
       cullinanII: world.cullinanII,
       masterpiece: world.masterpiece,
+      langhamPlace: world.langhamPlace,
       landmarks: world.landmarks,
       stats,
       teleports: TELEPORTS,
