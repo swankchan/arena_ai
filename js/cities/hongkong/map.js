@@ -42,6 +42,13 @@ const MAP = {
 const RADAR_SCALE = 0.58;
 const MIN_FULL_ZOOM = 0.003;
 const MAX_FULL_ZOOM = 2.2;
+export const HK_FULL_MAP_PLAYER_RADIUS = 30000;
+
+// One world unit is one metre. Fit the shorter viewport axis to a 60 km diameter so the
+// complete 30 km radius around the player remains visible in both landscape and portrait.
+export function hongKongRadiusZoom(w, h, radius = HK_FULL_MAP_PLAYER_RADIUS) {
+  return Math.min(Math.max(1, w), Math.max(1, h)) / (2 * Math.max(1, radius));
+}
 
 export function hongKongFitZoom(bounds, w, h) {
   const width = Math.max(1, bounds.maxX - bounds.minX);
@@ -439,6 +446,16 @@ export class HKGMapSystem {
     this.viewZoom = this.fitZoom();
   }
 
+  focusPlayer(radius = HK_FULL_MAP_PLAYER_RADIUS) {
+    const entity = this.controllerManager.getActiveEntity();
+    const { w, h } = this.fullSize();
+    this.viewCenterX = entity.position.x;
+    this.viewCenterZ = entity.position.z;
+    this.viewZoom = hongKongRadiusZoom(w, h, radius);
+    // Do not clamp this focused view to the atlas bounds: near the coast or an outlying
+    // island the player must remain the exact centre of the requested 30 km radius.
+  }
+
   clampView() {
     const b = HK_FULL_MAP.bounds;
     const { w, h } = this.fullSize();
@@ -527,7 +544,7 @@ export class HKGMapSystem {
         if (typeof pop.hidePopover === 'function' && pop.matches(':popover-open')) pop.hidePopover();
       }
       this.resizeFullCanvas();
-      this.fitAll();
+      this.focusPlayer(HK_FULL_MAP_PLAYER_RADIUS);
       this.renderFullMap();
     } else {
       this.fullStatic = null;

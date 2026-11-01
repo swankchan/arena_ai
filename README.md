@@ -23,10 +23,10 @@ Add `?city=hongkong` (or `?city=grid`, `?city=newyork`) to the URL to skip the p
 | `Q` `C` | Descend (helicopter) |
 | `B` | Horn |
 | `N` | Toggle sound |
-| `M` | Full-screen map |
-| `H` | Hide / show the HUD |
+| `M` | Full-screen map; Hong Kong opens centred on the player with a 30 km radius |
+| `H` | Hide / show every UI overlay, leaving only the 3D view |
 
-Touch controls and gamepads are supported. The teleport menu is generated from the active city's destinations.
+The **Home** button returns to the city picker. The **Weather** menu offers Clear, Rain, Thunderstorm (rain and lightning), and Snow; the atmospheric sky includes animated procedural volumetric clouds. Touch controls and gamepads are supported. The teleport menu is generated from the active city's destinations.
 
 ## Development
 

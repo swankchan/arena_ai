@@ -301,6 +301,7 @@ body::after {
 /* Clean view [H]: everything but the toggle itself steps out of the way */
 body.hud-minimized::before,
 body.hud-minimized::after {
+  display: none;
   opacity: 0;
 }
 
@@ -320,6 +321,15 @@ body.hud-minimized .hud-bottom-center { transform: translate(-50%, 12px); }
 
 body.hud-minimized .toolbar > :not(#btn-toggle-hud) {
   display: none;
+}
+
+/* H is a true photo/cinematic view: no restore button, touch overlay, map or scrim remains
+   on screen. The keyboard shortcut is still active, so H always restores the interface. */
+body.hud-minimized .hud,
+body.hud-minimized #touch-controls,
+body.hud-minimized #fullmap-modal,
+body.hud-minimized .popover {
+  display: none !important;
 }
 
 /* ------------------------------------------------------------------------------------------------------------------
@@ -681,6 +691,32 @@ body.hud-minimized .icon-show {
   outline: 1.5px solid rgba(255, 255, 255, 0.92);
   outline-offset: -4px;
   box-shadow: 0 1px 0 rgba(0, 0, 0, 0.35), 0 10px 22px -10px rgba(0, 0, 0, 0.75);
+}
+
+/* Hong Kong street blades follow the local white-on-street sign convention: white enamel,
+   black lettering and a dark inset keyline. Manhattan keeps its green blades above. */
+body[data-city="hongkong"] .street-sign {
+  color: #111418;
+  background: #f7f7f2;
+  border-radius: 2px;
+  outline: 1.5px solid rgba(17, 20, 24, 0.9);
+  outline-offset: -3px;
+  text-shadow: none;
+  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.5), 0 8px 20px -12px rgba(0, 0, 0, 0.8);
+}
+
+.weather-popover .pop-item {
+  min-width: 238px;
+}
+
+.weather-popover .weather-btn > .icon {
+  flex: none;
+  margin-right: 8px;
+  color: var(--text-2);
+}
+
+.weather-popover .weather-btn.active > .icon {
+  color: var(--taxi);
 }
 
 .radar {
@@ -1306,8 +1342,21 @@ body[data-mode='helicopter'] .gauge-alt {
 }
 
 @media (max-width: 620px) {
+  .toolbar {
+    max-width: calc(100vw - 2 * var(--edge));
+    gap: 0;
+    padding: 0 3px;
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+  .toolbar::-webkit-scrollbar { display: none; }
+  .toolbar-divider { margin: 0 2px; }
+  .toolbar .time-switch { flex: none; gap: 0; }
+  .toolbar .time-btn,
+  .toolbar .time-btn.active,
+  .toolbar .tool-btn { flex: none; padding: 0 7px; gap: 0; }
+  .toolbar .tool-btn .icon-sm { display: none; }
   .time-btn.active .seg-label { display: none; }
-  .time-btn.active { padding: 0 9px; gap: 0; }
   .radar { display: none; }
   .hud-bottom-right { bottom: calc(var(--edge) + 64px); }
   .gauge { display: none; }

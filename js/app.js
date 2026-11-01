@@ -9,6 +9,7 @@ import { TouchControls } from './touch-controls.js';
 import { GamepadControls } from './gamepad-controls.js';
 import { CameraSystem, CAMERA_PRESETS } from './cameras.js';
 import { LightingSystem } from './lighting.js';
+import { WeatherSystem } from './weather.js';
 import { createTeleportTo } from './teleport.js';
 import { getCity } from './cities/registry.js';
 
@@ -49,6 +50,7 @@ async function initApp(cityStub) {
   const { city } = await cityStub.load();
 
   document.title = `${city.name} — Slop Cities`;
+  document.body.dataset.city = city.id;
   const brandTitle = document.getElementById('brand-title');
   if (brandTitle) brandTitle.textContent = city.name;
   const brandBullet = document.getElementById('brand-bullet');
@@ -156,7 +158,8 @@ async function initApp(cityStub) {
   }
 
   const cameraSystem = new CameraSystem(renderer.domElement, controllerManager);
-  globalThis.__slopDebug = { scene, renderer, cameraSystem, controllerManager, world };
+  const weatherSystem = new WeatherSystem(scene, lightingSystem);
+  globalThis.__slopDebug = { scene, renderer, cameraSystem, controllerManager, world, lightingSystem, weatherSystem };
   const touchControls = new TouchControls(controllerManager);
   const soundButton = document.getElementById('btn-sound');
   const silentAudio = {
@@ -195,6 +198,8 @@ async function initApp(cityStub) {
   const modeButtons = document.querySelectorAll('[data-mode]');
   const cameraButtons = document.querySelectorAll('[data-camera]');
   const timeButtons = document.querySelectorAll('[data-time]');
+  const weatherButtons = document.querySelectorAll('[data-weather]');
+  const weatherButton = document.getElementById('btn-weather');
   const hudToggleBtn = document.getElementById('btn-toggle-hud');
   const modeSwitch = document.getElementById('mode-switch');
   touchControls.onAvailabilityChange = placeModeIndicator;
@@ -311,6 +316,20 @@ async function initApp(cityStub) {
     });
   }
 
+  function selectWeather(weatherId) {
+    weatherSystem.setWeather(weatherId);
+    const labels = { clear: 'Clear', rain: 'Rain', storm: 'Thunderstorm', snow: 'Snow' };
+    const label = labels[weatherSystem.mode] || 'Clear';
+    weatherButtons.forEach((btn) => {
+      btn.classList.toggle('active', btn.getAttribute('data-weather') === weatherSystem.mode);
+      btn.setAttribute('aria-pressed', String(btn.getAttribute('data-weather') === weatherSystem.mode));
+    });
+    if (weatherButton) {
+      weatherButton.title = `Weather: ${label}`;
+      weatherButton.setAttribute('aria-label', `Choose weather · ${label}`);
+    }
+  }
+
   // Popovers (native [popover]: light dismiss & Esc for free) open against the control that toggles them: data-anchor
   // names the element they sit above / below, data-align the one whose right edge they line up with
   const popovers = document.querySelectorAll('.popover[popover]');
@@ -349,6 +368,15 @@ async function initApp(cityStub) {
     });
   });
 
+  const homeButton = document.getElementById('btn-home');
+  homeButton?.addEventListener('click', () => {
+    savePlayerState();
+    const homeUrl = new URL(window.location.href);
+    homeUrl.search = '';
+    homeUrl.hash = '';
+    window.location.assign(homeUrl.href);
+  });
+
   modeButtons.forEach((btn) => {
     btn.addEventListener('click', () => {
       selectMode(btn.getAttribute('data-mode'));
@@ -374,6 +402,13 @@ async function initApp(cityStub) {
   timeButtons.forEach((btn) => {
     btn.addEventListener('click', () => {
       selectTime(btn.getAttribute('data-time'));
+    });
+  });
+
+  weatherButtons.forEach((btn) => {
+    btn.addEventListener('click', () => {
+      selectWeather(btn.getAttribute('data-weather'));
+      closePopovers();
     });
   });
 
@@ -501,9 +536,12 @@ async function initApp(cityStub) {
       document.body.classList.toggle('hud-minimized');
       const isMin = document.body.classList.contains('hud-minimized');
       hudToggleBtn.setAttribute('aria-pressed', String(isMin));
-      hudToggleBtn.setAttribute('aria-label', isMin ? 'Show HUD' : 'Hide HUD');
-      hudToggleBtn.title = isMin ? 'Show the HUD [H]' : 'Clean view: hide the HUD [H]';
-      if (isMin) closePopovers();
+      hudToggleBtn.setAttribute('aria-label', isMin ? 'Show all UI' : 'Hide all UI');
+      hudToggleBtn.title = isMin ? 'Show all UI [H]' : 'Hide all UI: only the 3D view [H]';
+      if (isMin) {
+        closePopovers();
+        if (mapSystem?.isFullMapOpen) mapSystem.toggleFullMap(false);
+      }
     });
   }
 
@@ -573,6 +611,7 @@ async function initApp(cityStub) {
   const updateCulling = world.updateCulling ? (position) => world.updateCulling(position) : null;
   dynamicRoots.push(
     ...(world.dynamicRoots ?? []),
+    weatherSystem.root,
     ...Object.values(controllerManager.entities).map((entity) => entity.mesh),
     controllerManager.entities.cyclist?.helmet
   );
@@ -635,13 +674,14 @@ async function initApp(cityStub) {
   const colorGrade = createPostProcessing(renderer, scenePassColor, reflections);
   const renderPipeline = new THREE.RenderPipeline(renderer, colorGrade.outputNode);
   if (new URLSearchParams(window.location.search).has('debug')) {
-    globalThis.__slopTest = { renderPipeline, updateCulling, mapSystem };
+    globalThis.__slopTest = { renderPipeline, updateCulling, mapSystem, weatherSystem };
   }
 
   // Initialize the UI and chase camera around the restored player, or the city's spawn.
   selectMode(controllerManager.activeMode);
   selectCamera('chase', true);
   selectTime('golden');
+  selectWeather('clear');
   // the web fonts change the buttons' widths once they arrive
   if (document.fonts) document.fonts.ready.then(placeModeIndicator);
   markInit('ui');
@@ -754,6 +794,7 @@ async function initApp(cityStub) {
       nextPlayerSave = now + 5000;
     }
     lightingSystem.update(cameraSystem.currentPos);
+    weatherSystem.update(dt, cameraSystem.camera);
     mapSystem?.update();
     audioSystem.update(dt, elapsed, cameraSystem.camera, lightingSystem.activePresetId === 'midnight');
     if (warmedUp && updateCulling) updateCulling(cameraSystem.camera.position); // the warm-up frame draws every chunk

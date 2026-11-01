@@ -45,8 +45,8 @@ const TIME_PRESETS = {
     rayleigh: 2.8,
     mieCoefficient: 0.008,
     mieDirectionalG: 0.88,
-    cloudCoverage: 0.36,
-    cloudDensity: 0.38,
+    cloudCoverage: 0.46,
+    cloudDensity: 0.52,
     skyExposure: 0.148,
     nightFactor: 0.0
   },
@@ -70,8 +70,8 @@ const TIME_PRESETS = {
     rayleigh: 2.4,
     mieCoefficient: 0.006,
     mieDirectionalG: 0.86,
-    cloudCoverage: 0.32,
-    cloudDensity: 0.35,
+    cloudCoverage: 0.40,
+    cloudDensity: 0.46,
     skyExposure: 0.142,
     nightFactor: 0.0
   },
@@ -95,8 +95,8 @@ const TIME_PRESETS = {
     rayleigh: 3.4,
     mieCoefficient: 0.010,
     mieDirectionalG: 0.90,
-    cloudCoverage: 0.40,
-    cloudDensity: 0.42,
+    cloudCoverage: 0.48,
+    cloudDensity: 0.54,
     skyExposure: 0.115,
     nightFactor: 0.28
   },
@@ -120,10 +120,38 @@ const TIME_PRESETS = {
     rayleigh: 1.5,
     mieCoefficient: 0.004,
     mieDirectionalG: 0.80,
-    cloudCoverage: 0.22,
-    cloudDensity: 0.25,
+    cloudCoverage: 0.30,
+    cloudDensity: 0.36,
     skyExposure: 0.022,
     nightFactor: 0.86
+  }
+};
+
+const BASE_CLOUD_SPEED = 0.000055;
+const WEATHER_PRESETS = {
+  clear: {
+    sun: 1, hemi: 1, fog: 1, env: 1, exposure: 1,
+    cloudCoverage: null, cloudDensity: null, cloudSpeed: 1,
+    skyTint: new THREE.Color(0x8b98a3), skyMix: 0,
+    fogColor: new THREE.Color(0x9aa7b0), fogMix: 0
+  },
+  rain: {
+    sun: 0.62, hemi: 0.86, fog: 2.5, env: 0.82, exposure: 0.82,
+    cloudCoverage: 0.76, cloudDensity: 0.74, cloudSpeed: 1.35,
+    skyTint: new THREE.Color(0x687984), skyMix: 0.28,
+    fogColor: new THREE.Color(0x84949e), fogMix: 0.48
+  },
+  storm: {
+    sun: 0.36, hemi: 0.68, fog: 3.4, env: 0.66, exposure: 0.64,
+    cloudCoverage: 0.93, cloudDensity: 0.94, cloudSpeed: 1.85,
+    skyTint: new THREE.Color(0x394a5b), skyMix: 0.48,
+    fogColor: new THREE.Color(0x596b7a), fogMix: 0.66
+  },
+  snow: {
+    sun: 0.74, hemi: 0.96, fog: 2.1, env: 0.88, exposure: 0.88,
+    cloudCoverage: 0.66, cloudDensity: 0.58, cloudSpeed: 0.72,
+    skyTint: new THREE.Color(0xa1afb9), skyMix: 0.24,
+    fogColor: new THREE.Color(0xb6c2ca), fogMix: 0.52
   }
 };
 
@@ -131,6 +159,7 @@ class LightingSystem {
   constructor(scene, renderer = null) {
     this.scene = scene;
     this.activePresetId = 'golden';
+    this.weatherId = 'clear';
 
     // Register SunLight with either supported Three.js light-node API.
     if (SunLight.registerNode) {
@@ -154,21 +183,27 @@ class LightingSystem {
     this.sky.rayleigh.value = 2.8;
     this.sky.mieCoefficient.value = 0.008;
     this.sky.mieDirectionalG.value = 0.88;
-    this.sky.cloudScale.value = 0.00018;
-    this.sky.cloudSpeed.value = 0.000015;
-    this.sky.cloudCoverage.value = 0.36;
-    this.sky.cloudDensity.value = 0.38;
+    this.sky.cloudScale.value = 0.00024;
+    this.sky.cloudSpeed.value = BASE_CLOUD_SPEED;
+    this.sky.cloudCoverage.value = 0.46;
+    this.sky.cloudDensity.value = 0.52;
     this.sky.cloudElevation.value = 0.52;
 
     // Calibrate SkyMesh raw radiance (EE=1000 * 0.04) into standard exposure=1.0 HDR range
     this.uSkyExposure = uniform(0.148);
     this.uNightFactor = uniform(0.0);
     this.uNightSkyColor = uniform(new THREE.Color(0x0b1528));
+    this.uWeatherSkyTint = uniform(new THREE.Color(0x8b98a3));
+    this.uWeatherSkyMix = uniform(0.0);
+    this.uLightningFlash = uniform(0.0);
     const rawSkyNode = this.sky.material.colorNode;
     this.sky.material.colorNode = Fn(() => {
       const raw = rawSkyNode;
       const dayCol = raw.rgb.mul(this.uSkyExposure);
-      const finalSky = mix(dayCol, this.uNightSkyColor, this.uNightFactor);
+      const nightSky = mix(dayCol, this.uNightSkyColor, this.uNightFactor);
+      const weatherTint = this.uWeatherSkyTint.mul(float(1.0).sub(this.uNightFactor.mul(0.85)));
+      const gradedSky = mix(nightSky, weatherTint, this.uWeatherSkyMix);
+      const finalSky = gradedSky.add(vec3(0.62, 0.76, 1.0).mul(this.uLightningFlash));
       return vec4(finalSky, float(1.0));
     })();
 
@@ -243,45 +278,54 @@ class LightingSystem {
     // Bake physical SkyMesh (without solar disc) into scene.environment for realistic canyon IBL.
     // Reuses a single RenderTarget so texture identity never changes.
     this.sky.showSunDisc.value = 0;
+    const lightningFlash = this.uLightningFlash.value;
+    this.uLightningFlash.value = 0;
     this.envScene.add(this.sky);
     this.envRenderTarget = this.pmremGenerator.fromScene(this.envScene, 0, 0.1, 100, {
       renderTarget: this.envRenderTarget
     });
     this.scene.environment = this.envRenderTarget.texture;
     this.sky.showSunDisc.value = 1;
+    this.uLightningFlash.value = lightningFlash;
     this.scene.add(this.sky);
   }
 
   applyPreset(presetId, force = false) {
     const p = TIME_PRESETS[presetId] || TIME_PRESETS.golden;
+    const w = WEATHER_PRESETS[this.weatherId] || WEATHER_PRESETS.clear;
     if (!force && this.activePresetId === p.id && this.envRenderTarget !== null) {
       return;
     }
     this.activePresetId = p.id;
 
     this.sunLight.color.setHex(p.sunColor);
-    this.sunLight.intensity = p.sunIntensity;
+    this.sunLight.intensity = p.sunIntensity * w.sun;
+    this.baseSunIntensity = this.sunLight.intensity;
     this.sunLight.position.copy(p.sunDir);
     this.sunLight.updateMatrixWorld();
 
     this.hemiLight.color.setHex(p.hemiSky);
     this.hemiLight.groundColor.setHex(p.hemiGround);
-    this.hemiLight.intensity = p.hemiIntensity;
+    this.hemiLight.intensity = p.hemiIntensity * w.hemi;
+    this.baseHemiIntensity = this.hemiLight.intensity;
 
-    this.scene.fog.color.setHex(p.fogColor);
-    this.scene.fog.density = p.fogDensity;
-    if (this.uFogDensity) this.uFogDensity.value = p.fogDensity;
+    this.scene.fog.color.setHex(p.fogColor).lerp(w.fogColor, w.fogMix);
+    this.scene.fog.density = p.fogDensity * w.fog;
+    if (this.uFogDensity) this.uFogDensity.value = this.scene.fog.density;
 
     // Update physical Preetham SkyMesh uniforms
     this.sky.turbidity.value = p.turbidity;
     this.sky.rayleigh.value = p.rayleigh;
     this.sky.mieCoefficient.value = p.mieCoefficient;
     this.sky.mieDirectionalG.value = p.mieDirectionalG;
-    this.sky.cloudCoverage.value = p.cloudCoverage;
-    this.sky.cloudDensity.value = p.cloudDensity;
+    this.sky.cloudCoverage.value = w.cloudCoverage ?? p.cloudCoverage;
+    this.sky.cloudDensity.value = w.cloudDensity ?? p.cloudDensity;
+    this.sky.cloudSpeed.value = BASE_CLOUD_SPEED * w.cloudSpeed;
     this.sky.sunPosition.value.copy(p.sunDir);
-    this.uSkyExposure.value = p.skyExposure;
+    this.uSkyExposure.value = p.skyExposure * w.exposure;
     this.uNightFactor.value = p.nightFactor;
+    this.uWeatherSkyTint.value.copy(w.skyTint);
+    this.uWeatherSkyMix.value = w.skyMix;
 
     cityUniforms.uSunColor.value.setHex(p.sunColor);
     cityUniforms.uSkyTopColor.value.setHex(p.skyTop);
@@ -291,8 +335,15 @@ class LightingSystem {
     cityUniforms.uRoadWetness.value = p.roadWetness;
     cityUniforms.uCanyonBounce.value = p.canyonBounce;
 
-    this.scene.environmentIntensity = p.envIntensity;
+    this.scene.environmentIntensity = p.envIntensity * w.env;
     this.bakeEnvironmentMap();
+  }
+
+  setWeather(weatherId) {
+    const next = WEATHER_PRESETS[weatherId] ? weatherId : 'clear';
+    if (next === this.weatherId) return;
+    this.weatherId = next;
+    this.applyPreset(this.activePresetId, true);
   }
 
   update(focusPos) {

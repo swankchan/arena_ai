@@ -448,9 +448,10 @@ export function createHongKongTraffic(scene, { getFocus, taxiStyle, getGroundHei
   const wheelMatrix = new THREE.Matrix4();
   const pos = new THREE.Vector3();
 
-  function vehicleGroundHeight(vehicle, x, z, referenceY) {
-    const route = routes[vehicle.link];
-    if (!route || (route.flags & 6)) return getGroundHeight(x, z, 'car', referenceY);
+  const currentGroundSample = { height: null, distanceSq: Infinity };
+  const nextGroundSample = { height: null, distanceSq: Infinity };
+
+  function routeGroundSample(route, x, z, out) {
     const flat = route.flat;
     let bestDistanceSq = Infinity, height = null;
     for (let i = 2; i < flat.length; i += 2) {
@@ -463,7 +464,35 @@ export function createHongKongTraffic(scene, { getFocus, taxiStyle, getGroundHei
         height = roadRibbonHeightAtSegment(route.wayId, i / 2 - 1, t);
       }
     }
-    return height ?? getGroundHeight(x, z, 'car', referenceY);
+    out.height = height;
+    out.distanceSq = bestDistanceSq;
+    return out;
+  }
+
+  function vehicleGroundHeight(vehicle, x, z, referenceY) {
+    const route = routes[vehicle.link];
+    if (!route || (route.flags & 6)) return getGroundHeight(x, z, 'car', referenceY);
+    const current = routeGroundSample(route, x, z, currentGroundSample);
+    if (vehicle.turnActive && vehicle.turn) {
+      // A turning vehicle is no longer on vehicle.link's centreline. Sampling only that old
+      // route clamps every wheel to its last endpoint and makes the car hover (or sink) at
+      // a sloping junction. Prefer the precise outgoing ribbon once it is closer, and use
+      // the real junction/terrain query while between the two rendered carriageways.
+      const nextLink = vehicle.next?.link;
+      const nextRoute = routes[nextLink];
+      if (nextRoute && !(nextRoute.flags & 6)) {
+        const next = routeGroundSample(nextRoute, x, z, nextGroundSample);
+        const nextHalfWidth = Math.max(0.35, (graph[nextLink]?.[3] || 6) * 0.5 + 0.35);
+        if (next.height !== null && next.distanceSq < currentGroundSample.distanceSq && next.distanceSq <= nextHalfWidth ** 2) {
+          return next.height;
+        }
+      }
+      const currentHalfWidth = Math.max(0.35, (graph[vehicle.link]?.[3] || 6) * 0.5 + 0.35);
+      if (current.height === null || current.distanceSq > currentHalfWidth ** 2) {
+        return getGroundHeight(x, z, 'car', referenceY);
+      }
+    }
+    return current.height ?? getGroundHeight(x, z, 'car', referenceY);
   }
 
   function advance(vehicle, dt, isBus) {

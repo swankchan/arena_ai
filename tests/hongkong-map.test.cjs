@@ -12,6 +12,8 @@ let cfg;
 let makeFrame;
 let pointInRing;
 let hongKongFitZoom;
+let hongKongRadiusZoom;
+let HK_FULL_MAP_PLAYER_RADIUS;
 let isHongKongCorePoint;
 let HKGMapSystem;
 let buildTerritoryCoastColliders;
@@ -25,7 +27,7 @@ test.before(async () => {
   ({ default: cfg } = await import('../tools/cities/hongkong/config.mjs'));
   ({ makeFrame } = await import('../tools/geo/frame.mjs'));
   ({ pointInRing } = await import('../tools/geo/geom.mjs'));
-  ({ hongKongFitZoom, isHongKongCorePoint, HKGMapSystem } = await import('../js/cities/hongkong/map.js'));
+  ({ hongKongFitZoom, hongKongRadiusZoom, HK_FULL_MAP_PLAYER_RADIUS, isHongKongCorePoint, HKGMapSystem } = await import('../js/cities/hongkong/map.js'));
   ({ buildTerritoryCoastColliders } = await import('../js/cities/hongkong/coast-colliders.js'));
   ({ colliderContains } = await import('../js/cities/hongkong/colliders.js'));
 });
@@ -43,14 +45,30 @@ test('Hong Kong full-map fit uses the available wide and portrait viewports', ()
   ), 'the tighter fit is larger than the previous padded fit');
 });
 
-test('Hong Kong opens on the fitted atlas and prevents tiny manual zoom-outs', () => {
+test('Hong Kong opens centred on the player with a complete 30 km radius', () => {
   const source = readFileSync(join(__dirname, '../js/cities/hongkong/map.js'), 'utf8');
-  assert.match(source, /this\.resizeFullCanvas\(\);\s*this\.fitAll\(\);\s*this\.renderFullMap\(\)/);
+  assert.equal(HK_FULL_MAP_PLAYER_RADIUS, 30000);
+  assert.match(source, /this\.resizeFullCanvas\(\);\s*this\.focusPlayer\(HK_FULL_MAP_PLAYER_RADIUS\);\s*this\.renderFullMap\(\)/);
+  const fake = {
+    controllerManager: { getActiveEntity: () => ({ position: { x: 1234, z: -5678 } }) },
+    fullSize: () => ({ w: 1568, h: 756 })
+  };
+  HKGMapSystem.prototype.focusPlayer.call(fake);
+  assert.equal(fake.viewCenterX, 1234);
+  assert.equal(fake.viewCenterZ, -5678);
+  assert.equal(fake.viewZoom, hongKongRadiusZoom(1568, 756));
+  assert.equal(Math.min(1568, 756) / (2 * fake.viewZoom), 30000);
+  assert.equal(hongKongRadiusZoom(390, 844), 390 / 60000, 'portrait keeps the full radius across its width');
+});
+
+test('Hong Kong atlas prevents tiny manual zoom-outs and retains a fit-all command', () => {
+  const source = readFileSync(join(__dirname, '../js/cities/hongkong/map.js'), 'utf8');
   assert.match(source, /minimumFullZoom\(\)/);
   assert.match(source, /return Math\.max\(MIN_FULL_ZOOM, this\.fitZoom\(\)\);/);
   assert.match(source, /hongKongFitZoom\(HK_FULL_MAP\.bounds, w, h\)/);
   assert.match(source, /Math\.max\(this\.minimumFullZoom\(\), this\.viewZoom \/ 1\.45\)/);
   assert.match(source, /Math\.max\(this\.minimumFullZoom\(\), Math\.min\(MAX_FULL_ZOOM, this\.viewZoom \* factor\)\)/);
+  assert.match(source, /viewAllBtn\?\.addEventListener\('click', \(\) => \{\s*this\.fitAll\(\)/);
 });
 
 test('Hong Kong OSM atlas contains territory-wide land, roads, parks and place labels', () => {
