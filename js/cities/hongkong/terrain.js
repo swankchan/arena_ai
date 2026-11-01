@@ -7,6 +7,7 @@ import { BANK_OF_CHINA_SITE } from './bank-of-china-architecture.js';
 import { CENTRAL_PLAZA_SITE } from './central-plaza-architecture.js';
 import { THE_CENTER_SITE } from './the-center-architecture.js';
 import { NINA_TOWER_PODIUM_SITE } from './nina-tower-architecture.js';
+import { CHEUNG_KONG_SITE } from './cheung-kong-architecture.js';
 
 function decodeBytes(base64) {
   const binary = atob(base64);
@@ -48,6 +49,7 @@ const BANK_OF_CHINA_PAD_HEIGHT = rawHongKongTerrainHeight(BANK_OF_CHINA_SITE.x, 
 const CENTRAL_PLAZA_PAD_HEIGHT = rawHongKongTerrainHeight(CENTRAL_PLAZA_SITE.x, CENTRAL_PLAZA_SITE.z);
 const THE_CENTER_PAD_HEIGHT = rawHongKongTerrainHeight(THE_CENTER_SITE.x, THE_CENTER_SITE.z);
 const NINA_TOWER_PAD_HEIGHT = rawHongKongTerrainHeight(NINA_TOWER_PODIUM_SITE.x, NINA_TOWER_PODIUM_SITE.z);
+const CHEUNG_KONG_PAD_HEIGHT = rawHongKongTerrainHeight(CHEUNG_KONG_SITE.x, CHEUNG_KONG_SITE.z);
 
 export function hongKongTerrainHeight(x, z) {
   if (pointInFlatRing(HSBC_SITE.ring, x, z)) return HSBC_PAD_HEIGHT;
@@ -58,6 +60,7 @@ export function hongKongTerrainHeight(x, z) {
   if (pointInFlatRing(CENTRAL_PLAZA_SITE.ring, x, z)) return CENTRAL_PLAZA_PAD_HEIGHT;
   if (pointInFlatRing(THE_CENTER_SITE.ring, x, z)) return THE_CENTER_PAD_HEIGHT;
   if (pointInFlatRing(NINA_TOWER_PODIUM_SITE.ring, x, z)) return NINA_TOWER_PAD_HEIGHT;
+  if (pointInFlatRing(CHEUNG_KONG_SITE.ring, x, z)) return CHEUNG_KONG_PAD_HEIGHT;
   return rawHongKongTerrainHeight(x, z);
 }
 
@@ -72,6 +75,7 @@ export const HONG_KONG_TERRAIN_META = Object.freeze({
   centralPlazaPadHeight: CENTRAL_PLAZA_PAD_HEIGHT,
   theCenterPadHeight: THE_CENTER_PAD_HEIGHT,
   ninaTowerPadHeight: NINA_TOWER_PAD_HEIGHT,
+  cheungKongPadHeight: CHEUNG_KONG_PAD_HEIGHT,
   tunnelStats: HK_TERRAIN.stats
 });
 

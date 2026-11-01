@@ -2,7 +2,7 @@
 
 這份文件是香港場景**實際建築物進度總表及 100 幢主要大廈施工清單**，記錄建築物是否已加入、是否精修，以及是否作為 Landmark 整合。`tools/data/hongkong/landmarks.json` 及下表的待製作項目只是來源／候選資料；資料出現在該 JSON 或本清單 **不代表已經加入場景**。
 
-最後整理：**2026-11-01**。目前已實際加入 **8 幢**；其餘 **92 幢**仍是待製作項目，沒有基本體量或精修完成的意思。
+最後整理：**2026-11-01**。目前已實際加入 **9 幢**；其餘 **91 幢**仍是待製作項目，沒有基本體量或精修完成的意思。
 
 ## 標記定義
 
@@ -19,12 +19,12 @@
 | 項目 | 數量 |
 | --- | ---: |
 | 施工清單總數 | 100 |
-| 已加入場景的建築物 | 8 |
-| 已加入而且精修 | 8 |
+| 已加入場景的建築物 | 9 |
+| 已加入而且精修 | 9 |
 | 已加入但只有基本體量 | 0 |
-| 已加入並作為 Landmark 整合 | 8 |
+| 已加入並作為 Landmark 整合 | 9 |
 | 製作中 | 0 |
-| 待製作 | 92 |
+| 待製作 | 91 |
 
 目前普通建築群仍為 **0**；上表只計實際加入的建築物，不把橋樑、道路構築物或純 OSM 候選資料計算在內。
 
@@ -39,6 +39,7 @@
 - **‡ 中環廣場 373.9 m** 是外部建築高度參考；本地 OSM way **27087018** 的 **309 m** 是 roof，另有 **78 levels**。官方項目頁另採 **374 m including mast／75-storey Grade A office**，四套來源表述在詳細紀錄及程式分列，沒有把 roof 當 architectural height 或擅自取整。
 - 中環中心的 **346 m／73 levels** 來自本地 OSM，CTBUH 亦採 73 層；香港旅遊發展局頁面另寫 **79 floors**。外部 292 m roof/275 m occupied 與 346 m architectural 在詳細紀錄分列，不把不同層數 convention 合併。
 - 如心廣場高座 OSM way **112284860** 的 **318 m／80 levels** 與外部 **320.4 m architectural／319.8 m roof／301.1 m occupied／151.7 m observatory** 分開保存；低座 OSM way **112284790** 沒有 `height` tag，外部 **170.4／148.1 m** 及另一摘要 **163.7 m** 不互相覆寫。頂層編號 **89** 不是 89 個實體樓層。三個原始 rings 均保存於專屬來源模組。
+- 長江集團中心 OSM way **64897826** 採 **283 m／63 levels**，CVU 採 **282.8 m architectural／to-tip、63 above-ground／5 below-ground**；另一常見樓層表述為 **62 層**，升降機最高標號 **70** 不是 70 個實體樓層。結構論文的 **47.4 × 47.4 m、1 m chamfer** 與 OSM 六頂點外框分列，沒有互相取整。
 
 | 內部 ID | 建築物 | 地區 | 場景狀態 | 精修 | Landmark | 高度 | 位置／footprint 依據 | 主要實作 |
 | --- | --- | --- | --- | --- | --- | ---: | --- | --- |
@@ -50,7 +51,7 @@
 | `HK-B0006` | 中環廣場 Central Plaza | 灣仔 | 已加入 | **是** | **是** | 373.9 m‡ | OSM way **27087018** | `js/cities/hongkong/central-plaza-world.js` |
 | `HK-B0007` | 中環中心 The Center | 中環 | 已加入 | **是** | **是** | 346 m | OSM way **148228888** | `js/cities/hongkong/the-center-world.js` |
 | `HK-B0008` | 如心廣場 Nina Tower | 荃灣 | 已加入 | **是** | **是** | OSM 318 m；外部高／低座 320.4／170.4 m | OSM ways **112284860／112284790／492365420**（目前 API buildings；原始幾何另存於專屬來源模組） | `js/cities/hongkong/nina-tower-world.js` |
-| `HK-B0009` | 長江集團中心 Cheung Kong Center | 中環 | 待製作 | 否 | 否 | 283 m | OSM way **64897826**（目前 API building；本地快照未收錄） | — |
+| `HK-B0009` | 長江集團中心 Cheung Kong Center | 中環 | 已加入 | **是** | **是** | OSM 283 m；外部 282.8 m | OSM way **64897826**（目前 API building；原始幾何另存於專屬來源模組） | `js/cities/hongkong/cheung-kong-world.js` |
 | `HK-B0010` | K11 Atelier | 尖沙咀 | 待製作 | 否 | 否 | 274 m | OSM way **668219664** | — |
 | `HK-B0011` | 天璽I The Cullinan I | 西九龍 | 待製作 | 否 | 否 | 270 m | OSM way **200726114** | — |
 | `HK-B0012` | 天璽II The Cullinan II | 西九龍 | 待製作 | 否 | 否 | 270 m | OSM way **25608721** | — |
@@ -143,7 +144,7 @@
 | `HK-B0099` | K11人文購物藝術館 K11 MUSEA | 尖沙咀 | 待製作 | 否 | 否 | 37 m | OSM way **1044263638** | — |
 | `HK-B0100` | 香港大會堂低座 Hong Kong City Hall Low Block | 中環 | 待製作 | 否 | 否 | 21.9 m | OSM way **101959153** | — |
 
-首八座建築的造型、參考資料、碰撞及地面處理細節，統一參看 [香港手建 Landmarks](hongkong-landmarks.md)。程序化外觀尺寸不應當成實測圖則。
+首九座建築的造型、參考資料、碰撞及地面處理細節，統一參看 [香港手建 Landmarks](hongkong-landmarks.md)。程序化外觀尺寸不應當成實測圖則。
 
 ## 道路衝突紀錄
 
@@ -157,6 +158,7 @@
 | 2026-11-01 | `HK-B0006` | 中環廣場 OSM way **27087018** footprint 及南面入口 canopy | 以全港道路中心線及車道半寬掃描建築邊界，並檢查入口 canopy 及 clearance 後街燈；沒有發現道路或燈柱衝突 | 無需搬路、搬燈、改白色標線或搬歪建築；保留港灣道及周邊道路現有幾何 | `tests/hongkong-central-plaza-clearance.test.cjs`；全塔、南北立面、入口、冠頂及 Lightime 日夜瀏覽器檢查 |
 | 2026-11-01 | `HK-B0007` | 中環中心 OSM way **148228888** 星形 footprint、架空大堂及公共空間 | 以全港道路中心線及車道半寬掃描 16 邊建築邊界，並檢查 clearance 後街燈；沒有發現道路或燈柱衝突 | 無需搬路、搬燈、改白色標線或搬歪建築；保留皇后大道中、租庇利街及周邊道路現有幾何 | `tests/hongkong-the-center-clearance.test.cjs`；全塔、星形立面、架空入口、冠頂及彩虹霓虹日夜瀏覽器檢查 |
 | 2026-11-01 | `HK-B0008` | 如心廣場雙塔及 Nina Mall 1 的三個 OSM rings、架空商場及地面服務道路 | 高座無道路衝突；低座有 9 個地面道路 segment，商場 ring 有 52 個 segment，其中 12 個地面、40 個 tunnel；全部是無名、非 elevated 道路。三個 rings 均沒有 clearance 後街燈 | 不搬路、不刪隧道、不改白色標線或搬歪建築。16 條與地面道路相交的商場外牆邊保留車輛開口；商場上蓋由 8 m 開始，低座立面由 24 m 開始；最低 portal lintel 對實際渲染道路剖面仍保留超過 4.5 m 淨空，ground query 不把道路覆蓋成 plaza | `tests/hongkong-nina-tower-clearance.test.cjs`；雙塔、商場、入口、弧形天橋、冠架及日夜瀏覽器檢查 |
+| 2026-11-01 | `HK-B0009` | 長江集團中心 OSM way **64897826**、chamfered tower、圓角大堂及入口 barrel canopy | 以全港道路中心線／車道半寬掃描原始塔身、1 m chamfer 塔身、圓角大堂及實際入口雨篷，並檢查 clearance 後街燈；全部沒有道路或燈柱衝突 | 無需搬路、搬燈、改白色標線或搬歪建築；保留皇后大道中、花園道及周邊道路現有幾何 | `tests/hongkong-cheung-kong-clearance.test.cjs`；全塔、立面、大堂入口、平屋頂及光纖夜景瀏覽器檢查 |
 | — | — | — | 現有 HSBC／SCB 暫未補回逐項歷史衝突台帳 | 由下一次相關改動開始逐項記錄 | — |
 
 ## 新增及更新規則
