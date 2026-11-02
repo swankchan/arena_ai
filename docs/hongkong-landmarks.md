@@ -1,6 +1,6 @@
 # 香港手建 Landmarks
 
-香港仍採用 `unified-simple` 展示：全港道路及基本地面保留，**不生成普通建築群**。手建地標會逐個加入；目前有滙豐總行大廈、渣打銀行大廈、國際金融中心二期、環球貿易廣場、中銀大廈、中環廣場、中環中心、如心廣場、長江集團中心、K11 Atelier、天璽I及天璽II。
+香港仍採用 `unified-simple` 展示：全港道路及基本地面保留，**不生成普通建築群**。手建地標會逐個加入；目前有滙豐總行大廈、渣打銀行大廈、國際金融中心二期、環球貿易廣場、中銀大廈、中環廣場、中環中心、如心廣場、長江集團中心、K11 Atelier、天璽I、天璽II、名鑄、朗豪坊辦公大樓及御峰。
 
 建築物進度、**精修**與 **Landmark** 獨立標記，以及道路衝突台帳，見 [香港建築物 Inventory](hongkong-building-inventory.md)。
 
@@ -329,6 +329,32 @@
 - Wikimedia Commons 外觀分類及實際查看的上海街／夜間候選圖，只作外觀研究，沒有打包：
   https://commons.wikimedia.org/wiki/Category:Exterior_of_Langham_Place,_Hong_Kong
 
+## 御峰 The Summit
+
+- 地點及來源：司徒拔道 41C 號，採目前 **OSM way 65257281 version 9** 的 **64 個獨立頂點**；原始 WGS84 geometry、完整 tags、版本、changeset 及 ODbL attribution 保存在 `summit-architecture.js`。minimum-area OBB 中心為 **(2480.1916635285093, 1802.6617586407342)**，定向尺寸 **34.26816106655042 × 18.55579374716308 m**，`ry=-0.019566131082668026`。模型保留蝶形雙翼、中央凹口及南向服務尾翼，沒有把半山土地用途範圍或附近 Highcliff 當成御峰塔身。
+- 高度、層數、面積及年份分列：OSM 為 **220 m／69 levels／residential**。CTBUH／CVU 為 **219.8 m architectural＝219.8 m to-tip、69 above-ground／2 below-ground、15,225 m² Tower GFA、3 部升降機、1996 construction start／2002 completed、residential、all-concrete**；design architect 為 **DLN**，developer 為 Hang Lung Group，結構工程為 Maunsell AECOM／Skilling Ward Magnusson Barkshire，幕牆顧問為 Far East Aluminum Works。Wikipedia 次要 convention 為 **65 storeys、1999 start／2001 completed、219.8 m roof**。各組資料獨立保存，沒有平均、取整或把 65 層改寫成另一個來源的 69 層；模型最高點採 CTBUH **219.8 m**。
+- 蝶形綠色立面：依 Building Journal 的蝶形平面、緩弧立面、**screw-on metal panels＋curtain wall** 及綠色調說明，配合實看的雙塔日間照片，建立雙弧形綠玻璃、細鋁直棂／逐層橫帶、深色中央凹口，以及南翼綠灰金屬板。主牆由 **18–211 m**，採 **65 道視覺 shaft courses**；連同四層基座是與 69 層來源相互對應的視覺分層，不是已測量室內樓層。項目報道的典型 **3.3 m floor-to-floor**、客廳雙層高 **20 ft** 及每層兩個 duplex 只作設計背景，沒有假稱外牆每道分格已重建室內複式剖面。
+- 雙翼冠頂及水缸：主屋面 **211 m**；四個照片導向區為西翼 **216.8 m**、中央 saddle **211 m**、東翼 **219.8 m**、南向服務尾翼 **212.6 m**。這四個分區高度是模型造型控制，**不是四個獨立測量值**。弧形金屬冠頂有水平百頁、coping、屋面及高差封邊；中央 saddle 另依項目報道的屋頂分隔水缸資料加入四個視覺分格及框架，數量與尺寸不是工程圖則。最高東翼不大於來源 **219.8 m**（只存在 Float32 渲染誤差）。未取得可核實專項夜間燈飾照片，因此沒有自行加入霓虹、冠頂燈帶或官方燈光時序。
+- 弧形 podium 及 Happy Valley 入口：基座採原 ring 的 **1.08 倍**照片導向外挑、**18 m** 高四層弧形玻璃及銀色橫帶，頂部有 lawn、玻璃欄杆及向塔身延伸的細柱；這些比例不是實測尺寸。項目報道支持 podium 頂 lawn，以及由俯瞰 Happy Valley 的 terrace 進入主大堂，因此選 podium-scaled source **vertex 17／node 797836721** 作模型入口，world 座標 **(2480.241178339267, 1792.6406806278126)**、約正北向。該 OSM node **沒有 `entrance` tag**，所以這是有資料支持的模型定位，不是已核實門節點。入口有玻璃大堂、門及門柄、薄玻璃雨篷、偏側幼柱、暖色燈及 `THE SUMMIT / 41C STUBBS ROAD` 字牌；12 m 前庭、10 m 雨篷、4.85 m 高度及 2.3 m 外伸均為視覺控制。
+- 地面、道路及碰撞：raw DTM 施工地台為 **142.56601499466683 m**，plaza 面為 **142.68601499466683 m**，不是已核實道路或入口工程標高。塔身及 podium 各有 **64 條逐邊 OBB colliders**，屋面水缸、入口雨篷、柱及門牆另有碰撞。私人 driveway **OSM way 93073565** 對應生成道路 array **record index 37050**；index 不是 OSM way ID。原 5.5 m 車路邊緣侵入 tower／podium，因此按建築物優先，保留起點及接入方向，只把終點由 **(2467.7,1803.7)** 縮至 **(2466.1,1805.4)**，約 1.6 m。生成器以完整 record signature 保留同一修正，目前生成資料亦同步；調整後塔身、podium、入口前庭均無車路或 clearance 後街燈衝突，白色路面線及全港交通 graph 繼續由同一道路資料生成。
+- 日夜及資產：日間玻璃保持綠色反射、金屬板不發光；夜間只有少量住宅窗、 podium 窗及入口暖光，沒有把整幢塔做成均勻發光盒。實際查看 CTBUH／DLN 外觀及 Wikimedia 雙塔照片辨認左右主體，剔除 Opus、Peak Hotel、室內及 Happy Valley 景觀錯配圖。研究照片沒有打包進應用程式，模型不使用照片貼圖或下載 GLTF。`hk-summit.com` 是第三方售樓頁，不是官方網站；其另一種 70 層口径及可能經電腦修飾的圖片沒有取代上述來源。
+- 實際驗證：最終 Chromium／WebGL build 在 **960×640** 實看北／南全塔、冠頂、立面、podium、入口日景，以及全塔、冠頂、podium、入口夜景，共 **10 views**。scene 為 **15 landmarks／0 generic buildings**；本幢 **26 meshes、163,318 vertices、75,288 triangles、136 colliders、3,965 塊主牆玻璃、1,885 塊金屬面板、300 塊 podium 玻璃及四個水缸視覺分格**，全部 collider 已接入 world。中心及入口 person ground 均為 **142.68601499466683 m**；driveway 起點／修正終點的車輛 ground query 分別為 **156.68142857142772／149.46871576567585 m**，沒有被 plaza 高度覆蓋。`controllerManager` 實際逐步驅動行人及車輛撞向南面 podium 長邊，最終法線距離分別 **0.905／2.605 m**。`geometryIssues=[]`、`badColliders=[]`；最高渲染點為世界 **362.36601804642464 m**，扣地台約 **219.80000305175781 m**，差值是 Float32 頂點精度。page exception／Three.js shader error 均為 **0**，只有既有 Google Fonts 外部 request 失敗及 4 個 GL performance warnings。專用 Node 測試 **5／5**，相關地形、道路、交通及街燈整合測試 **67／67 pass**；道路 source-signature 對照及高架台帳重建測試 **7／7**，完整 `node --test tests/*.test.cjs` 為 **373／373 pass**。
+
+### 參考資料
+
+- OSM 塔身及目前 API 幾何：https://www.openstreetmap.org/way/65257281
+  https://api.openstreetmap.org/api/0.6/way/65257281/full.json
+- CTBUH／CVU：41C Stubbs Road、219.8 m architectural／to-tip、69＋2、15,225 m²、3 升降機、1996／2002、all-concrete、DLN、Hang Lung、結構／幕牆團隊及建築外觀照片：
+  https://www.skyscrapercenter.com/building/the-summit/1267
+- Building Journal March 2003 項目報道：蝶形平面、緩弧立面、screw-on metal panels＋curtain wall、綠色調、54 個複式、3.3 m／20 ft 樓層背景、podium lawn、Happy Valley lobby terrace 及屋頂分隔水缸：
+  https://building.com.hk/feature/05_03summit.pdf
+- Wikimedia Commons 實看日間雙塔圖；御峰是左側較寬、雙弧形綠玻璃塔，右側細長白／藍塔是 Highcliff：
+  https://commons.wikimedia.org/wiki/File:HK_Stubbs_Road_Highcliff_n_The_Summit.JPG
+- Wikipedia 次要 convention：65 storeys、1999／2001、219.8 m roof；沒有與 CTBUH 的 69 層、1996／2002 合併：
+  https://en.wikipedia.org/wiki/The_Summit_(Hong_Kong)
+- 第三方售樓頁，只作 54 複式、20 ft 客廳樓底及入口／外觀的輔助核對；不是官方網站，其 disclaimer 亦說明圖片可能為想像或經電腦修飾：
+  https://www.hk-summit.com/
+
 ## 程式入口
 
 - `hsbc-headquarters-architecture.js`：滙豐純地理位置、OBB、樓層比例及 collider 座標換算，可在 Node 測試。
@@ -361,4 +387,6 @@
 - `masterpiece-world.js`：名鑄圓角酒店／住宅立面、連續弧形白色阳台帶、中央藍玻璃、雙層高空中花園、百頁冠頂、四道開敞門架、維修吊臂、河內道暖色玻璃入口、日夜材質、碰撞及 stats。
 - `langham-place-architecture.js`：朗豪坊辦公大樓 49 頂點 OSM 來源、OBB、高度／層數 conventions、四區屋面、橢圓圓頂、真實入口、前庭及逐邊碰撞座標換算。
 - `langham-place-world.js`：朗豪坊辦公大樓多瓣藍玻璃、兩道灰色厚帶、交叉撐、四區階梯屋面、肋架圓頂、傾斜銀柱、辦公入口、日夜材質、碰撞及 stats。
-- `simple-world.js`：只整合這十四個 authored landmarks；普通 `buildings` 仍為 0。
+- `summit-architecture.js`：御峰 64 頂點 OSM 來源、OBB、高度／層數／年份 conventions、蝶形雙翼、四區冠頂、照片導向 podium／Happy Valley 入口、前庭及逐邊碰撞座標換算。
+- `summit-world.js`：御峰綠色弧形幕牆、金屬板、雙翼冠頂、分隔水缸、四層弧形 podium、lawn、玻璃入口及雨篷、日夜材質、碰撞及 stats。
+- `simple-world.js`：只整合這十五個 authored landmarks；普通 `buildings` 仍為 0。

@@ -13,6 +13,7 @@ import { CULLINAN_I_SITE, CULLINAN_I_GROUND_RINGS } from './cullinan-i-architect
 import { CULLINAN_II_SITE, CULLINAN_II_GROUND_RINGS } from './cullinan-ii-architecture.js';
 import { MASTERPIECE_SITE, MASTERPIECE_GROUND_RINGS } from './masterpiece-architecture.js';
 import { LANGHAM_PLACE_SITE, LANGHAM_PLACE_GROUND_RINGS } from './langham-place-architecture.js';
+import { THE_SUMMIT_ENTRANCE, THE_SUMMIT_GROUND_RINGS } from './summit-architecture.js';
 
 function decodeBytes(base64) {
   const binary = atob(base64);
@@ -60,6 +61,7 @@ const CULLINAN_I_PAD_HEIGHT = rawHongKongTerrainHeight(CULLINAN_I_SITE.x, CULLIN
 const CULLINAN_II_PAD_HEIGHT = rawHongKongTerrainHeight(CULLINAN_II_SITE.x, CULLINAN_II_SITE.z);
 const MASTERPIECE_PAD_HEIGHT = rawHongKongTerrainHeight(MASTERPIECE_SITE.x, MASTERPIECE_SITE.z);
 const LANGHAM_PLACE_PAD_HEIGHT = rawHongKongTerrainHeight(LANGHAM_PLACE_SITE.x, LANGHAM_PLACE_SITE.z);
+const SUMMIT_PAD_HEIGHT = rawHongKongTerrainHeight(THE_SUMMIT_ENTRANCE.x, THE_SUMMIT_ENTRANCE.z);
 
 export function hongKongTerrainHeight(x, z) {
   if (pointInFlatRing(HSBC_SITE.ring, x, z)) return HSBC_PAD_HEIGHT;
@@ -76,6 +78,7 @@ export function hongKongTerrainHeight(x, z) {
   if (CULLINAN_II_GROUND_RINGS.some((ring) => pointInFlatRing(ring, x, z))) return CULLINAN_II_PAD_HEIGHT;
   if (MASTERPIECE_GROUND_RINGS.some((ring) => pointInFlatRing(ring, x, z))) return MASTERPIECE_PAD_HEIGHT;
   if (LANGHAM_PLACE_GROUND_RINGS.some((ring) => pointInFlatRing(ring, x, z))) return LANGHAM_PLACE_PAD_HEIGHT;
+  if (THE_SUMMIT_GROUND_RINGS.some((ring) => pointInFlatRing(ring, x, z))) return SUMMIT_PAD_HEIGHT;
   return rawHongKongTerrainHeight(x, z);
 }
 
@@ -96,6 +99,7 @@ export const HONG_KONG_TERRAIN_META = Object.freeze({
   cullinanIIPadHeight: CULLINAN_II_PAD_HEIGHT,
   masterpiecePadHeight: MASTERPIECE_PAD_HEIGHT,
   langhamPlacePadHeight: LANGHAM_PLACE_PAD_HEIGHT,
+  summitPadHeight: SUMMIT_PAD_HEIGHT,
   tunnelStats: HK_TERRAIN.stats
 });
 

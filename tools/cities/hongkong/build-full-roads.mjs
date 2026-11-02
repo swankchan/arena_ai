@@ -36,6 +36,23 @@ function distanceToRoad(points, x, z) {
   return best;
 }
 
+// Building-priority corrections are keyed by the complete generated record, not a fragile array index.
+// HK-B0015: OSM way 93073565 is a private driveway. Its 5.5 m carriageway edge overlapped
+// The Summit's source tower and photograph-derived podium; retain the access and trim only its terminal point.
+const THE_SUMMIT_DRIVEWAY_SOURCE = Object.freeze(['', 5.5, 0, 1, 0, Object.freeze([2451.5, 1821.1, 2467.7, 1803.7])]);
+const THE_SUMMIT_DRIVEWAY_ADJUSTED = Object.freeze(['', 5.5, 0, 1, 0, Object.freeze([2451.5, 1821.1, 2466.1, 1805.4])]);
+export function applyHongKongRoadAdjustments(roads) {
+  const before = JSON.stringify(THE_SUMMIT_DRIVEWAY_SOURCE);
+  const matches = roads.filter((road) => JSON.stringify(road) === before);
+  if (matches.length > 1) throw new Error('Ambiguous The Summit driveway adjustment');
+  for (const road of matches) road[5] = [...THE_SUMMIT_DRIVEWAY_ADJUSTED[5]];
+  return roads;
+}
+// Derived source inventories still match the unadjusted OSM signature; runtime geometry remains building-priority.
+export function hongKongRoadSourceRecord(road) {
+  return JSON.stringify(road) === JSON.stringify(THE_SUMMIT_DRIVEWAY_ADJUSTED) ? THE_SUMMIT_DRIVEWAY_SOURCE : road;
+}
+
 export async function buildHongKongFullRoads({ dataDir = DEFAULT_DATA, outFile = DEFAULT_OUT, manifestFile = DEFAULT_MANIFEST } = {}) {
   const { default: cfg } = await import('./config.mjs');
   const frame = makeFrame(cfg.frame);
@@ -59,6 +76,7 @@ export async function buildHongKongFullRoads({ dataDir = DEFAULT_DATA, outFile =
     const flags = (road.highway ? 1 : 0) | (road.elevated ? 2 : 0) | (road.tunnel ? 4 : 0);
     return [road.name, q(road.w), road.dir, road.lanes, flags, flat(rdp(road.pts, 0.65))];
   });
+  applyHongKongRoadAdjustments(roads);
 
   const bounds = worldBounds(cfg.fullMapBounds, frame);
   const checks = cfg.fullMapLandChecks.map((check) => {

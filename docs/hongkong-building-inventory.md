@@ -2,7 +2,7 @@
 
 這份文件是香港場景**實際建築物進度總表及 100 幢主要大廈施工清單**，記錄建築物是否已加入、是否精修，以及是否作為 Landmark 整合。`tools/data/hongkong/landmarks.json` 及下表的待製作項目只是來源／候選資料；資料出現在該 JSON 或本清單 **不代表已經加入場景**。
 
-最後整理：**2026-11-01**。目前已實際加入 **14 幢**；其餘 **86 幢**仍是待製作項目，沒有基本體量或精修完成的意思。
+最後整理：**2026-11-02**。目前已實際加入 **15 幢**；其餘 **85 幢**仍是待製作項目，沒有基本體量或精修完成的意思。
 
 ## 標記定義
 
@@ -19,12 +19,12 @@
 | 項目 | 數量 |
 | --- | ---: |
 | 施工清單總數 | 100 |
-| 已加入場景的建築物 | 14 |
-| 已加入而且精修 | 14 |
+| 已加入場景的建築物 | 15 |
+| 已加入而且精修 | 15 |
 | 已加入但只有基本體量 | 0 |
-| 已加入並作為 Landmark 整合 | 14 |
+| 已加入並作為 Landmark 整合 | 15 |
 | 製作中 | 0 |
-| 待製作 | 86 |
+| 待製作 | 85 |
 
 目前普通建築群仍為 **0**；上表只計實際加入的建築物，不把橋樑、道路構築物或純 OSM 候選資料計算在內。
 
@@ -32,7 +32,7 @@
 
 清單次序是**施工次序**，不是官方高度、知名度或重要性排名。選取原則是有明確名稱、天際線或公共重要性，以及可追溯的建築／地盤資料；正式建模前仍須核實當幢 footprint、來源及道路衝突。高度是來源參考值，不代表已按該高度建模；`—` 表示目前採用的來源沒有可用高度值。
 
-- 大部分 OSM 元件及高度來自本地 Geofabrik 快照；目前 API 補核的五個 `building` 元件會在對應列明示，未假裝已存在於本地快照。
+- 大部分 OSM 元件及高度來自本地 Geofabrik 快照；目前 API 補核的多個 `building` 元件會在對應列明示，未假裝已存在於本地快照。
 - **† 中銀大廈 367.4 m** 是[外部建築資料](https://en.wikipedia.org/wiki/Bank_of_China_Tower_(Hong_Kong))的建築高度參考；OSM way **25604760** 提供 `building=office` footprint，但沒有 `height` tag，不能寫成由 OSM 高度標籤核實。該 way 不在舊本地 landmark snapshot，現已把原始經緯度、版本及 ODbL 來源保存於 `bank-of-china-architecture.js`，並以測試重算同一 georef。
 - Two IFC 的 **415.8 m／90 levels** 來自本地 OSM；建築設計及幕牆資料的 **412 m／88 層** 是另一套來源表述，兩者在詳細紀錄分列，沒有混合成一個假精確規格。
 - ICC 的 **484 m／118 levels** 來自本地 OSM；KPF 同樣描述 **118-story**，另有資料採 **108 occupied floors above ground** 的計法。模型的 108 道幕牆 courses 只是視覺分層，沒有把不同層數計法合成一個假精確規格。
@@ -62,7 +62,7 @@
 | `HK-B0012` | 天璽II The Cullinan II | 西九龍 | 已加入 | **是** | **是** | OSM 270 m；CTBUH 269.9 m | OSM way **25608721**（version 21；原始幾何、tags 及入口 node 另存於專屬來源模組） | `js/cities/hongkong/cullinan-ii-world.js` |
 | `HK-B0013` | 名鑄 The Masterpiece | 尖沙咀 | 已加入 | **是** | **是** | OSM 261 m；CTBUH 257 m | OSM way **124697429**（version 6；原始幾何及 tags 另存於專屬來源模組） | `js/cities/hongkong/masterpiece-world.js` |
 | `HK-B0014` | 朗豪坊辦公大樓 Langham Place Office Tower | 旺角 | 已加入 | **是** | **是** | OSM 255 m；CTBUH 255.1 m | OSM way **65259283**（version 10；原始幾何、tags 及入口 node 另存於專屬來源模組） | `js/cities/hongkong/langham-place-world.js` |
-| `HK-B0015` | 御峰 The Summit | 半山區 | 待製作 | 否 | 否 | 220 m | OSM way **65257281** | — |
+| `HK-B0015` | 御峰 The Summit | 半山區 | 已加入 | **是** | **是** | OSM 220 m；CTBUH 219.8 m | OSM way **65257281**（version 9；原始幾何及 tags 另存於專屬來源模組） | `js/cities/hongkong/summit-world.js` |
 | `HK-B0016` | 合和中心 Hopewell Centre | 灣仔 | 待製作 | 否 | 否 | 216 m | OSM way **88391069** | — |
 | `HK-B0017` | 新鴻基中心 Sun Hung Kai Centre | 灣仔 | 待製作 | 否 | 否 | 215 m | OSM way **107497703** | — |
 | `HK-B0018` | 太古廣場二座 Two Pacific Place | 金鐘 | 待製作 | 否 | 否 | 213 m | OSM way **41498695** | — |
@@ -149,7 +149,7 @@
 | `HK-B0099` | K11人文購物藝術館 K11 MUSEA | 尖沙咀 | 待製作 | 否 | 否 | 37 m | OSM way **1044263638** | — |
 | `HK-B0100` | 香港大會堂低座 Hong Kong City Hall Low Block | 中環 | 待製作 | 否 | 否 | 21.9 m | OSM way **101959153** | — |
 
-首十一座建築的造型、參考資料、碰撞及地面處理細節，統一參看 [香港手建 Landmarks](hongkong-landmarks.md)。程序化外觀尺寸不應當成實測圖則。
+各幢已加入建築的造型、參考資料、碰撞及地面處理細節，統一參看 [香港手建 Landmarks](hongkong-landmarks.md)。程序化外觀尺寸不應當成實測圖則。
 
 ## 道路衝突紀錄
 
@@ -169,6 +169,7 @@
 | 2026-11-01 | `HK-B0012` | 天璽II OSM way **25608721**、西側 W Hotel 玻璃中庭／落客 forecourt、雅翔道及 elevated way **51139** | 精確塔身 ring 與道路沒有相交；W forecourt 經道路中心線及車道半寬掃描後，亦無地面或 elevated 車路衝突，兩個檢查範圍均沒有 clearance 後街燈 | 不搬路、不搬燈、不改白色標線或搬歪建築。W 中庭按建築師所述放在西側高架道路 forecourt，入口雨篷及景觀花槽留在無車路範圍；OSM edge 12 的 level-1 indoor door 獨立保留，沒有拿來取代 W 落客位置 | `tests/hongkong-cullinan-ii-clearance.test.cjs`；全塔、W 中庭、冠頂及日夜瀏覽器、行人／車輛碰撞檢查 |
 | 2026-11-01 | `HK-B0013` | 名鑄 OSM way **124697429**、河內道住宅入口 forecourt、河內道 way **39492** 及麼地道 way **5544** | 精確 44 頂點塔身 ring 沒有道路相交；edge 25 的 **16 m 寬、back −1 m／front 4 m** 入口測試範圍亦無地面或 elevated 車路及 clearance 後街燈衝突 | 不搬路、不搬燈、不改白色標線或搬歪建築。入口按河內道住宅入口 layout 定向，但不是假裝成 OSM 門節點或實測雨篷；ground query 只在未選取道路時抬高前庭 | `tests/hongkong-masterpiece-clearance.test.cjs`；全塔、弧形住宅立面、河內道入口、冠頂及日夜瀏覽器、行人／車輛碰撞檢查 |
 | 2026-11-01 | `HK-B0014` | 朗豪坊辦公大樓 OSM way **65259283**、入口 node **10199055644**、上海街 ways **24913／24915**、砵蘭街 way **39362** 及亞皆老街 way **9596** | 精確 49 頂點塔身 ring 沒有道路相交；共享 source edges 30／31 的真實入口 node 前庭亦無地面或 elevated 車路及 clearance 後街燈衝突 | 不搬路、不搬燈、不改白色標線或搬歪建築。入口以 OSM `entrance=yes` node 為準，沒有套用商場 grand atrium 或酒店 drop-off；ground query 只在未選取道路時抬高前庭 | `tests/hongkong-langham-place-clearance.test.cjs`；全塔、兩道灰色帶、圓頂、入口及日夜瀏覽器、行人／車輛碰撞檢查 |
+| 2026-11-02 | `HK-B0015` | 御峰 OSM way **65257281**、照片導向 podium／Happy Valley 入口，以及私人 driveway OSM way **93073565**（生成道路 array **record index 37050**，不是 OSM ID） | 原 5.5 m 車路邊緣侵入精確塔身及 1.08 倍照片導向 podium；入口前庭無道路衝突，三個範圍均無 clearance 後街燈 | 建築不搬歪；保留 driveway 起點 **(2451.5,1821.1)** 及接入方向，只把 RDP 後終點由 **(2467.7,1803.7)** 縮至 **(2466.1,1805.4)**，約 1.6 m。生成器以完整 record signature 套用同一修正，並同步目前生成資料；塔身、podium、前庭重新掃描均無車路衝突 | `tests/summit-clearance.test.cjs`；10-view 日夜瀏覽器、地形、行人／車輛實撞及道路 ground query 檢查 |
 | — | — | — | 現有 HSBC／SCB 暫未補回逐項歷史衝突台帳 | 由下一次相關改動開始逐項記錄 | — |
 
 ## 新增及更新規則

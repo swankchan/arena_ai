@@ -9,6 +9,7 @@ import { makeFrame } from '../../geo/frame.mjs';
 import { buildRoads } from '../../geo/roads.mjs';
 import { rdp } from '../../geo/geom.mjs';
 import { HK_FULL_ROADS } from '../../../js/hk-full-roads-data.js';
+import { hongKongRoadSourceRecord } from './build-full-roads.mjs';
 import { HK_FULL_MAP } from '../../../js/hk-full-map-data.js';
 import { CROSSING_ROUTES } from '../../../js/cities/hongkong/crossings.js';
 import config from './config.mjs';
@@ -490,7 +491,7 @@ export async function buildHongKongViaductInventory({ dataDir = DEFAULT_DATA_DIR
   let matchedRuntimeRecords = 0, ambiguousRuntimeRecords = 0;
   const ways = [];
   HK_FULL_ROADS.roads.forEach((road, sourceRecordIndex) => {
-    const matches = bySignature.get(signature(road)) || [];
+    const matches = bySignature.get(signature(hongKongRoadSourceRecord(road))) || [];
     let cacheRoad = null;
     if (matches.length === 1) {
       cacheRoad = matches[0];
