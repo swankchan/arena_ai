@@ -37,6 +37,8 @@ import { isLanghamPlacePlazaPoint } from './langham-place-architecture.js';
 import { buildSummit } from './summit-world.js';
 import { isSummitPlazaPoint } from './summit-architecture.js';
 import { buildHopewell } from './hopewell-world.js';
+import { buildSunHungKai } from './sun-hung-kai-world.js';
+import { isSunHungKaiPlazaPoint } from './sun-hung-kai-architecture.js';
 import { createHongKongTrafficAids } from './traffic-aids.js';
 
 const WATER_LEVEL = -2.2;
@@ -83,6 +85,8 @@ export function buildSimpleHongKongWorld(scene, { setStatus = () => {} } = {}) {
     queensRoadLowerGround: HONG_KONG_TERRAIN_META.hopewellQreLowerPadHeight,
     kennedyRoadGround: HONG_KONG_TERRAIN_META.hopewellKennedyPadHeight
   });
+  setStatus('Building Sun Hung Kai Centre bronze grid, illuminated stone corners and sloping atrium...');
+  const sunHungKai = buildSunHungKai(scene, { groundOffset: HONG_KONG_TERRAIN_META.sunHungKaiPadHeight });
   setStatus('Building drivable harbour bridges and tunnels...');
   const crossings = buildHongKongCrossings(scene);
   setStatus('Placing 144,995 lamp posts across Hong Kong...');
@@ -133,7 +137,9 @@ export function buildSimpleHongKongWorld(scene, { setStatus = () => {} } = {}) {
     const summitGround = !groundUsesRoad && isSummitPlazaPoint(x, z) ? Math.max(langhamPlaceGround, summit.plazaTop) : langhamPlaceGround;
     // Hopewell preserves the sloping tower site; only its two source-tagged lobbies and QRE escalator landings are authored.
     const hopewellGround = !groundUsesRoad ? hopewell.groundHeightAt(x, z, summitGround) : summitGround;
-    return isHsbcPlazaPoint(x, z) ? Math.max(hopewellGround, hsbc.plazaTop) : hopewellGround;
+    // Sun Hung Kai's podium is flat, but its source-tagged covered service way always remains a road surface.
+    const sunHungKaiGround = !groundUsesRoad && isSunHungKaiPlazaPoint(x, z) ? Math.max(hopewellGround, sunHungKai.plazaTop) : hopewellGround;
+    return isHsbcPlazaPoint(x, z) ? Math.max(sunHungKaiGround, hsbc.plazaTop) : sunHungKaiGround;
   }
 
   const stats = {
@@ -157,11 +163,12 @@ export function buildSimpleHongKongWorld(scene, { setStatus = () => {} } = {}) {
     ...langhamPlace.stats,
     ...summit.stats,
     ...hopewell.stats,
+    ...sunHungKai.stats,
     presentation: 'unified-simple',
     landMeshes: full.stats.fullLandRings,
     blocks: 0,
     parks: full.stats.fullParks,
-    landmarks: hsbc.landmarks.length + standardChartered.landmarks.length + twoIfc.landmarks.length + icc.landmarks.length + bankOfChina.landmarks.length + centralPlaza.landmarks.length + theCenter.landmarks.length + ninaTower.landmarks.length + cheungKong.landmarks.length + k11Atelier.landmarks.length + cullinanI.landmarks.length + cullinanII.landmarks.length + masterpiece.landmarks.length + langhamPlace.landmarks.length + summit.landmarks.length + hopewell.landmarks.length,
+    landmarks: hsbc.landmarks.length + standardChartered.landmarks.length + twoIfc.landmarks.length + icc.landmarks.length + bankOfChina.landmarks.length + centralPlaza.landmarks.length + theCenter.landmarks.length + ninaTower.landmarks.length + cheungKong.landmarks.length + k11Atelier.landmarks.length + cullinanI.landmarks.length + cullinanII.landmarks.length + masterpiece.landmarks.length + langhamPlace.landmarks.length + summit.landmarks.length + hopewell.landmarks.length + sunHungKai.landmarks.length,
     lots: 0,
     buildings: 0,
     skippedLots: 0,
@@ -173,7 +180,7 @@ export function buildSimpleHongKongWorld(scene, { setStatus = () => {} } = {}) {
 
   return {
     root: scene,
-    colliders: [...full.colliders, ...crossings.colliders, ...hsbc.colliders, ...standardChartered.colliders, ...twoIfc.colliders, ...icc.colliders, ...bankOfChina.colliders, ...centralPlaza.colliders, ...theCenter.colliders, ...ninaTower.colliders, ...cheungKong.colliders, ...k11Atelier.colliders, ...cullinanI.colliders, ...cullinanII.colliders, ...masterpiece.colliders, ...langhamPlace.colliders, ...summit.colliders, ...hopewell.colliders],
+    colliders: [...full.colliders, ...crossings.colliders, ...hsbc.colliders, ...standardChartered.colliders, ...twoIfc.colliders, ...icc.colliders, ...bankOfChina.colliders, ...centralPlaza.colliders, ...theCenter.colliders, ...ninaTower.colliders, ...cheungKong.colliders, ...k11Atelier.colliders, ...cullinanI.colliders, ...cullinanII.colliders, ...masterpiece.colliders, ...langhamPlace.colliders, ...summit.colliders, ...hopewell.colliders, ...sunHungKai.colliders],
     bounds: full.bounds,
     stats,
     personSpawn: { ...SPAWN.person },
@@ -203,8 +210,9 @@ export function buildSimpleHongKongWorld(scene, { setStatus = () => {} } = {}) {
     langhamPlace,
     summit,
     hopewell,
+    sunHungKai,
     treeField: null,
-    landmarks: [...hsbc.landmarks, ...standardChartered.landmarks, ...twoIfc.landmarks, ...icc.landmarks, ...bankOfChina.landmarks, ...centralPlaza.landmarks, ...theCenter.landmarks, ...ninaTower.landmarks, ...cheungKong.landmarks, ...k11Atelier.landmarks, ...cullinanI.landmarks, ...cullinanII.landmarks, ...masterpiece.landmarks, ...langhamPlace.landmarks, ...summit.landmarks, ...hopewell.landmarks],
+    landmarks: [...hsbc.landmarks, ...standardChartered.landmarks, ...twoIfc.landmarks, ...icc.landmarks, ...bankOfChina.landmarks, ...centralPlaza.landmarks, ...theCenter.landmarks, ...ninaTower.landmarks, ...cheungKong.landmarks, ...k11Atelier.landmarks, ...cullinanI.landmarks, ...cullinanII.landmarks, ...masterpiece.landmarks, ...langhamPlace.landmarks, ...summit.landmarks, ...hopewell.landmarks, ...sunHungKai.landmarks],
     trafficAids
   };
 }

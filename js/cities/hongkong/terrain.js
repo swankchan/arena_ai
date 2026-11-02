@@ -18,6 +18,7 @@ import {
   HOPEWELL_GROUND_SAMPLE, HOPEWELL_KENNEDY_GROUND_SAMPLE, HOPEWELL_QRE_ESCALATOR_RISE,
   HOPEWELL_QRE_UPPER_FORECOURT_RING, HOPEWELL_QRE_LOWER_FORECOURT_RING, HOPEWELL_KENNEDY_FORECOURT_RING
 } from './hopewell-architecture.js';
+import { SUN_HUNG_KAI_GROUND_SAMPLE, SUN_HUNG_KAI_GROUND_RINGS } from './sun-hung-kai-architecture.js';
 
 function decodeBytes(base64) {
   const binary = atob(base64);
@@ -72,6 +73,8 @@ const HOPEWELL_DATUM_HEIGHT = rawHongKongTerrainHeight(HOPEWELL_GROUND_SAMPLE.x,
 const HOPEWELL_QRE_UPPER_PAD_HEIGHT = HOPEWELL_DATUM_HEIGHT + 0.12;
 const HOPEWELL_QRE_LOWER_PAD_HEIGHT = HOPEWELL_QRE_UPPER_PAD_HEIGHT - HOPEWELL_QRE_ESCALATOR_RISE;
 const HOPEWELL_KENNEDY_PAD_HEIGHT = rawHongKongTerrainHeight(HOPEWELL_KENNEDY_GROUND_SAMPLE.x, HOPEWELL_KENNEDY_GROUND_SAMPLE.z) + 0.12;
+// Sun Hung Kai Centre uses its Harbour Road entrance DTM sample. The covered service way remains road-priority.
+const SUN_HUNG_KAI_PAD_HEIGHT = rawHongKongTerrainHeight(SUN_HUNG_KAI_GROUND_SAMPLE.x, SUN_HUNG_KAI_GROUND_SAMPLE.z);
 
 export function hongKongTerrainHeight(x, z) {
   if (pointInFlatRing(HSBC_SITE.ring, x, z)) return HSBC_PAD_HEIGHT;
@@ -92,6 +95,7 @@ export function hongKongTerrainHeight(x, z) {
   if (pointInFlatRing(HOPEWELL_QRE_UPPER_FORECOURT_RING, x, z)) return HOPEWELL_QRE_UPPER_PAD_HEIGHT;
   if (pointInFlatRing(HOPEWELL_QRE_LOWER_FORECOURT_RING, x, z)) return HOPEWELL_QRE_LOWER_PAD_HEIGHT;
   if (pointInFlatRing(HOPEWELL_KENNEDY_FORECOURT_RING, x, z)) return HOPEWELL_KENNEDY_PAD_HEIGHT;
+  if (SUN_HUNG_KAI_GROUND_RINGS.some((ring) => pointInFlatRing(ring, x, z))) return SUN_HUNG_KAI_PAD_HEIGHT;
   return rawHongKongTerrainHeight(x, z);
 }
 
@@ -117,6 +121,7 @@ export const HONG_KONG_TERRAIN_META = Object.freeze({
   hopewellQreUpperPadHeight: HOPEWELL_QRE_UPPER_PAD_HEIGHT,
   hopewellQreLowerPadHeight: HOPEWELL_QRE_LOWER_PAD_HEIGHT,
   hopewellKennedyPadHeight: HOPEWELL_KENNEDY_PAD_HEIGHT,
+  sunHungKaiPadHeight: SUN_HUNG_KAI_PAD_HEIGHT,
   tunnelStats: HK_TERRAIN.stats
 });
 

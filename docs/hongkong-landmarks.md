@@ -1,6 +1,6 @@
 # 香港手建 Landmarks
 
-香港仍採用 `unified-simple` 展示：全港道路及基本地面保留，**不生成普通建築群**。手建地標會逐個加入；目前有滙豐總行大廈、渣打銀行大廈、國際金融中心二期、環球貿易廣場、中銀大廈、中環廣場、中環中心、如心廣場、長江集團中心、K11 Atelier、天璽I、天璽II、名鑄、朗豪坊辦公大樓、御峰及合和中心。
+香港仍採用 `unified-simple` 展示：全港道路及基本地面保留，**不生成普通建築群**。手建地標會逐個加入；目前有滙豐總行大廈、渣打銀行大廈、國際金融中心二期、環球貿易廣場、中銀大廈、中環廣場、中環中心、如心廣場、長江集團中心、K11 Atelier、天璽I、天璽II、名鑄、朗豪坊辦公大樓、御峰、合和中心及新鴻基中心。
 
 建築物進度、**精修**與 **Landmark** 獨立標記，以及道路衝突台帳，見 [香港建築物 Inventory](hongkong-building-inventory.md)。
 
@@ -382,6 +382,38 @@
 - 日間外觀及 QRE 入口候選照片頁，只作外觀研究，沒有打包：
   https://www.tripadvisor.com/Attraction_Review-g294217-d593187-Reviews-Hopewell_Centre-Hong_Kong.html
 
+## 新鴻基中心 Sun Hung Kai Centre
+
+- 地點及來源：港灣道 30 號、灣仔北，採目前 **OSM way 107497703 version 7** 的 **16 個獨立頂點**；原始 WGS84 geometry、完整 tags、版本、changeset 及 ODbL attribution 保存在 `sun-hung-kai-architecture.js`。minimum-area OBB 中心為 **(1786.7784910621674, 173.91897159900114)**，定向尺寸 **48.15195521150213 × 32.5409409095401 m**，`ry=0.09258241307825177`。四條主立面之間的短切角全部保留，沒有用土地用途範圍、附近 China Resources Building 或理想長方盒取代塔身。
+- 高度、層數、面積及年份分列：OSM 為 **215 m／57 levels／layer=3**；`layer=3` 不是高度或樓層。CTBUH 現況頁採 **214.5 m／56 floors／83,984 m² Tower GFA／all-concrete**，並把 **1991** 列在現況紀錄；業主官方頁採 **53-storey／逾 800,000 sq ft**，並說明這是 SHKP headquarters。BEAM 項目摘要另記 **215 m／53 floors／first completed 1981**；舊 CTBUH 搜尋摘要及 Emporis 分別提供 **193 m／51 floors**、1981 落成及 1991 加五層的舊塔／翻新背景。模型最高點採 **214.5 m**，不把 1991 說成最初落成，也不把上述高度、層數或面積平均、取整或合併。
+- 深棕玻璃及石材角牆：依實看日景、近景及夜景，在四條 source-derived 主立面建立深棕／古銅反光玻璃、密集細豎框和橫框，在十二條短邊及角位建立通高淺色石材 piers；日間不是純黑盒，夜間角牆有低亮度冷白補光。全幢 **5,916 塊辦公玻璃、1,024 塊石材面板、120 支主豎框**均有實際幾何，夜間只有稀疏暖色辦公窗，沒有套用中銀斜架、中環廣場金字塔或合和圓柱。
+- 加建及樓層視覺控制：以 **18 m podium、193 m 舊塔高度控制、46 道下段＋5 道上段＝51 道視覺幕牆 courses** 表現照片所見立面分段；這些 courses 不是 OSM 57、CTBUH 56、官方 53 或舊塔 51 的任何一種實體樓層計法。主玻璃頂 **211.5 m**、parapet／coping **212.4 m**，均屬照片導向模型控制，不是測量圖則。
+- 平屋頂及標誌：屋頂沒有任意尖頂或天線；依照高空照片加入三個有百頁的低矮機房、兩個衛星碟及基座，最高機房止於 **214.5 m**。南／東兩條主立面近頂部各有方形 **SHK** monogram，S、H、K 均用 Canvas 向量字重建，沒有變成只有 S 的通用標誌。機房、碟及字牌尺寸是視覺比例，不是設備工程圖。
+- 港灣道入口及厚重 podium：目前 OSM way 沒有 entrance-tagged node，因此入口明確標為**照片導向**：取 source **edge 9** 中點，向外投影 **4.8 m**，world **(1788.7474929603632, 194.89327626029163)**。入口有 **26 m 寬、18–44 m** 的斜玻璃 atrium、14×6 玻璃分格、金屬 grid 及石材 cheeks；4.7 m 水平後退、雙層商業玻璃、粗石柱、種植槽、門框和雨篷都是依照片整理的視覺尺寸，不是實測入口。厚重 fascia 上有 SHK 標誌、`SUN HUNG KAI CENTRE`、門牌 30 及自繪五個中文字「新鴻基中心」，避免極簡瀏覽器缺 CJK 字體時出現方塊。
+- 有蓋服務車路：西側道路完整保留 **OSM way 1184418781**，其 tags 包括 `covered=yes`、`highway=service`、`lanes=2`、`oneway=yes`；生成道路 **record 48641** 的 8.4 m 雙線 record、generator 及白色標線均未修改。為符合這項來源而不是把車路藏在玻璃盒內，podium 地面層採開敞 porte-cochere；上層外牆碰撞由 **7.2 m** 開始，塔身由 **18 m** 開始，西側三支地面柱向內退 **4.8 m**，以最保守旋轉外接半寬計算仍連柱身完全退出 8.4 m 車路；東側柱及港灣道入口自有門牆／柱碰撞。7.2 m 是場景通車淨空控制，不是實地工程測量。
+- 地形及地面查詢：以港灣道入口 raw DTM **5 m** 作施工地台，plaza 面為 **5.12 m**；這不是已核實道路工程標高。ground query 只抬高未被選取道路的塔身、podium 及入口前庭，有蓋車路取樣仍為 **5.025 m**，附近南側車路為 **4.92 m**，沒有被 plaza 覆蓋。
+- 日夜及資產：日間保留深棕玻璃、古銅框、淺色切角石牆及藍灰斜玻璃；夜間有低量辦公窗、亮石角、頂部標誌、暖色商業 podium 和柔和 atrium 內光，沒有未經核實的整座 LED 動畫。研究時實看官方／Commons 日景、屋頂、港灣道入口及夜景；已排除 OneDay 的 Overseas Trust Bank Building／China Resources Building、Harbour Road Sports Centre、室內景觀及中區通用鳥瞰等錯配圖。研究照片沒有打包，模型不使用照片貼圖或下載 GLTF。
+- 實際驗證：最終 Chromium／WebGL build 在 **960×640** 實看港灣道及維港方向全塔、屋頂機房／加建、玻璃與石角、斜玻璃入口、有蓋西側車路日景，以及全塔、頂部標誌、入口及車路夜景，共 **10 views**。scene 為 **17 landmarks／0 generic buildings**；本幢 **28 meshes、55,542 vertices、20,922 triangles、57 colliders**，全部 collider 已接入 world，`geometryIssues=[]`、`badColliders=[]`。大廈中心及入口 person ground 均為 **5.12 m**；最高渲染點為世界 **219.5 m**，扣地台為 **214.5 m**。`controllerManager` 實際驅動行人及車輛撞向入口玻璃門牆，最終法線距離 **0.65／2.3539892165 m**；兩輛測試車分別沿西／東車道中心由有蓋段內起步，各直駛 **96.4016503385 m** 並穿出南側，沒有被 podium 牆或柱封住。page exception／Three.js shader error 均為 **0**，只有既有外部 resource `ERR_CONNECTION_CLOSED`。專用架構／材質測試 **4／4**、道路及街燈測試 **2／2**，完整 `node --test tests/*.test.cjs` 為 **385／385 pass**。
+
+### 參考資料
+
+- OSM 塔身、目前 API 幾何及原始 tags：https://www.openstreetmap.org/way/107497703
+  https://api.openstreetmap.org/api/0.6/way/107497703/full.json
+- 保留的有蓋服務車路：https://www.openstreetmap.org/way/1184418781
+- 新鴻基地產官方項目頁：30 Harbour Road、SHKP headquarters、53-storey、逾 800,000 sq ft Grade A office 及灣仔北位置：
+  https://www.shkp.com/en-US/our-business/hong-kong-properties/offices/sun-hung-kai-centre
+- CTBUH／CVU 現況：214.5 m、56 floors、83,984 m² Tower GFA、all-concrete、1991 現況紀錄及 Otis：
+  https://www.skyscrapercenter.com/building/sun-hung-kai-centre/1363
+- 舊 CTBUH 搜尋摘要的 193 m／51 floors，以及 Emporis 的 1981／1991 加五層、dark brown curtain wall 背景；兩者只作分列的舊塔／翻新資料：
+  https://www.skyscrapercenter.com/building/sun-hung-kai-centre/18352
+  https://www.emporis.com/buildings/121056/sun-hung-kai-centre-hong-kong-china
+- BEAM 項目摘要：215 m、53 floors、first completed 1981；沒有把項目團隊名單未經核實地全部標成原設計團隊：
+  https://greenbuilding.hkgbc.org.hk/projects/view/187
+- 香港旅遊發展局：30 Harbour Road、官方商場連結及外觀／podium 照片：
+  https://www.discoverhongkong.com/eng/place-to-go/travel.guide-sun-hung-kai-centre.html
+- Wikimedia Commons 外觀及夜景分類，用於核對深棕格網、淺色角牆、平頂設備、斜玻璃、厚重 podium、SHK 中英字牌及夜間亮角：
+  https://commons.wikimedia.org/wiki/Category:Sun_Hung_Kai_Centre
+
 ## 程式入口
 
 - `hsbc-headquarters-architecture.js`：滙豐純地理位置、OBB、樓層比例及 collider 座標換算，可在 Node 測試。
@@ -418,4 +450,6 @@
 - `summit-world.js`：御峰綠色弧形幕牆、金屬板、雙翼冠頂、分隔水缸、四層弧形 podium、lawn、玻璃入口及雨篷、日夜材質、碰撞及 stats。
 - `hopewell-architecture.js`：合和中心 41 頂點 OSM 來源、OBB、高度／層數／面積 conventions、QRE 3/F 及堅尼地道 17/F 入口 nodes、照片導向南向升降機、局部前庭、扶手電梯地面高度及逐邊碰撞座標換算。
 - `hopewell-world.js`：合和中心深色橫向窗帶、82 支白 fins、米色百頁 podium、旋轉餐廳冠頂、圓形屋頂泳池、外置觀光升降機、兩個入口、日夜材質、碰撞及 stats。
-- `simple-world.js`：只整合這十六個 authored landmarks；普通 `buildings` 仍為 0。
+- `sun-hung-kai-architecture.js`：新鴻基中心 16 頂點 OSM 來源、OBB、高度／層數／面積／年份 conventions、照片導向港灣道入口、有蓋車路淨空、局部前庭及逐邊碰撞座標換算。
+- `sun-hung-kai-world.js`：新鴻基中心深棕格網玻璃、淺色切角石牆、五層加建視覺帶、平屋頂機房／雙衛星碟、SHK 標誌、斜玻璃 atrium、開敞有蓋車路、雙語字牌、日夜材質、碰撞及 stats。
+- `simple-world.js`：只整合這十七個 authored landmarks；普通 `buildings` 仍為 0。
