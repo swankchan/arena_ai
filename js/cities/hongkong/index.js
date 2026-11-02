@@ -80,6 +80,7 @@ export const city = {
       masterpiece: world.masterpiece,
       langhamPlace: world.langhamPlace,
       summit: world.summit,
+      hopewell: world.hopewell,
       landmarks: world.landmarks,
       stats,
       teleports: TELEPORTS,

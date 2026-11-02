@@ -1,6 +1,6 @@
 # 香港手建 Landmarks
 
-香港仍採用 `unified-simple` 展示：全港道路及基本地面保留，**不生成普通建築群**。手建地標會逐個加入；目前有滙豐總行大廈、渣打銀行大廈、國際金融中心二期、環球貿易廣場、中銀大廈、中環廣場、中環中心、如心廣場、長江集團中心、K11 Atelier、天璽I、天璽II、名鑄、朗豪坊辦公大樓及御峰。
+香港仍採用 `unified-simple` 展示：全港道路及基本地面保留，**不生成普通建築群**。手建地標會逐個加入；目前有滙豐總行大廈、渣打銀行大廈、國際金融中心二期、環球貿易廣場、中銀大廈、中環廣場、中環中心、如心廣場、長江集團中心、K11 Atelier、天璽I、天璽II、名鑄、朗豪坊辦公大樓、御峰及合和中心。
 
 建築物進度、**精修**與 **Landmark** 獨立標記，以及道路衝突台帳，見 [香港建築物 Inventory](hongkong-building-inventory.md)。
 
@@ -355,6 +355,33 @@
 - 第三方售樓頁，只作 54 複式、20 ft 客廳樓底及入口／外觀的輔助核對；不是官方網站，其 disclaimer 亦說明圖片可能為想像或經電腦修飾：
   https://www.hk-summit.com/
 
+## 合和中心 Hopewell Centre
+
+- 地點及來源：皇后大道東 183 號，採目前 **OSM way 88391069 version 11** 的 **41 個獨立頂點**；原始 WGS84 geometry、完整 tags、版本、changeset 及 ODbL attribution 保存在 `hopewell-architecture.js`。minimum-area OBB 中心為 **(1235.5292258979, 800.5136217406646)**，定向尺寸 **45.54252657121617 × 45.70628985749818 m**，`ry=1.2546400529770054`；近圓形使 minimum-area 方向本身不是立面朝向依據。模型使用原圓柱塔身，不把灣仔土地用途範圍或附近大廈當成合和中心 footprint。
+- 高度、層數、面積及年份分列：OSM 為 **216 m／63 levels／building:min_level=13／layer=2**；Zolima CityMag 亦記 **216 m**。CTBUH／CVU 為 **222 m／64 floors／111,000 m² Tower GFA、1977 construction start／1981 completed**，並列 WMKY Limited、Arup Associates 及 Schindler。官方項目頁採 **66-storey／約 840,000 sq ft**，用途包括 office、shopping arcade 及 carpark。各組數值沒有平均、取整或合併；主圓頂採 **216 m**，照片中外置升降機及字牌的最高點採 **222 m**，兩者的模型分配是視覺詮釋，不是另行測量的屋面工程標高。
+- 圓柱辦公立面：依官方圓形設計、column-free office floor 說明及實看日間／高空照片，建立深色橫向玻璃窗帶、古銅色 spandrels、**41 支主白色直 fins＋41 支較細中間 fins**，而非均勻發光玻璃盒。主牆由 **34–184 m**，使用 **50 道、每道 3 m 的視覺辦公 courses**；34 m podium、3 m course 和窗格尺寸是照片導向造型控制，不是把 OSM `min_level=13` 換算成假精確米數，也不是室內樓層測量。
+- 旋轉餐廳及屋頂泳池：塔頂用五段深色弧形玻璃、較粗白色水平帶及短直 fins 形成官方／Zolima 所述 revolving restaurant 和層疊冠頂。主屋頂甲板為 **215.58 m**、外圈 coping 到 **216 m**；依高空照片加入中央 **4.35 m 半徑**圓形泳池、深色池邊及 **8.6 m 外半徑**古銅色環形甲板。這些半徑及分段高度是照片比例控制，不是工程測量；沒有把錯配的 Kennedy Town Swimming Pool 圖片當本幢證據。
+- 外置觀光升降機：依日間照片及 Zolima 的 express lift 描述，在 source **vertex 0** 的南向位置建立獨立深色玻璃井道、白色雙導軌、橫框、弧形白色觀光艙及紅色 `HOPEWELL／合和中心` 字牌，最高 **222 m**。該位置是照片導向選點，原始資料沒有獨立測量井道座標；升降機不取代圓柱塔身，也沒有複製到其他大廈。
+- 米色 podium 及百頁：低層保留原圓柱外框，以米色石牆、直向棕色百頁、off-white piers 及多道水平帶形成 blocky commercial podium 的可識別材質；QRE 正面另有外挑米色百頁牆及斜撑深色雨篷。基座碰撞由地台下 **20 m** 開始以埋入北側較低的自然斜坡，這只是防止粗 DTM 穿牆及由牆底走入的模型底座，不是已核實地下室深度。
+- 兩個真實入口節點：QRE 使用 OSM **node 1026827584／source vertex 29**，tags 為 `entrance=yes`、`exit=yes`、`access=yes`、`level=2`、`level:ref=3`，world **(1212.566515120296, 799.7770102975186)**；建立 183 門牌、中英名、玻璃門、雙扶手電梯、實體斜床／上下平台、斜撑雨篷及暖光。堅尼地道使用 **node 12419988600／source vertex 34**，`level:ref=17`、門牌 17，world **(1215.256298057911, 811.2712094899398)**；另建石門套、玻璃門、雨篷及地址字牌。兩個入口沒有被套成同一地面標高或一式一樣模板。
+- 山坡地形及地面查詢：QRE source node 的 raw DTM **37.73671751692041 m** 只作全幢相對施工 datum；QRE 上平台 **37.856717516920405 m**、下平台 **35.456717516920406 m**，中間以連續扶手電梯 ground field 連接。堅尼地道 raw DTM＋0.12 m 為 **42.35839206414999 m**。塔身中心仍保留 raw DTM **32.32825022725507 m**，沒有把整個圓柱壓成單一平地；所有數值都是可追溯 DTM／模型地面，不是已核實道路或入口工程標高。
+- 道路、街燈及碰撞：塔身及 podium 各有 **41 條逐邊 OBB colliders**，外置升降機、兩個入口門牆、雨篷、柱及 QRE 上層百頁牆另有碰撞。以全港道路中心線及車道半寬掃描精確圓柱、QRE 上／下前庭、堅尼地道前庭及升降機外框，五者均無車路或 clearance 後街燈衝突，因此沒有搬路、搬燈、改白色標線或搬歪建築；所選道路繼續優先於入口地台高度。
+- 日夜及資產：日間保持深灰／棕色玻璃、白色混凝土 fins、米色 podium 及古銅百頁；夜間只有部分辦公窗、餐廳窗及入口暖光，沒有未經照片核實的整座霓虹或泳池燈飾。研究時實看日間外觀、QRE 入口及高空屋頂照片，剔除室內 lobby 作外牆證據及 Kennedy Town Swimming Pool 錯配圖。研究照片沒有打包，模型不使用照片貼圖或下載 GLTF；中英字牌所需八個中文字以程式筆畫繪製，避免無 CJK 字體的瀏覽器顯示方塊。
+- 實際驗證：最終 Chromium／WebGL build 在 **960×640** 實看 QRE／升降機方向及東北方向全塔、冠頂與泳池、辦公立面、QRE 扶手電梯入口、堅尼地道入口日景，以及全塔、餐廳冠頂、QRE、堅尼地道夜景，共 **10 views**。scene 為 **16 landmarks／0 generic buildings**；本幢 **36 meshes、140,027 vertices、66,173 triangles、92 colliders、4,100 塊辦公玻璃、82 支直 fins、1,580 支 podium 百頁**，全部 collider 已接入 world。raw 塔身中心 **32.32825022725507 m** 經既有 land surface offset 後的 person ground 為 **32.24825022725507 m**；QRE 上平台、扶手電梯中點及堅尼地道 ground 分別 **37.856717516920405／36.65671751692035／42.35839206414999 m**，鄰近所選車路取樣 **44.002372892331856 m**，沒有被入口平台覆蓋。`controllerManager` 實際逐步驅動行人及車輛撞向北面 source edge 20，最終法線距離 **0.94／2.64 m**，分別對應 0.48 m 人體半徑／2.18 m 車身半長加 0.46 m 牆厚半值，不能穿牆。`geometryIssues=[]`、`badColliders=[]`；主屋頂最高渲染點 **253.7367175169204 m**，扣 datum 為 **216 m**；外置升降機／字牌最高渲染點 **259.7367175169204 m**，扣 datum 為 **222 m**。page exception／Three.js shader error 均為 **0**，只有既有外部 resource `ERR_CONNECTION_CLOSED`。專用架構／材質測試 **4／4**、道路及街燈測試 **2／2**，完整 `node --test tests/*.test.cjs` 為 **379／379 pass**。
+
+### 參考資料
+
+- OSM 圓柱、目前 API 幾何及兩個入口 nodes：https://www.openstreetmap.org/way/88391069
+  https://api.openstreetmap.org/api/0.6/way/88391069/full.json
+- 合和實業官方項目頁：183 Queen’s Road East、QRE／Kennedy Road 兩個主要入口、66-storey、約 840,000 sq ft、office／shopping arcade／carpark、圓形及 column-free office floor，以及項目照片：
+  https://www.hopewellholdings.com/eng/hhl_hopewell_centre.htm
+- CTBUH／CVU：222 m、64 floors、111,000 m² Tower GFA、1977／1981、WMKY Limited、Arup Associates、Schindler：
+  https://www.skyscrapercenter.com/building/hopewell-centre/1325
+- Zolima CityMag：216 m、blocky commercial podium、完美圓柱、revolving restaurant、外置 express lift、直向 façade fins、Kennedy Road 17 樓入口及圓形屋頂泳池：
+  https://zolimacitymag.com/hong-kongs-modern-heritage-part-viii-the-hopewell-centre/
+- 日間外觀及 QRE 入口候選照片頁，只作外觀研究，沒有打包：
+  https://www.tripadvisor.com/Attraction_Review-g294217-d593187-Reviews-Hopewell_Centre-Hong_Kong.html
+
 ## 程式入口
 
 - `hsbc-headquarters-architecture.js`：滙豐純地理位置、OBB、樓層比例及 collider 座標換算，可在 Node 測試。
@@ -389,4 +416,6 @@
 - `langham-place-world.js`：朗豪坊辦公大樓多瓣藍玻璃、兩道灰色厚帶、交叉撐、四區階梯屋面、肋架圓頂、傾斜銀柱、辦公入口、日夜材質、碰撞及 stats。
 - `summit-architecture.js`：御峰 64 頂點 OSM 來源、OBB、高度／層數／年份 conventions、蝶形雙翼、四區冠頂、照片導向 podium／Happy Valley 入口、前庭及逐邊碰撞座標換算。
 - `summit-world.js`：御峰綠色弧形幕牆、金屬板、雙翼冠頂、分隔水缸、四層弧形 podium、lawn、玻璃入口及雨篷、日夜材質、碰撞及 stats。
-- `simple-world.js`：只整合這十五個 authored landmarks；普通 `buildings` 仍為 0。
+- `hopewell-architecture.js`：合和中心 41 頂點 OSM 來源、OBB、高度／層數／面積 conventions、QRE 3/F 及堅尼地道 17/F 入口 nodes、照片導向南向升降機、局部前庭、扶手電梯地面高度及逐邊碰撞座標換算。
+- `hopewell-world.js`：合和中心深色橫向窗帶、82 支白 fins、米色百頁 podium、旋轉餐廳冠頂、圓形屋頂泳池、外置觀光升降機、兩個入口、日夜材質、碰撞及 stats。
+- `simple-world.js`：只整合這十六個 authored landmarks；普通 `buildings` 仍為 0。

@@ -14,6 +14,10 @@ import { CULLINAN_II_SITE, CULLINAN_II_GROUND_RINGS } from './cullinan-ii-archit
 import { MASTERPIECE_SITE, MASTERPIECE_GROUND_RINGS } from './masterpiece-architecture.js';
 import { LANGHAM_PLACE_SITE, LANGHAM_PLACE_GROUND_RINGS } from './langham-place-architecture.js';
 import { THE_SUMMIT_ENTRANCE, THE_SUMMIT_GROUND_RINGS } from './summit-architecture.js';
+import {
+  HOPEWELL_GROUND_SAMPLE, HOPEWELL_KENNEDY_GROUND_SAMPLE, HOPEWELL_QRE_ESCALATOR_RISE,
+  HOPEWELL_QRE_UPPER_FORECOURT_RING, HOPEWELL_QRE_LOWER_FORECOURT_RING, HOPEWELL_KENNEDY_FORECOURT_RING
+} from './hopewell-architecture.js';
 
 function decodeBytes(base64) {
   const binary = atob(base64);
@@ -62,6 +66,12 @@ const CULLINAN_II_PAD_HEIGHT = rawHongKongTerrainHeight(CULLINAN_II_SITE.x, CULL
 const MASTERPIECE_PAD_HEIGHT = rawHongKongTerrainHeight(MASTERPIECE_SITE.x, MASTERPIECE_SITE.z);
 const LANGHAM_PLACE_PAD_HEIGHT = rawHongKongTerrainHeight(LANGHAM_PLACE_SITE.x, LANGHAM_PLACE_SITE.z);
 const SUMMIT_PAD_HEIGHT = rawHongKongTerrainHeight(THE_SUMMIT_ENTRANCE.x, THE_SUMMIT_ENTRANCE.z);
+// Hopewell keeps its sloping DTM across the cylinder. Only the two actual entrance nodes and the QRE escalator
+// landings receive separate local pads; these DTM-derived surfaces are not surveyed engineering elevations.
+const HOPEWELL_DATUM_HEIGHT = rawHongKongTerrainHeight(HOPEWELL_GROUND_SAMPLE.x, HOPEWELL_GROUND_SAMPLE.z);
+const HOPEWELL_QRE_UPPER_PAD_HEIGHT = HOPEWELL_DATUM_HEIGHT + 0.12;
+const HOPEWELL_QRE_LOWER_PAD_HEIGHT = HOPEWELL_QRE_UPPER_PAD_HEIGHT - HOPEWELL_QRE_ESCALATOR_RISE;
+const HOPEWELL_KENNEDY_PAD_HEIGHT = rawHongKongTerrainHeight(HOPEWELL_KENNEDY_GROUND_SAMPLE.x, HOPEWELL_KENNEDY_GROUND_SAMPLE.z) + 0.12;
 
 export function hongKongTerrainHeight(x, z) {
   if (pointInFlatRing(HSBC_SITE.ring, x, z)) return HSBC_PAD_HEIGHT;
@@ -79,6 +89,9 @@ export function hongKongTerrainHeight(x, z) {
   if (MASTERPIECE_GROUND_RINGS.some((ring) => pointInFlatRing(ring, x, z))) return MASTERPIECE_PAD_HEIGHT;
   if (LANGHAM_PLACE_GROUND_RINGS.some((ring) => pointInFlatRing(ring, x, z))) return LANGHAM_PLACE_PAD_HEIGHT;
   if (THE_SUMMIT_GROUND_RINGS.some((ring) => pointInFlatRing(ring, x, z))) return SUMMIT_PAD_HEIGHT;
+  if (pointInFlatRing(HOPEWELL_QRE_UPPER_FORECOURT_RING, x, z)) return HOPEWELL_QRE_UPPER_PAD_HEIGHT;
+  if (pointInFlatRing(HOPEWELL_QRE_LOWER_FORECOURT_RING, x, z)) return HOPEWELL_QRE_LOWER_PAD_HEIGHT;
+  if (pointInFlatRing(HOPEWELL_KENNEDY_FORECOURT_RING, x, z)) return HOPEWELL_KENNEDY_PAD_HEIGHT;
   return rawHongKongTerrainHeight(x, z);
 }
 
@@ -100,6 +113,10 @@ export const HONG_KONG_TERRAIN_META = Object.freeze({
   masterpiecePadHeight: MASTERPIECE_PAD_HEIGHT,
   langhamPlacePadHeight: LANGHAM_PLACE_PAD_HEIGHT,
   summitPadHeight: SUMMIT_PAD_HEIGHT,
+  hopewellDatumHeight: HOPEWELL_DATUM_HEIGHT,
+  hopewellQreUpperPadHeight: HOPEWELL_QRE_UPPER_PAD_HEIGHT,
+  hopewellQreLowerPadHeight: HOPEWELL_QRE_LOWER_PAD_HEIGHT,
+  hopewellKennedyPadHeight: HOPEWELL_KENNEDY_PAD_HEIGHT,
   tunnelStats: HK_TERRAIN.stats
 });
 
