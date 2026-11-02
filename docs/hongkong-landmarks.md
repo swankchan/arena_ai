@@ -573,6 +573,36 @@
 - 舊 Citibank Tower 外觀及大堂歷史相片（只作建築研究，沒有恢復舊品牌）：
   https://commons.wikimedia.org/wiki/Category:Three_Garden_Road,_Central
 
+## 長江集團中心二期 Cheung Kong Center II
+
+- 地點及範圍：採目前 **OSM way 1272960455 version 2** 的 **9 個獨立頂點**，原始 WGS84 geometry、node IDs、tags、版本及 ODbL attribution 保存在 `ckc2-architecture.js`。這是 **10 Harcourt Road** 的二期塔身，沒有把原長江集團中心、Hutchison House 舊址整個土地用途範圍或旁邊 The Henderson 當成本幢 footprint。實際 ring 面積 **1420.895655020291 m²**；minimum-area OBB 只作定向包絡，中心 **(307.5057091659538, 91.15211125833096)**、尺寸 **51.06506246799256 × 27.984325844756995 m**、`ry=-0.2734655835858326`，OBB 面積 **1429.0213473871747 m²** 不冒充標準層面積。
+- 高度及面積 conventions：**OSM 205 m**、CTBUH **205.5 m architectural／to-tip、194 m occupied、41層、2024 completed** 與 DLN **Building Height 205.510 m** 獨立保存，模型最高 datum 採未擅自取整的 **205.510 m**。DLN 的 **3056.509 m² site、45,847 m² above-ground GFA、45,534 m² office、312 m² commercial、5層 podium、3層 basement、178車位**與 2022 設計揭露報道的 **51,096.7 m²／550,000 sq ft** 分列，沒有把不同面積口徑合併。
+- 建築研究：以 **DLN Architects Limited** 的塔身幕牆及 jumbo-size podium glass wall 資料為基礎，實看 28Hse 近景、Getty 2024 全塔及冠頂相片，確認矩形深藍反光玻璃、銀色密集窗格、兩道深色橫向設備帶、多層大玻璃裙樓，以及酒紅／紫紅冠頂上的白色 `CKC II`。入口藍綠／紫色螺旋管狀裝置依 SCMP presented 相片作程序化詮釋；該頁是 presented 內容，只作外觀依據，不當獨立建築測繪。
+- 幕牆及裙樓：**30–194 m** 主塔以 **36 道照片導向視覺 courses**、**3,636 塊藍色 vision glass、3,636 塊銀藍 spandrel、110 支直向 mullions、657 道水平構件**組成；這不是另一個官方樓層聲稱。**86／143 m** 兩道深色百頁帶、**18 m** jumbo glass 頂界、**30 m** 五層裙樓頂界及 **199 m** 字牌帶底均為外觀建模控制值，不是官方公布樓層標高。裙樓有 **41 塊 jumbo glass、210 個 spider fittings、8 支全高圓柱**，入口正面前後保留清晰大玻璃而非藍色實牆。
+- 冠頂及入口藝術：冠頂深色設備百頁、酒紅字牌帶、**59 支直向 fins**、屋頂機房及 telescopic BMU 均低於或止於 **205.510 m**；前後 `CKC II` 字牌啟用正確深度遮擋，不再讓背面字牌穿透正面。Harcourt Road 大堂內以 **7 條螺旋管及12個層疊管環**表達相片的彩色懸吊裝置，配合暖色線性天花；這些數量是模型幾何，不是官方藝術品管件清單。
+- 入口及地台：主入口位於北側長邊 **source edge 4**，world 座標 **(311.3243400924342, 77.69104194192079)**；這是地址及相片導向的 Harcourt Road 入口，**OSM 沒有 entrance-tagged node**，不冒稱實測入口。製作清晰玻璃門牆、門柄、懸吊玻璃雨篷、`CHEUNG KONG CENTER II`、`10 HARCOURT ROAD` 及 **14 m 寬、3.2 m 深** level forecourt。中心 raw DTM／施工平台 **6.3990500627303675 m**，plaza／入口地面 **6.519050062730368 m**，不讓 raw DTM 在門前形成梯級。
+- 道路及街燈：精確塔身及入口前庭均沒有生成車路或 clearance 後街燈衝突，無需搬路、搬燈或改白色標線。最近 **record 13642 segment 1** 的中心線距塔身 **7.538663527938291 m**，大於其 **5.2 m** 車路半寬；record index 只作生成資料定位，不是 OSM ID。terrain、ground query 與 road profile 共用同一 DTM pad，所選道路仍有地面優先權；這不是已核實道路工程標高。
+- 碰撞及實際驗證：全幢 **70 個 colliders** 覆蓋逐跨裙樓、主塔、冠頂及入口門牆，全部接入 world。Chromium／WebGL 完成 **9-view** 日間／夜間全塔、冠頂、入口及道路檢查，並對字牌深度、入口玻璃及螺旋裝置作額外 focused re-render 和實看修正。最終目前 build 的入口日夜驗證為 **46 meshes、88,584 vertices、46,301 triangles**，scene **23 landmarks／0 generic buildings**，`geometryIssues=[]`、`badColliders=0`；最高渲染點為世界 **211.9090445695663 m**，扣 datum 為 **205.50999450683594 m**（浮點誤差內的205.510 m）。行人／車輛實撞入口的法線距離分別 **0.58／2.28 m**，停止位置 ground 均為 **6.519050062730368 m**；測試車沿鄰近保留車路實行 **34.134847933305885 m**，沒有被塔身或前庭封死。page exception／Three.js shader warning 均為 **0**，只有既有 Google Fonts 外部 resource `ERR_CONNECTION_CLOSED`。專測 **9／9**、完整 `node --test tests/*.test.cjs` **437／437 pass**。
+- 資產：研究相片只作目視及比例研究，沒有打包進 runtime；模型不使用照片貼圖或下載 GLTF。
+
+### 參考資料
+
+- OSM 精確二期塔身、目前 API 幾何及原始 tags：https://www.openstreetmap.org/way/1272960455
+  https://api.openstreetmap.org/api/0.6/way/1272960455/full.json
+- DLN 建築師：Hutchison House 重建、205.510 m、41層、5層 podium、site／GFA／車位及項目規格：
+  https://www.dln.com.hk/en/project/commercial/Cheung_Kong_Center-II
+- CTBUH／CVU：205.5 m、194 m occupied、41層、2024 completed、10 Harcourt Road 及 Concrete-Steel Composite：
+  https://www.skyscrapercenter.com/building/id/44864
+- Meinhardt：DLN、tower curtain wall、jumbo-size podium glass wall、façade／BMU consultancy：
+  https://meinhardt-china.com/project/cheung-kong-centre-ii-central/
+- 完工立面近景及2024全塔／冠頂相片（只作研究，沒有打包）：
+  https://www.28hse.com/en/estate/detail/cheung-kong-center-ii-30861
+  https://www.gettyimages.co.uk/photos/cheung-kong-centre
+- 入口螺旋管狀藝術裝置的 presented 相片依據：
+  https://www.scmp.com/presented/business/topics/iconic-installation-ckcii/article/3359569/reaching-stars-iconic-art-installation-showcased-cheung-kong-center-ii
+- 2022 設計揭露報道的另一面積口徑 **51,096.7 m²／550,000 sq ft**；其當時預計完工日期不取代 CVU 後來的2024 completed：
+  https://verticalurbanism.org/news-article/design-for-new-tower-in-hong-kong-revealed/
+
 ## 程式入口
 
 - `hsbc-headquarters-architecture.js`：滙豐純地理位置、OBB、樓層比例及 collider 座標換算，可在 Node 測試。
@@ -615,4 +645,8 @@
 - `two-pacific-place-world.js`：太古廣場二座橢圓藍玻璃、白色橫帶、地面橫豎框、機電百頁、弧形冠頂與金色 Shangri-La 字牌、屋頂設備、酒店 porte-cochere、辦公入口、日夜材質、碰撞及 stats。
 - `airside-architecture.js`：AIRSIDE 63 頂點 OSM complex、正交坐標、五區裁剪 rings、高度／層數 conventions、斜屋面、來源入口、DTM 地台、surface／B1 道路及逐邊碰撞座標換算。
 - `airside-world.js`：AIRSIDE 五個 interconnected volumes、四種曲率 fluted glass、斜 reveal、百頁及 LED fins、兩個來源入口、地面車路開口、PV、屋頂花園、日夜材質、碰撞及 stats。
-- `simple-world.js`：只整合這十九個 authored landmarks；普通 `buildings` 仍為 0。
+- `champion-tower-architecture.js`：冠君大廈精確 OSM 翼、弧形大堂、來源高度、plaza 及 collider 座標換算。
+- `champion-tower-world.js`：冠君大廈弧形反光幕牆、無框玻璃大堂、金屬冠頂、現行字牌、日夜材質、碰撞及 stats。
+- `ckc2-architecture.js`：長江集團中心二期精確九頂點 OSM 來源、OBB、來源高度／面積、入口 frame、plaza 及 collider 座標換算。
+- `ckc2-world.js`：二期藍玻窗格、五層 jumbo-glass 裙樓、兩道設備帶、紅色 `CKC II` 冠頂、BMU、入口螺旋裝置、日夜材質、碰撞及 stats。
+- `simple-world.js`：只整合這二十三個 authored landmarks；普通 `buildings` 仍為 0。

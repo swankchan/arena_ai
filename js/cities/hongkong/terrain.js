@@ -27,6 +27,7 @@ import { AIRSIDE_SITE, AIRSIDE_GROUND_SAMPLE, isAirsidePlazaPoint } from './airs
 import { LEE_GARDEN_ONE_GROUND_SAMPLE, isLeeGardenOnePlazaPoint } from './lee-garden-one-architecture.js';
 import { ONE_IFC_GROUND_SAMPLE, isOneIfcPlazaPoint } from './one-ifc-architecture.js';
 import { CHAMPION_TOWER_GROUND_SAMPLE, isChampionTowerPlazaPoint } from './champion-tower-architecture.js';
+import { CKC2_GROUND_SAMPLE, isCkc2PlazaPoint } from './ckc2-architecture.js';
 
 function decodeBytes(base64) {
   const binary = atob(base64);
@@ -98,6 +99,8 @@ const LEE_GARDEN_ONE_PAD_HEIGHT = rawHongKongTerrainHeight(LEE_GARDEN_ONE_GROUND
 const ONE_IFC_PAD_HEIGHT = rawHongKongTerrainHeight(ONE_IFC_GROUND_SAMPLE.x, ONE_IFC_GROUND_SAMPLE.z);
 // Champion Tower uses its own OSM centre; the taller ICBC wing and shared retail podium are separate buildings.
 const CHAMPION_TOWER_PAD_HEIGHT = rawHongKongTerrainHeight(CHAMPION_TOWER_GROUND_SAMPLE.x, CHAMPION_TOWER_GROUND_SAMPLE.z);
+// Cheung Kong Center II uses its own Harcourt Road OSM centre, separate from the original Cheung Kong Center.
+const CKC2_PAD_HEIGHT = rawHongKongTerrainHeight(CKC2_GROUND_SAMPLE.x, CKC2_GROUND_SAMPLE.z);
 
 export function hongKongTerrainHeight(x, z) {
   if (pointInFlatRing(HSBC_SITE.ring, x, z)) return HSBC_PAD_HEIGHT;
@@ -126,6 +129,7 @@ export function hongKongTerrainHeight(x, z) {
   if (isLeeGardenOnePlazaPoint(x, z)) return LEE_GARDEN_ONE_PAD_HEIGHT;
   if (isOneIfcPlazaPoint(x, z)) return ONE_IFC_PAD_HEIGHT;
   if (isChampionTowerPlazaPoint(x, z)) return CHAMPION_TOWER_PAD_HEIGHT;
+  if (isCkc2PlazaPoint(x, z)) return CKC2_PAD_HEIGHT;
   return rawHongKongTerrainHeight(x, z);
 }
 
@@ -159,6 +163,7 @@ export const HONG_KONG_TERRAIN_META = Object.freeze({
   leeGardenOnePadHeight: LEE_GARDEN_ONE_PAD_HEIGHT,
   oneIfcPadHeight: ONE_IFC_PAD_HEIGHT,
   championTowerPadHeight: CHAMPION_TOWER_PAD_HEIGHT,
+  ckc2PadHeight: CKC2_PAD_HEIGHT,
   tunnelStats: HK_TERRAIN.stats
 });
 
