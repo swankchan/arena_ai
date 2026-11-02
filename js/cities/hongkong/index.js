@@ -84,6 +84,7 @@ export const city = {
       sunHungKai: world.sunHungKai,
       twoPacificPlace: world.twoPacificPlace,
       airside: world.airside,
+      leeGardenOne: world.leeGardenOne,
       landmarks: world.landmarks,
       stats,
       teleports: TELEPORTS,

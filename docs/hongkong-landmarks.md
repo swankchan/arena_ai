@@ -477,6 +477,39 @@
 - Arup 建成 PV 圖及可持續技術資料：
   https://arup.com/en-us/news/airside-honoured-at-ashrae-technology-awards
 
+## 利園一期 Lee Garden One
+
+- 地點及來源：希慎道 33 號，採目前 **OSM way 1424342883 version 1** 的 **10 個獨立頂點**作 commercial／mall 建築基座，原始 WGS84 geometry、tags、版本及 ODbL attribution 保存在 `lee-garden-one-architecture.js`。minimum-area OBB 中心為 **(2595.3604218068294, 371.99836545584674)**，定向尺寸 **114.61782709856607 × 45.73061598829872 m**，`ry=0.37960124862618994`；building ring 面積 **4496.7959470638725 m²**。另一個 **way 292229804 version 8** 是 **5364.6784018451435 m²** 的 complex／address 邊界，沒有 `building` tag，只作 site 參考，沒有當成塔身或裙樓實體。
+- 辦公塔平面：OSM 基座不能整座拉成 240.4 m 塔。模型依已實看的六邊截角三角形標準層平面、中央三角核心及雙排 lift lobby，建立 **6 個獨立頂點**的 photo／floor-plan-directed tower ring；均匀縮放及向北 **4 m** 的配置是建築設計推導，**不是 OSM surveyed tower polygon 或工程測量**。塔身面積 **1554.8318406250005 m²**，按 Hysan 約 **88%** whole-floor efficiency 折算約 **14,727.74 sq ft lettable**，位於官方典型 **14,661–16,793 sq ft** 範圍內；全部塔身頂點均在 OSM building base 內。
+- 高度、層數及面積 conventions 分列：OSM 為 **211 m／52 levels**；CTBUH／CVU 為 **240.4 m architectural／to-tip、198 m occupied、50 above／4 below、1996 start／1998 completed、84,665 m² Tower GFA**；Hysan 官方另採 **53 floors、約 903,000 sq ft GFA**，典型樓面、約 **2.50 m** clear headroom 及約 **10–18 m** curtain-wall-to-core depth 獨立保存。其他 published **240.35 m／1997** 不互相平均或取整。Make 項目頁 **83,900 m²** 是另一項目面積口徑，沒有改名成 retail area 或與 CTBUH tower GFA 混合。
+- 塔身立面及材料：依 DLN 資料及建成外觀製作藍綠玻璃、密集銀色水平遮陽帶、深色豎框、兩組照片導向機電帶及平冠頂。**39 道視覺 courses** 對應 39 層辦公資料，但不把 OSM／CTBUH／Hysan 的不同總層數合成一個假規格。全塔有 **4,095 塊主幕牆玻璃、240 道水平帶、111 支主豎框及57塊冠頂面板**；三個中段圓形懸挑 corner lobes 另有 **1,134 塊曲面玻璃及81道弧形橫帶**，不是把弧線畫在平面上。平冠頂採 OSM **211 m** 視覺 datum，southwest offset spire 三段及支撐到 CTBUH **240.4 m**，另有屋頂機房、百頁及紅色 tip beacon。
+- 裙樓及 2026 屋頂擴建：building base 用作四層商業／裙樓依據，有暖色地面玻璃、石灰石面板、Lan Fong Road 銅色 mesh lattice veils、雙斜 transition braces、屋頂花槽及玻璃欄杆。依 Make 的立面翻新及兩層屋頂擴建文字資料，在南側非塔身裙樓屋頂條帶設 **42 × 6.4 m** 的兩層玻璃盒、銅框、綠牆及整合照明；位置及尺寸屬 site-directed 視覺設計，沒有冒充已實看官方施工圖或精確測量。
+- 行人入口：保留 source **vertex 8／node 2957737898** 的 `entrance=yes／exit=yes`，world 座標 **(2621.7345210514645, 346.68630859673357)**。入口有高玻璃大堂、四道門及門柄、銅框、玻璃雨篷、暖色內部、`LEE GARDEN ONE / 33 HYSAN AVENUE` 字牌，以及帶淺 diamond relief 的 Gascogne Beige limestone 柱。門前 **3 m** 深 level forecourt 由門前 **15.2 m** 收窄至外緣 **4 m**，避開斜向恩平道車路；行人及車輛停止位置均保持 **9.003145681894631 m**，不再由門外 raw DTM 形成 unintended step。
+- 停車入口：保留 source **vertex 5／node 2093159628** 的 `amenity=parking_entrance、parking=underground、entrance=main、exit=main`，world 座標 **(2546.1011226623477, 367.37143777942526)**，沒有當成第二個行人大堂。門架有石質側柱及過樑、overhead shutter、暗色地下 recess、導引燈及 `PARKING` 字牌；道路白色標線保留。
+- 道路及地面：六邊辦公塔沒有道路衝突；building base 只與生成 **record 46221／OSM way 909982840** 的 **8.4 m** service road 相交。complex 另涉及 records **35549／46219／46220**，但那些 source ways 不被誤當塔身穿路。地面玻璃按實際車路留下 **5 個道路開口 bays**，連兩個來源入口共 **10 個開口 bays**；周邊 **123 個鋪裝 bays**同樣避開車路，沒有用整塊 plaza slab 覆蓋瀝青路面。上層只用逐邊牆 colliders，不封地面。**18 m** 裙樓 soffit 對最高渲染道路剖面扣除 **4.7 m** 車輛包絡後仍有 **13.275 m**；停車門架下實際淨空約 **5.075 m**，超過 4.5 m。building、complex 及入口前庭均無 clearance 後街燈。
+- 地形及碰撞：building 中心 raw DTM **8.883145681894632 m** 是施工平台依據，plaza 為 **9.003145681894631 m**；terrain、ground query 及 road-elevation 共用同一 building pad，所選道路仍保持道路優先。這是可追溯 DTM／模型地面，不是已核實道路工程標高。全幢 **137 個 colliders** 包括六邊塔身、三個 lobes、地面玻璃、裙樓上層、屋頂擴建／機房、尖頂及兩個入口，全部接入 world。
+- 實際驗證：最終 Chromium／WebGL build 在 **900×620** 實看東北／西南全塔、裙樓屋頂擴建、來源行人入口、停車入口及車路日景，以及全塔、冠頂／尖頂、兩個入口夜景；入口前庭修正後再補拍日夜兩 view，共 **11 views**。scene 為 **20 landmarks／0 generic buildings**；本幢 **46 meshes、99,477 vertices、64,822 triangles**，`geometryIssues=[]`，全部 **137 colliders** 已接入 world。最高渲染點為世界 **249.2831456890472 m**，扣 datum 為 **240.40000000715256 m**，差值是 Float32 精度。行人／車輛實撞入口門牆的法線距離分別 **0.6599999999998938／2.3621848080647663 m**，兩者門前 ground 均為 **9.003145681894631 m**；測試車沿保留 service road 駛過停車門架，實行 **11.324763126972622 m**、穿過 portal 後法線位置 **−2.42737044258378 m**，再於地下 recess 前停止。兩次最終 browser run 的 page exception／Three.js shader warning 均為 **0**，只有既有 Google Fonts 外部 resource `ERR_CONNECTION_CLOSED`。專用架構、地形、道路、街燈及 collider 測試 **9／9 pass**，完整 `node --test tests/*.test.cjs` 為 **410／410 pass**。
+- 研究及資產：實看正確塔身、rounded cantilever、尖頂、大堂及六邊標準層平面，排除 Chanel、Cartier、Centaline 等錯配候選圖；Make 官方圖下載失敗，因此只把其文字資料用作翻新特徵依據，沒有假稱已實看該批官方相片。研究相片沒有打包，模型不使用照片貼圖或下載 GLTF。
+
+### 參考資料
+
+- OSM building base、目前 API 幾何及原始 tags：https://www.openstreetmap.org/way/1424342883
+  https://api.openstreetmap.org/api/0.6/way/1424342883/full.json
+- 獨立 complex／address 邊界；沒有 `building` tag：https://www.openstreetmap.org/way/292229804
+  https://api.openstreetmap.org/api/0.6/way/292229804/full.json
+- CTBUH／CVU：240.4 m architectural／to-tip、198 m occupied、50 above／4 below、chamfered triangle、39 層辦公、四層裙樓、三個圓形 corner lobes、平冠頂及 southwest offset spire：
+  https://www.skyscrapercenter.com/building/lee-garden-one/978
+- Hysan 官方：約 903k sq ft GFA、53 floors、14,661–16,793 sq ft typical lettable floorplate、約 88% efficiency、2.50 m clear headroom 及約 10–18 m core depth：
+  https://www.hysan.com.hk/portfolio/lee-garden-one/
+- 標準層平面來源；六邊截角三角外圍、中央三角核心及雙 lift lobby：
+  https://www.cbdofficehk.com/lee-garden-one
+- Make Architects：2026 facade refurbishment、石材／銅色細節、Lan Fong Road mesh lattice veils、diamond-motif Gascogne Beige limestone 入口柱、兩層屋頂玻璃盒／綠牆／整合照明：
+  https://www.makearchitects.com/media/news-events/make-completes-facade-refurbishment-at-the-iconic-lee-garden-one-in-hong-kong/
+  https://www.makearchitects.com/projects/lee-garden-one/
+- DLN 項目資料及外觀參考：
+  https://archello.com/project/the-lee-gardens
+  http://www.luxstate.com/hk-commercial/hong-kong/causeway-bay/lee-garden-one
+
 ## 程式入口
 
 - `hsbc-headquarters-architecture.js`：滙豐純地理位置、OBB、樓層比例及 collider 座標換算，可在 Node 測試。
