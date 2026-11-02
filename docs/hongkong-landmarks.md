@@ -414,6 +414,37 @@
 - Wikimedia Commons 外觀及夜景分類，用於核對深棕格網、淺色角牆、平頂設備、斜玻璃、厚重 podium、SHK 中英字牌及夜間亮角：
   https://commons.wikimedia.org/wiki/Category:Sun_Hung_Kai_Centre
 
+## 太古廣場二座／港島香格里拉 Two Pacific Place／Island Shangri-La
+
+- 地點及來源：金鐘道 88 號，採目前 **OSM way 41498695 version 14** 的 **24 個獨立頂點**；原始 WGS84 geometry、完整 tags、版本、changeset 及 ODbL attribution 保存在 `two-pacific-place-architecture.js`。minimum-area OBB 中心為 **(497.04534573313845, 521.911565590797)**，定向尺寸 **88.5816189191869 × 42.764852508730144 m**、面積 **3788.179868063567 m²**，`ry=-1.197150254305616`。同一精確 ring 用來表現下部 Two Pacific Place 辦公及上部 Island Shangri-La 酒店，沒有把 Pacific Place 土地用途範圍、商場或 Conrad 當成塔身。
+- 高度、層數及用途分列：OSM 為 **213 m／57 levels**；CTBUH 為 **213.1 m architectural／to-tip、197.8 m occupied、57 floors、1986 動工／1991 落成**。Swire 只把下部辦公用途列為 **27 office floors／逾 695,000 sq ft**；Wong & Ouyang 另述酒店塔在 podium 上 **50 storeys**；酒店官方現頁採 **56 floors／544 rooms and suites**。各組數值沒有平均、取整或互相取代；模型最高點採 **213.1 m**。
+- 橢圓曲面及白帶：依建築師所述 elliptical tower 及實看正確塔身照片，保留 24 邊近似曲面的長弧與短弧，不用長方盒替代。長弧採連續浅色水平帶、藍灰反光玻璃及細豎框，四條端部短弧採較深藍玻璃與較細橫帶，並以白色轉角 piers 分區。全幢有 **7,850 塊獨立玻璃、1,224 道橫帶、181 支主豎框**；主立面的 **0.82 m** 橫帶和 **1.35 m** 目標窗寬是照片導向視覺控制，不是幕牆工程尺寸。
+- 樓層視覺控制：以 **24 m podium、50 道視覺 courses（27 office＋23 hotel）** 組織立面，主玻璃到 CTBUH occupied **197.8 m**；這只是相片導向分格，不把 Swire 27 層當成整塔層數，也不假稱 50 courses 是實體樓層測量。地面商業玻璃另有 **233 個橫豎框**，日間可見框架，夜間只有低量暖光。
+- 冠頂、字牌及屋頂：occupied 標高以上先作深色機電百頁，再由照片導向 **203.1 m** 起作白色弧形 fascia 到 **213.1 m**；沒有把 197.8、203.1 說成來源核實的屋面分段。長弧冠頂有正確方向的金色 `Shangri-La` 曲面向量字牌，日夜均可讀。 parapet 內有屋面甲板、三個低矮機房及六個風扇；設備尺寸是視覺詮釋而非工程圖。
+- 酒店入口：依 Wong & Ouyang 的獨立 porte-cochere 說明、酒店第六層車道背景及入口相片，在 source **edge 4** 中點外投 **4 m** 建立酒店 arrival frame；這不是偽造的 OSM entrance node。雨篷有金色 `ISLAND SHANGRI-LA` 字牌、四道玻璃門、石柱、暖色 soffit、花槽及種植。入口 raw DTM＋0.12 m 為 **36.18290299409062 m**，與辦公入口不共用假平地。
+- 辦公入口：依 88 Queensway 地址及 podium 相片，在 source **edge 16** 中點外投 **4 m**，建立另一個玻璃門牆、雨篷、門框及暖光大堂，並有 `TWO PACIFIC PLACE`、自繪「太古廣場二座」及 `88 QUEENSWAY`。入口 raw DTM＋0.12 m 為 **27.157740721831654 m**；前庭用 **2.2 m** 實心基座接入山坡，避免薄片地台漂浮。兩個入口的位置和尺寸均屬相片／site-plan 導向，不是實測門樓圖則。
+- 道路及淨空：精確塔身、酒店前庭及辦公前庭都沒有道路衝突；只有 **1.06 倍照片導向 podium ring** 與生成道路 **record 49182** 的兩段相交，對應 **OSM way 1206722419**。原 way 只有 `highway=service`、`service=driveway`、`layer=1`，沒有當成已核實高架橋。原道路完整保留，地面玻璃及 **24 支柱**收在無車路衝突的塔身 ring，外挑 podium 由地台上 **12 m** 開始；對兩段實際渲染道路最高點保留 **5.374504722694418 m** 場景淨空，超過 **4.5 m** 車輛控制值。這是模型淨空，不是實地工程測量。
+- 地形、街燈及碰撞：塔身 raw DTM datum 為 **29.794768780862512 m**，外挑 podium 不做平地貼片；塔身、酒店及辦公各自使用可追溯 DTM 地台，所選車路仍優先於入口高度。四個建築掃描範圍都沒有 clearance 後街燈。全幢 **111 個 colliders** 包括塔身、外挑 band、地面玻璃、柱、屋頂設備及兩個入口，全部接入 world。
+- 日夜及資產：日間保留藍灰玻璃、白色預製帶、銀框及金色字牌；夜間白色橫帶有低亮度冷光，辦公窗比酒店窗更稀疏，兩個入口只發暖光，沒有把整座做成均勻發光盒。研究時實看正確塔身、crown、入口及車道候選圖，排除 Conrad、Upper House、Three Pacific Place、商場中庭及客房室內等錯配圖。研究相片沒有打包，模型不使用照片貼圖或下載 GLTF。
+- 實際驗證：最終 Chromium／WebGL build 在 **1100×760** 實看東北／西南全塔、曲面冠頂、屋頂設備、立面近景、酒店及辦公入口、service driveway 日景，以及全塔、冠頂、兩個入口及車路夜景，共 **13 views**；酒店兩個视角補拍後再次實看，字牌、四道門及柱均無遮擋。scene 為 **18 landmarks／0 generic buildings**；本幢 **36 meshes、103,806 vertices、44,466 triangles**，`geometryIssues=[]`、`badColliders=[]`，全部 **111 colliders** 已接入 world。最高渲染點為世界 **242.89477488437814 m**，扣 datum 為 **213.10000610351562 m**，差值是 Float32 精度。中心／酒店／辦公／driveway ground 分別 **29.914768780862513／36.18290299409062／27.157740721831654／35.28633548673981 m**。`controllerManager` 實際驅動行人及車輛撞向兩個入口門牆，兩者的法線距離均為 **0.65／2.353989216526 m**；測試車沿保留 driveway 雙向實駛 **21.412597930082715／22.12677046131424 m**，沒有被牆或柱封死。page exception／Three.js shader error 均為 **0**，只有既有外部 resource `ERR_CONNECTION_CLOSED`。專用架構、地形、道路、街燈及 collider 測試 **7／7 pass**，完整 `node --test tests/*.test.cjs` 為 **392／392 pass**。
+
+### 參考資料
+
+- OSM 塔身、目前 API 幾何及原始 tags：https://www.openstreetmap.org/way/41498695
+  https://api.openstreetmap.org/api/0.6/way/41498695/full.json
+- 保留的 service driveway；`layer=1` 沒有被解讀成已核實橋樑：https://www.openstreetmap.org/way/1206722419
+  https://api.openstreetmap.org/api/0.6/way/1206722419/full.json
+- Swire Properties 官方 Two Pacific Place：88 Queensway、27 office floors、逾 695,000 sq ft／64,500 m² 下部辦公 GFA：
+  https://www.swireproperties.com/en/portfolio/current-developments/pacific-place/two-pacific-place/
+- Wong & Ouyang 官方 Pacific Place 項目頁：elliptical twin towers、酒店塔在 podium 上 50 storeys、酒店位於下部辦公樓上及獨立 porte-cochere：
+  https://www.wongouyang.com/projects/pacific-place/
+- CTBUH／CVU 正確單幢 Shangri-La Hotel：213.1 m、197.8 m occupied、57 floors、1986／1991 及 Wong & Ouyang；沒有再用錯樓 `/1365`：
+  https://www.skyscrapercenter.com/building/shangri-la-hotel/1379
+- CTBUH Pacific Place complex，只用來區分 Conrad、Three Pacific Place、JW Marriott／Upper House 及 One Pacific Place：
+  https://www.skyscrapercenter.com/complex/393
+- 港島香格里拉官方現頁：56 floors、544 rooms and suites、8 restaurants and bars，以及酒店入口／車道背景：
+  https://www.shangri-la.com/hongkong/islandshangrila/
+
 ## 程式入口
 
 - `hsbc-headquarters-architecture.js`：滙豐純地理位置、OBB、樓層比例及 collider 座標換算，可在 Node 測試。
@@ -452,4 +483,6 @@
 - `hopewell-world.js`：合和中心深色橫向窗帶、82 支白 fins、米色百頁 podium、旋轉餐廳冠頂、圓形屋頂泳池、外置觀光升降機、兩個入口、日夜材質、碰撞及 stats。
 - `sun-hung-kai-architecture.js`：新鴻基中心 16 頂點 OSM 來源、OBB、高度／層數／面積／年份 conventions、照片導向港灣道入口、有蓋車路淨空、局部前庭及逐邊碰撞座標換算。
 - `sun-hung-kai-world.js`：新鴻基中心深棕格網玻璃、淺色切角石牆、五層加建視覺帶、平屋頂機房／雙衛星碟、SHK 標誌、斜玻璃 atrium、開敞有蓋車路、雙語字牌、日夜材質、碰撞及 stats。
-- `simple-world.js`：只整合這十七個 authored landmarks；普通 `buildings` 仍為 0。
+- `two-pacific-place-architecture.js`：太古廣場二座 24 頂點 OSM 來源、OBB、辦公／酒店高度及層數 conventions、雙入口 frames、三層 DTM 地台、service driveway 來源及逐邊碰撞座標換算。
+- `two-pacific-place-world.js`：太古廣場二座橢圓藍玻璃、白色橫帶、地面橫豎框、機電百頁、弧形冠頂與金色 Shangri-La 字牌、屋頂設備、酒店 porte-cochere、辦公入口、日夜材質、碰撞及 stats。
+- `simple-world.js`：只整合這十八個 authored landmarks；普通 `buildings` 仍為 0。

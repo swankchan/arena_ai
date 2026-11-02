@@ -19,6 +19,10 @@ import {
   HOPEWELL_QRE_UPPER_FORECOURT_RING, HOPEWELL_QRE_LOWER_FORECOURT_RING, HOPEWELL_KENNEDY_FORECOURT_RING
 } from './hopewell-architecture.js';
 import { SUN_HUNG_KAI_GROUND_SAMPLE, SUN_HUNG_KAI_GROUND_RINGS } from './sun-hung-kai-architecture.js';
+import {
+  TWO_PACIFIC_PLACE_SITE, TWO_PACIFIC_PLACE_GROUND_SAMPLE, TWO_PACIFIC_PLACE_HOTEL_GROUND_SAMPLE,
+  TWO_PACIFIC_PLACE_OFFICE_GROUND_SAMPLE, TWO_PACIFIC_PLACE_HOTEL_FORECOURT_RING, TWO_PACIFIC_PLACE_OFFICE_FORECOURT_RING
+} from './two-pacific-place-architecture.js';
 
 function decodeBytes(base64) {
   const binary = atob(base64);
@@ -75,6 +79,11 @@ const HOPEWELL_QRE_LOWER_PAD_HEIGHT = HOPEWELL_QRE_UPPER_PAD_HEIGHT - HOPEWELL_Q
 const HOPEWELL_KENNEDY_PAD_HEIGHT = rawHongKongTerrainHeight(HOPEWELL_KENNEDY_GROUND_SAMPLE.x, HOPEWELL_KENNEDY_GROUND_SAMPLE.z) + 0.12;
 // Sun Hung Kai Centre uses its Harbour Road entrance DTM sample. The covered service way remains road-priority.
 const SUN_HUNG_KAI_PAD_HEIGHT = rawHongKongTerrainHeight(SUN_HUNG_KAI_GROUND_SAMPLE.x, SUN_HUNG_KAI_GROUND_SAMPLE.z);
+// Two Pacific Place keeps three DTM-derived construction levels: tower, Supreme Court Road hotel arrival and Queensway office lobby.
+// The larger podium overhang is deliberately not a ground pad; its service driveway and natural terrain stay intact.
+const TWO_PACIFIC_PLACE_PAD_HEIGHT = rawHongKongTerrainHeight(TWO_PACIFIC_PLACE_GROUND_SAMPLE.x, TWO_PACIFIC_PLACE_GROUND_SAMPLE.z);
+const TWO_PACIFIC_PLACE_HOTEL_PAD_HEIGHT = rawHongKongTerrainHeight(TWO_PACIFIC_PLACE_HOTEL_GROUND_SAMPLE.x, TWO_PACIFIC_PLACE_HOTEL_GROUND_SAMPLE.z) + 0.12;
+const TWO_PACIFIC_PLACE_OFFICE_PAD_HEIGHT = rawHongKongTerrainHeight(TWO_PACIFIC_PLACE_OFFICE_GROUND_SAMPLE.x, TWO_PACIFIC_PLACE_OFFICE_GROUND_SAMPLE.z) + 0.12;
 
 export function hongKongTerrainHeight(x, z) {
   if (pointInFlatRing(HSBC_SITE.ring, x, z)) return HSBC_PAD_HEIGHT;
@@ -96,6 +105,9 @@ export function hongKongTerrainHeight(x, z) {
   if (pointInFlatRing(HOPEWELL_QRE_LOWER_FORECOURT_RING, x, z)) return HOPEWELL_QRE_LOWER_PAD_HEIGHT;
   if (pointInFlatRing(HOPEWELL_KENNEDY_FORECOURT_RING, x, z)) return HOPEWELL_KENNEDY_PAD_HEIGHT;
   if (SUN_HUNG_KAI_GROUND_RINGS.some((ring) => pointInFlatRing(ring, x, z))) return SUN_HUNG_KAI_PAD_HEIGHT;
+  if (pointInFlatRing(TWO_PACIFIC_PLACE_HOTEL_FORECOURT_RING, x, z)) return TWO_PACIFIC_PLACE_HOTEL_PAD_HEIGHT;
+  if (pointInFlatRing(TWO_PACIFIC_PLACE_OFFICE_FORECOURT_RING, x, z)) return TWO_PACIFIC_PLACE_OFFICE_PAD_HEIGHT;
+  if (pointInFlatRing(TWO_PACIFIC_PLACE_SITE.ring, x, z)) return TWO_PACIFIC_PLACE_PAD_HEIGHT;
   return rawHongKongTerrainHeight(x, z);
 }
 
@@ -122,6 +134,9 @@ export const HONG_KONG_TERRAIN_META = Object.freeze({
   hopewellQreLowerPadHeight: HOPEWELL_QRE_LOWER_PAD_HEIGHT,
   hopewellKennedyPadHeight: HOPEWELL_KENNEDY_PAD_HEIGHT,
   sunHungKaiPadHeight: SUN_HUNG_KAI_PAD_HEIGHT,
+  twoPacificPlacePadHeight: TWO_PACIFIC_PLACE_PAD_HEIGHT,
+  twoPacificPlaceHotelPadHeight: TWO_PACIFIC_PLACE_HOTEL_PAD_HEIGHT,
+  twoPacificPlaceOfficePadHeight: TWO_PACIFIC_PLACE_OFFICE_PAD_HEIGHT,
   tunnelStats: HK_TERRAIN.stats
 });
 

@@ -2,7 +2,7 @@
 
 這份文件是香港場景**實際建築物進度總表及 100 幢主要大廈施工清單**，記錄建築物是否已加入、是否精修，以及是否作為 Landmark 整合。`tools/data/hongkong/landmarks.json` 及下表的待製作項目只是來源／候選資料；資料出現在該 JSON 或本清單 **不代表已經加入場景**。
 
-最後整理：**2026-11-02**。目前已實際加入 **17 幢**；其餘 **83 幢**仍是待製作項目，沒有基本體量或精修完成的意思。
+最後整理：**2026-11-02**。目前已實際加入 **18 幢**；其餘 **82 幢**仍是待製作項目，沒有基本體量或精修完成的意思。
 
 ## 標記定義
 
@@ -19,12 +19,12 @@
 | 項目 | 數量 |
 | --- | ---: |
 | 施工清單總數 | 100 |
-| 已加入場景的建築物 | 17 |
-| 已加入而且精修 | 17 |
+| 已加入場景的建築物 | 18 |
+| 已加入而且精修 | 18 |
 | 已加入但只有基本體量 | 0 |
-| 已加入並作為 Landmark 整合 | 17 |
+| 已加入並作為 Landmark 整合 | 18 |
 | 製作中 | 0 |
-| 待製作 | 83 |
+| 待製作 | 82 |
 
 目前普通建築群仍為 **0**；上表只計實際加入的建築物，不把橋樑、道路構築物或純 OSM 候選資料計算在內。
 
@@ -67,7 +67,7 @@
 | `HK-B0015` | 御峰 The Summit | 半山區 | 已加入 | **是** | **是** | OSM 220 m；CTBUH 219.8 m | OSM way **65257281**（version 9；原始幾何及 tags 另存於專屬來源模組） | `js/cities/hongkong/summit-world.js` |
 | `HK-B0016` | 合和中心 Hopewell Centre | 灣仔 | 已加入 | **是** | **是** | OSM 216 m；CTBUH 222 m | OSM way **88391069**（version 11；原始幾何、tags 及兩個入口 nodes 另存於專屬來源模組） | `js/cities/hongkong/hopewell-world.js` |
 | `HK-B0017` | 新鴻基中心 Sun Hung Kai Centre | 灣仔 | 已加入 | **是** | **是** | OSM 215 m；CTBUH 214.5 m | OSM way **107497703**（version 7；原始幾何及 tags 另存於專屬來源模組） | `js/cities/hongkong/sun-hung-kai-world.js` |
-| `HK-B0018` | 太古廣場二座 Two Pacific Place | 金鐘 | 待製作 | 否 | 否 | 213 m | OSM way **41498695** | — |
+| `HK-B0018` | 太古廣場二座 Two Pacific Place | 金鐘 | 已加入 | **是** | **是** | OSM 213 m；CTBUH 213.1 m | OSM way **41498695**（version 14；原始幾何及 tags 另存於專屬來源模組） | `js/cities/hongkong/two-pacific-place-world.js` |
 | `HK-B0019` | AIRSIDE | 啟德 | 待製作 | 否 | 否 | 213 m | OSM way **1212412229** | — |
 | `HK-B0020` | 利園一期 Lee Garden One | 銅鑼灣 | 待製作 | 否 | 否 | 211 m | OSM way **1424342883** | — |
 | `HK-B0021` | 國際金融中心一期 One International Finance Centre | 中環 | 待製作 | 否 | 否 | 210 m | OSM way **148554945** | — |
@@ -174,6 +174,7 @@
 | 2026-11-02 | `HK-B0015` | 御峰 OSM way **65257281**、照片導向 podium／Happy Valley 入口，以及私人 driveway OSM way **93073565**（生成道路 array **record index 37050**，不是 OSM ID） | 原 5.5 m 車路邊緣侵入精確塔身及 1.08 倍照片導向 podium；入口前庭無道路衝突，三個範圍均無 clearance 後街燈 | 建築不搬歪；保留 driveway 起點 **(2451.5,1821.1)** 及接入方向，只把 RDP 後終點由 **(2467.7,1803.7)** 縮至 **(2466.1,1805.4)**，約 1.6 m。生成器以完整 record signature 套用同一修正，並同步目前生成資料；塔身、podium、前庭重新掃描均無車路衝突 | `tests/summit-clearance.test.cjs`；10-view 日夜瀏覽器、地形、行人／車輛實撞及道路 ground query 檢查 |
 | 2026-11-02 | `HK-B0016` | 合和中心 OSM way **88391069**、QRE 入口 node **1026827584**、堅尼地道入口 node **12419988600**、兩層前庭及照片導向南向外置升降機 | 以全港道路中心線／車道半寬掃描精確 41 頂點圓柱、QRE 上／下前庭、堅尼地道前庭及升降機外框，並檢查 clearance 後街燈；五個範圍均無道路或燈柱衝突 | 無需搬路、搬燈、改白色標線或搬歪建築；塔身下方保留自然斜坡 DTM，只在三個入口相關小範圍使用局部地台，所選車路不被入口高度覆蓋 | `tests/hopewell-clearance.test.cjs`；10-view 日夜瀏覽器、地形、行人／車輛實撞及道路 ground query 檢查 |
 | 2026-11-02 | `HK-B0017` | 新鴻基中心 OSM way **107497703**、照片導向港灣道入口，以及有蓋服務車路 OSM way **1184418781**（生成道路 **record 48641**，不是 OSM ID） | 完整 8.4 m 雙線有蓋車路穿過塔身／podium 西側；道路及三個建築範圍沒有 clearance 後街燈衝突。入口前庭無道路衝突 | 建築及原道路均不搬歪；保留原 generator／生成 record、`covered=yes` 及白色標線。podium 地面層改為開敞 porte-cochere，上層碰撞由 **7.2 m** 開始、塔身由 **18 m** 開始，西側三支地面柱向內退 **4.8 m**（連柱身完全退出 8.4 m 車路），入口門牆另行碰撞；所選車路維持道路 ground，不被 plaza 覆蓋 | `tests/sun-hung-kai-clearance.test.cjs`；10-view 日夜瀏覽器、行人／車輛入口實撞，以及兩條車道中心實駛穿過有蓋通道檢查 |
+| 2026-11-02 | `HK-B0018` | 太古廣場二座 OSM way **41498695**、1.06 倍照片導向 podium、兩個入口前庭，以及 service driveway OSM way **1206722419**（生成道路 **record 49182**，不是 OSM ID） | 精確塔身及兩個前庭無道路衝突；只有 podium 與同一 5.5 m driveway 的 segments **2／3** 相交。四個範圍均無 clearance 後街燈；來源只有 `layer=1`，沒有當成已核實橋樑標高 | 建築及原道路均不搬歪；地面玻璃和 24 支柱收在無車路衝突的塔身 ring，外挑 podium 由地台上 **12 m** 開始，對實際渲染道路剖面保留 **5.3745047227 m** 場景淨空。所選車路保持道路 ground，不被三層入口地台覆蓋 | `tests/two-pacific-place.test.cjs`；13-view 日夜瀏覽器、酒店／辦公入口行人及車輛實撞，以及 driveway 雙向實駛檢查 |
 | — | — | — | 現有 HSBC／SCB 暫未補回逐項歷史衝突台帳 | 由下一次相關改動開始逐項記錄 | — |
 
 ## 新增及更新規則
