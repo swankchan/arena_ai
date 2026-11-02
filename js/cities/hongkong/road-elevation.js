@@ -7,6 +7,7 @@ import { ICC_SITE } from './icc-architecture.js';
 import { AIRSIDE_SITE } from './airside-architecture.js';
 import { LEE_GARDEN_ONE_SITE } from './lee-garden-one-architecture.js';
 import { ONE_IFC_SITE } from './one-ifc-architecture.js';
+import { CHAMPION_TOWER_SITE } from './champion-tower-architecture.js';
 import { smoothConstrainedProfileHeights } from './road-profile-smoothing.js';
 
 export const ROAD_SURFACE_OFFSET = 0.025;
@@ -130,7 +131,7 @@ function addTerrainStations(stations, ax, az, dx, dz, offsetX, offsetZ) {
 
 function addPadStations(stations, boundaries, ax, az, dx, dz, offsetX, offsetZ) {
   const x = ax + offsetX, z = az + offsetZ;
-  for (const ring of [HSBC_SITE.ring, SCB_SITE.ring, ICC_SITE.ring, AIRSIDE_SITE.ring, LEE_GARDEN_ONE_SITE.ring, ONE_IFC_SITE.ring]) {
+  for (const ring of [HSBC_SITE.ring, SCB_SITE.ring, ICC_SITE.ring, AIRSIDE_SITE.ring, LEE_GARDEN_ONE_SITE.ring, ONE_IFC_SITE.ring, CHAMPION_TOWER_SITE.ring]) {
     for (let i = 0, j = ring.length - 2; i < ring.length; j = i, i += 2) {
       const px = ring[j], pz = ring[j + 1], ex = ring[i] - px, ez = ring[i + 1] - pz;
       const denominator = dx * ez - dz * ex;

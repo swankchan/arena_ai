@@ -540,6 +540,39 @@
 - 正確 One IFC 外觀相片（HK ifc Phase1）：
   https://commons.wikimedia.org/wiki/File:HK_ifc_Phase1.jpg
 
+## 冠君大廈 Champion Tower
+
+- 地點及範圍：採目前 **OSM way 85320726 version 9** 的 **15 個獨立頂點**，原始 WGS84 geometry、node IDs、tags、版本及 ODbL attribution 保存在 `champion-tower-architecture.js`。這是 Three Garden Road 內的 **Champion Tower 翼**，沒有把 ICBC Tower、整個零售裙樓或土地用途範圍當成塔身。實際 ring 面積 **1841.3171431796509 m²**；minimum-area OBB 只作定向包絡，中心 **(105.87173729276151, 385.591747567869)**、尺寸 **66.43255828662996 × 39.65579045281385 m**、`ry=-0.7416658288586051`，OBB 面積 **2634.4356106589394 m²** 不冒充標準層面積。
+- 高度、層數及面積 conventions：OSM 與 published roof 均為 **205 m**；官方 Champion REIT／Three Garden Road 採 **47-storey Champion Tower／37-storey ICBC Tower**，OSM 目前寫 **51 levels**，Centadata 另寫 **50 floors**，全部獨立保存。PropWiser 的 Champion Tower **約770,000 sq ft GFA／17,300 sq ft typical lettable** 與整個項目 **1,559,000 sq ft／144,800 m² GFA、26層可連通、34,000 sq ft combined lettable** 分列。官方 **9個 lift zones／每區4部高速升降機／另4部 service lifts、558個車位**是整個 Three Garden Road 的資料，沒有冒充 Champion 單塔數量。
+- 建築研究：以 **Rocco Yim／Rocco Design Architects、1992年落成**、現代玻璃及鋼材、兩道弧形反光立面和十層高無框玻璃大堂為依據。實看官方項目資料、舊 Citibank Tower 外觀、現行 Champion Tower 大堂、典型樓面平面及近景；排除 Cheung Kong Center 錯標相片，以及 CTBUH 搜尋中同名的以色列 Bnei Brak 大廈，沒有把錯誤資料套用過來。
+- 幕牆：**42–192 m** 主塔以 **37 道照片導向視覺 courses** 建模，這不是把官方47、OSM51或Centadata50層合并成另一個樓層聲稱。全幢有 **4,218 塊藍綠反光 vision glass、4,218 塊銀灰 spandrel、129 支直向 mullions、1,125 道水平構件**；弧形面與較暗的 service spine 分開用料。**94／144 m** 兩組暗色細百頁帶是外觀視覺 datums，不是假稱已測量的避火層。
+- 十層高大堂：地面至 **42 m** 以兩面無框弧形玻璃牆、石材服務核心、幼鋼索及蜘蛛扣件表達官方描述；有 **29 塊大堂玻璃、203 個 spider fittings、8 支全高圓柱**。入口內另做現行大堂相片所見的石材牆、接待台、 brushed-steel turnstiles 及暖色升降機大堂，而不是把舊 Citi 標誌重新套用。
+- 冠頂：**192–205 m** 以弧形金屬包板、深色百頁、中央機房及 **74 支冠頂 ribs** 組成，頂部銀色連續 rim 精確止於 **205 m**；沒有附加天線或沿用舊 Citibank 字牌。夜間冠頂採冷白光，辦公玻璃保留不規則暖色室內燈。
+- 入口及地台：主入口位於 **source edge 12**，world 座標 **(119.2264322062928, 411.0172818237491)**；這是官方地址及外觀導向的 Garden Road 入口，**不是假稱 OSM 有入口節點**。製作四道玻璃門、門柄、懸吊玻璃雨篷、石材招牌牆、`CHAMPION TOWER`、`冠君大廈` 及 `3 GARDEN ROAD`。門前 **10.8 m 寬、3.2 m 深** 前庭與大堂地面同為 **19.772700909351723 m**，不讓外面較高 DTM 在門前形成梯級。
+- 道路及街燈：精確塔身和入口前庭均沒有車路衝突，無需搬路、搬燈或改白色標線。最近生成 **record 35963** 的道路中心線距塔身 **6.730280338640443 m**，大於其 **5.5 m** 車路半寬；record index 只作生成資料定位，不是 OSM ID。塔身及入口前庭的 clearance 後街燈均為 **0**，瀝青路面、白色標線及道路 ground 保留。
+- 地形及碰撞：中心 raw DTM／施工平台 **19.652700909351722 m**，plaza **19.772700909351723 m**；terrain、ground query 與 road profile 共用同一來源，所選道路仍有優先權。這是 DTM-derived 場景地面，不是已核實工程標高。全幢 **96 個 colliders** 覆蓋大堂玻璃／石柱、主塔、冠頂及入口門牆，全部接入 world。
+- 實際驗證：最終 Chromium／WebGL build 在 **640×448** 實看東南／西南全塔、冠頂、Garden Road 大堂及鄰近道路，以及全塔、冠頂、入口和道路夜景，共 **9 views**。scene 為 **22 landmarks／0 generic buildings**；本幢 **25 meshes、99,997 vertices、41,031 triangles**，`geometryIssues=[]`、`badColliders=0`，全部 **96 colliders** 已接入 world。最高渲染點為世界 **224.65270090935172 m**，扣 datum 恰好 **205 m**。行人／車輛實撞入口的法線距離分別 **0.5800000000000043／2.2800000000000074 m**，停止位置 ground 均為 **19.772700909351723 m**；測試車沿鄰近保留車路實行 **34.13484793330777 m**，沒有被塔身或鋪裝封死。page exception／Three.js shader warning 均為 **0**，只有既有 Google Fonts 外部 resource `ERR_CONNECTION_CLOSED`。專測 **9／9**、整合及 runtime **20／20**、完整 `node --test tests/*.test.cjs` **428／428 pass**。
+- 資產：研究相片及平面圖只作目視及比例研究，沒有打包進 runtime；模型不使用照片貼圖或下載 GLTF。
+
+### 參考資料
+
+- OSM 精確 Champion Tower 翼、目前 API 幾何及原始 tags：https://www.openstreetmap.org/way/85320726
+  https://api.openstreetmap.org/api/0.6/way/85320726/full.json
+- Champion REIT 官方：現代玻璃／鋼材、Champion 47層／ICBC 37層、26層連通及34,000 sq ft 合併樓面：
+  https://www.championreit.com/properties-and-portfolio/three-garden-road
+- Three Garden Road 官方：九個 lift zones、每區四部高速升降機、四部 service lifts、558車位及項目規格：
+  https://www.threegardenroad.com/en/building
+- 建築師、1992、兩道弧形反光立面、兩幅十層高無框玻璃、項目 GFA 及舊名歷史：
+  https://en.wikipedia.org/wiki/Three_Garden_Road,_Central
+- Champion 單塔約770,000 sq ft、17,300 sq ft typical、47層及1992：
+  https://office.propwiser.com.hk/en/Building/central/three-garden-road-champion-tower/213
+- Centadata 的50層／22部客梯／2部貨梯是另一 agency convention，沒有覆寫官方47層：
+  https://oir.centanet.com/en/property/office/hong-kong-central-champion-tower/detail/48f5c748-70d8-4802-957e-a458cef1bccb/
+- 現行外觀、入口及典型平面相片：
+  https://hkpodium.com/property-details/three-garden-road-champion-tower_office_central/id=66183
+- 舊 Citibank Tower 外觀及大堂歷史相片（只作建築研究，沒有恢復舊品牌）：
+  https://commons.wikimedia.org/wiki/Category:Three_Garden_Road,_Central
+
 ## 程式入口
 
 - `hsbc-headquarters-architecture.js`：滙豐純地理位置、OBB、樓層比例及 collider 座標換算，可在 Node 測試。

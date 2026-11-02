@@ -2,7 +2,7 @@
 
 這份文件是香港場景**實際建築物進度總表及 100 幢主要大廈施工清單**，記錄建築物是否已加入、是否精修，以及是否作為 Landmark 整合。`tools/data/hongkong/landmarks.json` 及下表的待製作項目只是來源／候選資料；資料出現在該 JSON 或本清單 **不代表已經加入場景**。
 
-最後整理：**2026-11-02**。目前已實際加入 **21 幢**；其餘 **79 幢**仍是待製作項目，沒有基本體量或精修完成的意思。
+最後整理：**2026-11-02**。目前已實際加入 **22 幢**；其餘 **78 幢**仍是待製作項目，沒有基本體量或精修完成的意思。
 
 ## 標記定義
 
@@ -19,12 +19,12 @@
 | 項目 | 數量 |
 | --- | ---: |
 | 施工清單總數 | 100 |
-| 已加入場景的建築物 | 21 |
-| 已加入而且精修 | 21 |
+| 已加入場景的建築物 | 22 |
+| 已加入而且精修 | 22 |
 | 已加入但只有基本體量 | 0 |
-| 已加入並作為 Landmark 整合 | 21 |
+| 已加入並作為 Landmark 整合 | 22 |
 | 製作中 | 0 |
-| 待製作 | 79 |
+| 待製作 | 78 |
 
 目前普通建築群仍為 **0**；上表只計實際加入的建築物，不把橋樑、道路構築物或純 OSM 候選資料計算在內。
 
@@ -50,6 +50,7 @@
 
 - 利園一期 **OSM way 1424342883** 是約 **4,496.795947 m²** 的 commercial／mall 建築基座，不能整座當成辦公塔標準層；**way 292229804** 是另一個沒有 `building` tag 的 complex／address 邊界。塔身依已實看的六邊截角三角形標準層平面及 Hysan 典型樓面資料另行建構，**不是 OSM surveyed tower polygon**。OSM **211 m／52 levels**、CTBUH **240.4 m architectural/to-tip、198 m occupied、50 above／4 below**、Hysan **53 floors** 及其他 published **240.35 m／1997** 全部保存為不同 convention，沒有平均、取整或互相覆寫。
 - 國際金融中心一期 **OSM way 148554945** 的 **32 個獨立頂點**是與典型平面圖相符的階級方形塔身，實際 ring 面積 **2239.237667 m²**；OBB 面積 **2572.258453 m²** 只作定向包絡，不當標準層面積。OSM `addr` 原始 tags 寫 **8 Finance Street**，SHKP／CTBUH 官方地址則是 **1 Harbour View Street**，兩者並存紀錄，沒有暗中改寫來源。OSM／CTBUH **210 m／38 above** 與 CTBUH **1999**、其他 published **1998／39層**、InterAsia **41層／647,868 sq ft** 分開保存。
+- 冠君大廈 **OSM way 85320726 version 9** 是 Three Garden Road 內 Champion Tower 翼的 **15 個獨立頂點**，不是整個雙塔項目或 ICBC Tower；實際 ring 面積 **1841.317143 m²**，OBB **2634.435611 m²** 只作定向包絡。官方 **47層**、OSM **51 levels**、Centadata **50層**及 ICBC **37層**分列；Champion Tower 約 **770,000 sq ft／17,300 sq ft typical** 與整個項目 **1,559,000 sq ft／34,000 sq ft 合併樓面**不可混用。
 
 | 內部 ID | 建築物 | 地區 | 場景狀態 | 精修 | Landmark | 高度 | 位置／footprint 依據 | 主要實作 |
 | --- | --- | --- | --- | --- | --- | ---: | --- | --- |
@@ -74,7 +75,7 @@
 | `HK-B0019` | AIRSIDE | 啟德 | 已加入 | **是** | **是** | OSM／Snøhetta **213 m**；CTBUH **207.1 m** | OSM way **1212412229**（version 9；原始幾何及 tags 另存於專屬來源模組） | `js/cities/hongkong/airside-world.js` |
 | `HK-B0020` | 利園一期 Lee Garden One | 銅鑼灣 | 已加入 | **是** | **是** | OSM **211 m**；CTBUH **240.4 m** | OSM ways **1424342883／292229804**（building base／complex site 分列；六邊塔身為平面圖導向） | `js/cities/hongkong/lee-garden-one-world.js` |
 | `HK-B0021` | 國際金融中心一期 One International Finance Centre | 中環 | 已加入 | **是** | **是** | OSM／CTBUH **210 m** | OSM way **148554945**（version 14；32 個獨立頂點、原始幾何及 tags 另存於專屬來源模組） | `js/cities/hongkong/one-ifc-world.js` |
-| `HK-B0022` | 冠君大廈 Champion Tower | 中環 | 待製作 | 否 | 否 | 205 m | OSM way **85320726** | — |
+| `HK-B0022` | 冠君大廈 Champion Tower | 中環 | 已加入 | **是** | **是** | OSM／published roof **205 m** | OSM way **85320726**（version 9；15 個獨立頂點、原始幾何及 tags 另存於專屬來源模組） | `js/cities/hongkong/champion-tower-world.js` |
 | `HK-B0023` | 長江集團中心二期 Cheung Kong Center II | 金鐘 | 待製作 | 否 | 否 | 205 m | OSM way **1272960455** | — |
 | `HK-B0024` | 金鐘道政府合署高座 Queensway Government Offices High Block | 金鐘 | 待製作 | 否 | 否 | 199 m | OSM way **41499029** | — |
 | `HK-B0025` | 香港港麗酒店 Conrad Hong Kong | 金鐘 | 待製作 | 否 | 否 | 198 m | OSM way **41498759** | — |
@@ -181,6 +182,7 @@
 | 2026-11-02 | `HK-B0019` | AIRSIDE 精確 OSM way **1212412229**、五個上層體量、地面基座、18 條 surface access records 及 8 條 B1 tunnel records；record index 只作生成資料定位，不當 OSM ID | 外環內或相交者為 **18 surface＋8 tunnel records**；其中 **8 條 source ways** 穿越地面外牆，需要 **38 個開口 bays**。clearance 後街燈為 **0**；B1 不使用 surface pad 剖面 | 保留全部車路。地面玻璃按車路分 bay 留空，14 支柱逐點檢查，兩個入口另有 **15 個開口 bays**；上層只用 edge-wall colliders，不封地面。對最高 surface profile 保留 **7.871004440580341 m** 場景淨空；所選道路保持道路 ground | `tests/airside.test.cjs`；13-view 日夜瀏覽器、兩入口行人／車輛實撞、surface driveway 雙向實駛及 B1 隧道實駛 **45.9555802714631 m** |
 | 2026-11-02 | `HK-B0020` | 利園一期 OSM building way **1424342883**、獨立 complex way **292229804**、六邊辦公塔、地面玻璃／鋪裝及停車入口 | 辦公塔沒有道路衝突；building base 只與 **record 46221／way 909982840** 的 **8.4 m** service road 相交。complex 另有 records **35549／46219／46220**，但 complex 不是塔身或裙樓實體。building／complex／收窄入口前庭均無 clearance 後街燈 | 建築及道路均不搬歪；保留原生成道路及白色標線。地面玻璃按車路留 **5 個道路開口 bays**，連兩個來源入口共 **10 個開口 bays**，周邊鋪裝亦避開車路；上層只用逐邊牆 colliders。18 m 裙樓 soffit 對最高道路剖面扣除 4.7 m 車輛包絡後仍有 **13.275 m**，停車門架下實際淨空約 **5.075 m**；所選道路保持道路 ground | `tests/lee-garden-one.test.cjs`；**11-view** 日夜 Chromium、入口行人／車輛實撞及停車入口實駛；全測試 **410／410**，詳見 landmarks 紀錄 |
 | 2026-11-02 | `HK-B0021` | 國際金融中心一期精確 OSM way **148554945**、長邊入口前庭及地面 drive-through | 塔身只與生成 **records 44957／45026** 的兩段 **5.5 m** service road 相交，均落在 source edge 0；record index 不是 OSM ID。塔身及入口前庭均無 clearance 後街燈 | 建築及原道路不搬歪；地面整條 edge 0 留作開敞 drive-through，上層 soffit／colliders 由 **12 m** 開始。鋪裝內縮至 **0.92** 倍並重新掃描無道路衝突，保留瀝青及白色標線；所選道路保持道路 ground。對最高渲染道路剖面扣除 4.7 m 車輛包絡後淨空 **6.601588196482504 m** | `tests/one-ifc.test.cjs`；**9-view** 日夜 Chromium、入口行人／車輛實撞及 service road 實駛 **19.349155857884057 m**；全測試 **419／419**，詳見 landmarks 紀錄 |
+| 2026-11-02 | `HK-B0022` | 冠君大廈精確 OSM way **85320726**、Garden Road 入口前庭及鄰近生成車路 | 精確塔身及入口前庭均無道路衝突；最近的 **record 35963** 車路中心線距塔身 **6.730280338640443 m**，大於其 **5.5 m** 車路半寬。塔身及前庭均無 clearance 後街燈 | 無需搬路、搬燈或改白色標線；保留原車路、瀝青及道路 ground。建築使用本身 DTM 施工平台，入口 **3.2 m** 前庭保持水平，不把整個 Three Garden Road complex 或 ICBC Tower 當成實體範圍 | `tests/champion-tower.test.cjs`；**9-view** 日夜 Chromium、入口行人／車輛實撞及鄰近車路實駛 **34.13484793330777 m**；全測試 **428／428**，詳見 landmarks 紀錄 |
 | — | — | — | 現有 HSBC／SCB 暫未補回逐項歷史衝突台帳 | 由下一次相關改動開始逐項記錄 | — |
 
 ## 新增及更新規則

@@ -26,6 +26,7 @@ import {
 import { AIRSIDE_SITE, AIRSIDE_GROUND_SAMPLE, isAirsidePlazaPoint } from './airside-architecture.js';
 import { LEE_GARDEN_ONE_GROUND_SAMPLE, isLeeGardenOnePlazaPoint } from './lee-garden-one-architecture.js';
 import { ONE_IFC_GROUND_SAMPLE, isOneIfcPlazaPoint } from './one-ifc-architecture.js';
+import { CHAMPION_TOWER_GROUND_SAMPLE, isChampionTowerPlazaPoint } from './champion-tower-architecture.js';
 
 function decodeBytes(base64) {
   const binary = atob(base64);
@@ -95,6 +96,8 @@ const AIRSIDE_PAD_HEIGHT = rawHongKongTerrainHeight(AIRSIDE_GROUND_SAMPLE.x, AIR
 const LEE_GARDEN_ONE_PAD_HEIGHT = rawHongKongTerrainHeight(LEE_GARDEN_ONE_GROUND_SAMPLE.x, LEE_GARDEN_ONE_GROUND_SAMPLE.z);
 // One IFC uses its stepped-square OSM tower centre. The drive-through keeps the selected road profile above this pad.
 const ONE_IFC_PAD_HEIGHT = rawHongKongTerrainHeight(ONE_IFC_GROUND_SAMPLE.x, ONE_IFC_GROUND_SAMPLE.z);
+// Champion Tower uses its own OSM centre; the taller ICBC wing and shared retail podium are separate buildings.
+const CHAMPION_TOWER_PAD_HEIGHT = rawHongKongTerrainHeight(CHAMPION_TOWER_GROUND_SAMPLE.x, CHAMPION_TOWER_GROUND_SAMPLE.z);
 
 export function hongKongTerrainHeight(x, z) {
   if (pointInFlatRing(HSBC_SITE.ring, x, z)) return HSBC_PAD_HEIGHT;
@@ -122,6 +125,7 @@ export function hongKongTerrainHeight(x, z) {
   if (isAirsidePlazaPoint(x, z)) return AIRSIDE_PAD_HEIGHT;
   if (isLeeGardenOnePlazaPoint(x, z)) return LEE_GARDEN_ONE_PAD_HEIGHT;
   if (isOneIfcPlazaPoint(x, z)) return ONE_IFC_PAD_HEIGHT;
+  if (isChampionTowerPlazaPoint(x, z)) return CHAMPION_TOWER_PAD_HEIGHT;
   return rawHongKongTerrainHeight(x, z);
 }
 
@@ -154,6 +158,7 @@ export const HONG_KONG_TERRAIN_META = Object.freeze({
   airsidePadHeight: AIRSIDE_PAD_HEIGHT,
   leeGardenOnePadHeight: LEE_GARDEN_ONE_PAD_HEIGHT,
   oneIfcPadHeight: ONE_IFC_PAD_HEIGHT,
+  championTowerPadHeight: CHAMPION_TOWER_PAD_HEIGHT,
   tunnelStats: HK_TERRAIN.stats
 });
 
