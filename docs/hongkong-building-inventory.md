@@ -2,7 +2,7 @@
 
 這份文件是香港場景**實際建築物進度總表及 100 幢主要大廈施工清單**，記錄建築物是否已加入、是否精修，以及是否作為 Landmark 整合。`tools/data/hongkong/landmarks.json` 及下表的待製作項目只是來源／候選資料；資料出現在該 JSON 或本清單 **不代表已經加入場景**。
 
-最後整理：**2026-11-02**。目前已實際加入 **24 幢**；其餘 **76 幢**仍是待製作項目，沒有基本體量或精修完成的意思。
+最後整理：**2026-11-02**。目前已實際加入 **25 幢**；其餘 **75 幢**仍是待製作項目，沒有基本體量或精修完成的意思。
 
 ## 標記定義
 
@@ -19,12 +19,12 @@
 | 項目 | 數量 |
 | --- | ---: |
 | 施工清單總數 | 100 |
-| 已加入場景的建築物 | 24 |
-| 已加入而且精修 | 24 |
+| 已加入場景的建築物 | 25 |
+| 已加入而且精修 | 25 |
 | 已加入但只有基本體量 | 0 |
-| 已加入並作為 Landmark 整合 | 24 |
+| 已加入並作為 Landmark 整合 | 25 |
 | 製作中 | 0 |
-| 待製作 | 76 |
+| 待製作 | 75 |
 
 目前普通建築群仍為 **0**；上表只計實際加入的建築物，不把橋樑、道路構築物或純 OSM 候選資料計算在內。
 
@@ -53,6 +53,7 @@
 - 冠君大廈 **OSM way 85320726 version 9** 是 Three Garden Road 內 Champion Tower 翼的 **15 個獨立頂點**，不是整個雙塔項目或 ICBC Tower；實際 ring 面積 **1841.317143 m²**，OBB **2634.435611 m²** 只作定向包絡。官方 **47層**、OSM **51 levels**、Centadata **50層**及 ICBC **37層**分列；Champion Tower 約 **770,000 sq ft／17,300 sq ft typical** 與整個項目 **1,559,000 sq ft／34,000 sq ft 合併樓面**不可混用。
 - 長江集團中心二期 **OSM way 1272960455 version 2** 是9頂點截角矩形塔身，實際 ring 面積 **1420.895655 m²**，OBB **1429.021347 m²** 只作包絡。OSM **205 m**、CTBUH **205.5 m architectural/to-tip／194 m occupied／2024** 與 DLN **205.510 m／41層／5層裙樓／45,847 m² GFA** 分列；published **51,096.7 m²／550,000 sq ft** 不覆寫 DLN 面積。
 - 金鐘道政府合署高座 **OSM way 41499029 version 13** 是36頂點高座，實際 ring 面積 **1917.488176 m²**，OBB **1984.662561 m²** 只作包絡。OSM **199 m／57層**、CTBUH **198.7 m／47層／1985**、published **56層／62,077 m²** 與1986 opening 分列；入口採用真實 **node 11779198293 entrance=yes**，不另造入口點。
+- 香港港麗酒店 **OSM way 41498759 version 29** 是 **31 個獨立頂點**的弧形酒店／住宅塔身，實際 ring 面積 **1920.415786 m²**，OBB **2589.612402 m²** 只作包絡。OSM **198 m／62層**、CTBUH **198.9 m architectural/to-tip／183.9 m occupied／61層／1990** 分列，模型最高點採 **198.9 m**；法院道入口由官方到達指引及入口相片定向，不冒充 OSM 門節點。
 
 | 內部 ID | 建築物 | 地區 | 場景狀態 | 精修 | Landmark | 高度 | 位置／footprint 依據 | 主要實作 |
 | --- | --- | --- | --- | --- | --- | ---: | --- | --- |
@@ -80,7 +81,7 @@
 | `HK-B0022` | 冠君大廈 Champion Tower | 中環 | 已加入 | **是** | **是** | OSM／published roof **205 m** | OSM way **85320726**（version 9；15 個獨立頂點、原始幾何及 tags 另存於專屬來源模組） | `js/cities/hongkong/champion-tower-world.js` |
 | `HK-B0023` | 長江集團中心二期 Cheung Kong Center II | 金鐘 | 已加入 | **是** | **是** | OSM **205 m**；CTBUH **205.5 m**；DLN **205.510 m** | OSM way **1272960455**（version 2；9 個獨立頂點、原始幾何及 tags 另存於專屬來源模組） | `js/cities/hongkong/ckc2-world.js` |
 | `HK-B0024` | 金鐘道政府合署高座 Queensway Government Offices High Block | 金鐘 | 已加入 | **是** | **是** | OSM **199 m**；CTBUH **198.7 m** | OSM way **41499029**（version 13；36 個獨立頂點、原始幾何及 tags 另存於專屬來源模組） | `js/cities/hongkong/qgo-world.js` |
-| `HK-B0025` | 香港港麗酒店 Conrad Hong Kong | 金鐘 | 待製作 | 否 | 否 | 198 m | OSM way **41498759** | — |
+| `HK-B0025` | 香港港麗酒店 Conrad Hong Kong | 金鐘 | 已加入 | **是** | **是** | OSM **198 m**；CTBUH **198.9 m** | OSM way **41498759**（version 29；31 個獨立頂點、原始幾何及 tags 另存於專屬來源模組） | `js/cities/hongkong/conrad-world.js` |
 | `HK-B0026` | 希慎廣場 Hysan Place | 銅鑼灣 | 待製作 | 否 | 否 | 197 m | OSM way **755914808** | — |
 | `HK-B0027` | 太古坊二座 Two Taikoo Place | 鰂魚涌 | 待製作 | 否 | 否 | 195 m | OSM way **710522581** | — |
 | `HK-B0028` | The Henderson | 中環 | 待製作 | 否 | 否 | 190 m | OSM way **26434768** | — |
@@ -187,6 +188,7 @@
 | 2026-11-02 | `HK-B0022` | 冠君大廈精確 OSM way **85320726**、Garden Road 入口前庭及鄰近生成車路 | 精確塔身及入口前庭均無道路衝突；最近的 **record 35963** 車路中心線距塔身 **6.730280338640443 m**，大於其 **5.5 m** 車路半寬。塔身及前庭均無 clearance 後街燈 | 無需搬路、搬燈或改白色標線；保留原車路、瀝青及道路 ground。建築使用本身 DTM 施工平台，入口 **3.2 m** 前庭保持水平，不把整個 Three Garden Road complex 或 ICBC Tower 當成實體範圍 | `tests/champion-tower.test.cjs`；**9-view** 日夜 Chromium、入口行人／車輛實撞及鄰近車路實駛 **34.13484793330777 m**；全測試 **428／428**，詳見 landmarks 紀錄 |
 | 2026-11-02 | `HK-B0023` | 長江集團中心二期精確 OSM way **1272960455**、Harcourt Road 入口前庭及鄰近生成車路 | 精確塔身及入口前庭均無道路衝突；最近 **record 13642 segment 1** 的中心線距塔身 **7.538663527938291 m**，大於其 **5.2 m** 車路半寬。塔身及前庭均無 clearance 後街燈 | 無需搬路、搬燈或改白色標線；保留原車路、瀝青及道路 ground。建築使用本身 DTM 平台，入口 **3.2 m** 前庭保持水平；不把原 Cheung Kong Center 的 footprint 或立面套到二期 | `tests/ckc2.test.cjs`；日夜 Chromium、入口行人／車輛實撞及鄰近道路實駛，已完成並通過；見 `docs/hongkong-landmarks.md` 的二期實施及驗證紀錄 |
 | 2026-11-02 | `HK-B0024` | 金鐘道政府合署高座精確 OSM way **41499029**、法院道入口及穿越裙樓的生成道路 | 保留 **record 49953 segments 0–2** 高架服務車路及 **record 36487 segments 2–3** 法院道；它們與精確高座 ring 相交，不造假說無衝突 | **建築物優先、道路配合**：不改白色標線及道路 record；37個衝突裙樓 bays 全部開敞，無地面玻璃或柱擋路，raw DTM 不鋪進車路走廊。46 m 辦公塔身 soffit 對全部衝突剖面保留超過4.7 m 車輛淨空；塔身及前庭無街燈 | `tests/qgo.test.cjs`；日夜 Chromium、入口行人／車輛實撞及兩條保留道路實駛，已完成並通過；見 `docs/hongkong-landmarks.md` 的高座實施及驗證紀錄 |
+| 2026-11-02 | `HK-B0025` | 香港港麗酒店精確 OSM way **41498759**、法院道 porte-cochere 及三條穿越／貼近塔身的生成道路 | **record 44556 segment 1**、**49177 segment 0**、**49181 segment 0** 與精確弧形 ring 相交；record index 只作生成資料定位，不當 OSM ID。塔身及入口雨篷範圍無 clearance 後街燈 | **建築物優先、道路配合**：塔身不搬歪，三條完整 generated-record signatures、瀝青及白色標線保留；14 m 以下按實際酒店架空入口層處理，25 支柱逐點避開車路，道路 ground 不被 plaza 覆蓋。soffit 對最高衝突剖面保留 **7.83483833573845 m** 場景淨空；入口另設 DTM-anchored 三級台階，不當實測道路標高 | `tests/conrad.test.cjs`；9-view 日夜 Chromium、最終入口日夜 focused re-render、行人／車輛實撞及三條道路實駛，已完成並通過；見 `docs/hongkong-landmarks.md` |
 | — | — | — | 現有 HSBC／SCB 暫未補回逐項歷史衝突台帳 | 由下一次相關改動開始逐項記錄 | — |
 
 ## 新增及更新規則

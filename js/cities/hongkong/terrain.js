@@ -29,6 +29,7 @@ import { ONE_IFC_GROUND_SAMPLE, isOneIfcPlazaPoint } from './one-ifc-architectur
 import { CHAMPION_TOWER_GROUND_SAMPLE, isChampionTowerPlazaPoint } from './champion-tower-architecture.js';
 import { CKC2_GROUND_SAMPLE, isCkc2PlazaPoint } from './ckc2-architecture.js';
 import { QGO_GROUND_SAMPLE, QGO_ENTRANCE_GROUND_SAMPLE, isQgoPlazaPoint, isQgoEntranceForecourtPoint } from './qgo-architecture.js';
+import { CONRAD_GROUND_SAMPLE, CONRAD_ENTRANCE_GROUND_SAMPLE, CONRAD_ENTRANCE_LANDING_RISE, conradEntranceStepDrop, isConradPlazaPoint, isConradEntranceForecourtPoint } from './conrad-architecture.js';
 
 function decodeBytes(base64) {
   const binary = atob(base64);
@@ -105,6 +106,10 @@ const CKC2_PAD_HEIGHT = rawHongKongTerrainHeight(CKC2_GROUND_SAMPLE.x, CKC2_GROU
 // QGO's documented road portals keep raw DTM under carriageways; the rest of the podium shares one pad.
 const QGO_PAD_HEIGHT = rawHongKongTerrainHeight(QGO_GROUND_SAMPLE.x, QGO_GROUND_SAMPLE.z);
 const QGO_ENTRANCE_PAD_HEIGHT = rawHongKongTerrainHeight(QGO_ENTRANCE_GROUND_SAMPLE.x, QGO_ENTRANCE_GROUND_SAMPLE.z);
+// Conrad's fixed curved tower sits above an open arrival level. Road corridors retain their raw / selected profiles;
+// the Supreme Court Road door has a DTM-anchored, photo-directed stepped landing above the driveway, not a surveyed road level.
+const CONRAD_PAD_HEIGHT = rawHongKongTerrainHeight(CONRAD_GROUND_SAMPLE.x, CONRAD_GROUND_SAMPLE.z);
+const CONRAD_ENTRANCE_PAD_HEIGHT = rawHongKongTerrainHeight(CONRAD_ENTRANCE_GROUND_SAMPLE.x, CONRAD_ENTRANCE_GROUND_SAMPLE.z) + CONRAD_ENTRANCE_LANDING_RISE;
 
 export function hongKongTerrainHeight(x, z) {
   if (pointInFlatRing(HSBC_SITE.ring, x, z)) return HSBC_PAD_HEIGHT;
@@ -136,6 +141,8 @@ export function hongKongTerrainHeight(x, z) {
   if (isCkc2PlazaPoint(x, z)) return CKC2_PAD_HEIGHT;
   if (isQgoEntranceForecourtPoint(x, z)) return QGO_ENTRANCE_PAD_HEIGHT;
   if (isQgoPlazaPoint(x, z)) return QGO_PAD_HEIGHT;
+  if (isConradEntranceForecourtPoint(x, z)) return CONRAD_ENTRANCE_PAD_HEIGHT - conradEntranceStepDrop(x, z);
+  if (isConradPlazaPoint(x, z)) return CONRAD_PAD_HEIGHT;
   return rawHongKongTerrainHeight(x, z);
 }
 
@@ -172,6 +179,8 @@ export const HONG_KONG_TERRAIN_META = Object.freeze({
   ckc2PadHeight: CKC2_PAD_HEIGHT,
   qgoPadHeight: QGO_PAD_HEIGHT,
   qgoEntrancePadHeight: QGO_ENTRANCE_PAD_HEIGHT,
+  conradPadHeight: CONRAD_PAD_HEIGHT,
+  conradEntrancePadHeight: CONRAD_ENTRANCE_PAD_HEIGHT,
   tunnelStats: HK_TERRAIN.stats
 });
 

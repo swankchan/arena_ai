@@ -89,6 +89,7 @@ export const city = {
       championTower: world.championTower,
       ckc2: world.ckc2,
       qgo: world.qgo,
+      conrad: world.conrad,
       landmarks: world.landmarks,
       stats,
       teleports: TELEPORTS,

@@ -630,6 +630,34 @@
   https://en.wikipedia.org/wiki/Queensway_Government_Offices
   https://zh.wikipedia.org/zh-hk/金鐘道政府合署
 
+## 香港港麗酒店 Conrad Hong Kong
+
+- 地點及範圍：採目前 **OSM way 41498759 version 29** 的 **31 個獨立頂點**（32個 geometry rows 包括閉合點），原始 WGS84 geometry、node IDs、tags、版本及 ODbL attribution 保存在 `conrad-architecture.js`。這是金鐘道88號太古廣場內的 Conrad 酒店／住宅塔身，不把 Island Shangri-La、JW Marriott、Lippo Centre 或整個商場土地範圍混入。實際 curved ring 面積 **1920.4157856197853 m²**；minimum-area OBB 只作定向包絡，中心 **(584.6580799372291, 562.3662464329992)**、尺寸 **79.52983903309769 × 32.56151946371233 m**、`ry=0.38202951409437447`，OBB 面積 **2589.612401622119 m²** 不冒充標準層面積。
+- 高度、層數及用途 conventions：**OSM 198 m／62 levels／513 rooms** 與 CTBUH **198.9 m architectural＝to-tip、183.9 m occupied、61 above-ground floors、1990 completed、Hotel / Residential** 分列，模型最高點採 CTBUH **198.9 m**。太古廣場官方酒店資料採467客房＋46套房（合共513）及40–61樓；設計建築師 **Wong & Ouyang**、developer **Swire Properties**、structural engineer **Leslie E. Robertson Associates** 均作獨立資料保存。
+- 建築研究：實看 Hilton 官方夜間外觀、Mr. Miles 的全塔立面及酒店入口相片，確認弧月形長立面、藍綠玻璃、每層白色橫向 slab ribbons、粗白豎向主 fins、**一道**深色設備帶、白色弧形冠帶及紅色 **CONRAD** 字牌。搜圖中混入的 Shangri-La、Lippo Centre 及遠景相片沒有用作 Conrad 立面依據；入口則以灰色大理石標誌牆、玻璃門、黃銅拉手、紅地毯、圓角有蓋車道、圓柱及密集筒燈為特徵。
+- 塔身及冠頂：**14–183.9 m** 採 **57 道視覺 shaft courses**，連四層架空入口／裙樓視覺計法對應 CTBUH 61層，但不把 OSM62改寫成61。全塔有 **6,215 塊玻璃、1,705 道水平 ribbons、558 道設備百頁及13支主白 fins**；次要豎向只用細暗 mullions，避免變成普通密格玻璃盒。單一設備帶位於相對 **109.38245614035087–115.3438596491228 m**，是相片導向視覺控制而非官方機電標高。**183.9–198.9 m** 白色弧形冠帶上另建連續曲面 UV 的紅色 `CONRAD` 字牌；字牌保留 depth test，沒有用背面穿透的 `depthTest:false`。
+- 道路及架空入口層：精確 ring 與 **record 44556 segment 1**、**49177 segment 0**、**49181 segment 0** 相交，沒有假稱無衝突。依 **建築物優先、道路配合**，塔身位置不變，三條完整 generated-record signatures、車路、瀝青及白色標線均保留；14 m 以下按酒店相片中的架空入口層處理，只留內縮大堂核心及 **25支逐點避開車路的 pilotis**。最高衝突道路剖面為 **39.19338722764987 m**，相對14 m soffit 的世界高度為 **47.02822556338832 m**，場景淨空 **7.83483833573845 m**，大於 **4.7 m** 車輛包絡；這不是實地工程測量。
+- 法院道入口及台階：官方 Conrad Dining 到達指引明確指示由 Supreme Court Road 進入酒店，因此採 source **edge 5、inset 2.5 m** 的入口 frame，world 座標 **(570.6684151463476, 580.7896736460939)**，沒有虛構 OSM entrance node。入口 raw DTM **36.75687319338536 m**，加相片導向 **1.85 m** 落地平台修正後為 **38.60687319338536 m**，門前完成面 **38.72687319338536 m**；此局部修正不是 DEM 或道路工程標高。三級紅色台階分別下降 **0.14／0.28／0.42 m**，同時反映在 terrain 與 player ground query，避免只畫台階而碰撞仍是一片平地。雨篷筒燈、石牆雙語字牌、玻璃門及植栽均有日夜材質。
+- 碰撞及實際驗證：最終 **124 個 colliders** 覆蓋內縮大堂、避車路 pilotis、主塔、冠頂及入口，全部接入 world。Chromium／WebGL 完成 **9-view** 日夜全塔、弧形冠頂、入口及道路檢查，並在立面次要白框、入口平台遮擋及紅毯台階三輪實看修正後，再作最終入口日夜 focused re-render。最終 focused build 為 **27 meshes、138,986 vertices、54,606 triangles**，scene **25 landmarks／0 generic buildings**，`geometryIssues=[]`、`badColliders=0`；最高世界座標 **231.9282194598727 m**，扣 datum **198.89999389648438 m**（Float32 精度內的198.9 m）。行人實撞門前第一級的法線距離 **0.65 m**、ground **38.58687319338536 m**；車輛在落客區外停止，法線距離 **2.7520101187911914 m**。三條保留道路分別實駛 **13.519980175142171／23.029303178998287／34.13484793330736 m**，沒有被牆、柱或鋪裝封死。page exception／Three.js shader warning 均為 **0**，只有既有 Google Fonts 外部 resource `ERR_CONNECTION_CLOSED`。專測 **9／9 pass**，完整 `node --test tests/*.test.cjs` **455／455 pass**。
+- 資產及 runtime：研究相片只作目視及比例研究，沒有打包進 runtime；玻璃、石材紋理、弧形字牌、入口及台階均為程序化 geometry／canvas，不使用照片貼圖或下載 GLTF。最後 self-contained runtime 為 **156 modules、31,386,109 bytes**，無 external module imports。
+
+### 參考資料
+
+- OSM 精確弧形塔身、目前 API 幾何及原始 tags：
+  https://www.openstreetmap.org/way/41498759
+  https://api.openstreetmap.org/api/0.6/way/41498759/full.json
+- CTBUH：198.9 m、183.9 m occupied、61層、1990、Hotel / Residential、Wong & Ouyang 及項目團隊：
+  https://www.skyscrapercenter.com/building/conrad-hong-kong/1730
+- Hilton 官方酒店身份、金鐘道88號及外觀資料：
+  https://www.hilton.com.cn/zh-hk/hotels/hkghcci-conrad-hong-kong
+- 太古廣場官方：513間客房／套房及40–61樓：
+  https://www.pacificplace.com.hk/zh-hk/stay/conrad
+- Conrad Dining 官方到達指引：由 Justice Drive 轉入 Supreme Court Road 後到酒店入口：
+  https://conraddining.com/en/contact-us/
+- 實看全塔外觀及入口相片（只作研究，不進 runtime）：
+  https://www.mrmiles.hk/conrad-hong-kong/
+  https://www.theluxevoyager.com/luxe-hotels/hong-kong/conrad-hong-kong/
+
 ## 程式入口
 
 - `hsbc-headquarters-architecture.js`：滙豐純地理位置、OBB、樓層比例及 collider 座標換算，可在 Node 測試。
@@ -678,4 +706,6 @@
 - `ckc2-world.js`：二期藍玻窗格、五層 jumbo-glass 裙樓、兩道設備帶、紅色 `CKC II` 冠頂、BMU、入口螺旋裝置、日夜材質、碰撞及 stats。
 - `qgo-architecture.js`：金鐘道政府合署高座36頂點 OSM 來源、來源高度／層數、真實入口 node、雙地台、道路走廊及 portal／collider 座標換算。
 - `qgo-world.js`：高座綠色窗帶、白色混凝土及遮陽板、機電百頁、開敞道路裙樓、法院道自動電梯入口、LED龍形冠頂、日夜材質、碰撞及 stats。
-- `simple-world.js`：只整合這二十四個 authored landmarks；普通 `buildings` 仍為 0。
+- `conrad-architecture.js`：港麗31頂點弧形 OSM 來源、來源高度／層數、法院道入口 frame、三級台階、道路走廊及 collider 座標換算。
+- `conrad-world.js`：港麗藍綠弧形玻璃、白色 ribbons／主 fins、單一設備帶、紅色曲面冠頂字牌、法院道大理石 porte-cochere、日夜材質、碰撞及 stats。
+- `simple-world.js`：只整合這二十五個 authored landmarks；普通 `buildings` 仍為 0。
