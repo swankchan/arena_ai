@@ -603,6 +603,33 @@
 - 2022 設計揭露報道的另一面積口徑 **51,096.7 m²／550,000 sq ft**；其當時預計完工日期不取代 CVU 後來的2024 completed：
   https://verticalurbanism.org/news-article/design-for-new-tower-in-hong-kong-revealed/
 
+## 金鐘道政府合署高座 Queensway Government Offices High Block
+
+- 地點及範圍：採目前 **OSM way 41499029 version 13** 的 **36 個獨立頂點**（37個 geometry rows 包括閉合點），原始 WGS84 geometry、node IDs、tags、版本及 ODbL attribution 保存在 `qgo-architecture.js`。這是 **66 Queensway** 的高座，不把低座、高等法院或旁邊酒店併入塔身。實際 ring 面積 **1917.4881758893898 m²**；minimum-area OBB 只作定向包絡，中心 **(439.59216171704844, 466.0797528712888)**、尺寸 **49.92739012946208 × 39.75097748880481 m**、`ry=-0.6567425387080323`，OBB 面積 **1984.6625611110226 m²** 不冒充標準層面積。
+- 高度、層數及年代 conventions：**OSM 199 m／57 levels**、CTBUH **198.7 m architectural／to-tip、47 above-ground floors、1985 completed／28 elevators** 與 published **56層／62,077 m² GFA／1986 opening** 分列，模型最高點採 **199 m**。建築設計保存為 **K.M. Tseng／Hong Kong Architectural Services Department**，主承包商 **Gammon**；不把不同樓層計法擅自統一。
+- 建築研究：實看政府 Film Promotion and Facilitation Section 的高座正面、裙樓及有蓋通道相片，以及 harbour-side 全塔相片，確認白色混凝土側牆及橫向遮陽板、綠色連續窗帶、細長側牆窗洞、兩道深色機電帶、多層停車／玻璃裙樓和開敞地面柱廊。官方旅遊事務署資料確認天台 **Brand Hong Kong Dragon** 於2002年設置、**2022年升級為 LED panel system**；模型以程序化向量龍及支撐桁架表達，不把舊霓虹相片當成現行材質。
+- 幕牆：**46–190 m** 主塔以 **47 道視覺 courses**、**4,042 塊綠色 ribbon glass、1,363 個側牆 slit windows、1,692 道白色水平遮陽構件**組成；這是配合 CTBUH 47層計法的視覺模型，不宣稱 OSM57或published56被改成47。**82／126 m** 兩道深色百頁帶是相片導向控制值；published directory 的 **16／32樓機電層**只作來源資料保存，不把視覺帶高度假稱官方標高。
+- 裙樓及道路 portals：精確 ring 與 **record 49953 segments 0–2** 的5.5 m高架服務車路，以及 **record 36487 segments 2–3** 的8.4 m法院道相交，沒有假稱「無道路衝突」。依 **建築物優先、道路配合**，完整保留兩條 generated-record signatures、車路、瀝青及白色標線；**37個衝突裙樓 bays** 全部開敞，另外 **41個非衝突 bays** 保留停車／玻璃立面，**60支柱**均避開車路及入口。車路走廊沿用 raw DTM，辦公塔身從相對 **46 m** 開始，對全部衝突剖面保留超過 **4.7 m** 車輛淨空，沒有用實心裙樓封路。
+- 入口及兩級地台：入口採真實 **OSM node 11779198293 `entrance=yes`**，world 座標 **(437.1773256660604, 489.31182459010637)**，不是另造入口點。製作灰色石材門框、玻璃門及雨篷、`QUEENSWAY GOVERNMENT OFFICES` 字牌、雙向自動電梯和扶手。塔中心 raw DTM **29.182327886771162 m**、plaza **29.302327886771163 m**；入口本身 raw DTM **33.923207867367836 m**、獨立 level landing **34.04320786736783 m**，所以沒有把較低中心平台強套到法院道入口。入口附近車路仍保留自己的道路 ground。
+- 冠頂：**190–193 m** 白色 parapet、屋頂機房及龍形 LED 字牌／桁架組成冠頂，最高渲染點精確 **199 m**；桁架頂部帽梁略低於字牌頂，避免構件厚度令模型超越來源高度。日間可見紅橙龍形，夜間保留明亮 LED 效果，辦公室窗帶則有不規則暖色燈光。
+- 碰撞及實際驗證：最終 **176 個 colliders** 覆蓋非衝突裙樓、避柱、主塔、冠頂及入口，全部接入 world。Chromium／WebGL 完成 **9-view** 日夜全塔、龍形冠頂、法院道入口及道路 portals 檢查，並對入口柱及字牌作額外日夜 focused re-render。最終目前 build 為 **20 meshes、241,410 vertices、112,164 triangles**，scene **24 landmarks／0 generic buildings**，`geometryIssues=[]`、`badColliders=0`；最高世界座標 **228.18232788677116 m**，扣 datum 精確 **199 m**。行人／車輛實撞入口的法線距離分別 **0.03／1.73 m**，停止位置 ground 均為 **34.04320786736783 m**；測試車沿高架服務車路及法院道各實行 **34.134847933306 m**，兩者均無被柱、牆或鋪裝封死。page exception／Three.js shader warning 均為 **0**，只有既有 Google Fonts 外部 resource `ERR_CONNECTION_CLOSED`。專測 **9／9**、完整 `node --test tests/*.test.cjs` **446／446 pass**。
+- 資產：研究相片只作目視及比例研究，沒有打包進 runtime；龍形、立面、入口及自動電梯均為程序化 geometry／canvas，不使用照片貼圖或下載 GLTF。
+
+### 參考資料
+
+- OSM 精確高座、目前 API 幾何、原始 tags 及入口 node：
+  https://www.openstreetmap.org/way/41499029
+  https://api.openstreetmap.org/api/0.6/way/41499029/full.json
+- CTBUH／CVU：198.7 m、47層、1985、28部升降機及 Hong Kong Architectural Services Department：
+  https://www.skyscrapercenter.com/hong-kong/queensway-government-office-building/1743/
+- 政府 Film Promotion and Facilitation Section：66 Queensway、完工高座／裙樓／有蓋通道相片及天台 Brand Hong Kong 標誌：
+  https://fpf.ccidahk.gov.hk/en/location/detail.php?id=860
+- 旅遊事務署 A Symphony of Lights：高座／低座1986／1985、2002龍形標誌及2022 LED panel 升級：
+  https://www.tourism.gov.hk/symphony/english/participating/participating_hk_11.html
+- Published 補充資料：K.M. Tseng、Gammon、56層、199 m、62,077 m²及1986 opening；與 OSM／CTBUH conventions 分列：
+  https://en.wikipedia.org/wiki/Queensway_Government_Offices
+  https://zh.wikipedia.org/zh-hk/金鐘道政府合署
+
 ## 程式入口
 
 - `hsbc-headquarters-architecture.js`：滙豐純地理位置、OBB、樓層比例及 collider 座標換算，可在 Node 測試。
@@ -649,4 +676,6 @@
 - `champion-tower-world.js`：冠君大廈弧形反光幕牆、無框玻璃大堂、金屬冠頂、現行字牌、日夜材質、碰撞及 stats。
 - `ckc2-architecture.js`：長江集團中心二期精確九頂點 OSM 來源、OBB、來源高度／面積、入口 frame、plaza 及 collider 座標換算。
 - `ckc2-world.js`：二期藍玻窗格、五層 jumbo-glass 裙樓、兩道設備帶、紅色 `CKC II` 冠頂、BMU、入口螺旋裝置、日夜材質、碰撞及 stats。
-- `simple-world.js`：只整合這二十三個 authored landmarks；普通 `buildings` 仍為 0。
+- `qgo-architecture.js`：金鐘道政府合署高座36頂點 OSM 來源、來源高度／層數、真實入口 node、雙地台、道路走廊及 portal／collider 座標換算。
+- `qgo-world.js`：高座綠色窗帶、白色混凝土及遮陽板、機電百頁、開敞道路裙樓、法院道自動電梯入口、LED龍形冠頂、日夜材質、碰撞及 stats。
+- `simple-world.js`：只整合這二十四個 authored landmarks；普通 `buildings` 仍為 0。
