@@ -445,6 +445,38 @@
 - 港島香格里拉官方現頁：56 floors、544 rooms and suites、8 restaurants and bars，以及酒店入口／車道背景：
   https://www.shangri-la.com/hongkong/islandshangrila/
 
+## AIRSIDE
+
+- 地點及來源：協調道 2 號，採目前 **OSM way 1212412229 version 9** 的 **63 個獨立頂點**；原始 WGS84 geometry、完整 tags、版本、changeset 及 ODbL attribution 保存在 `airside-architecture.js`。整個 commercial complex 外環不是單塔 footprint。主塔局部框架由 source vertices **36→42→43** 推導，寬深 **49.14934426296074 × 44.5461924655298 m**，另用精確正交軸保存所有來源座標；內部五區分界是相片導向裁剪，不是工程分層圖。
+- 高度、層數及落成日期分列：OSM／Snøhetta 為 **213 m／47 層**，OSM 另有地下 **4 層**；CTBUH 為 **207.1 m architectural／to-tip、189.5 m occupied、43 floors、地下 4 層、2022 completed**。項目對外開放日期另為 **2023-09-28**；建築報道所述第二體量 **18 levels**、零售 **9 層**也獨立保留。各組數值沒有平均、取整或互相取代，模型主塔最高點採 **213 m**。
+- 五個 interconnected volumes：以精確外環裁剪主塔、第二塔、中央 atrium、中間體量及向啟德河降低的南端體量；中間區有兩個有效 polygon，因此是 **5 zones／6 upper rings／8 curtain-wall sections**，不是把整個地盤拉成一根塔。主塔四角採照片導向 **2.4 m chamfer**；OSM `roof:direction=201.93`、`roof:height=13` 用於實際削角頂點的斜屋面，最高／最低為 **213／200 m**。第二塔及其他低層體量的高度只作照片導向體量控制，不冒充實測工程標高。
+- 立面及材料：依 Snøhetta／建成照片製作藍灰及銀色 curved fluted glass、下段平玻璃、斜向厚 reveal、成組金屬百頁、四種 fin depths、弧形橫框及斜冠頂。全幢有 **23,126 塊玻璃（16,857 fluted／6,269 flat）、475 個百頁面板、26,115 道框架、859 支 fins**；主塔 **38 courses**、第二塔 **9 courses**是立面視覺分格，不是把不同來源樓層合成新層數。夜間 fins 以低亮度冷色線光表現 media canvas，玻璃只有稀疏暖光，不用均勻發光盒。
+- 辦公入口：保留 OSM source vertices **40／41**、nodes **13788270483／11228949741** 的 `entrance=main`／`entrance:use=office` 位置，兩組門各自有门框、門柄及玻璃；共享雨篷、深色字牌背板、圓柱及線性 soffit 燈是照片導向設計，沒有假稱為 OSM 門樓。`AIRSIDE / OFFICE · 2 CONCORDE ROAD` 日夜均清晰，不被白色 canopy 遮住。
+- 商場入口：使用 source **vertex 6／node 11232828740** 的 `entrance=yes`、`abutters=retail`、`level=0`，world 座標 **(4003.695527153193, -5400.0921588462115)**；這是零售入口，不是「第二座塔入口」。模型有高玻璃 atrium、四道門、門柄、雨篷、暖光及帶深色背板的 `AIRSIDE` 字牌；外伸 **4.5 m** 花崗岩前庭只作入口地面，沒有當成土地用途邊界。
+- 屋頂及景觀：主塔、第二塔及低層屋頂有 **540 塊模型 PV panels**、支架及 cell bus bars；這是對官方逾 **1,350 m² PV** 的視覺詮釋，不是聲稱官方面板數量或全部位於主塔冠頂。另有 **17 棵樹、47 組灌木、4 個水景、花槽、座椅及外緣玻璃欄杆**。官方 **600 m² educational gardens、30% soft landscape、177,670 m² 總 GFA、110,000 m² office、60,000 m² retail**均保留為來源資料，不由模型件數反推工程面積。
+- 道路及地面開口：完整保留 **18 條 surface access records／8 條 B1 tunnel records**；其中 **8 條 source ways** 穿越地面外牆，玻璃按車路分出 **38 個開口 bays**，兩個入口另有 **15 個開口 bays**，14 支柱逐點避開車路。上層只用逐邊牆 colliders，沒有由地面封頂的整環 solid。對實際最高 surface road profile 保留 **7.871004440580341 m** 場景淨空，超過 4.7 m 車輛控制值；這不是實地工程測量。外環內沒有 clearance 後街燈。
+- 地形、碰撞及分層：主塔中心 raw DTM **6.209510786436553 m** 用作施工平台，plaza 為 **6.329510786436553 m**；這是可追溯 DTM／模型地面，不是已核實道路工程標高。terrain 與 road-elevation 共用同一 pad boundaries，所選 surface 車路保持道路優先；B1 使用原隧道剖面，測試位置為 **2.25 m**，不會被升至 surface pad。全幢 **657 個 colliders** 包括上層逐邊牆、地面玻璃／過樑、柱及兩個入口，全部接入 world。
+- 實際驗證：最終 Chromium／WebGL build 在 **1100×760** 實看東北全塔、西南五體量、主塔冠頂、PV／花園、辦公入口、商場入口及有蓋車路日景，以及全塔、五體量、LED fins、兩入口及車路夜景，共 **13 views**。scene 為 **19 landmarks／0 generic buildings**；本幢 **99 meshes、509,165 vertices、196,612 triangles**，`geometryIssues=[]`、`badColliders=[]`，最高渲染點扣 datum 為 **213 m**。兩個入口行人／車輛實撞的法線距離均為 **0.65／2.3539892165 m**，門前 ground 均保持 **6.329510786436553 m**；surface driveway 雙向實駛 **36.62701263481304／37.82147055445696 m**，B1 實駛 **45.9555802714631 m** 並保持 **2.25 m**。page exception／Three.js shader error 均為 **0**，只有既有外部 resource `ERR_CONNECTION_CLOSED`。專用架構、地形、道路、街燈及 collider 測試 **9／9 pass**，完整 `node --test tests/*.test.cjs` 為 **401／401 pass**。
+- 研究及資產：實看 Snøhetta／ArchDaily 建成主塔、五體量、弧形玻璃、斜切、入口、屋頂花園及 PV 圖，排除舊機場、周邊住宅、設計 render 及室內圖作錯誤依據。研究相片沒有打包，模型不使用照片貼圖或下載 GLTF。
+
+### 參考資料
+
+- OSM complex、目前 API 幾何及原始 tags：https://www.openstreetmap.org/way/1212412229
+  https://api.openstreetmap.org/api/0.6/way/1212412229/full.json
+- Snøhetta 官方項目頁：213 m、五個 interconnected volumes、177,670 m²、110,000 m² office、60,000 m² retail、逾 1,350 m² PV、600 m² educational gardens 及 30% soft landscape：
+  https://www.snohetta.com/projects/airside
+- CTBUH／CVU：207.1 m architectural／to-tip、189.5 m occupied、43 floors、地下 4 層及 2022 completed：
+  https://www.skyscrapercenter.com/building/airside/39854
+- Designboom／Dezeen 建成報道：向啟德河梯級下降、weaves／folds／tears／cuts、屋頂花園及 PV：
+  https://www.designboom.com/architecture/snohetta-mixed-use-airside-complex-opens-hong-kong-tribute-textile-heritage-10-30-2023/
+  https://www.dezeen.com/2023/10/30/snohetta-skyscraper-airside-kai-tak-hong-kong-airport/
+- ArchDaily 建成攝影及項目團隊，用於核對主塔弧形 fluting、平玻璃及斜 reveal：
+  https://www.archdaily.com/1009276/airside-snohetta
+- Design & Architecture：47-storey 主塔、18-level 第二體量、九層零售、四種 radii、金屬百頁及 fins 線性 LED：
+  https://designandarchitecture.com/article/snoslashhetta-references-developer-nan-fung-grouprsquos-textiles-heritage-and-the-kai-tak-sitersquos-aviation-past-for-airside-hong-kong.html
+- Arup 建成 PV 圖及可持續技術資料：
+  https://arup.com/en-us/news/airside-honoured-at-ashrae-technology-awards
+
 ## 程式入口
 
 - `hsbc-headquarters-architecture.js`：滙豐純地理位置、OBB、樓層比例及 collider 座標換算，可在 Node 測試。
@@ -485,4 +517,6 @@
 - `sun-hung-kai-world.js`：新鴻基中心深棕格網玻璃、淺色切角石牆、五層加建視覺帶、平屋頂機房／雙衛星碟、SHK 標誌、斜玻璃 atrium、開敞有蓋車路、雙語字牌、日夜材質、碰撞及 stats。
 - `two-pacific-place-architecture.js`：太古廣場二座 24 頂點 OSM 來源、OBB、辦公／酒店高度及層數 conventions、雙入口 frames、三層 DTM 地台、service driveway 來源及逐邊碰撞座標換算。
 - `two-pacific-place-world.js`：太古廣場二座橢圓藍玻璃、白色橫帶、地面橫豎框、機電百頁、弧形冠頂與金色 Shangri-La 字牌、屋頂設備、酒店 porte-cochere、辦公入口、日夜材質、碰撞及 stats。
-- `simple-world.js`：只整合這十八個 authored landmarks；普通 `buildings` 仍為 0。
+- `airside-architecture.js`：AIRSIDE 63 頂點 OSM complex、正交坐標、五區裁剪 rings、高度／層數 conventions、斜屋面、來源入口、DTM 地台、surface／B1 道路及逐邊碰撞座標換算。
+- `airside-world.js`：AIRSIDE 五個 interconnected volumes、四種曲率 fluted glass、斜 reveal、百頁及 LED fins、兩個來源入口、地面車路開口、PV、屋頂花園、日夜材質、碰撞及 stats。
+- `simple-world.js`：只整合這十九個 authored landmarks；普通 `buildings` 仍為 0。

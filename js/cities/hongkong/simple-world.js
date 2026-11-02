@@ -40,6 +40,7 @@ import { buildHopewell } from './hopewell-world.js';
 import { buildSunHungKai } from './sun-hung-kai-world.js';
 import { isSunHungKaiPlazaPoint } from './sun-hung-kai-architecture.js';
 import { buildTwoPacificPlace } from './two-pacific-place-world.js';
+import { buildAirside } from './airside-world.js';
 import { createHongKongTrafficAids } from './traffic-aids.js';
 
 const WATER_LEVEL = -2.2;
@@ -94,6 +95,8 @@ export function buildSimpleHongKongWorld(scene, { setStatus = () => {} } = {}) {
     hotelGround: HONG_KONG_TERRAIN_META.twoPacificPlaceHotelPadHeight,
     officeGround: HONG_KONG_TERRAIN_META.twoPacificPlaceOfficePadHeight
   });
+  setStatus('Building AIRSIDE’s five textile-inspired volumes, fluted glass and rooftop landscape...');
+  const airside = buildAirside(scene, { groundOffset: HONG_KONG_TERRAIN_META.airsidePadHeight });
   setStatus('Building drivable harbour bridges and tunnels...');
   const crossings = buildHongKongCrossings(scene);
   setStatus('Placing 144,995 lamp posts across Hong Kong...');
@@ -148,7 +151,9 @@ export function buildSimpleHongKongWorld(scene, { setStatus = () => {} } = {}) {
     const sunHungKaiGround = !groundUsesRoad && isSunHungKaiPlazaPoint(x, z) ? Math.max(hopewellGround, sunHungKai.plazaTop) : hopewellGround;
     // Two Pacific Place has separate hotel and office DTM pads. The selected layer=1 driveway remains road-priority under the overhang.
     const twoPacificPlaceGround = !groundUsesRoad ? twoPacificPlace.groundHeightAt(x, z, sunHungKaiGround) : sunHungKaiGround;
-    return isHsbcPlazaPoint(x, z) ? Math.max(twoPacificPlaceGround, hsbc.plazaTop) : twoPacificPlaceGround;
+    // AIRSIDE's covered surface access ways remain road-priority; an unselected B1 tunnel does not suppress the lobby floor.
+    const airsideGround = !groundUsesRoad ? airside.groundHeightAt(x, z, twoPacificPlaceGround) : twoPacificPlaceGround;
+    return isHsbcPlazaPoint(x, z) ? Math.max(airsideGround, hsbc.plazaTop) : airsideGround;
   }
 
   const stats = {
@@ -174,11 +179,12 @@ export function buildSimpleHongKongWorld(scene, { setStatus = () => {} } = {}) {
     ...hopewell.stats,
     ...sunHungKai.stats,
     ...twoPacificPlace.stats,
+    ...airside.stats,
     presentation: 'unified-simple',
     landMeshes: full.stats.fullLandRings,
     blocks: 0,
     parks: full.stats.fullParks,
-    landmarks: hsbc.landmarks.length + standardChartered.landmarks.length + twoIfc.landmarks.length + icc.landmarks.length + bankOfChina.landmarks.length + centralPlaza.landmarks.length + theCenter.landmarks.length + ninaTower.landmarks.length + cheungKong.landmarks.length + k11Atelier.landmarks.length + cullinanI.landmarks.length + cullinanII.landmarks.length + masterpiece.landmarks.length + langhamPlace.landmarks.length + summit.landmarks.length + hopewell.landmarks.length + sunHungKai.landmarks.length + twoPacificPlace.landmarks.length,
+    landmarks: hsbc.landmarks.length + standardChartered.landmarks.length + twoIfc.landmarks.length + icc.landmarks.length + bankOfChina.landmarks.length + centralPlaza.landmarks.length + theCenter.landmarks.length + ninaTower.landmarks.length + cheungKong.landmarks.length + k11Atelier.landmarks.length + cullinanI.landmarks.length + cullinanII.landmarks.length + masterpiece.landmarks.length + langhamPlace.landmarks.length + summit.landmarks.length + hopewell.landmarks.length + sunHungKai.landmarks.length + twoPacificPlace.landmarks.length + airside.landmarks.length,
     lots: 0,
     buildings: 0,
     skippedLots: 0,
@@ -190,7 +196,7 @@ export function buildSimpleHongKongWorld(scene, { setStatus = () => {} } = {}) {
 
   return {
     root: scene,
-    colliders: [...full.colliders, ...crossings.colliders, ...hsbc.colliders, ...standardChartered.colliders, ...twoIfc.colliders, ...icc.colliders, ...bankOfChina.colliders, ...centralPlaza.colliders, ...theCenter.colliders, ...ninaTower.colliders, ...cheungKong.colliders, ...k11Atelier.colliders, ...cullinanI.colliders, ...cullinanII.colliders, ...masterpiece.colliders, ...langhamPlace.colliders, ...summit.colliders, ...hopewell.colliders, ...sunHungKai.colliders, ...twoPacificPlace.colliders],
+    colliders: [...full.colliders, ...crossings.colliders, ...hsbc.colliders, ...standardChartered.colliders, ...twoIfc.colliders, ...icc.colliders, ...bankOfChina.colliders, ...centralPlaza.colliders, ...theCenter.colliders, ...ninaTower.colliders, ...cheungKong.colliders, ...k11Atelier.colliders, ...cullinanI.colliders, ...cullinanII.colliders, ...masterpiece.colliders, ...langhamPlace.colliders, ...summit.colliders, ...hopewell.colliders, ...sunHungKai.colliders, ...twoPacificPlace.colliders, ...airside.colliders],
     bounds: full.bounds,
     stats,
     personSpawn: { ...SPAWN.person },
@@ -222,8 +228,9 @@ export function buildSimpleHongKongWorld(scene, { setStatus = () => {} } = {}) {
     hopewell,
     sunHungKai,
     twoPacificPlace,
+    airside,
     treeField: null,
-    landmarks: [...hsbc.landmarks, ...standardChartered.landmarks, ...twoIfc.landmarks, ...icc.landmarks, ...bankOfChina.landmarks, ...centralPlaza.landmarks, ...theCenter.landmarks, ...ninaTower.landmarks, ...cheungKong.landmarks, ...k11Atelier.landmarks, ...cullinanI.landmarks, ...cullinanII.landmarks, ...masterpiece.landmarks, ...langhamPlace.landmarks, ...summit.landmarks, ...hopewell.landmarks, ...sunHungKai.landmarks, ...twoPacificPlace.landmarks],
+    landmarks: [...hsbc.landmarks, ...standardChartered.landmarks, ...twoIfc.landmarks, ...icc.landmarks, ...bankOfChina.landmarks, ...centralPlaza.landmarks, ...theCenter.landmarks, ...ninaTower.landmarks, ...cheungKong.landmarks, ...k11Atelier.landmarks, ...cullinanI.landmarks, ...cullinanII.landmarks, ...masterpiece.landmarks, ...langhamPlace.landmarks, ...summit.landmarks, ...hopewell.landmarks, ...sunHungKai.landmarks, ...twoPacificPlace.landmarks, ...airside.landmarks],
     trafficAids
   };
 }

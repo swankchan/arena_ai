@@ -23,6 +23,7 @@ import {
   TWO_PACIFIC_PLACE_SITE, TWO_PACIFIC_PLACE_GROUND_SAMPLE, TWO_PACIFIC_PLACE_HOTEL_GROUND_SAMPLE,
   TWO_PACIFIC_PLACE_OFFICE_GROUND_SAMPLE, TWO_PACIFIC_PLACE_HOTEL_FORECOURT_RING, TWO_PACIFIC_PLACE_OFFICE_FORECOURT_RING
 } from './two-pacific-place-architecture.js';
+import { AIRSIDE_SITE, AIRSIDE_GROUND_SAMPLE, isAirsidePlazaPoint } from './airside-architecture.js';
 
 function decodeBytes(base64) {
   const binary = atob(base64);
@@ -84,6 +85,9 @@ const SUN_HUNG_KAI_PAD_HEIGHT = rawHongKongTerrainHeight(SUN_HUNG_KAI_GROUND_SAM
 const TWO_PACIFIC_PLACE_PAD_HEIGHT = rawHongKongTerrainHeight(TWO_PACIFIC_PLACE_GROUND_SAMPLE.x, TWO_PACIFIC_PLACE_GROUND_SAMPLE.z);
 const TWO_PACIFIC_PLACE_HOTEL_PAD_HEIGHT = rawHongKongTerrainHeight(TWO_PACIFIC_PLACE_HOTEL_GROUND_SAMPLE.x, TWO_PACIFIC_PLACE_HOTEL_GROUND_SAMPLE.z) + 0.12;
 const TWO_PACIFIC_PLACE_OFFICE_PAD_HEIGHT = rawHongKongTerrainHeight(TWO_PACIFIC_PLACE_OFFICE_GROUND_SAMPLE.x, TWO_PACIFIC_PLACE_OFFICE_GROUND_SAMPLE.z) + 0.12;
+// AIRSIDE's broad Kai Tak construction platform uses the main-tower DTM sample. Surface access ways share this pad;
+// the eight B1 tunnel ways retain their own portal-connected profiles rather than being raised to the podium datum.
+const AIRSIDE_PAD_HEIGHT = rawHongKongTerrainHeight(AIRSIDE_GROUND_SAMPLE.x, AIRSIDE_GROUND_SAMPLE.z);
 
 export function hongKongTerrainHeight(x, z) {
   if (pointInFlatRing(HSBC_SITE.ring, x, z)) return HSBC_PAD_HEIGHT;
@@ -108,6 +112,7 @@ export function hongKongTerrainHeight(x, z) {
   if (pointInFlatRing(TWO_PACIFIC_PLACE_HOTEL_FORECOURT_RING, x, z)) return TWO_PACIFIC_PLACE_HOTEL_PAD_HEIGHT;
   if (pointInFlatRing(TWO_PACIFIC_PLACE_OFFICE_FORECOURT_RING, x, z)) return TWO_PACIFIC_PLACE_OFFICE_PAD_HEIGHT;
   if (pointInFlatRing(TWO_PACIFIC_PLACE_SITE.ring, x, z)) return TWO_PACIFIC_PLACE_PAD_HEIGHT;
+  if (isAirsidePlazaPoint(x, z)) return AIRSIDE_PAD_HEIGHT;
   return rawHongKongTerrainHeight(x, z);
 }
 
@@ -137,6 +142,7 @@ export const HONG_KONG_TERRAIN_META = Object.freeze({
   twoPacificPlacePadHeight: TWO_PACIFIC_PLACE_PAD_HEIGHT,
   twoPacificPlaceHotelPadHeight: TWO_PACIFIC_PLACE_HOTEL_PAD_HEIGHT,
   twoPacificPlaceOfficePadHeight: TWO_PACIFIC_PLACE_OFFICE_PAD_HEIGHT,
+  airsidePadHeight: AIRSIDE_PAD_HEIGHT,
   tunnelStats: HK_TERRAIN.stats
 });
 

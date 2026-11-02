@@ -83,6 +83,7 @@ export const city = {
       hopewell: world.hopewell,
       sunHungKai: world.sunHungKai,
       twoPacificPlace: world.twoPacificPlace,
+      airside: world.airside,
       landmarks: world.landmarks,
       stats,
       teleports: TELEPORTS,
