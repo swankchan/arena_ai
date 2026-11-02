@@ -42,6 +42,7 @@ import { isSunHungKaiPlazaPoint } from './sun-hung-kai-architecture.js';
 import { buildTwoPacificPlace } from './two-pacific-place-world.js';
 import { buildAirside } from './airside-world.js';
 import { buildLeeGardenOne } from './lee-garden-one-world.js';
+import { buildOneInternationalFinanceCentre } from './one-ifc-world.js';
 import { createHongKongTrafficAids } from './traffic-aids.js';
 
 const WATER_LEVEL = -2.2;
@@ -100,6 +101,8 @@ export function buildSimpleHongKongWorld(scene, { setStatus = () => {} } = {}) {
   const airside = buildAirside(scene, { groundOffset: HONG_KONG_TERRAIN_META.airsidePadHeight });
   setStatus('Building Lee Garden One’s triangular tower, three corner lobes and southwest spire...');
   const leeGardenOne = buildLeeGardenOne(scene, { groundOffset: HONG_KONG_TERRAIN_META.leeGardenOnePadHeight });
+  setStatus('Building One IFC’s stepped-square shaft, pilaster fins and open crown...');
+  const oneIfc = buildOneInternationalFinanceCentre(scene, { groundOffset: HONG_KONG_TERRAIN_META.oneIfcPadHeight });
   setStatus('Building drivable harbour bridges and tunnels...');
   const crossings = buildHongKongCrossings(scene);
   setStatus('Placing 144,995 lamp posts across Hong Kong...');
@@ -158,7 +161,9 @@ export function buildSimpleHongKongWorld(scene, { setStatus = () => {} } = {}) {
     const airsideGround = !groundUsesRoad ? airside.groundHeightAt(x, z, twoPacificPlaceGround) : twoPacificPlaceGround;
     // Lee Garden One's driveway and underground-parking access stay on the selected road profile.
     const leeGardenOneGround = !groundUsesRoad ? leeGardenOne.groundHeightAt(x, z, airsideGround) : airsideGround;
-    return isHsbcPlazaPoint(x, z) ? Math.max(leeGardenOneGround, hsbc.plazaTop) : leeGardenOneGround;
+    // One IFC's drive-through and source-adjacent carriageway remain road-priority.
+    const oneIfcGround = !groundUsesRoad ? oneIfc.groundHeightAt(x, z, leeGardenOneGround) : leeGardenOneGround;
+    return isHsbcPlazaPoint(x, z) ? Math.max(oneIfcGround, hsbc.plazaTop) : oneIfcGround;
   }
 
   const stats = {
@@ -186,11 +191,12 @@ export function buildSimpleHongKongWorld(scene, { setStatus = () => {} } = {}) {
     ...twoPacificPlace.stats,
     ...airside.stats,
     ...leeGardenOne.stats,
+    ...oneIfc.stats,
     presentation: 'unified-simple',
     landMeshes: full.stats.fullLandRings,
     blocks: 0,
     parks: full.stats.fullParks,
-    landmarks: hsbc.landmarks.length + standardChartered.landmarks.length + twoIfc.landmarks.length + icc.landmarks.length + bankOfChina.landmarks.length + centralPlaza.landmarks.length + theCenter.landmarks.length + ninaTower.landmarks.length + cheungKong.landmarks.length + k11Atelier.landmarks.length + cullinanI.landmarks.length + cullinanII.landmarks.length + masterpiece.landmarks.length + langhamPlace.landmarks.length + summit.landmarks.length + hopewell.landmarks.length + sunHungKai.landmarks.length + twoPacificPlace.landmarks.length + airside.landmarks.length + leeGardenOne.landmarks.length,
+    landmarks: hsbc.landmarks.length + standardChartered.landmarks.length + twoIfc.landmarks.length + icc.landmarks.length + bankOfChina.landmarks.length + centralPlaza.landmarks.length + theCenter.landmarks.length + ninaTower.landmarks.length + cheungKong.landmarks.length + k11Atelier.landmarks.length + cullinanI.landmarks.length + cullinanII.landmarks.length + masterpiece.landmarks.length + langhamPlace.landmarks.length + summit.landmarks.length + hopewell.landmarks.length + sunHungKai.landmarks.length + twoPacificPlace.landmarks.length + airside.landmarks.length + leeGardenOne.landmarks.length + oneIfc.landmarks.length,
     lots: 0,
     buildings: 0,
     skippedLots: 0,
@@ -202,7 +208,7 @@ export function buildSimpleHongKongWorld(scene, { setStatus = () => {} } = {}) {
 
   return {
     root: scene,
-    colliders: [...full.colliders, ...crossings.colliders, ...hsbc.colliders, ...standardChartered.colliders, ...twoIfc.colliders, ...icc.colliders, ...bankOfChina.colliders, ...centralPlaza.colliders, ...theCenter.colliders, ...ninaTower.colliders, ...cheungKong.colliders, ...k11Atelier.colliders, ...cullinanI.colliders, ...cullinanII.colliders, ...masterpiece.colliders, ...langhamPlace.colliders, ...summit.colliders, ...hopewell.colliders, ...sunHungKai.colliders, ...twoPacificPlace.colliders, ...airside.colliders, ...leeGardenOne.colliders],
+    colliders: [...full.colliders, ...crossings.colliders, ...hsbc.colliders, ...standardChartered.colliders, ...twoIfc.colliders, ...icc.colliders, ...bankOfChina.colliders, ...centralPlaza.colliders, ...theCenter.colliders, ...ninaTower.colliders, ...cheungKong.colliders, ...k11Atelier.colliders, ...cullinanI.colliders, ...cullinanII.colliders, ...masterpiece.colliders, ...langhamPlace.colliders, ...summit.colliders, ...hopewell.colliders, ...sunHungKai.colliders, ...twoPacificPlace.colliders, ...airside.colliders, ...leeGardenOne.colliders, ...oneIfc.colliders],
     bounds: full.bounds,
     stats,
     personSpawn: { ...SPAWN.person },
@@ -236,8 +242,9 @@ export function buildSimpleHongKongWorld(scene, { setStatus = () => {} } = {}) {
     twoPacificPlace,
     airside,
     leeGardenOne,
+    oneIfc,
     treeField: null,
-    landmarks: [...hsbc.landmarks, ...standardChartered.landmarks, ...twoIfc.landmarks, ...icc.landmarks, ...bankOfChina.landmarks, ...centralPlaza.landmarks, ...theCenter.landmarks, ...ninaTower.landmarks, ...cheungKong.landmarks, ...k11Atelier.landmarks, ...cullinanI.landmarks, ...cullinanII.landmarks, ...masterpiece.landmarks, ...langhamPlace.landmarks, ...summit.landmarks, ...hopewell.landmarks, ...sunHungKai.landmarks, ...twoPacificPlace.landmarks, ...airside.landmarks, ...leeGardenOne.landmarks],
+    landmarks: [...hsbc.landmarks, ...standardChartered.landmarks, ...twoIfc.landmarks, ...icc.landmarks, ...bankOfChina.landmarks, ...centralPlaza.landmarks, ...theCenter.landmarks, ...ninaTower.landmarks, ...cheungKong.landmarks, ...k11Atelier.landmarks, ...cullinanI.landmarks, ...cullinanII.landmarks, ...masterpiece.landmarks, ...langhamPlace.landmarks, ...summit.landmarks, ...hopewell.landmarks, ...sunHungKai.landmarks, ...twoPacificPlace.landmarks, ...airside.landmarks, ...leeGardenOne.landmarks, ...oneIfc.landmarks],
     trafficAids
   };
 }

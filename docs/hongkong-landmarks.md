@@ -510,6 +510,36 @@
   https://archello.com/project/the-lee-gardens
   http://www.luxstate.com/hk-commercial/hong-kong/causeway-bay/lee-garden-one
 
+## 國際金融中心一期 One International Finance Centre
+
+- 地點及來源：採目前 **OSM way 148554945 version 14** 的 **32 個獨立頂點**，原始 WGS84 geometry、node IDs、tags、版本及 ODbL attribution 保存在 `one-ifc-architecture.js`。這個 `building=yes／building:use=office／layer=3` 元件與已實看的典型平面圖同為階級方形塔身，不是土地用途範圍。實際 ring 面積 **2239.237667082749 m²**；minimum-area OBB 只作定向包絡，中心 **(-272.8223130606762, -355.57825652657647)**、尺寸 **50.82473795154908 × 50.610363315919244 m**、`ry=0.6530525292750311`，OBB 面積 **2572.2584531642883 m²** 沒有冒充標準層面積。
+- 地址及數值 conventions：原始 OSM `addr` tags 寫 **8 Finance Street**，但 SHKP 及 CTBUH 官方地址是 **1 Harbour View Street**；來源 tags 原樣保存，場景門牌採官方地址並在文件明示差異。OSM 與 CTBUH 同為 **210 m architectural／to-tip、38 above-ground levels**，CTBUH 另有 **4 below、72,880 m² Tower GFA、1999 completion、All-Steel**。其他 published **1998／39層／4個交易樓層／18部客梯**、InterAsia **41層／647,868 sq ft GFA／約21,000 sq ft typical lettable／2部貨梯**均獨立保存，沒有平均、取整或互相覆寫。
+- 平面及體量：依 César Pelli／Rocco 的塔身照片和典型樓面中央核心、雙排 lift lobby 及階級方形外圍，直接使用精確 OSM ring，沒有改用矩形盒體。五個 curtain-wall tiers 由 **14 m** 到 **202 m**，形成 **4 次退台**；各層獨立縮放，冠頂以下不是單一斜拉盒。**38 道視覺 courses** 是立面建模分配，不把 OSM、CTBUH、published 或 InterAsia 的不同層數合并成一個假規格。
+- 立面材料及細節：按幕牆承包商所述 pilaster unitized panel system，分開製作雙層 vision glass、fritted spandrel、深色 backing、外置鋁合金／不銹鋼豎向 fins、橫向 transoms 及玻璃百頁。**1.61 m** 面板寬模數及 **4.17 m／4.85 m** office／trading panel 高度保留為來源模組資料，沒有假稱每個實際樓層的測量高度。全塔有 **4,712 塊 vision panels、4,712 塊 spandrels、780 支豎向 pilaster fins、2,592 道橫向構件**；三組照片導向機電／避火帶位於 **82／142／176 m** 視覺 datum，各有獨立暗色玻璃及百頁。
+- 冠頂：**192–202 m** 是收分的 glazed crown，**202–210 m** 為開敞 sculptural crown。製作 **92 支 ribs／rails** 及 **60 塊寬幅三角鋁合金 finial plates**，另有中央機房、百頁及屋頂蓋板；最高點保持 **210 m**，沒有另加天線或把 Two IFC 的更高尖頂套過來。夜間冠頂以冷白光照亮，辦公玻璃則保留不規則暖色室內燈。
+- 地面及入口：地面層有 **62 塊大堂玻璃、8 支圓形結構柱** 及 **12 m** 高的開敞 soffit，上部連續至 **14 m** 裙樓帶。主入口位於長邊 **source edge 24** 的中點，world 座標 **(-252.69016375486507, -370.9702959083021)**；這是照片及官方地址導向的 Harbour View Street 入口，**不是假稱 OSM 有入口節點**。入口有四道玻璃門及門柄、石柱、懸吊玻璃雨篷、暖色大堂、`ONE ifc`、`1 HARBOUR VIEW STREET` 及三條紫／紅／黃向量 ribbons。門前 **12.8 m 寬、3 m 深** level forecourt 採 **3.452616040109656 m**，不讓較高 raw DTM 在門前重新形成梯級。
+- 道路及鋪裝：精確塔身只與生成 **records 44957／45026** 的兩段 **5.5 m** service road 相交，均在 **source edge 0**；record index 只作生成資料定位，不當 OSM ID。地面整條 edge 0 保持開敞，上層 soffit／colliders 由 **12 m** 開始；**0.92 倍內縮鋪裝**及入口前庭重新掃描均無車路衝突，瀝青、白色標線及箭咀保持可見。道路中心線本身在塔身外面，沒有把走廊寬度相交誇大成「道路穿過整座塔」。對最高渲染道路剖面扣除 **4.7 m** 車輛包絡後仍有 **6.601588196482504 m** 淨空；塔身及入口前庭均無 clearance 後街燈。
+- 地形及碰撞：中心 raw DTM／施工平台 **3.332616040109656 m**，plaza **3.452616040109656 m**；terrain、ground query 與 road-elevation 共用同一 pad，所選道路仍保持道路 ground。這是可追溯 DTM／模型地面，不是已核實道路工程標高。全幢 **298 個 colliders** 覆蓋地面玻璃及圓柱、五個退台塔身、連續上層裙樓、機房和入口，全部接入 world。
+- 實際驗證：最終 Chromium／WebGL build 在 **900×620** 實看東北／西南全塔、日間冠頂、入口及 service road，以及全塔、冠頂、入口和道路夜景，共 **9 views**。scene 為 **21 landmarks／0 generic buildings**；本幢 **28 meshes、157,378 vertices、68,508 triangles**，`geometryIssues=[]`、`badColliders=0`，全部 **298 colliders** 已接入 world。最高渲染點為世界 **213.33261604010966 m**，扣 datum 恰好 **210 m**。行人／車輛實撞入口門牆的法線距離分別 **0.5799999999999947／2.280000000000018 m**，兩者停止位置 ground 均為 **3.452616040109656 m**；測試車沿保留 service road 實行 **19.349155857884057 m**，沒有被地面牆或鋪裝碰撞擋住。最終 browser run 的 page exception／Three.js shader warning 均為 **0**，只有既有 Google Fonts 外部 resource `ERR_CONNECTION_CLOSED`。專用架構、地形、道路、街燈及 collider 測試 **9／9 pass**，完整 `node --test tests/*.test.cjs` 為 **419／419 pass**。
+- 研究及資產：實看 CTBUH 的正確 One IFC 遠景、SHKP 一期／二期對照、階級方形標準層平面及底座／立面相片，排除把 Two IFC、其他弧形大廈或 AI 城市圖當成 One IFC 的候選圖。研究相片沒有打包，模型不使用照片貼圖或下載 GLTF。
+
+### 參考資料
+
+- OSM 精確塔身、目前 API 幾何及原始 tags：https://www.openstreetmap.org/way/148554945
+  https://api.openstreetmap.org/api/0.6/way/148554945/full.json
+- CTBUH／CVU：210 m architectural／to-tip、38 above／4 below、72,880 m²、1999、All-Steel 及正確 One IFC 相片：
+  https://www.skyscrapercenter.com/building/one-international-finance-centre/1470
+- SHKP 官方：一期地址 **1 Harbour View Street**、一期／二期外觀對照及綜合項目資料：
+  https://www.shkp.com/zh-HK/our-business/hong-kong-properties/offices/one-ifc-and-two-ifc
+- InterAsia：約 21,000 sq ft typical lettable、41層、647,868 sq ft、18部客梯／2部貨梯及階級方形典型平面圖：
+  https://www.interasia.com.hk/en/Hong-Kong-Building/Central/1253/One-International-Finance-Centre
+- 建築師及 One／Two IFC 相片對照：
+  https://www.e-architect.com/hong-kong/2ifc-hong-kong
+- 幕牆承包商 case-study 摘要：pilaster unitized panels、雙層 vision／spandrel glass、玻璃百頁、外置鋁／不銹鋼構件、屋頂鋁 fins 及 1.61 m／4.17 m／4.85 m 模組：
+  http://www.polyucee.hk/cecspoon/lwbt/Case_Studies/IFC2/IFC.html
+- 正確 One IFC 外觀相片（HK ifc Phase1）：
+  https://commons.wikimedia.org/wiki/File:HK_ifc_Phase1.jpg
+
 ## 程式入口
 
 - `hsbc-headquarters-architecture.js`：滙豐純地理位置、OBB、樓層比例及 collider 座標換算，可在 Node 測試。

@@ -85,6 +85,7 @@ export const city = {
       twoPacificPlace: world.twoPacificPlace,
       airside: world.airside,
       leeGardenOne: world.leeGardenOne,
+      oneIfc: world.oneIfc,
       landmarks: world.landmarks,
       stats,
       teleports: TELEPORTS,

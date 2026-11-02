@@ -25,6 +25,7 @@ import {
 } from './two-pacific-place-architecture.js';
 import { AIRSIDE_SITE, AIRSIDE_GROUND_SAMPLE, isAirsidePlazaPoint } from './airside-architecture.js';
 import { LEE_GARDEN_ONE_GROUND_SAMPLE, isLeeGardenOnePlazaPoint } from './lee-garden-one-architecture.js';
+import { ONE_IFC_GROUND_SAMPLE, isOneIfcPlazaPoint } from './one-ifc-architecture.js';
 
 function decodeBytes(base64) {
   const binary = atob(base64);
@@ -92,6 +93,8 @@ const AIRSIDE_PAD_HEIGHT = rawHongKongTerrainHeight(AIRSIDE_GROUND_SAMPLE.x, AIR
 // Lee Garden One uses the OSM building-centre DTM sample. Its exact building / podium ring is the construction pad;
 // the smaller floor-plan-directed office tower is not substituted for that base, and the parking access stays road-priority.
 const LEE_GARDEN_ONE_PAD_HEIGHT = rawHongKongTerrainHeight(LEE_GARDEN_ONE_GROUND_SAMPLE.x, LEE_GARDEN_ONE_GROUND_SAMPLE.z);
+// One IFC uses its stepped-square OSM tower centre. The drive-through keeps the selected road profile above this pad.
+const ONE_IFC_PAD_HEIGHT = rawHongKongTerrainHeight(ONE_IFC_GROUND_SAMPLE.x, ONE_IFC_GROUND_SAMPLE.z);
 
 export function hongKongTerrainHeight(x, z) {
   if (pointInFlatRing(HSBC_SITE.ring, x, z)) return HSBC_PAD_HEIGHT;
@@ -118,6 +121,7 @@ export function hongKongTerrainHeight(x, z) {
   if (pointInFlatRing(TWO_PACIFIC_PLACE_SITE.ring, x, z)) return TWO_PACIFIC_PLACE_PAD_HEIGHT;
   if (isAirsidePlazaPoint(x, z)) return AIRSIDE_PAD_HEIGHT;
   if (isLeeGardenOnePlazaPoint(x, z)) return LEE_GARDEN_ONE_PAD_HEIGHT;
+  if (isOneIfcPlazaPoint(x, z)) return ONE_IFC_PAD_HEIGHT;
   return rawHongKongTerrainHeight(x, z);
 }
 
@@ -149,6 +153,7 @@ export const HONG_KONG_TERRAIN_META = Object.freeze({
   twoPacificPlaceOfficePadHeight: TWO_PACIFIC_PLACE_OFFICE_PAD_HEIGHT,
   airsidePadHeight: AIRSIDE_PAD_HEIGHT,
   leeGardenOnePadHeight: LEE_GARDEN_ONE_PAD_HEIGHT,
+  oneIfcPadHeight: ONE_IFC_PAD_HEIGHT,
   tunnelStats: HK_TERRAIN.stats
 });
 
