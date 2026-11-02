@@ -90,6 +90,7 @@ export const city = {
       ckc2: world.ckc2,
       qgo: world.qgo,
       conrad: world.conrad,
+      hysan: world.hysan,
       landmarks: world.landmarks,
       stats,
       teleports: TELEPORTS,

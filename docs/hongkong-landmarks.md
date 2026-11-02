@@ -1,6 +1,6 @@
 # 香港手建 Landmarks
 
-香港仍採用 `unified-simple` 展示：全港道路及基本地面保留，**不生成普通建築群**。手建地標會逐個加入；目前有滙豐總行大廈、渣打銀行大廈、國際金融中心二期、環球貿易廣場、中銀大廈、中環廣場、中環中心、如心廣場、長江集團中心、K11 Atelier、天璽I、天璽II、名鑄、朗豪坊辦公大樓、御峰、合和中心及新鴻基中心。
+香港仍採用 `unified-simple` 展示：全港道路及基本地面保留，**不生成普通建築群**。手建地標會逐個加入；目前實際整合 **26 幢**，完整名單及逐幢狀態以 Inventory 為準。
 
 建築物進度、**精修**與 **Landmark** 獨立標記，以及道路衝突台帳，見 [香港建築物 Inventory](hongkong-building-inventory.md)。
 
@@ -658,6 +658,37 @@
   https://www.mrmiles.hk/conrad-hong-kong/
   https://www.theluxevoyager.com/luxe-hotels/hong-kong/conrad-hong-kong/
 
+## 希慎廣場 Hysan Place
+
+- 地點及範圍：採目前 **OSM way 755914808 version 4** 的 **27 個獨立節點**（28個 geometry rows 包括閉合點），原始 WGS84 geometry、node IDs、tags、版本及 ODbL attribution 保存在 `hysan-place-architecture.js`；完整 API 回應另存 `tools/data/hongkong/hysan-place-osm-full.json`，由測試逐點核對。實際 commercial／mall ring 面積 **3853.043734533363 m²**；minimum-area OBB 只作定向包絡，中心 **(2495.4342993398463, 230.67767548486006)**、尺寸 **80.4656692931535 × 66.56019021822635 m**、`ry=0.3850659713886759`，OBB 面積 **5355.810254189192 m²** 不冒充標準層面積。
+- 高度、層數及項目團隊：**OSM 197 m／38 levels／地下4層** 與 CTBUH **204.1 m architectural＝to-tip、190.1 m occupied、36 above-ground floors、地下4層、2012 completed** 分列，模型最高點採 CTBUH **204.1 m**。CTBUH **66,511 m²** 與 KPF **66,600 m²／716,000 ft²** 不互相覆寫；**Kohn Pedersen Fox Associates**、**Dennis Lau & Ng Chun Man Architects and Engineers**、零售室內建築師 **Benoy** 及承建商 **Gammon Construction Limited** 分開保存，沒有混寫角色。
+- 建築研究及體量：實看 KPF、Architect Magazine、RIBA 鳥瞰、入口及屋頂農圃相片，確認多個 office／retail／open-space cubes 由 elevated gardens 錯位分隔，而不是單一擠壓玻璃盒。模型由 **lower retail 8–19.2 m、middle retail 24–42 m、upper retail 54–88 m、lower office 88–136 m、upper office 148–190.1 m** 五個不同縮放的 ring 組成；**19.2–24 m Garden of Eden、42–54 m retail sky garden、136–148 m office sky garden** 是真正留空的綠化／通風層。上層 outlines 是照片導向視覺重建，不冒充 OSM surveyed floor plans。
+- 立面及日夜：商場採較粗白色橫帶、直向金屬面板與藍綠玻璃，辦公段改用較細橫框及密集直向 mullions；共 **4,389 塊玻璃、438 塊金屬面板、945 道水平 fins**。三層花園有實際種植槽、樹木、玻璃欄杆及退後核心，外置斜向扶手電梯廊有玻璃側板、支撐及踏步。日間只保留材質色差，夜間部分辦公／零售窗及入口亮暖光，沒有整幢均勻發光。**36 道視覺 courses** 包括地面層，花園不另算佔用樓層，亦不把 OSM38與CTBUH36合併。
+- 真實入口及標誌：主商場門採 **node 7060156467 `entrance=main`**，西側辦公入口採 **7060156468**，南入口採 **7060156469**，停車入口採 **1966250272**；**7060182527** 是 Jardine’s Crescent **F2 subway entrance**，沒有冒充商場門。主入口有雙向外置扶手電梯、玻璃門、石飾門架、Hysan device 及中英字牌；西入口有石飾牆、玻璃轉門及雙語字牌，南門按短邊尺度另行處理。中文以內嵌向量筆畫生成，不依賴瀏覽器 CJK font。首次實看發現主英文字牌被8 m橫帶遮住，已把字牌移到 fascia／fins 前方並完成最終日夜 focused re-render。
+- 地面及道路：中心 raw DTM／施工平台為 **5.676151158982634 m**，plaza 抬高 **0.12 m**，不是已核實道路工程標高。原 ring 只與 generated **record 44763 segment 0** 的無名 **8.4 m** 服務車路相交；依 **建築物優先、道路配合**，建築、原道路、瀝青及白色標線均保留，地面有 **8 road-open bays／6 entrance bays／91 closed bays／113 根避車柱**，道路 ground 不被 plaza 覆蓋。最高衝突道路剖面 **5.650170480726311 m**；8 m soffit 扣0.36 m lintel 後淨空 **7.665980678256323 m**，大於 **4.7 m** 車輛包絡。原 site 無 clearance 後街燈衝突。
+- 屋頂：上部辦公屋面設實際種植床、作物行、通路、綠化機房及開敞金屬冠頂；最高支撐止於 **204.1 m**，沒有加入無來源天線。屋頂農圃依航拍照片重建，尺寸屬視覺比例而非測量圖則。
+- 碰撞及實際驗證：最終 **436 個 colliders** 全部接入 world。Chromium／WebGL 完成 **12-view** 日夜全塔、前後立面、兩個入口、斜向電梯廊、三層花園、屋頂農圃及停車通道檢查，再完成 **5-view** 最終全塔／入口字牌日夜 focused re-render。最終 audit 為 **97 meshes、151,095 vertices、58,251 triangles**，scene **26 landmarks／0 generic buildings**，`geometryIssues=[]`、`badColliders=0`；最高世界座標 **209.77615726249826 m**，扣 datum **204.10000610351562 m**（Float32 精度內的204.1 m）。行人實撞主門的法線距離 **0.3000000000000155 m**、ground **5.796151158982634 m**；車輛在門外停止，法線距離 **2.0000000000000164 m**。保留服務車路實駛 **18.715233911518308 m**，`blocked=false`，道路 ground **5.650170480726311 m**。page exception／Three.js shader error 均為 **0**；另有既有 Google Fonts 外部 resource `ERR_CONNECTION_CLOSED` 及 SwiftShader `outsideRenderPass queueSerial` performance warnings，兩者已與實際渲染結果分開記錄。專測 **9／9 pass**，完整 `node --test tests/*.test.cjs` **464／464 pass**。
+- 資產及 runtime：研究相片只作目視及比例研究，沒有打包進 runtime；玻璃、石材、花園、字牌、入口及屋頂均為程序化 geometry／canvas，不使用照片貼圖或下載 GLTF。最後 self-contained runtime 為 **158 modules、31,427,324 bytes**，無 external module imports。
+
+### 參考資料
+
+- OSM 精確建築 ring、入口 nodes 及原始 full JSON：
+  https://www.openstreetmap.org/way/755914808
+  https://api.openstreetmap.org/api/0.6/way/755914808/full.json
+- CTBUH：204.1 m、190.1 m occupied、36層、地下4層、66,511 m²、2012及項目團隊：
+  https://www.skyscrapercenter.com/building/hysan-place/8917
+- KPF：shifting forms、vertical gardens、通風開口及66,600 m²：
+  https://www.kpf.com/project/hysan-place
+- Architect Magazine：office／retail／open-space cubes 與 elevated gardens：
+  https://www.architectmagazine.com/project-gallery/hysan-place/
+- Gammon：36層混合辦公／零售、4層地庫及2012年8月完成：
+  https://www.gammonconstruction.com/en/project-details.php?project_id=45
+- RIBA 鳥瞰及屋頂農圃航拍研究：
+  https://www.riba.org/news/the-lee-gardens-area-hong-kong/
+  https://www.scmp.com/business/article/3183266/rooftop-farms-hong-kong-skyscrapers-provide-fruitful-and-nutritious-hobby
+- 入口、外置扶手電梯及石飾辦公轉門相片研究（不進 runtime）：
+  https://topfloor.it/en/portfolio/hysan-place/
+
 ## 程式入口
 
 - `hsbc-headquarters-architecture.js`：滙豐純地理位置、OBB、樓層比例及 collider 座標換算，可在 Node 測試。
@@ -708,4 +739,6 @@
 - `qgo-world.js`：高座綠色窗帶、白色混凝土及遮陽板、機電百頁、開敞道路裙樓、法院道自動電梯入口、LED龍形冠頂、日夜材質、碰撞及 stats。
 - `conrad-architecture.js`：港麗31頂點弧形 OSM 來源、來源高度／層數、法院道入口 frame、三級台階、道路走廊及 collider 座標換算。
 - `conrad-world.js`：港麗藍綠弧形玻璃、白色 ribbons／主 fins、單一設備帶、紅色曲面冠頂字牌、法院道大理石 porte-cochere、日夜材質、碰撞及 stats。
-- `simple-world.js`：只整合這二十五個 authored landmarks；普通 `buildings` 仍為 0。
+- `hysan-place-architecture.js`：希慎27頂點 OSM 來源、分列高度／層數／面積、五個錯位體量、三層花園、四個來源入口、道路走廊及 collider 座標換算。
+- `hysan-place-world.js`：希慎商場／辦公幕牆、斜向扶手電梯廊、三層花園、雙語向量字牌、玻璃轉門、屋頂農圃、開敞冠頂、日夜材質、碰撞及 stats。
+- `simple-world.js`：只整合這二十六個 authored landmarks；普通 `buildings` 仍為 0。

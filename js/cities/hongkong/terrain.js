@@ -30,6 +30,7 @@ import { CHAMPION_TOWER_GROUND_SAMPLE, isChampionTowerPlazaPoint } from './champ
 import { CKC2_GROUND_SAMPLE, isCkc2PlazaPoint } from './ckc2-architecture.js';
 import { QGO_GROUND_SAMPLE, QGO_ENTRANCE_GROUND_SAMPLE, isQgoPlazaPoint, isQgoEntranceForecourtPoint } from './qgo-architecture.js';
 import { CONRAD_GROUND_SAMPLE, CONRAD_ENTRANCE_GROUND_SAMPLE, CONRAD_ENTRANCE_LANDING_RISE, conradEntranceStepDrop, isConradPlazaPoint, isConradEntranceForecourtPoint } from './conrad-architecture.js';
+import { HYSAN_GROUND_SAMPLE, isHysanPlazaPoint } from './hysan-place-architecture.js';
 
 function decodeBytes(base64) {
   const binary = atob(base64);
@@ -110,6 +111,8 @@ const QGO_ENTRANCE_PAD_HEIGHT = rawHongKongTerrainHeight(QGO_ENTRANCE_GROUND_SAM
 // the Supreme Court Road door has a DTM-anchored, photo-directed stepped landing above the driveway, not a surveyed road level.
 const CONRAD_PAD_HEIGHT = rawHongKongTerrainHeight(CONRAD_GROUND_SAMPLE.x, CONRAD_GROUND_SAMPLE.z);
 const CONRAD_ENTRANCE_PAD_HEIGHT = rawHongKongTerrainHeight(CONRAD_ENTRANCE_GROUND_SAMPLE.x, CONRAD_ENTRANCE_GROUND_SAMPLE.z) + CONRAD_ENTRANCE_LANDING_RISE;
+// Hysan Place uses its commercial-building centre DTM sample. The parking-access carriageway remains road-priority.
+const HYSAN_PAD_HEIGHT = rawHongKongTerrainHeight(HYSAN_GROUND_SAMPLE.x, HYSAN_GROUND_SAMPLE.z);
 
 export function hongKongTerrainHeight(x, z) {
   if (pointInFlatRing(HSBC_SITE.ring, x, z)) return HSBC_PAD_HEIGHT;
@@ -143,6 +146,7 @@ export function hongKongTerrainHeight(x, z) {
   if (isQgoPlazaPoint(x, z)) return QGO_PAD_HEIGHT;
   if (isConradEntranceForecourtPoint(x, z)) return CONRAD_ENTRANCE_PAD_HEIGHT - conradEntranceStepDrop(x, z);
   if (isConradPlazaPoint(x, z)) return CONRAD_PAD_HEIGHT;
+  if (isHysanPlazaPoint(x, z)) return HYSAN_PAD_HEIGHT;
   return rawHongKongTerrainHeight(x, z);
 }
 
@@ -181,6 +185,7 @@ export const HONG_KONG_TERRAIN_META = Object.freeze({
   qgoEntrancePadHeight: QGO_ENTRANCE_PAD_HEIGHT,
   conradPadHeight: CONRAD_PAD_HEIGHT,
   conradEntrancePadHeight: CONRAD_ENTRANCE_PAD_HEIGHT,
+  hysanPadHeight: HYSAN_PAD_HEIGHT,
   tunnelStats: HK_TERRAIN.stats
 });
 
