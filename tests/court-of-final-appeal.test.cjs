@@ -164,7 +164,7 @@ test('recessed arches are real holes and night materials retain granite, glass, 
   assert.match(world, /classicalFigure\(themisScale, true\)/); assert.match(world, /blindfold/); assert.match(world, /cfaGroundHeightAt/);
 });
 
-test('CFA is the thirty-first authored landmark and keeps its authoritative progress-table row', () => {
+test('CFA keeps its authored landmark integration and authoritative progress-table row', () => {
   const simple = fs.readFileSync(path.join(root, 'js/cities/hongkong/simple-world.js'), 'utf8');
   const debug = fs.readFileSync(path.join(root, 'js/cities/hongkong/index.js'), 'utf8');
   assert.match(simple, /buildCourtOfFinalAppeal\(scene, \{ groundOffset: HONG_KONG_TERRAIN_META\.cfaPadHeight \}\)/);
@@ -175,7 +175,7 @@ test('CFA is the thirty-first authored landmark and keeps its authoritative prog
   const rows = inventory.split(/\r?\n/).filter((line) => /^\| `HK-B\d{4}` /.test(line));
   const entry = rows.find((row) => row.startsWith('| `HK-B0092`'));
   assert.match(entry, /終審法院 The Court of Final Appeal/); assert.match(entry, /已加入/); assert.match(entry, /court-of-final-appeal-world\.js/);
-  assert.equal(rows.filter((row) => row.includes('| 已加入 |')).length, 31);
+  assert.equal(rows.filter((row) => row.includes('| 已加入 |')).length, 32);
   assert.match(rows.find((row) => row.startsWith('| `HK-B0031`')), /待製作/);
   assert.match(rows.find((row) => row.startsWith('| `HK-B0094`')), /待製作/);
 });

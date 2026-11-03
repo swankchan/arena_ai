@@ -96,6 +96,7 @@ export const city = {
       oneExchange: world.oneExchange,
       twoExchange: world.twoExchange,
       courtOfFinalAppeal: world.courtOfFinalAppeal,
+      hkcec: world.hkcec,
       landmarks: world.landmarks,
       stats,
       teleports: TELEPORTS,

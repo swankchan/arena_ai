@@ -1,6 +1,6 @@
 # 香港手建 Landmarks
 
-香港仍採用 `unified-simple` 展示：全港道路及基本地面保留，**不生成普通建築群**。手建地標會逐個加入；目前實際整合 **31 幢**，完整名單及逐幢狀態以 Inventory 為準。
+香港仍採用 `unified-simple` 展示：全港道路及基本地面保留，**不生成普通建築群**。手建地標會逐個加入；目前實際整合 **32 幢**，完整名單及逐幢狀態以 Inventory 為準。
 
 建築物進度、**精修**與 **Landmark** 獨立標記，以及道路衝突台帳，見 [香港建築物 Inventory](hongkong-building-inventory.md)。
 
@@ -857,6 +857,36 @@
   https://en.wikipedia.org/wiki/Court_of_Final_Appeal_Building
   https://archjourney.org/projects/hong-kong-court-of-final-appeal/
 
+## 香港會議展覽中心連會景閣 HKCEC & Convention Plaza Apartments
+
+- **範圍及身份**：用戶所稱「會展閣」按名稱及官方物業資料理解為 **會景閣 Convention Plaza Apartments（`HK-B0043`）**；不是同在上蓋、仍待製作的 **會展廣場辦公大樓（`HK-B0034`、way 107497689）**，也不是 Grand Hyatt 或 Renaissance Harbour View。今次一個 Landmark 同時包括會景閣及其所連接的 HKCEC 新翼、舊翼和中庭，四個建築元件各自保留，沒有把兩幢上蓋物業合併或把場館偷換成其他 inventory ID。
+- **精確用地及版本**：`hkcec-architecture.js` 保存四個目前 OSM ways 的原始經緯度、node IDs、tags、API 版本、extract hash 及 ODbL attribution：新翼 **26490011 v20**（64 geometry rows、**34,600.3389 m²**）、舊翼 **26490161 v13**（31 rows、**19,189.8889 m²**）、中庭 **79444510 v14**（25 rows、**11,484.9640 m²**）及會景閣 **107497692 v8**（14 rows、**1,797.5302 m²**）。各 ring 用同一城市 georef 及 minimum-area OBB 建 frame，逐點 round-trip 測試，不以一個長方體覆蓋整片會展用地。
+- **新翼飛鳥屋頂及幕牆**：SOM／Wong & Ouyang 的 1997 新翼資料及實看照片支持海鳥概念、中央大拱頂和兩側較低外挑翼頂，而不是單一半圓拱殼。模型用三層獨立曲面銀灰金屬屋頂、中央約 **80 m** 視覺跨距、**1,121** 段企口、曲面白色檐口及 **55 m** 總高控制；曲面玻璃有 **1,064** 幅面板，其中 **266** 幅延伸至非等高屋頂下緣。SOM 的 **6層／55 m／158,000 m²／80 m clear span** 與 OSM `building:levels=5`、`roof:levels=2` 分列，沒有混成假精確工程剖面。
+- **舊翼及中庭**：舊翼採淺灰水平厚帶、藍綠 ribbon glazing、**900** 幅窗板、平屋頂機房、天窗及 **19** 組機電風扇。中庭按 `building=bridge` 保持地面車路上蓋性質，以三層玻璃、**690** 幅面板、屋頂花園、**9** 道白色拱桁架、縱向 purlins、曲面玻璃、9 棵樹及6張長椅表達2009擴建；Wong & Ouyang 的官方 **3層／19,400 m²／約80 m跨距** 與 OSM `building:levels=8`、`fixme=Check floors` 不互相覆寫。
+- **會景閣立面及屋頂**：OSM `height=164`、`building:levels=47`、`building:min_level=10` 與官方1989落成、約600個服務式住宅及 **11–46樓共35個住宅樓層** 分開保存。塔身由地台上 **34 m** 起，精確13邊折角 ring 上有 **35 courses、5,110 幅藍綠玻璃、5,110 條細直棂及455道寬淺灰水平帶**。主屋面 **158 m**、低矮機電冠頂止於 **164 m** 是保守視覺控制；全塔屋頂沒有另稱已核實竣工圖，亦不添加無依據尖頂。
+- **入口、道路及碰撞**：新翼／舊翼／中庭／會景閣的道路掃描分別保留 **25／30／39／4** 個衝突 segment，不刪全港道路、隧道或白色標線。上蓋 soffit 為地台上 **8 m**，高於 **4.7 m** 車輛包絡；地面只放經全港非隧道道路逐點掃描的 **217** 支柱及 **366** 幅安全幕牆 panels，後者合成 **84** 個 OBB colliders。港灣道主入口及會景閣入口採照片導向 source edges **9／11**，不是假稱 OSM 門節點；分別保留 **6.5／15.8 m** 中央有蓋通道，玻璃門、石材側牆及會景閣紅毯放在側 bays，圓柱及字牌不橫封車道。總計 **452 colliders** 接入 world。
+- **地勢及日夜**：四座共用舊翼港灣道入口的 raw DTM 採樣 **5.000 m**，非道路平台 **5.150 m**；這是場景施工 datum，不是已核實道路工程標高。`terrain.js`、`road-elevation.js` 及 `simple-world.js` 讓所選道路保持原 profile 並優先於 plaza。日間為銀灰金屬、淺灰水平帶及藍綠反光玻璃；夜間僅部分窗格以 `aLit` 產生暖光，入口 canopy 有柔和暖燈，整幢石材及屋頂不均勻自發光。
+- **最終瀏覽器驗證**：最新 runtime 在 Chromium／WebGL **700×500** 完成日間全景、無遮擋會景閣、會景閣入口、HKCEC 主入口及夜景共 **5 views** 實看。全景城市為 **32 landmarks**；本綜合 Landmark 保持 **1 entry／4 components**，實際為 **58 meshes、81,676 triangles、452 colliders**，`invalidValues=0`。地面 **366 panels／84 OBB** 與統計一致；主入口及會景閣旁兩條真實車路的中央／左右共 **6** 個取樣全部保持道路 ground **5.025 m**、地面碰撞阻擋 **0**，兩個入口中央通道取樣阻擋亦為 **0**。入口門牆、圓柱、紅毯及字牌另由全段道路測試檢查，字牌置於 canopy 外緣而不再被 slab 遮擋。page exception 為 **0**；只有既有 Google Fonts 外部 request `ERR_CONNECTION_CLOSED`。HKCEC 架構／道路／入口專測 **13／13**，完整 `node --test tests/*.test.cjs` 為 **519／519 pass**。
+- **資產**：所有曲面、幕牆、桁架、屋頂設備、花園、入口及雙語字牌均為程序化 geometry／Canvas。研究照片只作外觀及比例依據，沒有打包進應用程式，也不依賴外鏈圖片或下載 GLTF。
+
+### 參考資料
+
+- SOM 新翼項目資料（1997、55 m、6層、屋頂及80 m無柱跨度）：
+  https://www.som.com/projects/hong-kong-convention-and-exhibition-centre/
+- Wong & Ouyang（海鳥概念、三座上下疊置展覽廳、2009中庭擴建、屋頂花園及拱桁架照片）：
+  https://www.wongouyang.com/projects/hong-kong-convention-and-exhibition-centre/
+- HKCEC Fast Facts（初期結構及相鄰 Convention Plaza 建築師資料）：
+  https://www.hkcec.com/sites/default/files/imce/PDF/Fast%20Facts%20FY14-15%20(Eng)_WS0813.pdf
+- 會景閣官方資料（1989、服務式住宅及樓層口径）：
+  https://conventionplaza.hk/convention-plaza-apartments/
+- 港灣道1號、外觀、石材基座、圓柱及入口照片：
+  https://www.28hse.com/estate/detail/convention-plaza-831
+- OSM：
+  https://www.openstreetmap.org/way/26490011
+  https://www.openstreetmap.org/way/26490161
+  https://www.openstreetmap.org/way/79444510
+  https://www.openstreetmap.org/way/107497692
+
 ## 程式入口
 
 - `hsbc-headquarters-architecture.js`：滙豐純地理位置、OBB、樓層比例及 collider 座標換算，可在 Node 測試。
@@ -919,4 +949,6 @@
 - `two-exchange-square-world.js`：Two Exchange Square 弧面銀玻璃／粉紅花崗岩立面、開放總站上蓋、長向階梯屋頂、曲面玻璃入口、Exchange Square 字樣、六區升降機目錄、雙扶手電梯、線性水景、日夜材質、碰撞及 stats。
 - `court-of-final-appeal-architecture.js`：終審法院七頂點 OSM 用地、OBB／facade frames、照片導向入口、DTM 平台及 ground／collider 座標換算。
 - `court-of-final-appeal-world.js`：終審法院四面拱廊及巨柱、Ionic／Doric 柱式、花崗岩、窗洞、entablature、pediment、皇家紋章、Themis、穹頂鼓座、Crown、中式筒瓦、日夜材質、碰撞及 stats。
-- `simple-world.js`：只整合這三十一個 authored landmarks；普通 `buildings` 仍為 0。
+- `hkcec-architecture.js`：HKCEC 新翼／舊翼／中庭及會景閣四個目前 OSM rings、版本、OBB／入口 frames、DTM 地台、避車柱位及地面幕牆、道路／collider 座標換算。
+- `hkcec-world.js`：新翼三層飛鳥曲面屋頂及弧形玻璃、舊翼水平帶及機電屋頂、中庭花園與白色拱桁架、會景閣35層藍綠幕牆、側 bays 入口、日夜材質、道路 portals、碰撞及 stats。
+- `simple-world.js`：只整合這三十二個 authored landmarks；普通 `buildings` 仍為 0。

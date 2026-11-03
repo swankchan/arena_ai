@@ -36,6 +36,7 @@ import { HENDERSON_GROUND_SAMPLE, isHendersonPlazaPoint } from './the-henderson-
 import { ONE_EXCHANGE_GROUND_SAMPLE, isOneExchangePlazaPoint } from './one-exchange-square-architecture.js';
 import { TWO_EXCHANGE_GROUND_SAMPLE, isTwoExchangePlazaPoint } from './two-exchange-square-architecture.js';
 import { CFA_GROUND_SAMPLE, isCourtOfFinalAppealPoint } from './court-of-final-appeal-architecture.js';
+import { HKCEC_GROUND_SAMPLE, isHkcecPoint } from './hkcec-architecture.js';
 
 function decodeBytes(base64) {
   const binary = atob(base64);
@@ -127,6 +128,8 @@ const ONE_EXCHANGE_PAD_HEIGHT = rawHongKongTerrainHeight(ONE_EXCHANGE_GROUND_SAM
 const TWO_EXCHANGE_PAD_HEIGHT = rawHongKongTerrainHeight(TWO_EXCHANGE_GROUND_SAMPLE.x, TWO_EXCHANGE_GROUND_SAMPLE.z);
 // The declared-monument court uses its own building-centre DTM sample; surrounding carriageways stay outside its OSM ring.
 const CFA_PAD_HEIGHT = rawHongKongTerrainHeight(CFA_GROUND_SAMPLE.x, CFA_GROUND_SAMPLE.z);
+// HKCEC and the apartment podium share the Old Wing Harbour Road entrance DTM sample. This is a construction datum, not a surveyed road-engineering level.
+const HKCEC_PAD_HEIGHT = rawHongKongTerrainHeight(HKCEC_GROUND_SAMPLE.x, HKCEC_GROUND_SAMPLE.z);
 
 export function hongKongTerrainHeight(x, z) {
   if (pointInFlatRing(HSBC_SITE.ring, x, z)) return HSBC_PAD_HEIGHT;
@@ -166,6 +169,7 @@ export function hongKongTerrainHeight(x, z) {
   if (isOneExchangePlazaPoint(x, z)) return ONE_EXCHANGE_PAD_HEIGHT;
   if (isTwoExchangePlazaPoint(x, z)) return TWO_EXCHANGE_PAD_HEIGHT;
   if (isCourtOfFinalAppealPoint(x, z)) return CFA_PAD_HEIGHT;
+  if (isHkcecPoint(x, z)) return HKCEC_PAD_HEIGHT;
   return rawHongKongTerrainHeight(x, z);
 }
 
@@ -210,6 +214,7 @@ export const HONG_KONG_TERRAIN_META = Object.freeze({
   oneExchangePadHeight: ONE_EXCHANGE_PAD_HEIGHT,
   twoExchangePadHeight: TWO_EXCHANGE_PAD_HEIGHT,
   cfaPadHeight: CFA_PAD_HEIGHT,
+  hkcecPadHeight: HKCEC_PAD_HEIGHT,
   tunnelStats: HK_TERRAIN.stats
 });
 
