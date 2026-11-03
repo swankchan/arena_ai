@@ -154,6 +154,7 @@ test('unified simple mode adds only the authored landmarks and keeps generic bui
   assert.match(source, /buildConrad\(scene, \{ groundOffset: HONG_KONG_TERRAIN_META\.conradPadHeight, entranceGroundOffset: HONG_KONG_TERRAIN_META\.conradEntrancePadHeight \}\)/);
   assert.match(source, /buildHysanPlace\(scene, \{ groundOffset: HONG_KONG_TERRAIN_META\.hysanPadHeight \}\)/);
   assert.match(source, /buildTwoTaikooPlace\(scene, \{ groundOffset: HONG_KONG_TERRAIN_META\.twoTaikooPadHeight \}\)/);
+  assert.match(source, /buildTheHenderson\(scene, \{ groundOffset: HONG_KONG_TERRAIN_META\.hendersonPadHeight \}\)/);
   assert.match(source, /isHsbcPlazaPoint\(x, z\)/);
   assert.match(source, /isTwoIfcPlazaPoint\(x, z\)/);
   assert.match(source, /isIccPlazaPoint\(x, z\)/);
@@ -180,6 +181,7 @@ test('unified simple mode adds only the authored landmarks and keeps generic bui
   assert.match(source, /!groundUsesRoad \? conrad\.groundHeightAt\(x, z, qgoGround\) : qgoGround/);
   assert.match(source, /!groundUsesRoad \? hysan\.groundHeightAt\(x, z, conradGround\) : conradGround/);
   assert.match(source, /!groundUsesRoad \? twoTaikoo\.groundHeightAt\(x, z, hysanGround\) : hysanGround/);
+  assert.match(source, /!groundUsesRoad \? theHenderson\.groundHeightAt\(x, z, twoTaikooGround\) : twoTaikooGround/);
   assert.match(source, /scbEntranceGroundHeight\(x, z, crossingGround, standardChartered\.groundOffset\)/);
   assert.match(source, /\.\.\.hsbc\.stats/);
   assert.match(source, /\.\.\.standardChartered\.stats/);
@@ -208,6 +210,7 @@ test('unified simple mode adds only the authored landmarks and keeps generic bui
   assert.match(source, /\.\.\.conrad\.stats/);
   assert.match(source, /\.\.\.hysan\.stats/);
   assert.match(source, /\.\.\.twoTaikoo\.stats/);
+  assert.match(source, /\.\.\.theHenderson\.stats/);
   assert.match(source, /\.\.\.hsbc\.colliders/);
   assert.match(source, /\.\.\.standardChartered\.colliders/);
   assert.match(source, /\.\.\.twoIfc\.colliders/);
@@ -235,9 +238,10 @@ test('unified simple mode adds only the authored landmarks and keeps generic bui
   assert.match(source, /\.\.\.conrad\.colliders/);
   assert.match(source, /\.\.\.hysan\.colliders/);
   assert.match(source, /\.\.\.twoTaikoo\.colliders/);
+  assert.match(source, /\.\.\.theHenderson\.colliders/);
   assert.match(source, /landmarks: hsbc\.landmarks\.length \+ standardChartered\.landmarks\.length \+ twoIfc\.landmarks\.length \+ icc\.landmarks\.length \+ bankOfChina\.landmarks\.length \+ centralPlaza\.landmarks\.length \+ theCenter\.landmarks\.length \+ ninaTower\.landmarks\.length \+ cheungKong\.landmarks\.length \+ k11Atelier\.landmarks\.length \+ cullinanI\.landmarks\.length \+ cullinanII\.landmarks\.length \+ masterpiece\.landmarks\.length \+ langhamPlace\.landmarks\.length \+ summit\.landmarks\.length \+ hopewell\.landmarks\.length \+ sunHungKai\.landmarks\.length \+ twoPacificPlace\.landmarks\.length \+ airside\.landmarks\.length \+ leeGardenOne\.landmarks\.length \+ oneIfc\.landmarks\.length \+ championTower\.landmarks\.length \+ ckc2\.landmarks\.length \+ qgo\.landmarks\.length \+ conrad\.landmarks\.length \+ hysan\.landmarks\.length \+ twoTaikoo\.landmarks\.length/);
   assert.match(source, /buildings: 0/);
-  assert.match(source, /landmarks: \[\.\.\.hsbc\.landmarks, \.\.\.standardChartered\.landmarks, \.\.\.twoIfc\.landmarks, \.\.\.icc\.landmarks, \.\.\.bankOfChina\.landmarks, \.\.\.centralPlaza\.landmarks, \.\.\.theCenter\.landmarks, \.\.\.ninaTower\.landmarks, \.\.\.cheungKong\.landmarks, \.\.\.k11Atelier\.landmarks, \.\.\.cullinanI\.landmarks, \.\.\.cullinanII\.landmarks, \.\.\.masterpiece\.landmarks, \.\.\.langhamPlace\.landmarks, \.\.\.summit\.landmarks, \.\.\.hopewell\.landmarks, \.\.\.sunHungKai\.landmarks, \.\.\.twoPacificPlace\.landmarks, \.\.\.airside\.landmarks, \.\.\.leeGardenOne\.landmarks, \.\.\.oneIfc\.landmarks, \.\.\.championTower\.landmarks, \.\.\.ckc2\.landmarks, \.\.\.qgo\.landmarks, \.\.\.conrad\.landmarks, \.\.\.hysan\.landmarks, \.\.\.twoTaikoo\.landmarks\]/);
+  assert.match(source, /landmarks: \[\.\.\.hsbc\.landmarks, \.\.\.standardChartered\.landmarks, \.\.\.twoIfc\.landmarks, \.\.\.icc\.landmarks, \.\.\.bankOfChina\.landmarks, \.\.\.centralPlaza\.landmarks, \.\.\.theCenter\.landmarks, \.\.\.ninaTower\.landmarks, \.\.\.cheungKong\.landmarks, \.\.\.k11Atelier\.landmarks, \.\.\.cullinanI\.landmarks, \.\.\.cullinanII\.landmarks, \.\.\.masterpiece\.landmarks, \.\.\.langhamPlace\.landmarks, \.\.\.summit\.landmarks, \.\.\.hopewell\.landmarks, \.\.\.sunHungKai\.landmarks, \.\.\.twoPacificPlace\.landmarks, \.\.\.airside\.landmarks, \.\.\.leeGardenOne\.landmarks, \.\.\.oneIfc\.landmarks, \.\.\.championTower\.landmarks, \.\.\.ckc2\.landmarks, \.\.\.qgo\.landmarks, \.\.\.conrad\.landmarks, \.\.\.hysan\.landmarks, \.\.\.twoTaikoo\.landmarks, \.\.\.theHenderson\.landmarks\]/);
   assert.match(source, /createHongKongTrafficAids\(scene, \{/);
   assert.match(source, /getGroundHeight, getSurfaceHeight: getRoadPaintHeight, surfaceY: FULL_WORLD_HEIGHT\.road/);
   assert.match(source, /\.\.\.trafficAids\.stats/);
@@ -267,6 +271,7 @@ test('unified simple mode adds only the authored landmarks and keeps generic bui
   assert.match(pack, /conrad: world\.conrad/);
   assert.match(pack, /hysan: world\.hysan/);
   assert.match(pack, /twoTaikoo: world\.twoTaikoo/);
+  assert.match(pack, /theHenderson: world\.theHenderson/);
 });
 
 test('Standard Chartered preserves its OSM site while the tower turns 35 degrees towards HSBC', () => {
@@ -560,7 +565,7 @@ test('building inventory independently tracks scene status, refinement and landm
   assert.deepEqual(parsed.map((row) => row.id), Array.from({ length: 100 }, (_, index) =>
     `\`HK-B${String(index + 1).padStart(4, '0')}\``));
   assert.equal(new Set(parsed.map((row) => row.id)).size, 100);
-  assert.deepEqual(parsed.slice(0, 27).map(({ id, status, refined, landmark }) => ({ id, status, refined, landmark })), [
+  assert.deepEqual(parsed.slice(0, 28).map(({ id, status, refined, landmark }) => ({ id, status, refined, landmark })), [
     { id: '`HK-B0001`', status: '已加入', refined: '**是**', landmark: '**是**' },
     { id: '`HK-B0002`', status: '已加入', refined: '**是**', landmark: '**是**' },
     { id: '`HK-B0003`', status: '已加入', refined: '**是**', landmark: '**是**' },
@@ -587,9 +592,10 @@ test('building inventory independently tracks scene status, refinement and landm
     { id: '`HK-B0024`', status: '已加入', refined: '**是**', landmark: '**是**' },
     { id: '`HK-B0025`', status: '已加入', refined: '**是**', landmark: '**是**' },
     { id: '`HK-B0026`', status: '已加入', refined: '**是**', landmark: '**是**' },
-    { id: '`HK-B0027`', status: '已加入', refined: '**是**', landmark: '**是**' }
+    { id: '`HK-B0027`', status: '已加入', refined: '**是**', landmark: '**是**' },
+    { id: '`HK-B0028`', status: '已加入', refined: '**是**', landmark: '**是**' }
   ]);
-  assert.ok(parsed.slice(27).every((row) => row.status === '待製作' && row.refined === '否'
+  assert.ok(parsed.slice(28).every((row) => row.status === '待製作' && row.refined === '否'
     && row.landmark === '否' && row.implementation === '—'), 'OSM candidates are not presented as integrated or refined');
   assert.ok(parsed.every((row) => row.source && row.source !== '—'));
   assert.match(rows[0], /滙豐總行大廈 HSBC Main Building/);
@@ -644,9 +650,11 @@ test('building inventory independently tracks scene status, refinement and landm
   assert.match(rows[25], /hysan-place-world\.js/);
   assert.match(rows[26], /太古坊二座 Two Taikoo Place/);
   assert.match(rows[26], /two-taikoo-place-world\.js/);
+  assert.match(rows[27], /The Henderson/);
+  assert.match(rows[27], /the-henderson-world\.js/);
   assert.match(inventory, /\| 施工清單總數 \| 100 \|/);
-  assert.match(inventory, /\| 已加入場景的建築物 \| 27 \|/);
-  assert.match(inventory, /\| 待製作 \| 73 \|/);
+  assert.match(inventory, /\| 已加入場景的建築物 \| 28 \|/);
+  assert.match(inventory, /\| 待製作 \| 72 \|/);
   assert.match(inventory, /367\.4 m†/);
   assert.match(inventory, /沒有 `height` tag/);
   assert.match(inventory, /373\.9 m‡/);

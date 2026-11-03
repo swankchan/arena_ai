@@ -1,6 +1,6 @@
 # 香港手建 Landmarks
 
-香港仍採用 `unified-simple` 展示：全港道路及基本地面保留，**不生成普通建築群**。手建地標會逐個加入；目前實際整合 **27 幢**，完整名單及逐幢狀態以 Inventory 為準。
+香港仍採用 `unified-simple` 展示：全港道路及基本地面保留，**不生成普通建築群**。手建地標會逐個加入；目前實際整合 **28 幢**，完整名單及逐幢狀態以 Inventory 為準。
 
 建築物進度、**精修**與 **Landmark** 獨立標記，以及道路衝突台帳，見 [香港建築物 Inventory](hongkong-building-inventory.md)。
 
@@ -718,6 +718,41 @@
 - 全塔、弧形角、斜向基座、入口、金色吊燈及拱形行人橋相片研究（不進 runtime）：
   https://www.krisprovoost.com/twotaikooplace
 
+## The Henderson
+
+- 地點及範圍：採目前 **OSM way 26434768 version 17** 的 **58 個獨立節點**（59個 geometry rows 包括閉合點），原始 WGS84 geometry、node IDs、tags、版本及 ODbL attribution 保存在 `the-henderson-architecture.js`；完整 API 回應另存 `tools/data/hongkong/the-henderson-osm-full.json`，由測試逐點核對。這是美利道2號的 curved office ring，不是整片土地用途範圍。實際 ring 面積 **1713.7690360519955 m²**；minimum-area OBB 只作定向包絡，中心 **(261.19656609589896, 192.79463428595886)**、尺寸 **39.33343974557545 × 47.06161305322048 m**、`ry=-0.27710755358518435`，OBB 面積不冒充標準層面積。
+- 高度、層數及面積 conventions：**OSM／WSP／Discover Hong Kong 190 m** 與 **seele／Lichtvision 200 m** 分列，模型最高點採 **190 m**，沒有平均、取整或疊加。OSM／ZHA **36層／地下5層**、ZHA **2018–2025**、Hip Hing **2024完成／typical 6/F–38/F**、官方 workplace **typical 6/F–37/F／22/F Sky Garden／38/F Summit 38／39/F Cloud 39** 及 seele 宴會廳 **37/38** 均保留各自口径。WSP **43,200 m² GFA** 獨立保存；31道視覺幕牆 courses 不冒充官方樓層標高。
+- 建築研究及立面：實看 ZHA、官方、seele、CIBSE 及完工攝影的全塔、基座、入口、塔冠與 Art Garden 日夜資料，以 Bauhinia 花蕾的三組銀色花瓣體量、低反射四層雙夾膠曲面玻璃、東側核心筒、六支 mega-columns、收腰及開敞花園作主形態。塔身不是單一拉伸盒：三段立面各有鼓肚及豎向凹槽，玻璃色差克制，凹凸開孔、銀色橫帶和分段輪廓跟隨各高度輪廓。模型共 **3,840 塊 office＋595 塊 base 曲面玻璃、3,840 道豎向接縫、192 個 petal apertures**，用來表達官方「逾4,000塊」的幕牆密度，不冒充竣工面板清單。
+- 22/F Sky Garden：**105–113 m** 是依全塔比例及 22/F 資料所作的照片導向視覺控制，不是已核實工程樓層標高。這一段已真正打開外牆，可見核心筒、玻璃欄杆、雙線跑步徑、種植槽、12棵場景樹及15個 aquaponic 場景柱；跑步徑由58段組成。植物及設施數量是場景幾何，不是實際園境竣工清單，日景近景已實看確認不再被不透明塔身遮死。
+- Cloud 39 及屋頂：無柱宴會廳採 seele 的 **375 m²** 曲面玻璃立面、**132 塊曲面屋頂玻璃、119 支 structural glass fins、最高8 m玻璃頂**；另有12組場景宴會桌及三瓣不等高玻璃冠緣。屋頂徑向曲面使用单调 sqrt dome，逐 vertex 檢查沒有控制點之間的超高 overshoot。ZHA 的街面／屋頂雙氣象站資料支持小型屋頂氣象裝置；CIBSE 另記 **230 m² walkable PV array**，目前6個 PV 模組只作服務屋面視覺提示，不冒充實際陣列數量或圖則。群組局部最高點最終精確 **190 m**。
+- 入口及標誌：原 OSM way 沒有入口 node；美利道地面入口 **edge 42** 與高架行人網絡大堂 **edge 12** 均明確標為照片導向、`nodeId=null`，沒有假造來源門點。地面入口採 seele **11 m** 曲面玻璃、透明門扇、鏡面弧形 soffit、暖色大堂背牆及 `The Henderson／2 MURRAY ROAD` 字牌；主入口另有 **18 × 3.2 m** 水平前庭。高架大堂有自己的門牆及樓層入口，沒有把兩者混成一道通用門。
+- Art Garden 及日夜材質：基座有暖光、低亮鋪地、玻璃內透及景觀；Breathing Tree 以36根金屬杆及90個噴霧粒子作場景詮釋，另有 Allium／Topiary 等抽象裝置及燈環。這些數量是模型幾何，不是藝術品製作清單；已另看基座夜景，沒有用全域過曝白光掩蓋玻璃、入口及雕塑。Fractal Forest 只屬限期展覽，沒有當成永久裝置加入。
+- 地面及道路：中心 raw DTM 的建築 ground offset 為 **8.819865857148969 m**，plaza 為 **8.939865857148968 m**，不是已核實道路工程標高。精確 site 及收窄後的主入口前庭經全港道路中心線／車道半寬掃描均無道路相交，亦無 clearance 後街燈衝突，因此無需搬路或搬燈。依 **建築物優先、道路配合**，美利道瀝青、白色標線及原道路剖面全部保留；實際瀏覽器 ground 取樣 site／主入口／前庭均 **8.939865857148968 m**，美利道為 **8.681303820521162 m**，證實 plaza 沒有覆蓋車路。
+- 碰撞及實際驗證：最終 **709 個 colliders** 全部接入 world。Chromium／WebGL 多視角實看日夜全塔、主入口、Sky Garden、Cloud 39 及 Art Garden 基座；最終 audit 為 **63 meshes、256,252 vertices、85,530 triangles**，scene **28 landmarks／0 generic buildings**，`geometryIssues=[]`、`missingColliders=0`、`badColliders=0`，群組局部最高點 **190 m**。主入口碰撞 clone 經實際 `resolveHorizontalCollision` 解算，位移 **1.4738418613453774 m**；這是碰撞解算驗證，沒有冒充完整步行或駕駛巡行。page exception／Three.js shader error 均為 **0**，只有既有 Google Fonts 外部 resource `ERR_CONNECTION_CLOSED`。完整 `node --test tests/*.test.cjs` **480／480 pass**。
+- 資產及 runtime：研究相片只作目視及比例研究，沒有打包進 runtime；玻璃、金屬、花園、入口、字牌、宴會廳及藝術裝置均為程序化 geometry／canvas，不使用照片貼圖或下載 GLTF。最後 self-contained runtime 為 **162 modules、31,518,556 bytes**，無 external module imports。
+
+### 參考資料
+
+- OSM 精確建築 ring、原始 tags 及 full JSON：
+  https://www.openstreetmap.org/way/26434768
+  https://api.openstreetmap.org/api/0.6/way/26434768/full.json
+- ZHA：Bauhinia 花蕾、抬升基座、26 m無柱跨度、5 m floor-to-floor、東側核心筒、Sky Garden 跑步徑／aquaponics、Cloud 39，以及街面／屋頂氣象站：
+  https://www.zaha-hadid.com/architecture/2-murray-road/
+- 官方：六支 mega-columns、逾4,000塊曲面玻璃、22/F Sky Garden、38/F Summit 38、39/F Cloud 39、宴會廳面積及 Art Garden：
+  https://www.thehenderson.com.hk/architecture/
+  https://www.thehenderson.com.hk/workplace/
+  https://www.thehenderson.com.hk/cloud39/
+  https://www.thehenderson.com.hk/art/
+- seele：200 m來源口径、11 m入口玻璃、375 m²宴會廳立面、132塊屋頂玻璃及119支 structural glass fins：
+  https://seele.com/project/the-henderson-hong-kong
+- WSP：Completed、190 m、36層及43,200 m² GFA；Hip Hing：2024完成、36層、typical 6/F–38/F 及鋼結構：
+  https://www.wsp.com/en-nz/projects/the-henderson
+  https://www.hiphing.com.hk/en/projects/details.php?id=321
+- CIBSE：三組銀色花瓣、四層雙夾膠曲面 IGU、低輻射／抗反射鍍膜、氣象站及230 m² walkable PV：
+  https://www.cibsejournal.com/case-studies/shaping-the-future-the-henderson-building/
+- Lichtvision：2024完成、200 m來源口径及立面／室內／景觀照明整合：
+  https://lichtvision.com/en/project/the-henderson
+
 ## 程式入口
 
 - `hsbc-headquarters-architecture.js`：滙豐純地理位置、OBB、樓層比例及 collider 座標換算，可在 Node 測試。
@@ -772,4 +807,6 @@
 - `hysan-place-world.js`：希慎商場／辦公幕牆、斜向扶手電梯廊、三層花園、雙語向量字牌、玻璃轉門、屋頂農圃、開敞冠頂、日夜材質、碰撞及 stats。
 - `two-taikoo-place-architecture.js`：太古坊二座52頂點 OSM 來源、OBB、高度／層數／面積 conventions、三個來源入口、DTM 地台、surface／tunnel 道路走廊及逐邊碰撞座標換算。
 - `two-taikoo-place-world.js`：太古坊二座 conical corners、3 m unitized 玻璃、外遮陽 fins、15 m大堂、雙層花園、金色方塊吊燈、三個入口、雙語向量字牌、拱形行人橋、PV／風力屋頂、日夜材質、碰撞及 stats。
-- `simple-world.js`：只整合這二十七個 authored landmarks；普通 `buildings` 仍為 0。
+- `the-henderson-architecture.js`：The Henderson 58頂點 OSM 來源、OBB、獨立高度／層數 conventions、兩個照片導向入口、DTM 地台及 collider 座標換算。
+- `the-henderson-world.js`：The Henderson 三組花瓣體量、曲面低反玻璃、豎向凹槽、開放 Sky Garden、Cloud 39、兩個入口、Art Garden、日夜材質、碰撞及 stats。
+- `simple-world.js`：只整合這二十八個 authored landmarks；普通 `buildings` 仍為 0。
