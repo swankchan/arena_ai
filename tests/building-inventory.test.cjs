@@ -30,14 +30,14 @@ test('runtime Building Inventory mirrors all 100 authoritative construction rows
   });
 });
 
-test('inventory has 30 real preview targets and 70 explicitly model-free pending rows', async () => {
+test('inventory has 31 real preview targets and 69 explicitly model-free pending rows', async () => {
   const { HONG_KONG_BUILDING_INVENTORY: entries } = await import(dataUrl);
   const integrated = entries.filter((entry) => entry.status === 'integrated');
   const pending = entries.filter((entry) => entry.status === 'pending');
-  assert.equal(integrated.length, 30);
-  assert.equal(pending.length, 70);
+  assert.equal(integrated.length, 31);
+  assert.equal(pending.length, 69);
   assert.equal(new Set(entries.map((entry) => entry.id)).size, 100);
-  assert.equal(new Set(integrated.map((entry) => entry.worldKey)).size, 30);
+  assert.equal(new Set(integrated.map((entry) => entry.worldKey)).size, 31);
   entries.forEach((entry, index) => {
     assert.equal(entry.id, `HK-B${String(index + 1).padStart(4, '0')}`);
     if (entry.status === 'pending') assert.equal(entry.worldKey, null);

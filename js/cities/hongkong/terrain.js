@@ -35,6 +35,7 @@ import { TWO_TAIKOO_GROUND_SAMPLE, isTwoTaikooPlazaPoint } from './two-taikoo-pl
 import { HENDERSON_GROUND_SAMPLE, isHendersonPlazaPoint } from './the-henderson-architecture.js';
 import { ONE_EXCHANGE_GROUND_SAMPLE, isOneExchangePlazaPoint } from './one-exchange-square-architecture.js';
 import { TWO_EXCHANGE_GROUND_SAMPLE, isTwoExchangePlazaPoint } from './two-exchange-square-architecture.js';
+import { CFA_GROUND_SAMPLE, isCourtOfFinalAppealPoint } from './court-of-final-appeal-architecture.js';
 
 function decodeBytes(base64) {
   const binary = atob(base64);
@@ -124,6 +125,8 @@ const HENDERSON_PAD_HEIGHT = rawHongKongTerrainHeight(HENDERSON_GROUND_SAMPLE.x,
 // One Exchange Square uses its own DTM datum while the surface bus-terminal road retains road-priority queries.
 const ONE_EXCHANGE_PAD_HEIGHT = rawHongKongTerrainHeight(ONE_EXCHANGE_GROUND_SAMPLE.x, ONE_EXCHANGE_GROUND_SAMPLE.z);
 const TWO_EXCHANGE_PAD_HEIGHT = rawHongKongTerrainHeight(TWO_EXCHANGE_GROUND_SAMPLE.x, TWO_EXCHANGE_GROUND_SAMPLE.z);
+// The declared-monument court uses its own building-centre DTM sample; surrounding carriageways stay outside its OSM ring.
+const CFA_PAD_HEIGHT = rawHongKongTerrainHeight(CFA_GROUND_SAMPLE.x, CFA_GROUND_SAMPLE.z);
 
 export function hongKongTerrainHeight(x, z) {
   if (pointInFlatRing(HSBC_SITE.ring, x, z)) return HSBC_PAD_HEIGHT;
@@ -162,6 +165,7 @@ export function hongKongTerrainHeight(x, z) {
   if (isHendersonPlazaPoint(x, z)) return HENDERSON_PAD_HEIGHT;
   if (isOneExchangePlazaPoint(x, z)) return ONE_EXCHANGE_PAD_HEIGHT;
   if (isTwoExchangePlazaPoint(x, z)) return TWO_EXCHANGE_PAD_HEIGHT;
+  if (isCourtOfFinalAppealPoint(x, z)) return CFA_PAD_HEIGHT;
   return rawHongKongTerrainHeight(x, z);
 }
 
@@ -205,6 +209,7 @@ export const HONG_KONG_TERRAIN_META = Object.freeze({
   hendersonPadHeight: HENDERSON_PAD_HEIGHT,
   oneExchangePadHeight: ONE_EXCHANGE_PAD_HEIGHT,
   twoExchangePadHeight: TWO_EXCHANGE_PAD_HEIGHT,
+  cfaPadHeight: CFA_PAD_HEIGHT,
   tunnelStats: HK_TERRAIN.stats
 });
 

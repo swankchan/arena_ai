@@ -92,7 +92,7 @@ export const HONG_KONG_BUILDING_INVENTORY = Object.freeze([
   Object.freeze({"id":"HK-B0089","name":"香港會議展覽中心舊翼 HKCEC Old Wing","district":"灣仔","heightLabel":"—","status":"pending","refined":false,"worldKey":null}),
   Object.freeze({"id":"HK-B0090","name":"時代廣場 Times Square","district":"銅鑼灣","heightLabel":"—","status":"pending","refined":false,"worldKey":null}),
   Object.freeze({"id":"HK-B0091","name":"美利尼依格羅酒店 The Murray, Hong Kong, A Niccolo Hotel","district":"中環","heightLabel":"—","status":"pending","refined":false,"worldKey":null}),
-  Object.freeze({"id":"HK-B0092","name":"終審法院 The Court of Final Appeal","district":"中環","heightLabel":"—","status":"pending","refined":false,"worldKey":null}),
+  Object.freeze({"id":"HK-B0092","name":"終審法院 The Court of Final Appeal","district":"中環","heightLabel":"約40 m","status":"integrated","refined":true,"worldKey":"courtOfFinalAppeal"}),
   Object.freeze({"id":"HK-B0093","name":"茶具文物館 Flagstaff House Museum of Tea Ware","district":"中環","heightLabel":"—","status":"pending","refined":false,"worldKey":null}),
   Object.freeze({"id":"HK-B0094","name":"法國外方傳道會大樓 French Mission Building","district":"中環","heightLabel":"—","status":"pending","refined":false,"worldKey":null}),
   Object.freeze({"id":"HK-B0095","name":"利園二期 Lee Garden Two","district":"銅鑼灣","heightLabel":"—","status":"pending","refined":false,"worldKey":null}),

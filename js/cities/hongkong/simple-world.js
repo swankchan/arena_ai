@@ -52,6 +52,7 @@ import { buildTwoTaikooPlace } from './two-taikoo-place-world.js';
 import { buildTheHenderson } from './the-henderson-world.js';
 import { buildOneExchangeSquare } from './one-exchange-square-world.js';
 import { buildTwoExchangeSquare } from './two-exchange-square-world.js';
+import { buildCourtOfFinalAppeal } from './court-of-final-appeal-world.js';
 import { createHongKongTrafficAids } from './traffic-aids.js';
 
 const WATER_LEVEL = -2.2;
@@ -130,6 +131,8 @@ export function buildSimpleHongKongWorld(scene, { setStatus = () => {} } = {}) {
   const oneExchange = buildOneExchangeSquare(scene, { groundOffset: HONG_KONG_TERRAIN_META.oneExchangePadHeight });
   setStatus('Building Two Exchange Square’s curved arrival, lift directory and long-core roof...');
   const twoExchange = buildTwoExchangeSquare(scene, { groundOffset: HONG_KONG_TERRAIN_META.twoExchangePadHeight });
+  setStatus('Building the Court of Final Appeal’s granite colonnades, Themis and ribbed dome...');
+  const courtOfFinalAppeal = buildCourtOfFinalAppeal(scene, { groundOffset: HONG_KONG_TERRAIN_META.cfaPadHeight });
   setStatus('Building drivable harbour bridges and tunnels...');
   const crossings = buildHongKongCrossings(scene);
   setStatus('Placing 144,995 lamp posts across Hong Kong...');
@@ -205,7 +208,9 @@ export function buildSimpleHongKongWorld(scene, { setStatus = () => {} } = {}) {
     // One Exchange Square keeps the surface bus-terminal road on its rendered profile below the open podium.
     const oneExchangeGround = !groundUsesRoad ? oneExchange.groundHeightAt(x, z, hendersonGround) : hendersonGround;
     const twoExchangeGround = !groundUsesRoad ? twoExchange.groundHeightAt(x, z, oneExchangeGround) : oneExchangeGround;
-    return isHsbcPlazaPoint(x, z) ? Math.max(twoExchangeGround, hsbc.plazaTop) : twoExchangeGround;
+    // The court's open outer arcade is walkable; its closed inner walls and every selected road keep their own collision / height rules.
+    const cfaGround = !groundUsesRoad ? courtOfFinalAppeal.groundHeightAt(x, z, twoExchangeGround) : twoExchangeGround;
+    return isHsbcPlazaPoint(x, z) ? Math.max(cfaGround, hsbc.plazaTop) : cfaGround;
   }
 
   const stats = {
@@ -243,11 +248,12 @@ export function buildSimpleHongKongWorld(scene, { setStatus = () => {} } = {}) {
     ...theHenderson.stats,
     ...oneExchange.stats,
     ...twoExchange.stats,
+    ...courtOfFinalAppeal.stats,
     presentation: 'unified-simple',
     landMeshes: full.stats.fullLandRings,
     blocks: 0,
     parks: full.stats.fullParks,
-    landmarks: hsbc.landmarks.length + standardChartered.landmarks.length + twoIfc.landmarks.length + icc.landmarks.length + bankOfChina.landmarks.length + centralPlaza.landmarks.length + theCenter.landmarks.length + ninaTower.landmarks.length + cheungKong.landmarks.length + k11Atelier.landmarks.length + cullinanI.landmarks.length + cullinanII.landmarks.length + masterpiece.landmarks.length + langhamPlace.landmarks.length + summit.landmarks.length + hopewell.landmarks.length + sunHungKai.landmarks.length + twoPacificPlace.landmarks.length + airside.landmarks.length + leeGardenOne.landmarks.length + oneIfc.landmarks.length + championTower.landmarks.length + ckc2.landmarks.length + qgo.landmarks.length + conrad.landmarks.length + hysan.landmarks.length + twoTaikoo.landmarks.length + theHenderson.landmarks.length + oneExchange.landmarks.length + twoExchange.landmarks.length,
+    landmarks: hsbc.landmarks.length + standardChartered.landmarks.length + twoIfc.landmarks.length + icc.landmarks.length + bankOfChina.landmarks.length + centralPlaza.landmarks.length + theCenter.landmarks.length + ninaTower.landmarks.length + cheungKong.landmarks.length + k11Atelier.landmarks.length + cullinanI.landmarks.length + cullinanII.landmarks.length + masterpiece.landmarks.length + langhamPlace.landmarks.length + summit.landmarks.length + hopewell.landmarks.length + sunHungKai.landmarks.length + twoPacificPlace.landmarks.length + airside.landmarks.length + leeGardenOne.landmarks.length + oneIfc.landmarks.length + championTower.landmarks.length + ckc2.landmarks.length + qgo.landmarks.length + conrad.landmarks.length + hysan.landmarks.length + twoTaikoo.landmarks.length + theHenderson.landmarks.length + oneExchange.landmarks.length + twoExchange.landmarks.length + courtOfFinalAppeal.landmarks.length,
     lots: 0,
     buildings: 0,
     skippedLots: 0,
@@ -259,7 +265,7 @@ export function buildSimpleHongKongWorld(scene, { setStatus = () => {} } = {}) {
 
   return {
     root: scene,
-    colliders: [...full.colliders, ...crossings.colliders, ...hsbc.colliders, ...standardChartered.colliders, ...twoIfc.colliders, ...icc.colliders, ...bankOfChina.colliders, ...centralPlaza.colliders, ...theCenter.colliders, ...ninaTower.colliders, ...cheungKong.colliders, ...k11Atelier.colliders, ...cullinanI.colliders, ...cullinanII.colliders, ...masterpiece.colliders, ...langhamPlace.colliders, ...summit.colliders, ...hopewell.colliders, ...sunHungKai.colliders, ...twoPacificPlace.colliders, ...airside.colliders, ...leeGardenOne.colliders, ...oneIfc.colliders, ...championTower.colliders, ...ckc2.colliders, ...qgo.colliders, ...conrad.colliders, ...hysan.colliders, ...twoTaikoo.colliders, ...theHenderson.colliders, ...oneExchange.colliders, ...twoExchange.colliders],
+    colliders: [...full.colliders, ...crossings.colliders, ...hsbc.colliders, ...standardChartered.colliders, ...twoIfc.colliders, ...icc.colliders, ...bankOfChina.colliders, ...centralPlaza.colliders, ...theCenter.colliders, ...ninaTower.colliders, ...cheungKong.colliders, ...k11Atelier.colliders, ...cullinanI.colliders, ...cullinanII.colliders, ...masterpiece.colliders, ...langhamPlace.colliders, ...summit.colliders, ...hopewell.colliders, ...sunHungKai.colliders, ...twoPacificPlace.colliders, ...airside.colliders, ...leeGardenOne.colliders, ...oneIfc.colliders, ...championTower.colliders, ...ckc2.colliders, ...qgo.colliders, ...conrad.colliders, ...hysan.colliders, ...twoTaikoo.colliders, ...theHenderson.colliders, ...oneExchange.colliders, ...twoExchange.colliders, ...courtOfFinalAppeal.colliders],
     bounds: full.bounds,
     stats,
     personSpawn: { ...SPAWN.person },
@@ -303,8 +309,9 @@ export function buildSimpleHongKongWorld(scene, { setStatus = () => {} } = {}) {
     theHenderson,
     oneExchange,
     twoExchange,
+    courtOfFinalAppeal,
     treeField: null,
-    landmarks: [...hsbc.landmarks, ...standardChartered.landmarks, ...twoIfc.landmarks, ...icc.landmarks, ...bankOfChina.landmarks, ...centralPlaza.landmarks, ...theCenter.landmarks, ...ninaTower.landmarks, ...cheungKong.landmarks, ...k11Atelier.landmarks, ...cullinanI.landmarks, ...cullinanII.landmarks, ...masterpiece.landmarks, ...langhamPlace.landmarks, ...summit.landmarks, ...hopewell.landmarks, ...sunHungKai.landmarks, ...twoPacificPlace.landmarks, ...airside.landmarks, ...leeGardenOne.landmarks, ...oneIfc.landmarks, ...championTower.landmarks, ...ckc2.landmarks, ...qgo.landmarks, ...conrad.landmarks, ...hysan.landmarks, ...twoTaikoo.landmarks, ...theHenderson.landmarks, ...oneExchange.landmarks, ...twoExchange.landmarks],
+    landmarks: [...hsbc.landmarks, ...standardChartered.landmarks, ...twoIfc.landmarks, ...icc.landmarks, ...bankOfChina.landmarks, ...centralPlaza.landmarks, ...theCenter.landmarks, ...ninaTower.landmarks, ...cheungKong.landmarks, ...k11Atelier.landmarks, ...cullinanI.landmarks, ...cullinanII.landmarks, ...masterpiece.landmarks, ...langhamPlace.landmarks, ...summit.landmarks, ...hopewell.landmarks, ...sunHungKai.landmarks, ...twoPacificPlace.landmarks, ...airside.landmarks, ...leeGardenOne.landmarks, ...oneIfc.landmarks, ...championTower.landmarks, ...ckc2.landmarks, ...qgo.landmarks, ...conrad.landmarks, ...hysan.landmarks, ...twoTaikoo.landmarks, ...theHenderson.landmarks, ...oneExchange.landmarks, ...twoExchange.landmarks, ...courtOfFinalAppeal.landmarks],
     trafficAids
   };
 }

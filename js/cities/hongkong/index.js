@@ -96,6 +96,7 @@ export const city = {
       theHenderson: world.theHenderson,
       oneExchange: world.oneExchange,
       twoExchange: world.twoExchange,
+      courtOfFinalAppeal: world.courtOfFinalAppeal,
       landmarks: world.landmarks,
       buildingInventory: HONG_KONG_BUILDING_INVENTORY,
       stats,

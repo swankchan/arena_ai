@@ -1,6 +1,6 @@
 # 香港手建 Landmarks
 
-香港仍採用 `unified-simple` 展示：全港道路及基本地面保留，**不生成普通建築群**。手建地標會逐個加入；目前實際整合 **30 幢**，完整名單及逐幢狀態以 Inventory 為準。
+香港仍採用 `unified-simple` 展示：全港道路及基本地面保留，**不生成普通建築群**。手建地標會逐個加入；目前實際整合 **31 幢**，完整名單及逐幢狀態以 Inventory 為準。
 
 建築物進度、**精修**與 **Landmark** 獨立標記，以及道路衝突台帳，見 [香港建築物 Inventory](hongkong-building-inventory.md)。
 
@@ -827,6 +827,35 @@
   https://www.flickr.com/photos/cnmark/1525266278
 - 全塔、弧面／prism 立面、入口及屋頂照片均實際檢視；搜尋中其他城市同名建築及無結果的 lobby／roof 圖片搜尋沒有作為本幢依據。研究照片沒有打包進應用程式。
 
+## 終審法院 The Court of Final Appeal
+
+- **身份及選址**：本幢是昃臣道 8 號、1912 年啟用的舊最高法院大樓，2015 年起作終審法院；不是炮台里、1997–2015 年曾作終審法院的前法國外方傳道會大樓（`HK-B0094`）。使用目前 **OSM way 42293414 version 16** 的完整七頂點用地 ring，原始經緯度、node IDs、tags、目前 API version **16**／way timestamp **2025-01-22T03:29:37Z**、extract 來源時間及 ODbL attribution 保存在 `court-of-final-appeal-architecture.js`。用地 ring 面積 **2707.1590 m²**；minimum-area OBB **70.4730 × 38.4782 m**、中心 **(78.0604,109.3998)**、`ry=1.29531218095`，只作地盤包絡及建模 frame，不冒充竣工平面。
+- **官方研究**：古物古蹟辦事處資料確認 1912-01-15 啟用、三層花崗岩新古典建築、雙層高 Ionic 高柱、中央 pediment 及蒙眼 Themis；1984 年外牆列為法定古蹟。HIA 報告另記錄 Aston Webb／E. Ingress Bell、約 **70 × 38 m** 用地、1,447 條 China fir piles、周邊連續 Ionic／Doric 柱廊、拱券及 1/F verandah、花瓶欄杆、厚重 entablature、雙層鋼架 granolithic 穹頂、開放柱廊鼓座、四角 pinnacle、lantern／bronze Tudor Crown，以及兩翼中式雙層筒瓦坡頂和煙囪。司法機構資料確認 1912–1984 最高法院、1985–2011 立法會及 2015 年遷入現址。以上用途及歷史不可與前法國外方傳道會大樓混合。
+- **比例及立面**：OSM 沒有可用 height tag；二手建築資料的約 **40 m** 只作總高參考，官方三層與 OSM 四層標籤亦分開理解，沒有合成假精確層高。模型依實看正背面、柱廊、pediment、穹頂及夜景照片，採長邊 **13 開間**、短邊 **7 開間**、周邊 **40 個拱開間**及角部不重複的 **40 支雙層高巨柱**；這些是照片導向控制，不是測量圖則。主屋面約 **17–18 m**、pediment 約 **23.5 m**、鼓座 **22–29 m**、穹頂 **29–36 m**、Crown 最高約 **40 m**。四面均有真開口下層拱廊、內退玻璃及木窗框、上層巨柱、Ionic 渦卷／Doric 簡化柱頭、花瓶欄杆、多層檐口、dentils 及花崗岩分縫，不是長方體貼柱。
+- **西向主立面及雕塑**：Statue Square 一側為 local z 負面；中央 pediment 有皇家紋章、lion／unicorn supporters、`DIEU ET MON DROIT`、半圓 lunette、`ERECTED AD MDCCCCX`、E／R、Mercy／Truth 及三角形山牆。Themis 有蒙眼帶、天平及劍，雕塑高度以照片及二手約 2.7 m 資料作視覺控制。皇家紋章使用程序化 geometry／Canvas 細節；不是套用通用徽章或下載圖片。
+- **屋頂及材質**：中央穹頂由方座、四 pinnacle、24 柱開放鼓座、24 肋雙層曲面、lantern 及 Tudor Crown 組成；granolithic 外層與深色座、瓦頂分材質。兩翼為深灰中式筒瓦坡頂，有成行筒瓦、瓦當及兩煙囪。日間石材呈暖灰花崗岩、玻璃內退且不亮隨機住宅燈；夜間只有少量暖窗及按高度衰減的暖色立面 floodlight，不讓整幢石材均勻自發光。
+- **入口、地面及碰撞**：主入口依實際用地 edge **6** 定向；西向柱廊及入口沒有用整幅牆封死。raw DTM 中心 **5.450927277384849 m**，平台 **5.69092727738485 m**（raw＋0.24 m）；這是場景 DTM 採樣及施工平台，不是已核實道路工程標高。`terrain.js` 的獨立 CFA pad／ring 查詢、`road-elevation.js` 的接合及 `simple-world.js` 的 ground-height 鏈讓所選道路優先。道路中心線／車道半寬及 clearance 後街燈掃描均無衝突；建築不搬歪，原瀝青、白色標線、入口通達及全港道路保留。
+- **碰撞及 browser 驗證**：最終 **82 個 colliders** 全部接入 world，分開處理內退牆／封閉門窗、巨柱及穹頂；外層柱廊保持開放。完整城市中以 **person／0.48 m radius** 實測主入口中線三個由外至內取樣（facade offsets **2／0.5／−1.5 m**），水平碰撞解算位移全部 **0**；再進入內退門牆中心才被阻擋，位移 **0.7399999993488579 m**，證明可步行到達柱廊及門前，而非被外圍隱形盒提早擋住。中心及主入口 ground 均為 **5.69092727738485 m**；最低一級樓梯向下延伸接入外部斜坡 DTM，沒有懸空。
+- **最終實渲及幾何**：隔離 WebGL 實看正面、斜側、鳥瞰、pediment、柱廊、背面及夜景共 **7 views**；完整城市另實看日間正面／斜側／鳥瞰／柱廊／背面、夜間正面／背面，並對最終樓梯及行人入口再作 focused re-render。Building Inventory 的 `HK-B0092` 使用真模型 clone，日夜各 **37 visible meshes／37 source meshes**，`outside=[]`；全幢／屋頂／基座、拖曳及縮放可操作。關閉後原城市 child count、頂層可見性、相機、玩家、preset、霧、天氣及交通均恢復，最終 focused audit 的 `visibilityMismatches=[]`。最終幾何為 **37 meshes、766,054 vertices、255,362 triangles**，Crown 本地最高 **40 m**；position／normal／uv／bounds 非有限值 **0**，`missingColliders=0`、`badColliders=0`。page exception／Three shader error 均為 **0**，只有既有 Google Fonts 外部 resource `ERR_CONNECTION_CLOSED`。專測 **8／8 pass**，完整 `node --test tests/*.test.cjs` **508／508 pass**。
+- **資產及 runtime**：所有牆、真正拱洞、柱式、欄杆、雕塑、紋章、字樣、瓦頂及穹頂均為程序化 geometry／Canvas。研究照片只作目視及比例研究，沒有打包進應用程式，正式 runtime 不依賴外鏈圖片或下載 GLTF。最後 self-contained runtime 為 **170 modules、31,682,084 bytes**，無 external module imports。
+
+### 參考資料
+
+- 古物古蹟辦事處法定古蹟摘要：
+  https://www.amo.gov.hk/en/historic-buildings/monuments/hong-kong-island/monuments_26/index.html
+- 古物古蹟辦事處 HIA 報告（歷史、平面、柱廊、pediment、穹頂及中式瓦頂）：
+  https://www.amo.gov.hk/filemanager/amo/common/form/HIA_report_Former_LegCo_Bldg.pdf
+- 司法機構 2015 年報：2015 年 9 月由炮台里遷往昃臣道 8 號：
+  https://www.judiciary.hk/en/publications/annu_rept_2015/eng/review.html
+- 司法機構 2015 年報全文：歷史用途及法定古蹟外牆：
+  https://www.judiciary.hk/en/publications/annu_rept_2015/txteng/report.html
+- OSM 精確用地及 tags：
+  https://www.openstreetmap.org/way/42293414
+- 建築導讀及二手約 40 m 總高、Themis／紋章細節，只作輔助照片解讀，不取代官方歷史或工程圖則：
+  https://buildinghistory.org/jean/hongkong.shtml
+  https://en.wikipedia.org/wiki/Court_of_Final_Appeal_Building
+  https://archjourney.org/projects/hong-kong-court-of-final-appeal/
+
 ## 程式入口
 
 - `hsbc-headquarters-architecture.js`：滙豐純地理位置、OBB、樓層比例及 collider 座標換算，可在 Node 測試。
@@ -887,4 +916,6 @@
 - `one-exchange-square-world.js`：One Exchange Square 束狀銀玻璃／粉紅花崗岩立面、開放巴士總站上蓋、階梯屋頂、HKEX 入口、雙扶手電梯、程序壁畫、雕塑水景、日夜材質、碰撞及 stats。
 - `two-exchange-square-architecture.js`：Two Exchange Square 49頂點 OSM 來源、OBB、高度／層數／面積 conventions、照片導向入口、22個道路開放邊、12個安全柱位、DTM 地台及 collider 座標換算。
 - `two-exchange-square-world.js`：Two Exchange Square 弧面銀玻璃／粉紅花崗岩立面、開放總站上蓋、長向階梯屋頂、曲面玻璃入口、Exchange Square 字樣、六區升降機目錄、雙扶手電梯、線性水景、日夜材質、碰撞及 stats。
-- `simple-world.js`：只整合這三十個 authored landmarks；普通 `buildings` 仍為 0。
+- `court-of-final-appeal-architecture.js`：終審法院七頂點 OSM 用地、OBB／facade frames、照片導向入口、DTM 平台及 ground／collider 座標換算。
+- `court-of-final-appeal-world.js`：終審法院四面拱廊及巨柱、Ionic／Doric 柱式、花崗岩、窗洞、entablature、pediment、皇家紋章、Themis、穹頂鼓座、Crown、中式筒瓦、日夜材質、碰撞及 stats。
+- `simple-world.js`：只整合這三十一個 authored landmarks；普通 `buildings` 仍為 0。
