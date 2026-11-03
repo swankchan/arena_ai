@@ -48,6 +48,7 @@ import { buildCkc2 } from './ckc2-world.js';
 import { buildQgo } from './qgo-world.js';
 import { buildConrad } from './conrad-world.js';
 import { buildHysanPlace } from './hysan-place-world.js';
+import { buildTwoTaikooPlace } from './two-taikoo-place-world.js';
 import { createHongKongTrafficAids } from './traffic-aids.js';
 
 const WATER_LEVEL = -2.2;
@@ -118,6 +119,8 @@ export function buildSimpleHongKongWorld(scene, { setStatus = () => {} } = {}) {
   const conrad = buildConrad(scene, { groundOffset: HONG_KONG_TERRAIN_META.conradPadHeight, entranceGroundOffset: HONG_KONG_TERRAIN_META.conradEntrancePadHeight });
   setStatus('Building Hysan Place’s shifting volumes, sky gardens and diagonal express escalators...');
   const hysan = buildHysanPlace(scene, { groundOffset: HONG_KONG_TERRAIN_META.hysanPadHeight });
+  setStatus('Building Two Taikoo Place’s conical glass corners, sky gardens and renewable-energy roof...');
+  const twoTaikoo = buildTwoTaikooPlace(scene, { groundOffset: HONG_KONG_TERRAIN_META.twoTaikooPadHeight });
   setStatus('Building drivable harbour bridges and tunnels...');
   const crossings = buildHongKongCrossings(scene);
   setStatus('Placing 144,995 lamp posts across Hong Kong...');
@@ -186,7 +189,9 @@ export function buildSimpleHongKongWorld(scene, { setStatus = () => {} } = {}) {
     const conradGround = !groundUsesRoad ? conrad.groundHeightAt(x, z, qgoGround) : qgoGround;
     // Hysan's parking-access record remains a road through the open ground-level portal.
     const hysanGround = !groundUsesRoad ? hysan.groundHeightAt(x, z, conradGround) : conradGround;
-    return isHsbcPlazaPoint(x, z) ? Math.max(hysanGround, hsbc.plazaTop) : hysanGround;
+    // Two Taikoo Place keeps both surface mouths and the selected service tunnel on their own road profiles.
+    const twoTaikooGround = !groundUsesRoad ? twoTaikoo.groundHeightAt(x, z, hysanGround) : hysanGround;
+    return isHsbcPlazaPoint(x, z) ? Math.max(twoTaikooGround, hsbc.plazaTop) : twoTaikooGround;
   }
 
   const stats = {
@@ -220,11 +225,12 @@ export function buildSimpleHongKongWorld(scene, { setStatus = () => {} } = {}) {
     ...qgo.stats,
     ...conrad.stats,
     ...hysan.stats,
+    ...twoTaikoo.stats,
     presentation: 'unified-simple',
     landMeshes: full.stats.fullLandRings,
     blocks: 0,
     parks: full.stats.fullParks,
-    landmarks: hsbc.landmarks.length + standardChartered.landmarks.length + twoIfc.landmarks.length + icc.landmarks.length + bankOfChina.landmarks.length + centralPlaza.landmarks.length + theCenter.landmarks.length + ninaTower.landmarks.length + cheungKong.landmarks.length + k11Atelier.landmarks.length + cullinanI.landmarks.length + cullinanII.landmarks.length + masterpiece.landmarks.length + langhamPlace.landmarks.length + summit.landmarks.length + hopewell.landmarks.length + sunHungKai.landmarks.length + twoPacificPlace.landmarks.length + airside.landmarks.length + leeGardenOne.landmarks.length + oneIfc.landmarks.length + championTower.landmarks.length + ckc2.landmarks.length + qgo.landmarks.length + conrad.landmarks.length + hysan.landmarks.length,
+    landmarks: hsbc.landmarks.length + standardChartered.landmarks.length + twoIfc.landmarks.length + icc.landmarks.length + bankOfChina.landmarks.length + centralPlaza.landmarks.length + theCenter.landmarks.length + ninaTower.landmarks.length + cheungKong.landmarks.length + k11Atelier.landmarks.length + cullinanI.landmarks.length + cullinanII.landmarks.length + masterpiece.landmarks.length + langhamPlace.landmarks.length + summit.landmarks.length + hopewell.landmarks.length + sunHungKai.landmarks.length + twoPacificPlace.landmarks.length + airside.landmarks.length + leeGardenOne.landmarks.length + oneIfc.landmarks.length + championTower.landmarks.length + ckc2.landmarks.length + qgo.landmarks.length + conrad.landmarks.length + hysan.landmarks.length + twoTaikoo.landmarks.length,
     lots: 0,
     buildings: 0,
     skippedLots: 0,
@@ -236,7 +242,7 @@ export function buildSimpleHongKongWorld(scene, { setStatus = () => {} } = {}) {
 
   return {
     root: scene,
-    colliders: [...full.colliders, ...crossings.colliders, ...hsbc.colliders, ...standardChartered.colliders, ...twoIfc.colliders, ...icc.colliders, ...bankOfChina.colliders, ...centralPlaza.colliders, ...theCenter.colliders, ...ninaTower.colliders, ...cheungKong.colliders, ...k11Atelier.colliders, ...cullinanI.colliders, ...cullinanII.colliders, ...masterpiece.colliders, ...langhamPlace.colliders, ...summit.colliders, ...hopewell.colliders, ...sunHungKai.colliders, ...twoPacificPlace.colliders, ...airside.colliders, ...leeGardenOne.colliders, ...oneIfc.colliders, ...championTower.colliders, ...ckc2.colliders, ...qgo.colliders, ...conrad.colliders, ...hysan.colliders],
+    colliders: [...full.colliders, ...crossings.colliders, ...hsbc.colliders, ...standardChartered.colliders, ...twoIfc.colliders, ...icc.colliders, ...bankOfChina.colliders, ...centralPlaza.colliders, ...theCenter.colliders, ...ninaTower.colliders, ...cheungKong.colliders, ...k11Atelier.colliders, ...cullinanI.colliders, ...cullinanII.colliders, ...masterpiece.colliders, ...langhamPlace.colliders, ...summit.colliders, ...hopewell.colliders, ...sunHungKai.colliders, ...twoPacificPlace.colliders, ...airside.colliders, ...leeGardenOne.colliders, ...oneIfc.colliders, ...championTower.colliders, ...ckc2.colliders, ...qgo.colliders, ...conrad.colliders, ...hysan.colliders, ...twoTaikoo.colliders],
     bounds: full.bounds,
     stats,
     personSpawn: { ...SPAWN.person },
@@ -276,8 +282,9 @@ export function buildSimpleHongKongWorld(scene, { setStatus = () => {} } = {}) {
     qgo,
     conrad,
     hysan,
+    twoTaikoo,
     treeField: null,
-    landmarks: [...hsbc.landmarks, ...standardChartered.landmarks, ...twoIfc.landmarks, ...icc.landmarks, ...bankOfChina.landmarks, ...centralPlaza.landmarks, ...theCenter.landmarks, ...ninaTower.landmarks, ...cheungKong.landmarks, ...k11Atelier.landmarks, ...cullinanI.landmarks, ...cullinanII.landmarks, ...masterpiece.landmarks, ...langhamPlace.landmarks, ...summit.landmarks, ...hopewell.landmarks, ...sunHungKai.landmarks, ...twoPacificPlace.landmarks, ...airside.landmarks, ...leeGardenOne.landmarks, ...oneIfc.landmarks, ...championTower.landmarks, ...ckc2.landmarks, ...qgo.landmarks, ...conrad.landmarks, ...hysan.landmarks],
+    landmarks: [...hsbc.landmarks, ...standardChartered.landmarks, ...twoIfc.landmarks, ...icc.landmarks, ...bankOfChina.landmarks, ...centralPlaza.landmarks, ...theCenter.landmarks, ...ninaTower.landmarks, ...cheungKong.landmarks, ...k11Atelier.landmarks, ...cullinanI.landmarks, ...cullinanII.landmarks, ...masterpiece.landmarks, ...langhamPlace.landmarks, ...summit.landmarks, ...hopewell.landmarks, ...sunHungKai.landmarks, ...twoPacificPlace.landmarks, ...airside.landmarks, ...leeGardenOne.landmarks, ...oneIfc.landmarks, ...championTower.landmarks, ...ckc2.landmarks, ...qgo.landmarks, ...conrad.landmarks, ...hysan.landmarks, ...twoTaikoo.landmarks],
     trafficAids
   };
 }

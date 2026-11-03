@@ -1,6 +1,6 @@
 # 香港手建 Landmarks
 
-香港仍採用 `unified-simple` 展示：全港道路及基本地面保留，**不生成普通建築群**。手建地標會逐個加入；目前實際整合 **26 幢**，完整名單及逐幢狀態以 Inventory 為準。
+香港仍採用 `unified-simple` 展示：全港道路及基本地面保留，**不生成普通建築群**。手建地標會逐個加入；目前實際整合 **27 幢**，完整名單及逐幢狀態以 Inventory 為準。
 
 建築物進度、**精修**與 **Landmark** 獨立標記，以及道路衝突台帳，見 [香港建築物 Inventory](hongkong-building-inventory.md)。
 
@@ -689,6 +689,35 @@
 - 入口、外置扶手電梯及石飾辦公轉門相片研究（不進 runtime）：
   https://topfloor.it/en/portfolio/hysan-place/
 
+## 太古坊二座 Two Taikoo Place
+
+- 地點及範圍：採目前 **OSM way 710522581 version 8** 的 **52 個獨立節點**（53個 geometry rows 包括閉合點），原始 WGS84 geometry、node IDs、tags、版本及 ODbL attribution 保存在 `two-taikoo-place-architecture.js`；完整 API 回應另存 `tools/data/hongkong/two-taikoo-place-osm-full.json`，由測試逐點核對。這是鰂魚涌英皇道979號的辦公塔身，沒有把整個 Taikoo Place 土地用途範圍或太古坊一座混入。實際 ring 面積 **2651.4818416275084 m²**；minimum-area OBB 只作定向包絡，中心 **(5420.598278751581, -515.455706969496)**、尺寸 **72.7005378178319 × 37.48440626005413 m**、`ry=-0.024798786942836958`，OBB 面積 **2725.13649488804 m²** 不冒充標準層面積。
+- 高度、層數及面積 conventions：**OSM 195 m／46 levels／2022-09** 與 CTBUH **191 m architectural＝to-tip／46 above-ground floors／2022 completed** 分列，模型最高點採 CTBUH **191 m**、roof deck **187.6 m**；Swire／Schindler 的 **42層／約1 million sq ft** 是另一公布口径，沒有改寫 OSM 或 CTBUH。NBBJ **92,000 m²** 亦獨立保存，不與其他面積互相覆寫。設計建築師 **Wong & Ouyang**、façade designer **NBBJ**、façade engineer **Eckersley O'Callaghan**、cladding supplier **POHL Group** 及 developer **Swire Properties Limited** 分開記錄。
+- 建築研究及立面：實看 Kris Provoost 的全塔、基座、入口及拱形行人橋相片，以及 NBBJ／屋頂資料，確認圓角但非橢圓的辦公平面、向上略微外張的 sculptural conical corners、藍綠高性能玻璃、密集銀色直向遮陽 fins、3 m unitized glazing、斜向銀白基座飾帶及兩層花園。塔身由 **23–187.6 m** 的逐邊直紋面及四角二次曲線組成；共 **3,840 塊玻璃、148 支外遮陽 fins、46 道視覺 courses**，其中 office courses 為40，視覺分段不冒充官方樓層標高。最終瀏覽器幾何抽樣底部／頂部角半徑為 **38.15565581167807／38.593679731908885 m**，證實使用中的 facade 有 **0.4380239202308118 m** 外張，而不是只保留未使用的輔助函式。
+- 15 m 大堂及花園：**0–15 m** Great Room 使用高透明無框玻璃、纖細拉杆及避車柱，**15–23 m** 保留兩層景觀花園；這些高度是依公布的15 m大堂及兩層花園所作視覺控制，不是全套官方樓層標高。大堂內有金色方塊吊燈，花園有草地、灌木、28棵樹、種植槽及玻璃欄杆；兩層不再由不透明大平台遮住。入口日景能看見吊燈及內部柱廊，夜景只讓吊燈、字牌及部分辦公窗亮暖光。
+- 三個來源入口及標誌：主入口採真實 **node 12361796907／source edge 8**，東入口 **6680285871／edge 31**，北入口 **6680285873／edge 47**；主入口 world 座標 **(5384.337405991165, -517.4493584517977)**。三個入口均依各邊向外法線建模，有玻璃門、門架、雨篷及獨立碰撞；主入口另有 **14 m 寬、6 m 深** level forecourt 及兩道弧形欄杆行人橋。`TWO TAIKOO PLACE` 與 `太古坊二座` 中英字牌均由內嵌向量筆畫生成，不依賴瀏覽器 CJK font；最終日夜近景已實看確認兩行均清楚可見。
+- 地面及道路：中心 raw DTM／施工平台為 **6.923079698879263 m**，plaza 為 **7.043079698879263 m**，不是已核實道路工程標高。精確 ring 與 generated **records 35728／50426／50427 segment 0** 相交；前兩條是地面車路，**50427 `flags=4`** 是隧道，record index 不冒充 OSM ID。依 **建築物優先、道路配合**，塔身、完整道路 signatures、瀝青及白色標線均不搬歪；地面有 **11 road-open bays／4 entrance bays／81 closed bays／17 根避車柱**，所選表面道路及隧道維持各自 road profile，不被 plaza 覆蓋。三條道路對最高實際剖面扣除0.32 m lintel 後的場景淨空分別 **6.3215858117339945／5.39626529168032／5.603079698879263 m**，全部大於 **4.7 m** 車輛包絡；原 site 無 clearance 後街燈衝突。
+- 屋頂：**187.6 m** roof deck 上有圓角 parapet、周邊綠化、6台 cooling towers、兩組斜置 PV racks（共24個模組）及一組小型垂直軸風力裝置，冠頂最高止於 **191 m**。設備數量及尺寸是照片導向模型幾何，不冒充機電竣工清單；沒有加入無來源天線或把 OSM195 m 與 CTBUH191 m 疊加。
+- 碰撞及實際驗證：最終 **325 個 colliders** 全部接入 world。Chromium／WebGL 完成 **10-view** 日夜全塔、主／東入口、15 m Great Room、兩層花園、可再生能源屋頂及地面道路 portal 實看；全塔相機已保留完整191 m高度。最終 audit 為 **58 meshes、112,686 vertices、41,632 triangles**，scene **27 landmarks／0 generic buildings**，`geometryIssues=[]`、`badColliders=0`、`missingMeshes=[]`；最高世界座標 **197.92307969887926 m**，扣 datum 精確 **191 m**。行人實撞主門的 frame 法線距離 **0.41000000000009074 m**、ground **7.043079698879263 m**；車輛在門外停止於 **2.109999999999985 m**。測試車沿保留地面道路南北雙向實駛均 `reached=true`、`maxProgress=1.002100581199...`，沒有被核心筒、牆、柱或鋪裝封死。page exception／Three.js shader error 均為 **0**，只有既有 Google Fonts 外部 resource `ERR_CONNECTION_CLOSED`。專測 **8／8 pass**，完整 `node --test tests/*.test.cjs` **472／472 pass**。
+- 資產及 runtime：研究相片只作目視及比例研究，沒有打包進 runtime；玻璃、金屬、花園、字牌、入口、吊燈及屋頂均為程序化 geometry／canvas，不使用照片貼圖或下載 GLTF。最後 self-contained runtime 為 **160 modules、31,468,364 bytes**，無 external module imports。
+
+### 參考資料
+
+- OSM 精確建築 ring、三個入口 nodes、原始 tags 及 full JSON：
+  https://www.openstreetmap.org/way/710522581
+  https://api.openstreetmap.org/api/0.6/way/710522581/full.json
+- CTBUH：191 m architectural／to-tip、46層、2022、Wong & Ouyang、NBBJ 及 POHL：
+  https://www.skyscrapercenter.com/building/two-taikoo-place/26638
+- Eckersley O'Callaghan：195 m來源口径、15 m無框預應力拉杆玻璃、3 m unitized glazing、外部遮陽 fins 及 conically curved corner panels：
+  https://www.eocengineers.com/projects/two-taikoo-place-371/
+- NBBJ：92,000 m²、兩層花園、雕塑式弧形角、高性能玻璃／被動遮陽及屋頂可再生能源：
+  https://www.nbbj.com/work/swire-hong-kong
+- Swire：42層、約1 million sq ft、solar PV 及 wind turbine；Schindler：2022年9月、15 m大堂玻璃及方塊吊燈：
+  https://www.swirepacific.com/en/media/presseach.php?f=p220802.htm
+  https://www.jardineschindler.com/en/media/news-press-releases/taikoo-place-enhancing-the-community.html
+- 全塔、弧形角、斜向基座、入口、金色吊燈及拱形行人橋相片研究（不進 runtime）：
+  https://www.krisprovoost.com/twotaikooplace
+
 ## 程式入口
 
 - `hsbc-headquarters-architecture.js`：滙豐純地理位置、OBB、樓層比例及 collider 座標換算，可在 Node 測試。
@@ -741,4 +770,6 @@
 - `conrad-world.js`：港麗藍綠弧形玻璃、白色 ribbons／主 fins、單一設備帶、紅色曲面冠頂字牌、法院道大理石 porte-cochere、日夜材質、碰撞及 stats。
 - `hysan-place-architecture.js`：希慎27頂點 OSM 來源、分列高度／層數／面積、五個錯位體量、三層花園、四個來源入口、道路走廊及 collider 座標換算。
 - `hysan-place-world.js`：希慎商場／辦公幕牆、斜向扶手電梯廊、三層花園、雙語向量字牌、玻璃轉門、屋頂農圃、開敞冠頂、日夜材質、碰撞及 stats。
-- `simple-world.js`：只整合這二十六個 authored landmarks；普通 `buildings` 仍為 0。
+- `two-taikoo-place-architecture.js`：太古坊二座52頂點 OSM 來源、OBB、高度／層數／面積 conventions、三個來源入口、DTM 地台、surface／tunnel 道路走廊及逐邊碰撞座標換算。
+- `two-taikoo-place-world.js`：太古坊二座 conical corners、3 m unitized 玻璃、外遮陽 fins、15 m大堂、雙層花園、金色方塊吊燈、三個入口、雙語向量字牌、拱形行人橋、PV／風力屋頂、日夜材質、碰撞及 stats。
+- `simple-world.js`：只整合這二十七個 authored landmarks；普通 `buildings` 仍為 0。

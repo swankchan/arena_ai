@@ -2,7 +2,7 @@
 
 這份文件是香港場景**實際建築物進度總表及 100 幢主要大廈施工清單**，記錄建築物是否已加入、是否精修，以及是否作為 Landmark 整合。`tools/data/hongkong/landmarks.json` 及下表的待製作項目只是來源／候選資料；資料出現在該 JSON 或本清單 **不代表已經加入場景**。
 
-最後整理：**2026-11-03**。目前已實際加入 **26 幢**；其餘 **74 幢**仍是待製作項目，沒有基本體量或精修完成的意思。
+最後整理：**2026-11-03**。目前已實際加入 **27 幢**；其餘 **73 幢**仍是待製作項目，沒有基本體量或精修完成的意思。
 
 ## 標記定義
 
@@ -19,12 +19,12 @@
 | 項目 | 數量 |
 | --- | ---: |
 | 施工清單總數 | 100 |
-| 已加入場景的建築物 | 26 |
-| 已加入而且精修 | 26 |
+| 已加入場景的建築物 | 27 |
+| 已加入而且精修 | 27 |
 | 已加入但只有基本體量 | 0 |
-| 已加入並作為 Landmark 整合 | 26 |
+| 已加入並作為 Landmark 整合 | 27 |
 | 製作中 | 0 |
-| 待製作 | 74 |
+| 待製作 | 73 |
 
 目前普通建築群仍為 **0**；上表只計實際加入的建築物，不把橋樑、道路構築物或純 OSM 候選資料計算在內。
 
@@ -55,6 +55,7 @@
 - 金鐘道政府合署高座 **OSM way 41499029 version 13** 是36頂點高座，實際 ring 面積 **1917.488176 m²**，OBB **1984.662561 m²** 只作包絡。OSM **199 m／57層**、CTBUH **198.7 m／47層／1985**、published **56層／62,077 m²** 與1986 opening 分列；入口採用真實 **node 11779198293 entrance=yes**，不另造入口點。
 - 香港港麗酒店 **OSM way 41498759 version 29** 是 **31 個獨立頂點**的弧形酒店／住宅塔身，實際 ring 面積 **1920.415786 m²**，OBB **2589.612402 m²** 只作包絡。OSM **198 m／62層**、CTBUH **198.9 m architectural/to-tip／183.9 m occupied／61層／1990** 分列，模型最高點採 **198.9 m**；法院道入口由官方到達指引及入口相片定向，不冒充 OSM 門節點。
 - 希慎廣場 **OSM way 755914808 version 4** 是 **27 個獨立節點**的 commercial／mall 建築外框，實際 ring 面積 **3853.043734533363 m²**；OBB **5355.810254189192 m²** 只作定向包絡。OSM **197 m／38 levels** 與 CTBUH **204.1 m architectural/to-tip／190.1 m occupied／36層／地下4層／2012** 分列，KPF **66,600 m²** 與 CTBUH **66,511 m²** 亦互不覆寫。五個上層錯位體量是照片導向重建，不冒充 OSM surveyed upper-floor plans。
+- 太古坊二座 **OSM way 710522581 version 8** 是 **52 個獨立節點**的辦公塔身，實際 ring 面積 **2651.4818416275084 m²**；OBB **2725.13649488804 m²** 只作定向包絡。OSM **195 m／46 levels／2022-09**、CTBUH **191 m architectural/to-tip／46層／2022** 及 Swire／Schindler **42層** 分列，模型最高點採 **191 m**。NBBJ **92,000 m²** 與 Swire 約 **1 million sq ft** 不互相覆寫；三個入口均使用真實 OSM entrance nodes。
 
 | 內部 ID | 建築物 | 地區 | 場景狀態 | 精修 | Landmark | 高度 | 位置／footprint 依據 | 主要實作 |
 | --- | --- | --- | --- | --- | --- | ---: | --- | --- |
@@ -84,7 +85,7 @@
 | `HK-B0024` | 金鐘道政府合署高座 Queensway Government Offices High Block | 金鐘 | 已加入 | **是** | **是** | OSM **199 m**；CTBUH **198.7 m** | OSM way **41499029**（version 13；36 個獨立頂點、原始幾何及 tags 另存於專屬來源模組） | `js/cities/hongkong/qgo-world.js` |
 | `HK-B0025` | 香港港麗酒店 Conrad Hong Kong | 金鐘 | 已加入 | **是** | **是** | OSM **198 m**；CTBUH **198.9 m** | OSM way **41498759**（version 29；31 個獨立頂點、原始幾何及 tags 另存於專屬來源模組） | `js/cities/hongkong/conrad-world.js` |
 | `HK-B0026` | 希慎廣場 Hysan Place | 銅鑼灣 | 已加入 | **是** | **是** | OSM **197 m**；CTBUH **204.1 m** | OSM way **755914808**（version 4；27 個獨立節點、原始 full JSON、幾何及 tags 已保存） | `js/cities/hongkong/hysan-place-world.js` |
-| `HK-B0027` | 太古坊二座 Two Taikoo Place | 鰂魚涌 | 待製作 | 否 | 否 | 195 m | OSM way **710522581** | — |
+| `HK-B0027` | 太古坊二座 Two Taikoo Place | 鰂魚涌 | 已加入 | **是** | **是** | OSM **195 m**；CTBUH **191 m** | OSM way **710522581**（version 8；52 個獨立節點、三個入口 nodes、原始 full JSON、幾何及 tags 已保存） | `js/cities/hongkong/two-taikoo-place-world.js` |
 | `HK-B0028` | The Henderson | 中環 | 待製作 | 否 | 否 | 190 m | OSM way **26434768** | — |
 | `HK-B0029` | 交易廣場第一座 One Exchange Square | 中環 | 待製作 | 否 | 否 | 188 m | OSM way **32530560** | — |
 | `HK-B0030` | 交易廣場第二座 Two Exchange Square | 中環 | 待製作 | 否 | 否 | 188 m | OSM way **148554953** | — |
@@ -191,6 +192,7 @@
 | 2026-11-02 | `HK-B0024` | 金鐘道政府合署高座精確 OSM way **41499029**、法院道入口及穿越裙樓的生成道路 | 保留 **record 49953 segments 0–2** 高架服務車路及 **record 36487 segments 2–3** 法院道；它們與精確高座 ring 相交，不造假說無衝突 | **建築物優先、道路配合**：不改白色標線及道路 record；37個衝突裙樓 bays 全部開敞，無地面玻璃或柱擋路，raw DTM 不鋪進車路走廊。46 m 辦公塔身 soffit 對全部衝突剖面保留超過4.7 m 車輛淨空；塔身及前庭無街燈 | `tests/qgo.test.cjs`；日夜 Chromium、入口行人／車輛實撞及兩條保留道路實駛，已完成並通過；見 `docs/hongkong-landmarks.md` 的高座實施及驗證紀錄 |
 | 2026-11-02 | `HK-B0025` | 香港港麗酒店精確 OSM way **41498759**、法院道 porte-cochere 及三條穿越／貼近塔身的生成道路 | **record 44556 segment 1**、**49177 segment 0**、**49181 segment 0** 與精確弧形 ring 相交；record index 只作生成資料定位，不當 OSM ID。塔身及入口雨篷範圍無 clearance 後街燈 | **建築物優先、道路配合**：塔身不搬歪，三條完整 generated-record signatures、瀝青及白色標線保留；14 m 以下按實際酒店架空入口層處理，25 支柱逐點避開車路，道路 ground 不被 plaza 覆蓋。soffit 對最高衝突剖面保留 **7.83483833573845 m** 場景淨空；入口另設 DTM-anchored 三級台階，不當實測道路標高 | `tests/conrad.test.cjs`；9-view 日夜 Chromium、最終入口日夜 focused re-render、行人／車輛實撞及三條道路實駛，已完成並通過；見 `docs/hongkong-landmarks.md` |
 | 2026-11-03 | `HK-B0026` | 希慎廣場精確 OSM way **755914808**、停車入口 node **1966250272** 及穿越地面的生成服務車路 | 只有 **record 44763 segment 0** 的無名 **8.4 m** 道路與原 ring 相交；record index 不是 OSM ID。原 site 無 clearance 後街燈衝突 | **建築物優先、道路配合**：建築及道路均不搬歪，保留瀝青、白色標線及道路 ground；地面 **8 個道路開口 bays** 與 **113 支柱**逐點避車，上層由 **8 m** 開始。對最高道路剖面，扣除 0.36 m lintel 後場景淨空 **7.665980678256323 m**，大於 **4.7 m** 車輛包絡 | `tests/hysan-place.test.cjs`；12-view 日夜 Chromium、最終入口 focused re-render、行人／車輛實撞及保留道路實駛 **18.715233911518308 m**；見 `docs/hongkong-landmarks.md` |
+| 2026-11-03 | `HK-B0027` | 太古坊二座精確 OSM way **710522581**、三個來源入口及穿越塔身的生成車路／隧道 | **records 35728／50426／50427 segment 0** 與原 ring 相交；前兩條為地面車路，**50427 `flags=4`** 為隧道。record index 不是 OSM ID。原 site 無 clearance 後街燈衝突 | **建築物優先、道路配合**：建築及完整道路均不搬歪，保留瀝青、白色標線及各自 road profile；地面 **11 個道路開口 bays**、**17 支柱**逐點避車，上層由23 m開始。扣除0.32 m lintel 後三條淨空 **6.3215858117339945／5.39626529168032／5.603079698879263 m**，均大於4.7 m車輛包絡 | `tests/two-taikoo-place.test.cjs`；10-view 日夜 Chromium、入口行人／車輛實撞及地面道路南北雙向實駛均 `reached=true`；全測試 **472／472**，見 `docs/hongkong-landmarks.md` |
 | — | — | — | 現有 HSBC／SCB 暫未補回逐項歷史衝突台帳 | 由下一次相關改動開始逐項記錄 | — |
 
 ## 新增及更新規則

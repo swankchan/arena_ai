@@ -31,6 +31,7 @@ import { CKC2_GROUND_SAMPLE, isCkc2PlazaPoint } from './ckc2-architecture.js';
 import { QGO_GROUND_SAMPLE, QGO_ENTRANCE_GROUND_SAMPLE, isQgoPlazaPoint, isQgoEntranceForecourtPoint } from './qgo-architecture.js';
 import { CONRAD_GROUND_SAMPLE, CONRAD_ENTRANCE_GROUND_SAMPLE, CONRAD_ENTRANCE_LANDING_RISE, conradEntranceStepDrop, isConradPlazaPoint, isConradEntranceForecourtPoint } from './conrad-architecture.js';
 import { HYSAN_GROUND_SAMPLE, isHysanPlazaPoint } from './hysan-place-architecture.js';
+import { TWO_TAIKOO_GROUND_SAMPLE, isTwoTaikooPlazaPoint } from './two-taikoo-place-architecture.js';
 
 function decodeBytes(base64) {
   const binary = atob(base64);
@@ -113,6 +114,8 @@ const CONRAD_PAD_HEIGHT = rawHongKongTerrainHeight(CONRAD_GROUND_SAMPLE.x, CONRA
 const CONRAD_ENTRANCE_PAD_HEIGHT = rawHongKongTerrainHeight(CONRAD_ENTRANCE_GROUND_SAMPLE.x, CONRAD_ENTRANCE_GROUND_SAMPLE.z) + CONRAD_ENTRANCE_LANDING_RISE;
 // Hysan Place uses its commercial-building centre DTM sample. The parking-access carriageway remains road-priority.
 const HYSAN_PAD_HEIGHT = rawHongKongTerrainHeight(HYSAN_GROUND_SAMPLE.x, HYSAN_GROUND_SAMPLE.z);
+// Two Taikoo Place uses its own building-centre DTM sample; surface mouths and the service tunnel stay road-priority.
+const TWO_TAIKOO_PAD_HEIGHT = rawHongKongTerrainHeight(TWO_TAIKOO_GROUND_SAMPLE.x, TWO_TAIKOO_GROUND_SAMPLE.z);
 
 export function hongKongTerrainHeight(x, z) {
   if (pointInFlatRing(HSBC_SITE.ring, x, z)) return HSBC_PAD_HEIGHT;
@@ -147,6 +150,7 @@ export function hongKongTerrainHeight(x, z) {
   if (isConradEntranceForecourtPoint(x, z)) return CONRAD_ENTRANCE_PAD_HEIGHT - conradEntranceStepDrop(x, z);
   if (isConradPlazaPoint(x, z)) return CONRAD_PAD_HEIGHT;
   if (isHysanPlazaPoint(x, z)) return HYSAN_PAD_HEIGHT;
+  if (isTwoTaikooPlazaPoint(x, z)) return TWO_TAIKOO_PAD_HEIGHT;
   return rawHongKongTerrainHeight(x, z);
 }
 
@@ -186,6 +190,7 @@ export const HONG_KONG_TERRAIN_META = Object.freeze({
   conradPadHeight: CONRAD_PAD_HEIGHT,
   conradEntrancePadHeight: CONRAD_ENTRANCE_PAD_HEIGHT,
   hysanPadHeight: HYSAN_PAD_HEIGHT,
+  twoTaikooPadHeight: TWO_TAIKOO_PAD_HEIGHT,
   tunnelStats: HK_TERRAIN.stats
 });
 

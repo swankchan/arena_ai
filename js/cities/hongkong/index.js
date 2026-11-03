@@ -91,6 +91,7 @@ export const city = {
       qgo: world.qgo,
       conrad: world.conrad,
       hysan: world.hysan,
+      twoTaikoo: world.twoTaikoo,
       landmarks: world.landmarks,
       stats,
       teleports: TELEPORTS,
