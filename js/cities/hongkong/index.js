@@ -94,6 +94,7 @@ export const city = {
       twoTaikoo: world.twoTaikoo,
       theHenderson: world.theHenderson,
       oneExchange: world.oneExchange,
+      twoExchange: world.twoExchange,
       landmarks: world.landmarks,
       stats,
       teleports: TELEPORTS,

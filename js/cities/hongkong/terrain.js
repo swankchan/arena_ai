@@ -34,6 +34,7 @@ import { HYSAN_GROUND_SAMPLE, isHysanPlazaPoint } from './hysan-place-architectu
 import { TWO_TAIKOO_GROUND_SAMPLE, isTwoTaikooPlazaPoint } from './two-taikoo-place-architecture.js';
 import { HENDERSON_GROUND_SAMPLE, isHendersonPlazaPoint } from './the-henderson-architecture.js';
 import { ONE_EXCHANGE_GROUND_SAMPLE, isOneExchangePlazaPoint } from './one-exchange-square-architecture.js';
+import { TWO_EXCHANGE_GROUND_SAMPLE, isTwoExchangePlazaPoint } from './two-exchange-square-architecture.js';
 
 function decodeBytes(base64) {
   const binary = atob(base64);
@@ -122,6 +123,7 @@ const TWO_TAIKOO_PAD_HEIGHT = rawHongKongTerrainHeight(TWO_TAIKOO_GROUND_SAMPLE.
 const HENDERSON_PAD_HEIGHT = rawHongKongTerrainHeight(HENDERSON_GROUND_SAMPLE.x, HENDERSON_GROUND_SAMPLE.z);
 // One Exchange Square uses its own DTM datum while the surface bus-terminal road retains road-priority queries.
 const ONE_EXCHANGE_PAD_HEIGHT = rawHongKongTerrainHeight(ONE_EXCHANGE_GROUND_SAMPLE.x, ONE_EXCHANGE_GROUND_SAMPLE.z);
+const TWO_EXCHANGE_PAD_HEIGHT = rawHongKongTerrainHeight(TWO_EXCHANGE_GROUND_SAMPLE.x, TWO_EXCHANGE_GROUND_SAMPLE.z);
 
 export function hongKongTerrainHeight(x, z) {
   if (pointInFlatRing(HSBC_SITE.ring, x, z)) return HSBC_PAD_HEIGHT;
@@ -159,6 +161,7 @@ export function hongKongTerrainHeight(x, z) {
   if (isTwoTaikooPlazaPoint(x, z)) return TWO_TAIKOO_PAD_HEIGHT;
   if (isHendersonPlazaPoint(x, z)) return HENDERSON_PAD_HEIGHT;
   if (isOneExchangePlazaPoint(x, z)) return ONE_EXCHANGE_PAD_HEIGHT;
+  if (isTwoExchangePlazaPoint(x, z)) return TWO_EXCHANGE_PAD_HEIGHT;
   return rawHongKongTerrainHeight(x, z);
 }
 
@@ -201,6 +204,7 @@ export const HONG_KONG_TERRAIN_META = Object.freeze({
   twoTaikooPadHeight: TWO_TAIKOO_PAD_HEIGHT,
   hendersonPadHeight: HENDERSON_PAD_HEIGHT,
   oneExchangePadHeight: ONE_EXCHANGE_PAD_HEIGHT,
+  twoExchangePadHeight: TWO_EXCHANGE_PAD_HEIGHT,
   tunnelStats: HK_TERRAIN.stats
 });
 

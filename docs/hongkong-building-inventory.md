@@ -2,7 +2,7 @@
 
 這份文件是香港場景**實際建築物進度總表及 100 幢主要大廈施工清單**，記錄建築物是否已加入、是否精修，以及是否作為 Landmark 整合。`tools/data/hongkong/landmarks.json` 及下表的待製作項目只是來源／候選資料；資料出現在該 JSON 或本清單 **不代表已經加入場景**。
 
-最後整理：**2026-11-03**。目前已實際加入 **29 幢**；其餘 **71 幢**仍是待製作項目，沒有基本體量或精修完成的意思。
+最後整理：**2026-11-03**。目前已實際加入 **30 幢**；其餘 **70 幢**仍是待製作項目，沒有基本體量或精修完成的意思。
 
 ## 標記定義
 
@@ -19,12 +19,12 @@
 | 項目 | 數量 |
 | --- | ---: |
 | 施工清單總數 | 100 |
-| 已加入場景的建築物 | 29 |
-| 已加入而且精修 | 29 |
+| 已加入場景的建築物 | 30 |
+| 已加入而且精修 | 30 |
 | 已加入但只有基本體量 | 0 |
-| 已加入並作為 Landmark 整合 | 29 |
+| 已加入並作為 Landmark 整合 | 30 |
 | 製作中 | 0 |
-| 待製作 | 71 |
+| 待製作 | 70 |
 
 目前普通建築群仍為 **0**；上表只計實際加入的建築物，不把橋樑、道路構築物或純 OSM 候選資料計算在內。
 
@@ -58,6 +58,7 @@
 - 太古坊二座 **OSM way 710522581 version 8** 是 **52 個獨立節點**的辦公塔身，實際 ring 面積 **2651.4818416275084 m²**；OBB **2725.13649488804 m²** 只作定向包絡。OSM **195 m／46 levels／2022-09**、CTBUH **191 m architectural/to-tip／46層／2022** 及 Swire／Schindler **42層** 分列，模型最高點採 **191 m**。NBBJ **92,000 m²** 與 Swire 約 **1 million sq ft** 不互相覆寫；三個入口均使用真實 OSM entrance nodes。
 - The Henderson **OSM way 26434768 version 17** 是 **58 個獨立節點**的 curved office ring，實際面積 **1713.7690360519955 m²**；OBB 面積只作定向包絡，不是標準層面積。OSM／WSP／Discover Hong Kong **190 m** 與 seele／Lichtvision **200 m** 分列，模型最高點採 **190 m**，不平均或加疊。OSM／ZHA **36層**、官方 workplace **22/F Sky Garden／38/F Summit 38／39/F Cloud 39**、Hip Hing typical **6/F–38/F**、官方 typical **6/F–37/F** 及 seele 宴會廳 **37/38** 均保留各自口径；兩個入口是照片導向，不冒充 OSM 門節點。
 - 交易廣場第一座 **OSM way 32530560 version 11** 是 **43 個獨立節點**的 angular prisms／cylinders 組合 ring，實際面積 **1612.0205610386329 m²**；OBB **1849.6627058764952 m²** 只作定向包絡。OSM／CTBUH **188 m／52層** 與 Emporis 搜尋摘要 **188.01 m architectural／182.03 m main roof** 分列，模型最高點採 **188 m**；摘要正文未成功讀取，不能冒充已讀正文。P&T **162,400 m²** 是整個交易廣場 complex，JLL **600,000 sq ft／13,000 sq ft floor plate** 是 One 租務表述；Savvi **5/F–50/F共45個辦公樓層**只作45道視覺 courses 依據，不改寫官方52層。入口為照片導向，不冒充 OSM 門節點。
+- 交易廣場第二座 **OSM way 148554953 version 7** 是 **49 個獨立節點**的 curved ring，實際面積 **1717.1374305608952 m²**；OBB **1940.0213824402392 m²** 只作定向包絡，沒有複製 One 的43頂點外形。OSM／CTBUH **188 m／52層** 與 Emporis 搜尋摘要 **188.01 m architectural／182.03 m main roof** 分列，摘要正文未成功讀取。P&T **162,400 m²** 仍是整個 complex；Savvi 的 Two **約580,000 sq ft、5/F–49/F共44個辦公樓層**與 CBD **42個辦公樓層、24部客梯分6區**保留各自口径，44只作視覺 courses，不改寫52層。主入口由 RIBA 雙塔之間照片定向，不冒充 OSM 門節點。
 
 | 內部 ID | 建築物 | 地區 | 場景狀態 | 精修 | Landmark | 高度 | 位置／footprint 依據 | 主要實作 |
 | --- | --- | --- | --- | --- | --- | ---: | --- | --- |
@@ -90,7 +91,7 @@
 | `HK-B0027` | 太古坊二座 Two Taikoo Place | 鰂魚涌 | 已加入 | **是** | **是** | OSM **195 m**；CTBUH **191 m** | OSM way **710522581**（version 8；52 個獨立節點、三個入口 nodes、原始 full JSON、幾何及 tags 已保存） | `js/cities/hongkong/two-taikoo-place-world.js` |
 | `HK-B0028` | The Henderson | 中環 | 已加入 | **是** | **是** | OSM／WSP **190 m**；seele **200 m** | OSM way **26434768**（version 17；58 個獨立節點、原始 full JSON、幾何及 tags 已保存） | `js/cities/hongkong/the-henderson-world.js` |
 | `HK-B0029` | 交易廣場第一座 One Exchange Square | 中環 | 已加入 | **是** | **是** | OSM／CTBUH **188 m**；Emporis 摘要 **188.01 m** | OSM way **32530560**（version 11；43 個獨立節點、語義重建 full JSON、幾何及 tags 已保存） | `js/cities/hongkong/one-exchange-square-world.js` |
-| `HK-B0030` | 交易廣場第二座 Two Exchange Square | 中環 | 待製作 | 否 | 否 | 188 m | OSM way **148554953** | — |
+| `HK-B0030` | 交易廣場第二座 Two Exchange Square | 中環 | 已加入 | **是** | **是** | OSM／CTBUH **188 m**；Emporis 摘要 **188.01 m** | OSM way **148554953**（version 7；49 個獨立節點、語義重建 full JSON、幾何及 tags 已保存） | `js/cities/hongkong/two-exchange-square-world.js` |
 | `HK-B0031` | 力寶中心第二座 Lippo Centre Tower 2 | 金鐘 | 待製作 | 否 | 否 | 186 m | OSM way **107336263** | — |
 | `HK-B0032` | 友邦金融中心 AIA Central | 中環 | 待製作 | 否 | 否 | 185 m | OSM way **107324767** | — |
 | `HK-B0033` | 太古廣場三座 Three Pacific Place | 金鐘 | 待製作 | 否 | 否 | 182 m | OSM way **88391081** | — |
@@ -197,6 +198,7 @@
 | 2026-11-03 | `HK-B0027` | 太古坊二座精確 OSM way **710522581**、三個來源入口及穿越塔身的生成車路／隧道 | **records 35728／50426／50427 segment 0** 與原 ring 相交；前兩條為地面車路，**50427 `flags=4`** 為隧道。record index 不是 OSM ID。原 site 無 clearance 後街燈衝突 | **建築物優先、道路配合**：建築及完整道路均不搬歪，保留瀝青、白色標線及各自 road profile；地面 **11 個道路開口 bays**、**17 支柱**逐點避車，上層由23 m開始。扣除0.32 m lintel 後三條淨空 **6.3215858117339945／5.39626529168032／5.603079698879263 m**，均大於4.7 m車輛包絡 | `tests/two-taikoo-place.test.cjs`；10-view 日夜 Chromium、入口行人／車輛實撞及地面道路南北雙向實駛均 `reached=true`；全測試 **472／472**，見 `docs/hongkong-landmarks.md` |
 | 2026-11-03 | `HK-B0028` | The Henderson 精確 OSM way **26434768**、照片導向美利道主入口及高架大堂入口、**18 × 3.2 m** 主入口前庭 | 以全港道路中心線／車道半寬掃描精確 site 及主入口前庭，兩個範圍均無道路相交；掃描 clearance 後街燈亦無衝突。原 OSM way 沒有入口 node，edge **42／12** 只作照片導向入口定位 | 無需搬路、搬燈或搬歪建築；保留美利道瀝青、白色標線及原道路剖面。建築使用本身 DTM 地台，ground query 讓所選道路優先，不把車路壓成 plaza | `tests/the-henderson.test.cjs`；Chromium 實測 site／主入口／前庭 ground **8.939865857148968 m**、美利道取樣 **8.681303820521162 m**，主入口碰撞解算位移 **1.4738418613453774 m**；全測試 **480／480**，見 `docs/hongkong-landmarks.md` |
 | 2026-11-03 | `HK-B0029` | One Exchange Square 精確 OSM way **32530560**、**18 × 4.6 m** 照片導向入口前庭，以及地面巴士總站車路（生成道路 **record index 45686**，不是 OSM way ID） | 同一條 **5.5 m** 地面道路的 segments **0–6** 穿越／接觸 tower ring，涉及開放邊 **[3,4,5,11,12,13,14]**；主入口前庭無道路衝突，site／前庭均無 clearance 後街燈。原 OSM way 沒有入口 node，edge **30** 只作照片導向定位 | 建築及道路均不搬歪，保留瀝青、白色標線及原道路剖面。七個地面外牆 bays 開放，只把12支柱放在掃描確認遠離車路的頂點；上蓋 soffit 為地台上 **7.2 m**，對 `roadRibbonProfileAtSegment` 全剖面保守淨空 **6.83100020706347 m**，大於 **4.7 m** 車輛包絡。ground query 讓所選道路優先 | `tests/one-exchange-square.test.cjs`；Chromium 七個道路取樣的水平碰撞解算位移全部 **0**，道路取樣淨空 **6.834600448806343 m**；入口實撞及日夜多視角檢查；全測試 **488／488**，見 `docs/hongkong-landmarks.md` |
+| 2026-11-03 | `HK-B0030` | Two Exchange Square 精確 OSM way **148554953**、**13.8 × 4.4 m** 照片導向入口前庭，以及地面總站／落客車路（生成道路 **record indices 38087／39176／40776／44601／44602**，不是 OSM way IDs） | 六個地面道路 segments **[38087/0、39176/0、40776/0、40776/1、44601/0、44602/0]** 與 tower ring 相交，涉及 **22 個開放邊**；主入口前庭無道路衝突，site／前庭均無 clearance 後街燈。原 OSM way 沒有入口 node，edge **18** 只作照片導向定位 | 建築及道路均不搬歪，保留瀝青、白色標線及原道路剖面。地面車路範圍開放，只把12支柱放在逐點掃描確認遠離車路的頂點；上蓋 soffit 為地台上 **7.2 m**，對 `roadRibbonProfileAtSegment` 全剖面保守淨空 **6.7512405464244285 m**，大於 **4.7 m** 車輛包絡。ground query 讓所選道路優先 | `tests/two-exchange-square.test.cjs`；Chromium 八個道路取樣的水平碰撞解算位移全部 **0**，道路取樣淨空 **6.774466351634041 m**；入口實撞及最終六視角日夜檢查；全測試 **496／496**，見 `docs/hongkong-landmarks.md` |
 | — | — | — | 現有 HSBC／SCB 暫未補回逐項歷史衝突台帳 | 由下一次相關改動開始逐項記錄 | — |
 
 ## 新增及更新規則

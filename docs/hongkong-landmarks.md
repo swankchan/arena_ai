@@ -1,6 +1,6 @@
 # 香港手建 Landmarks
 
-香港仍採用 `unified-simple` 展示：全港道路及基本地面保留，**不生成普通建築群**。手建地標會逐個加入；目前實際整合 **29 幢**，完整名單及逐幢狀態以 Inventory 為準。
+香港仍採用 `unified-simple` 展示：全港道路及基本地面保留，**不生成普通建築群**。手建地標會逐個加入；目前實際整合 **30 幢**，完整名單及逐幢狀態以 Inventory 為準。
 
 建築物進度、**精修**與 **Landmark** 獨立標記，以及道路衝突台帳，見 [香港建築物 Inventory](hongkong-building-inventory.md)。
 
@@ -791,6 +791,42 @@
   https://webfile.hkland.com/assets/press-release/2025/en/hll_20250424.pdf
 - 全塔、弧面／prism 立面、入口、壁畫及屋頂照片均實際檢視；搜尋中誤標的倫敦同名建築、中銀及行人天橋相片沒有作為本幢依據。研究照片沒有打包進應用程式。
 
+## 交易廣場第二座 Two Exchange Square
+
+- 地點及範圍：採目前 **OSM way 148554953 version 7** 的 **49 個獨立節點**（50個 geometry rows 包括閉合點），原始經緯度、node IDs、tags、版本、來源時間 **2025-12-27T08:33:19Z** 及 ODbL attribution 保存在 `two-exchange-square-architecture.js`。`tools/data/hongkong/two-exchange-square-osm-full.json` 保存由目前 API geometry chunks **語義重建**的49 nodes＋way，測試逐點核對；它不是原始 HTTP response bytes。這是交易廣場第二座塔身，不是整個 complex、One 的複製品或土地用途範圍。實際 ring 面積 **1717.1374305608952 m²**；minimum-area OBB 只作包絡，中心 **(-140.50129589713575,-219.50433914366664)**、尺寸 **56.65741597791461 × 34.241261253363035 m**、`ry=1.0341078621453035`，OBB 面積 **1940.0213824402392 m²** 不冒充標準層面積。
+- 高度、層數及面積 conventions：**OSM／CTBUH 188 m／52層** 分列保存；CTBUH 另有 **地下1層、1982動工、1985完成、All-Concrete**。Emporis **188.01 m architectural／182.03 m main roof／52層／3.33 m floor-to-floor**只來自搜尋摘要，正文請求未成功，沒有假稱已讀正文。模型主屋面採 **182.03 m**、長向階梯機房最高 **188 m**，不平均、取整或添加無來源天線。P&T **162,400 m²** 是整個交易廣場 complex GFA；Savvi 的 Two **約580,000 sq ft、典型12,057–14,445 sq ft、5/F–49/F共44個辦公樓層**是單幢租務表述。CBD 另列 **42個辦公樓層、約2.5 m ceiling、24部客梯分6區**；42／44／52不互相覆寫，44只支持44道視覺幕牆 courses。
+- 建築研究及立面：實看雙塔、弧面、入口及屋頂照片，以 M+ 所述 **angular prisms and cylinders composite bundles、silver glass and polished granite** 和實景的成對弧面、豎向石肋及水平玻璃／花崗岩帶為依據。完整49-node ring 被保留，沒有改成橢圓、方盒或複製 One 的43-node ring。弧面採銀藍反光玻璃及細豎框，四條 angular prism edges **[1,18,31,32]** 使用橫向玻璃窗及粉紅花崗岩側肋。全幢有 **6,116 塊辦公玻璃、2,156 道花崗岩橫帶、8,140 段豎框、2,024 塊 prism 玻璃窗**；日間只有玻璃及石材色差，夜間以 `uInteriorGlow` 顯示克制暖窗，石材本身不發光。
+- 總站上蓋及道路：地面層依公共巴士總站／落客車路保留開口，不是通用密封玻璃盒。生成道路 **record indices 38087／39176／40776／44601／44602**（不是 OSM way IDs）的六個 segments **[38087/0、39176/0、40776/0、40776/1、44601/0、44602/0]** 與精確 ring 相交；外牆邊 **[0,1,2,3,4,5,6,7,8,9,31,32,39,40,41,42,43,44,45,46,47,48]** 開放，12支柱只放在逐點掃描確認離開車路的頂點。上蓋 soffit 是地台上 **7.2 m**，有 lintels、soffit、18盞場景暖光及上部玻璃／百頁；這些是保留道路的場景設計控制，不是實測總站工程圖。全渲染道路剖面的保守淨空為 **6.7512405464244285 m**，大於 **4.7 m** 車輛包絡；原道路中心線、瀝青、白色標線及坡度均保留。
+- 屋頂：**182.03 m** 主屋面有完整49邊弧形花崗岩 parapet、銀色 coping、四組屋頂機組、八個風扇及百頁；長向中央核心分兩級內縮至 **188 m**。典型平面支持長向核心及外圍租務區，但屋頂設備的位置、尺寸及百頁仍屬照片導向程序化重建，不冒充竣工機電圖則；沒有把 One／Three 的屋頂或標誌混用。
+- 入口及大堂：OSM way 沒有 entrance node；RIBA 雙塔之間主入口照片對應 **edge 18**，明確記為照片導向、`nodeId=null`。入口有 **13.8 × 4.4 m** 無車路前庭、12塊曲面玻璃、薄金屬 canopy、暖色 downlights、手寫體 `Exchange Square`、`TWO EXCHANGE SQUARE` 及 `8 CONNAUGHT PLACE`。最終入口高度採 **6.8 m** 視覺控制，保持在 **7.2 m** 總站 soffit 以下，避免字牌及玻璃被橫向構件遮住；這不是實測入口高度。玻璃後有一對各20級的場景扶手電梯、24 lifts／6 zones 目錄及靜態 HKEX 顯示牌；目錄及顯示內容是場景重建，不是實時租務或市場資料。
+- 水景及花園：入口側設 **6-jet** 線性反射水景、三個修剪植物花槽及低矮石凳，對應雙塔之間的到達空間。水景及植物的位置、尺寸是視覺整合，不是實測景觀圖；One 的 Nolan 壁畫及 Henry Moore 雕塑沒有套到本幢。
+- 地面、碰撞及道路優先：中心 raw DTM 的 ground offset 為 **4.248209657510245 m**，plaza 為 **4.368209657510245 m**，不是已核實道路工程標高。建築及前庭沒有 clearance 後街燈衝突，無需搬燈。`simple-world.js` 只在未選取道路時使用 Two Exchange Square plaza；所選地面車路保留 `roadRibbonProfileAtSegment`，兩個 ground rings 接入道路接合，並與 Henderson／One 的獨立 pads 串接而不互相覆寫。最終 **194 個 colliders** 全部接入 world，分開處理辦公塔身、非車路地面牆、支柱、上蓋、屋頂、入口門牆及水景花槽。
+- 瀏覽器驗證：重建單一 runtime 後，最終 Chromium／WebGL 實看日景全塔、正面入口、總站道路、屋頂，以及夜景全塔及入口共 **6 views**。實看後把入口由早期較高構圖修正為上述 **6.8 m**，再重新執行最終六視角，確認手寫體字樣、六區目錄、雙扶梯及日夜材質可見。最終 audit 為 **34 meshes、301,378 vertices、100,524 triangles**，scene **30 landmarks／0 generic buildings**，群組局部最高點 **188 m**；`geometryIssues=[]`、`missingColliders=0`、`badColliders=0`。site／主入口／前庭 ground 均 **4.368209657510245 m**；八個道路取樣的實際 `resolveHorizontalCollision` 位移全部 **0**，瀏覽器取樣淨空 **6.774466351634041 m**。入口玻璃碰撞 clone 解算位移 **2.7542705268100915 m**；這些是取樣及碰撞解算驗證，沒有冒充完整巴士駕駛巡行。page exception／Three.js shader error 均為 **0**，只有既有 Google Fonts 外部 resource `ERR_CONNECTION_CLOSED`。專測 **8／8 pass**，完整 `node --test tests/*.test.cjs` **496／496 pass**。
+- 資產及 runtime：研究相片只作目視及比例研究，沒有打包進 runtime；玻璃、花崗岩、入口、字牌、目錄、水景及屋頂均為程序化 geometry／Canvas，不使用下載 GLTF。最後 self-contained runtime 為 **166 modules、31,592,984 bytes**，無 external module imports。
+
+### 參考資料
+
+- OSM 精確建築 ring 及 tags：
+  https://www.openstreetmap.org/way/148554953
+  https://api.openstreetmap.org/api/0.6/way/148554953/full.json
+- CTBUH／CVU：188 m、52層、地下1層、1982–1985、All-Concrete、Hongkong Land、P&T、Arup、Gammon 及 Permasteelisa：
+  https://www.skyscrapercenter.com/building/exchange-square-2/2031
+- P&T：兩幢52層及一幢32層、公共巴士總站上蓋，以及整個 complex **162,400 m²**：
+  https://web.p-t-group.com/en/project-detail.php?projects_id=2
+- M+ 建築模型館藏：One／Two 的 angular prisms／cylinders composite bundles、silver glass 及 polished granite：
+  https://www.mplus.org.hk/en/collection/objects/model-exchange-square-i-ii-and-iii-circa-19831985-hong-kong-2013144/
+- Emporis 搜尋摘要（**正文未成功讀取**）：188.01 m architectural、182.03 m main roof、52層及3.33 m floor-to-floor：
+  https://www.emporis.com/buildings/120525/two-exchange-square-hong-kong-china
+- Savvi：Two 的約580,000 sq ft、典型12,057–14,445 sq ft、8.1 ft ceiling、VAV 及 **5/F–49/F** 辦公樓層列表：
+  https://www.savviprop.com/exchange-square
+- CBD：Two 的42個辦公樓層、約580,000 sq ft、約2.5 m ceiling、24部客梯分6區及典型平面：
+  https://www.cbdofficehk.com/exchange-square
+- RIBA：雙塔之間的 main entrance 實景，作 edge 18 曲面玻璃入口及字樣定向依據：
+  https://www.ribapix.com/two-exchange-square-hong-kong-the-main-entrance-between-the-two-towers_riba136866
+- 成對弧面、豎向石肋及水平玻璃／花崗岩帶的次要實景核對：
+  https://www.flickr.com/photos/cnmark/1525266278
+- 全塔、弧面／prism 立面、入口及屋頂照片均實際檢視；搜尋中其他城市同名建築及無結果的 lobby／roof 圖片搜尋沒有作為本幢依據。研究照片沒有打包進應用程式。
+
 ## 程式入口
 
 - `hsbc-headquarters-architecture.js`：滙豐純地理位置、OBB、樓層比例及 collider 座標換算，可在 Node 測試。
@@ -849,4 +885,6 @@
 - `the-henderson-world.js`：The Henderson 三組花瓣體量、曲面低反玻璃、豎向凹槽、開放 Sky Garden、Cloud 39、兩個入口、Art Garden、日夜材質、碰撞及 stats。
 - `one-exchange-square-architecture.js`：One Exchange Square 43頂點 OSM 來源、OBB、高度／層數／面積 conventions、照片導向入口、巴士總站道路開放邊、DTM 地台及 collider 座標換算。
 - `one-exchange-square-world.js`：One Exchange Square 束狀銀玻璃／粉紅花崗岩立面、開放巴士總站上蓋、階梯屋頂、HKEX 入口、雙扶手電梯、程序壁畫、雕塑水景、日夜材質、碰撞及 stats。
-- `simple-world.js`：只整合這二十九個 authored landmarks；普通 `buildings` 仍為 0。
+- `two-exchange-square-architecture.js`：Two Exchange Square 49頂點 OSM 來源、OBB、高度／層數／面積 conventions、照片導向入口、22個道路開放邊、12個安全柱位、DTM 地台及 collider 座標換算。
+- `two-exchange-square-world.js`：Two Exchange Square 弧面銀玻璃／粉紅花崗岩立面、開放總站上蓋、長向階梯屋頂、曲面玻璃入口、Exchange Square 字樣、六區升降機目錄、雙扶手電梯、線性水景、日夜材質、碰撞及 stats。
+- `simple-world.js`：只整合這三十個 authored landmarks；普通 `buildings` 仍為 0。
