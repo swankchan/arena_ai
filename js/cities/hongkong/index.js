@@ -93,6 +93,7 @@ export const city = {
       hysan: world.hysan,
       twoTaikoo: world.twoTaikoo,
       theHenderson: world.theHenderson,
+      oneExchange: world.oneExchange,
       landmarks: world.landmarks,
       stats,
       teleports: TELEPORTS,

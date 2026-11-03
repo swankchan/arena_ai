@@ -1,6 +1,6 @@
 # 香港手建 Landmarks
 
-香港仍採用 `unified-simple` 展示：全港道路及基本地面保留，**不生成普通建築群**。手建地標會逐個加入；目前實際整合 **28 幢**，完整名單及逐幢狀態以 Inventory 為準。
+香港仍採用 `unified-simple` 展示：全港道路及基本地面保留，**不生成普通建築群**。手建地標會逐個加入；目前實際整合 **29 幢**，完整名單及逐幢狀態以 Inventory 為準。
 
 建築物進度、**精修**與 **Landmark** 獨立標記，以及道路衝突台帳，見 [香港建築物 Inventory](hongkong-building-inventory.md)。
 
@@ -753,6 +753,44 @@
 - Lichtvision：2024完成、200 m來源口径及立面／室內／景觀照明整合：
   https://lichtvision.com/en/project/the-henderson
 
+## 交易廣場第一座 One Exchange Square
+
+- 地點及範圍：採目前 **OSM way 32530560 version 11** 的 **43 個獨立節點**（44個 geometry rows 包括閉合點），原始經緯度、node IDs、tags、版本、時間及 ODbL attribution 保存在 `one-exchange-square-architecture.js`。`tools/data/hongkong/one-exchange-square-osm-full.json` 保存由目前 API geometry chunks **語義重建**的43 nodes＋way，測試逐點核對；它不是聲稱保存原始 HTTP response bytes。這是交易廣場第一座塔身，不是整個 complex 或土地用途範圍。實際 ring 面積 **1612.0205610386329 m²**；minimum-area OBB 只作包絡，中心 **(-128.61514167635602,-171.88366316605914)**、尺寸 **53.97726369464803 × 34.267441127437024 m**、`ry=-0.5488020778560028`，OBB 面積 **1849.6627058764952 m²** 不冒充標準層面積。
+- 高度、層數及面積 conventions：**OSM／CTBUH 188 m／52層** 分列保存；CTBUH 另有 **地下1層、1982動工、1985完成、All-Concrete**。Emporis **188.01 m architectural／182.03 m main roof／52層**只來自搜尋摘要，正文請求未成功，文件及程式沒有假稱已讀正文。模型主屋面採 **182.03 m**、階梯機房屋頂最高 **188 m**，不平均、取整或添加無來源天線。P&T **162,400 m²** 是整個交易廣場 complex GFA；JLL **600,000 sq ft／13,000 sq ft typical floor** 是 One 租務表述，兩者不混用。Savvi **5/F–50/F共45個辦公樓層**只支持45道視覺幕牆 courses，沒有改寫官方52層。
+- 建築研究及束狀立面：實看 P&T、M+、完工攝影、入口及屋頂資料；M+ 所述 **angular prisms and cylinders composite bundles、silver glass and polished granite** 是主要形態依據。完整43-node ring 被保留，沒有改成橢圓、雙圓柱或玻璃方盒。弧面用銀藍反光玻璃及細豎框，三條 angular prism edges 使用寬幅橫向玻璃及粉紅花崗岩側肋，而非實心石刀。全幢有 **5,580 塊辦公玻璃、1,935 道花崗岩橫帶、7,020 段豎框、1,440 塊 prism 玻璃窗**；日間只有玻璃色差，夜間以 `uInteriorGlow` 顯示克制暖窗，石材本身不發光。
+- 巴士總站上蓋及道路：P&T 資料明確描述塔樓建於公共巴士總站上，因此地面層不是通用密封玻璃盒。生成道路 **record index 45686**（不是 OSM way ID）的七個 segments 與精確 ring 相交；外牆邊 **[3,4,5,11,12,13,14]** 開放，12支柱只放在逐點掃描確認離開車路的頂點。上蓋 soffit 是地台上 **7.2 m**，有 lintels、soffit、18盞場景暖光及上部玻璃／百頁；這些是保留道路的場景設計控制，不是實測總站工程圖。全渲染道路剖面的保守淨空為 **6.83100020706347 m**，大於 **4.7 m** 車輛包絡；原道路中心線、瀝青、白色標線及坡度均保留。
+- 屋頂：**182.03 m** 主屋面有完整43邊弧形花崗岩 parapet、銀色 coping、六組屋頂機組、風扇及百頁；兩級內縮機房止於 **188 m**。屋頂構件是依照片及 roof convention 所作的程序化重建，不冒充竣工機電圖則；沒有把 One／Two／Three Exchange Square 的屋頂或標誌混用。
+- 入口及大堂：OSM way 沒有 entrance node；**edge 30** 的 Connaught Place arrival 明確記為照片導向、`nodeId=null`。入口有 **18 × 4.6 m** 無車路前庭、分格玻璃門牆、薄金屬 canopy、暖色 downlights、樓名／地址及青色 HKEX 顯示牌。玻璃後有一對各24級的場景扶手電梯及兩幅 Canvas 程序壁畫，對應資料所述 Sidney Nolan《Landscape》左右彩色壁畫；壁畫是重新繪製的色塊／線條詮釋，不是照片貼圖或原作複製檔。入口尺寸、扶梯及裝置位置是視覺整合，不冒充室內測量。
+- 雕塑及花園：入口側以圆形水池、青銅橢圓環及上下相向尖點表現 Henry Moore《Oval with Points》的可識別關係，另有低矮燈點及修剪植物。雕塑是程序化視覺近似，**不是藝術品掃描、精確鑄造形狀或實測基座**；其他屬 Two Exchange Square、The Forum 或整個雕塑花園的作品沒有藉此提前完成。
+- 地面、碰撞及道路優先：中心 raw DTM 的 ground offset 為 **4.371980624896196 m**，plaza 為 **4.491980624896196 m**，不是已核實道路工程標高。建築及前庭沒有 clearance 後街燈衝突，無需搬燈。`simple-world.js` 只在未選取道路時使用 One Exchange Square plaza；所選地面車路保留 `roadRibbonProfileAtSegment`，同時兩個 ground rings 接入道路接合。最終 **180 個 colliders** 全部接入 world，分開處理辦公塔身、非車路地面牆、支柱、上蓋、屋頂、入口門牆及雕塑。
+- 瀏覽器驗證：重建單一 runtime 後，Chromium／WebGL 實看日景全塔、入口、巴士總站道路、屋頂，以及夜景全塔及入口。最終 audit 為 **33 meshes、276,730 vertices、92,300 triangles**，scene **29 landmarks／0 generic buildings**，群組局部最高點 **188 m**；`geometryIssues=[]`、`missingColliders=0`、`badColliders=0`。site／主入口／前庭 ground 均 **4.491980624896196 m**；七個道路取樣的實際 `resolveHorizontalCollision` 位移全部 **0**，瀏覽器取樣淨空 **6.834600448806343 m**。入口玻璃碰撞 clone 解算位移 **1.9905854841719366 m**；這些是取樣及碰撞解算驗證，沒有冒充完整巴士駕駛巡行。page exception／Three.js shader error 均為 **0**，只有既有 Google Fonts 外部 resource `ERR_CONNECTION_CLOSED`。完整 `node --test tests/*.test.cjs` **488／488 pass**。
+- 資產及 runtime：研究相片只作目視及比例研究，沒有打包進 runtime；玻璃、花崗岩、入口、壁畫、字牌、雕塑及屋頂均為程序化 geometry／Canvas，不使用下載 GLTF。最後 self-contained runtime 為 **164 modules、31,554,084 bytes**，無 external module imports。
+
+### 參考資料
+
+- OSM 精確建築 ring 及 tags：
+  https://www.openstreetmap.org/way/32530560
+  https://api.openstreetmap.org/api/0.6/way/32530560/full.json
+- CTBUH／CVU：188 m、52層、地下1層、1982–1985、All-Concrete、Hongkong Land、P&T、Arup Associates、Gammon 及 Permasteelisa：
+  https://www.skyscrapercenter.com/building/exchange-square-1/2030
+- P&T：兩幢52層及一幢32層、公共巴士總站上蓋，以及整個 complex **162,400 m²**：
+  https://web.p-t-group.com/en/project-detail.php?projects_id=2
+- M+ 建築模型館藏：One／Two 的 angular prisms／cylinders composite bundles、silver glass 及 polished granite：
+  https://www.mplus.org.hk/en/collection/objects/model-exchange-square-i-ii-and-iii-circa-19831985-hong-kong-2013144/
+- Emporis 搜尋摘要（**正文未成功讀取**）：188.01 m architectural、182.03 m main roof 及52層：
+  https://www.emporis.com/buildings/121002/one-exchange-square-hong-kong-china
+- JLL：One 的52級、600,000 sq ft、13,000 sq ft floor plates、行人天橋及地下巴士站租務描述：
+  https://property.jll.com.hk/en/liquid-lease/hong-kong/central/one-exchange-square-ls-hkg-p-000dli
+- Savvi：One 的 **5/F–50/F** 辦公樓層列表，只作45道視覺 courses 的次要依據：
+  https://www.savviprop.com/exchange-square
+- One Exchange Square 入口左右 Sidney Nolan《Landscape》及共享雕塑花園資料：
+  https://en.wikipedia.org/wiki/Exchange_Square_(Hong_Kong)
+- 《Oval with Points》在 One Exchange Square 前圆形噴水池的次要實景／作品說明，只用於外觀研究：
+  https://www.tripadvisor.co.uk/LocationPhotoDirectLink-g294217-d17205843-i386941954-Oval_with_Points-Hong_Kong.html
+- Hongkong Land 2025 HKEX permanent headquarters 公告，作現行 HKEX 身份背景；字牌尺寸及位置仍是照片導向場景重建：
+  https://webfile.hkland.com/assets/press-release/2025/en/hll_20250424.pdf
+- 全塔、弧面／prism 立面、入口、壁畫及屋頂照片均實際檢視；搜尋中誤標的倫敦同名建築、中銀及行人天橋相片沒有作為本幢依據。研究照片沒有打包進應用程式。
+
 ## 程式入口
 
 - `hsbc-headquarters-architecture.js`：滙豐純地理位置、OBB、樓層比例及 collider 座標換算，可在 Node 測試。
@@ -809,4 +847,6 @@
 - `two-taikoo-place-world.js`：太古坊二座 conical corners、3 m unitized 玻璃、外遮陽 fins、15 m大堂、雙層花園、金色方塊吊燈、三個入口、雙語向量字牌、拱形行人橋、PV／風力屋頂、日夜材質、碰撞及 stats。
 - `the-henderson-architecture.js`：The Henderson 58頂點 OSM 來源、OBB、獨立高度／層數 conventions、兩個照片導向入口、DTM 地台及 collider 座標換算。
 - `the-henderson-world.js`：The Henderson 三組花瓣體量、曲面低反玻璃、豎向凹槽、開放 Sky Garden、Cloud 39、兩個入口、Art Garden、日夜材質、碰撞及 stats。
-- `simple-world.js`：只整合這二十八個 authored landmarks；普通 `buildings` 仍為 0。
+- `one-exchange-square-architecture.js`：One Exchange Square 43頂點 OSM 來源、OBB、高度／層數／面積 conventions、照片導向入口、巴士總站道路開放邊、DTM 地台及 collider 座標換算。
+- `one-exchange-square-world.js`：One Exchange Square 束狀銀玻璃／粉紅花崗岩立面、開放巴士總站上蓋、階梯屋頂、HKEX 入口、雙扶手電梯、程序壁畫、雕塑水景、日夜材質、碰撞及 stats。
+- `simple-world.js`：只整合這二十九個 authored landmarks；普通 `buildings` 仍為 0。
