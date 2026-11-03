@@ -4,7 +4,6 @@ import { createHongKongCrowd } from './crowd.js';
 import { createHongKongHarbour } from './harbour.js';
 import { HKGMapSystem } from './map.js';
 import { HKAudioSystem } from './audio.js';
-import { HONG_KONG_BUILDING_INVENTORY } from './building-inventory-data.js';
 import {
   TELEPORTS,
   ROAD_NAMES,
@@ -98,7 +97,6 @@ export const city = {
       twoExchange: world.twoExchange,
       courtOfFinalAppeal: world.courtOfFinalAppeal,
       landmarks: world.landmarks,
-      buildingInventory: HONG_KONG_BUILDING_INVENTORY,
       stats,
       teleports: TELEPORTS,
       cameraPresets: city.cameraPresets,

@@ -11,7 +11,6 @@ import { CameraSystem, CAMERA_PRESETS } from './cameras.js';
 import { LightingSystem } from './lighting.js';
 import { WeatherSystem } from './weather.js';
 import { createTeleportTo } from './teleport.js';
-import { BuildingInventory } from './building-inventory.js';
 import { getCity } from './cities/registry.js';
 
 // Renderer setup, HUD wiring and the frame loop. The lightweight picker in main.js loads this
@@ -546,12 +545,6 @@ async function initApp(cityStub) {
     });
   }
 
-  const buildingInventory = world.buildingInventory?.length ? new BuildingInventory({
-    scene, cameraSystem, controllerManager, world, lightingSystem, renderer,
-    touchControls, gamepadControls, mapSystem, selectTime, closePopovers
-  }) : null;
-  if (globalThis.__slopDebug) globalThis.__slopDebug.buildingInventory = buildingInventory;
-
   // Global keyboard shortcuts for modes (1-4), cameras (V / 5-0), and HUD (H)
   window.addEventListener('keydown', (e) => {
     if (isTypingInField(e)) return;
@@ -681,7 +674,7 @@ async function initApp(cityStub) {
   const colorGrade = createPostProcessing(renderer, scenePassColor, reflections);
   const renderPipeline = new THREE.RenderPipeline(renderer, colorGrade.outputNode);
   if (new URLSearchParams(window.location.search).has('debug')) {
-    globalThis.__slopTest = { renderPipeline, updateCulling, mapSystem, weatherSystem, buildingInventory };
+    globalThis.__slopTest = { renderPipeline, updateCulling, mapSystem, weatherSystem };
   }
 
   // Initialize the UI and chase camera around the restored player, or the city's spawn.
@@ -791,26 +784,20 @@ async function initApp(cityStub) {
     const dt = Math.min(Math.max(rawDt, 0.001), 0.05);
     elapsed += dt;
 
-    // An isolated building preview pauses city/player simulation and follow-camera/culling writes. The selected
-    // building's own animation may continue; all original city geometry remains hidden until the inspector closes.
-    const inspectingBuilding = buildingInventory?.isPreviewOpen() ?? false;
-    if (inspectingBuilding) {
-      buildingInventory.update(dt, elapsed);
-    } else {
-      gamepadControls.update(dt);
-      controllerManager.update(dt, elapsed);
-      cameraSystem.update(dt, elapsed);
-      world.update?.(dt, elapsed, { cameraSystem, controllerManager });
-      if (!document.hidden && now >= nextPlayerSave) {
-        savePlayerState();
-        nextPlayerSave = now + 5000;
-      }
-      weatherSystem.update(dt, cameraSystem.camera);
-      mapSystem?.update();
+    // Update 3rd-person controllers, camera, and the city's own systems (traffic, signs, animation)
+    gamepadControls.update(dt);
+    controllerManager.update(dt, elapsed);
+    cameraSystem.update(dt, elapsed);
+    world.update?.(dt, elapsed, { cameraSystem, controllerManager });
+    if (!document.hidden && now >= nextPlayerSave) {
+      savePlayerState();
+      nextPlayerSave = now + 5000;
     }
-    lightingSystem.update(inspectingBuilding ? cameraSystem.camera.position : cameraSystem.currentPos);
+    lightingSystem.update(cameraSystem.currentPos);
+    weatherSystem.update(dt, cameraSystem.camera);
+    mapSystem?.update();
     audioSystem.update(dt, elapsed, cameraSystem.camera, lightingSystem.activePresetId === 'midnight');
-    if (warmedUp && updateCulling && !inspectingBuilding) updateCulling(cameraSystem.camera.position); // the warm-up frame draws every chunk
+    if (warmedUp && updateCulling) updateCulling(cameraSystem.camera.position); // the warm-up frame draws every chunk
     // Traffic collisions can move the player after controller updates; finalize moving hierarchies here.
     for (const root of dynamicRoots) root.updateMatrixWorld();
 

@@ -164,17 +164,18 @@ test('recessed arches are real holes and night materials retain granite, glass, 
   assert.match(world, /classicalFigure\(themisScale, true\)/); assert.match(world, /blindfold/); assert.match(world, /cfaGroundHeightAt/);
 });
 
-test('CFA is the thirty-first authored landmark and B0092 has a real isolated-preview target', async () => {
+test('CFA is the thirty-first authored landmark and keeps its authoritative progress-table row', () => {
   const simple = fs.readFileSync(path.join(root, 'js/cities/hongkong/simple-world.js'), 'utf8');
   const debug = fs.readFileSync(path.join(root, 'js/cities/hongkong/index.js'), 'utf8');
   assert.match(simple, /buildCourtOfFinalAppeal\(scene, \{ groundOffset: HONG_KONG_TERRAIN_META\.cfaPadHeight \}\)/);
   assert.match(simple, /\.\.\.courtOfFinalAppeal\.stats/); assert.match(simple, /\.\.\.courtOfFinalAppeal\.colliders/);
   assert.match(simple, /twoExchange\.landmarks\.length \+ courtOfFinalAppeal\.landmarks\.length/); assert.match(simple, /buildings: 0/);
   assert.match(debug, /courtOfFinalAppeal: world\.courtOfFinalAppeal/);
-  const { HONG_KONG_BUILDING_INVENTORY: entries } = await import('../js/cities/hongkong/building-inventory-data.js');
-  const entry = entries.find((item) => item.id === 'HK-B0092');
-  assert.deepEqual(entry, { id: 'HK-B0092', name: '終審法院 The Court of Final Appeal', district: '中環', heightLabel: '約40 m', status: 'integrated', refined: true, worldKey: 'courtOfFinalAppeal' });
-  assert.equal(entries.filter((item) => item.status === 'integrated').length, 31);
-  assert.equal(entries.find((item) => item.id === 'HK-B0031').status, 'pending');
-  assert.equal(entries.find((item) => item.id === 'HK-B0094').status, 'pending');
+  const inventory = fs.readFileSync(path.join(root, 'docs/hongkong-building-inventory.md'), 'utf8');
+  const rows = inventory.split(/\r?\n/).filter((line) => /^\| `HK-B\d{4}` /.test(line));
+  const entry = rows.find((row) => row.startsWith('| `HK-B0092`'));
+  assert.match(entry, /終審法院 The Court of Final Appeal/); assert.match(entry, /已加入/); assert.match(entry, /court-of-final-appeal-world\.js/);
+  assert.equal(rows.filter((row) => row.includes('| 已加入 |')).length, 31);
+  assert.match(rows.find((row) => row.startsWith('| `HK-B0031`')), /待製作/);
+  assert.match(rows.find((row) => row.startsWith('| `HK-B0094`')), /待製作/);
 });
