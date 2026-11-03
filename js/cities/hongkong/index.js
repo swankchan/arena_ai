@@ -2,6 +2,7 @@ import { buildHongKongWorld } from './world.js';
 import { createHongKongTraffic } from './traffic.js';
 import { createHongKongCrowd } from './crowd.js';
 import { createHongKongHarbour } from './harbour.js';
+import { createHongKongTramway } from './tram.js';
 import { HKGMapSystem } from './map.js';
 import { HKAudioSystem } from './audio.js';
 import {
@@ -45,8 +46,10 @@ export const city = {
     markInit?.('traffic');
 
     const harbour = createHongKongHarbour(scene);
+    const tramway = createHongKongTramway(scene);
     const crowd = createHongKongCrowd(scene, { getGroundHeight: world.getGroundHeight });
     markInit?.('harbour');
+    markInit?.('tramway');
     markInit?.('crowd');
 
     const stats = {
@@ -54,16 +57,17 @@ export const city = {
       cars: traffic.cars.length,
       buses: traffic.buses.length,
       walkers: crowd.walkers.length,
-      trams: harbour.trams.length,
+      ...tramway.stats,
       ferries: harbour.ferries.length
     };
     console.info('[hongkong] world ready', stats);
 
     return {
       colliders: world.colliders,
-      dynamicRoots: [traffic.group, harbour.group, crowd.group],
+      dynamicRoots: [traffic.group, harbour.group, tramway.group, crowd.group],
       streetLighting: world.streetLighting,
       traffic,
+      tramway,
       trafficAids: world.trafficAids,
       hsbc: world.hsbc,
       standardChartered: world.standardChartered,
@@ -142,6 +146,7 @@ export const city = {
         traffic.update(dt, controllerManager);
         crowd.update(dt, elapsed, cameraSystem.currentPos);
         harbour.update(dt, elapsed);
+        tramway.update(dt, elapsed, cameraSystem);
       },
 
       createMap({ controllerManager, cameraSystem, onToggle, onTeleport }) {

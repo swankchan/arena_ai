@@ -674,7 +674,7 @@ async function initApp(cityStub) {
   const colorGrade = createPostProcessing(renderer, scenePassColor, reflections);
   const renderPipeline = new THREE.RenderPipeline(renderer, colorGrade.outputNode);
   if (new URLSearchParams(window.location.search).has('debug')) {
-    globalThis.__slopTest = { renderPipeline, updateCulling, mapSystem, weatherSystem };
+    globalThis.__slopTest = { renderPipeline, renderer, lightingSystem, updateCulling, mapSystem, weatherSystem, world };
   }
 
   // Initialize the UI and chase camera around the restored player, or the city's spawn.

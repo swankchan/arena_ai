@@ -5,16 +5,22 @@
     "records": 144995
   },
   "derivation": {
-    "algorithm": "segment-normal-then-radial-v1",
+    "algorithm": "segment-normal-then-radial-tram-v2",
     "carriagewayMargin": 0.22,
     "heightTolerance": 2,
     "maxRelocation": 24,
-    "radialDirections": 16
+    "radialDirections": 16,
+    "tramTrackClearance": 1.45,
+    "tramPoleClearance": 0.75,
+    "tramWireClearance": 0.35,
+    "tramNetworkSha256": "ff877b3d0b546423b6233cd269cdb7ca69b4af2ea92e7afab5158df89649706a"
   },
   "counts": {
-    "relocated": 38486,
+    "relocated": 38514,
     "suppressed": 80,
     "rendered": 144915,
-    "remainingCarriagewayConflicts": 0
+    "tramAdjusted": 54,
+    "remainingCarriagewayConflicts": 0,
+    "remainingTramConflicts": 0
   }
 }

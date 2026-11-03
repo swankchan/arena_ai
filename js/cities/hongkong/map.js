@@ -2,6 +2,7 @@ import { GEO } from '../../hk-geodata.js';
 import { SCB_MAP_SITE } from './standard-chartered-architecture.js';
 import { HK_FULL_MAP } from '../../hk-full-map-data.js';
 import { HK_FULL_ROADS } from '../../hk-full-roads-data.js';
+import { HK_TRAM_NETWORK } from '../../hk-tram-network-data.js';
 import { AREA_LABELS, locationLabel, nearestRoadNode } from './meta.js';
 import { spawnOnFullRoad } from './full-meta.js';
 
@@ -28,6 +29,7 @@ const MAP = {
   roadMinor: '#39434a',
   roadSecondary: '#505c63',
   roadMajor: '#68757c',
+  tram: '#c4a56a',
   player: '#ffd23f',
   playerHalo: 'rgba(255, 210, 63, 0.24)',
   waypoint: '#ffcf3a',
@@ -80,6 +82,15 @@ function bbox(points) {
   return { minX, maxX, minZ, maxZ };
 }
 
+function makeTramLayer() {
+  const path = new Path2D();
+  for (const track of HK_TRAM_NETWORK.tracks) {
+    path.moveTo(track.points[0], track.points[2]);
+    for (let index = 3; index < track.points.length; index += 3) path.lineTo(track.points[index], track.points[index + 2]);
+  }
+  return path;
+}
+
 let layers = null;
 function mapLayers() {
   if (layers) return layers;
@@ -123,7 +134,7 @@ function mapLayers() {
     .filter(([, landmark]) => Number.isFinite(landmark.h) && landmark.h > 45)
     .map(([name, landmark]) => ({ name, ...landmark }))
     .sort((a, b) => b.h - a.h);
-  layers = { land, waterOnly, parks, woods, blocks, roadCasing, roadFill, labelRoads, landmarks };
+  layers = { land, waterOnly, parks, woods, blocks, roadCasing, roadFill, tram: makeTramLayer(), labelRoads, landmarks };
   return layers;
 }
 
@@ -159,7 +170,7 @@ function fullMapLayers() {
   }
   const coreOutline = new Path2D();
   coreOutline.rect(GEO.bounds.minX, GEO.bounds.minZ, GEO.bounds.maxX - GEO.bounds.minX, GEO.bounds.maxZ - GEO.bounds.minZ);
-  overviewLayers = { land, parks, woods, roadCasing, roadFill, labelRoads, places: HK_FULL_MAP.places, coreOutline };
+  overviewLayers = { land, parks, woods, roadCasing, roadFill, tram: makeTramLayer(), labelRoads, places: HK_FULL_MAP.places, coreOutline };
   return overviewLayers;
 }
 
@@ -617,6 +628,9 @@ export class HKGMapSystem {
       ctx.lineWidth = Math.max(widths[cls], minPx[cls] / view.zoom);
       ctx.stroke(L.roadFill[cls]);
     }
+    ctx.strokeStyle = MAP.tram;
+    ctx.lineWidth = Math.max(1.1, 0.75 / view.zoom);
+    ctx.stroke(L.tram);
     ctx.restore();
   }
 
@@ -649,6 +663,9 @@ export class HKGMapSystem {
       ctx.lineWidth = fill[cls];
       ctx.stroke(L.roadFill[cls]);
     }
+    ctx.strokeStyle = MAP.tram;
+    ctx.lineWidth = Math.max(1.0, 0.65 / view.zoom);
+    ctx.stroke(L.tram);
 
     ctx.restore();
   }

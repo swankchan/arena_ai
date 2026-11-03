@@ -1,0 +1,59 @@
+{
+  "version": 1,
+  "source": {
+    "file": "tools/data/hongkong/tram-network-source.json",
+    "sha256": "b19ae219bbb02e7b84733054557e0223496ef0bd38affc0e04b0166cdbb7f328",
+    "repository": "https://github.com/Sager1145/Japan-Train-Map",
+    "commit": "611065e10415be9d8cef66add1580ec99f5ee527",
+    "path": "app/public/rail/hk-2025.json",
+    "trackGeometry": "© OpenStreetMap contributors, ODbL 1.0; chained from OSM tram route relations",
+    "stops": "Hong Kong Tramways stop open data via DATA.GOV.HK, as packaged by the source repository",
+    "alignmentSha256": "ff877b3d0b546423b6233cd269cdb7ca69b4af2ea92e7afab5158df89649706a",
+    "method": "Cartographic centre-lines chained from OSM route relations, despiked, Chaikin-rounded and simplified by the source repository; not an engineering or cadastral survey.",
+    "upstreamUrls": [
+      "https://www.mtr.com.hk/en/customer/jp/index.php",
+      "https://opendata.mtr.com.hk/data/mtr_lines_and_stations.csv",
+      "https://opendata.mtr.com.hk/data/light_rail_routes_and_stops.csv",
+      "https://data.gov.hk/en-data/dataset/hktramways-hktramways-tram-stops",
+      "https://data.gov.hk/en-data/dataset/hktramways-hktramways-main-routes",
+      "https://www.openstreetmap.org/copyright",
+      "https://www.mtr.com.hk/ch/customer/services/system_map.html",
+      "https://www.openstreetmap.org/relation/6587853"
+    ]
+  },
+  "roadSource": {
+    "sha256": "c6fd49e15358616f46e3f00efb041ef2dfe6df470274b6074bc6492f3e406224",
+    "timestamp": "2026-10-29T21:21:26Z",
+    "indexedSurfaceSegments": 180462
+  },
+  "derivation": {
+    "sampleStepM": 3,
+    "supportSpacingM": 32,
+    "contactWireHeightM": 6,
+    "poleHeightM": 6.65,
+    "roadMarginM": 0.45,
+    "maxTrackGrade": 0.12,
+    "maxSupportSpanM": 32,
+    "derivedTerminusCrossovers": 3
+  },
+  "output": "js/hk-tram-network-data.js",
+  "bytes": 327676,
+  "stats": {
+    "trackCount": 7,
+    "trackLengthM": 30764.92,
+    "trackPointCount": 10575,
+    "stopAssignments": 123,
+    "uniqueStops": 116,
+    "supportSpans": 901,
+    "supportPoles": 1802,
+    "maxSupportSpanM": 31.96,
+    "roadFallbacks": 68,
+    "offCarriagewayPoints": 1230,
+    "asphaltInfillPoints": 5244,
+    "maxRoadDistanceM": 17.17,
+    "maxHeightStepM": 0.36,
+    "maxGrade": 0.1231,
+    "maxHeightCorrectionM": 5.2,
+    "junctionMaxHeightMismatchM": 0
+  }
+}

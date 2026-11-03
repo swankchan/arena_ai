@@ -32,7 +32,7 @@ test('lamp clearance preserves every source record and uses bounded, unique runt
   assert.ok(manifest.counts.suppressed < source.lamps.length * 0.001);
 });
 
-test('territory-wide lamp clearance generation is deterministic and revalidates to zero conflicts', { timeout: 240000 }, async () => {
+test('territory-wide lamp clearance generation is deterministic and revalidates to zero conflicts', { timeout: 360000 }, async () => {
   const directory = fs.mkdtempSync(path.join(os.tmpdir(), 'hk-street-clearance-'));
   const outFile = path.join(directory, 'clearance.js'), manifestFile = path.join(directory, 'manifest.json');
   const generated = await builder.buildHongKongStreetLightClearance({ outFile, manifestFile });

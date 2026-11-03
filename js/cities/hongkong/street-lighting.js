@@ -178,7 +178,9 @@ export function createHongKongStreetLighting(root, { lamps = HK_STREET_LIGHTS.la
     streetLightRelocated: applyClearance ? HK_STREET_LIGHT_CLEARANCE.overrides.length : 0,
     streetLightSuppressed: applyClearance ? HK_STREET_LIGHT_CLEARANCE.suppressed.length : 0,
     streetLightRendered: applyClearance ? lamps.length - HK_STREET_LIGHT_CLEARANCE.suppressed.length : lamps.length,
-    streetLightCarriagewayConflicts: 0
+    streetLightTramAdjusted: applyClearance ? (HK_STREET_LIGHT_CLEARANCE.tramAdjusted || 0) : 0,
+    streetLightCarriagewayConflicts: 0,
+    streetLightTramConflicts: 0
   };
   group.userData.stats = stats;
 

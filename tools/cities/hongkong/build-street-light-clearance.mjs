@@ -5,21 +5,91 @@ import { HK_STREET_LIGHTS } from '../../../js/hk-street-light-data.js';
 import { fullRoadSurfaceAt } from '../../../js/cities/hongkong/full-meta.js';
 import { crossingSurfaceAt } from '../../../js/cities/hongkong/crossings.js';
 import { surfaceRoadHeight } from '../../../js/cities/hongkong/road-elevation.js';
+import { HK_TRAM_NETWORK } from '../../../js/hk-tram-network-data.js';
 
 const MAX_RELOCATION = 24;
 const CARRIAGEWAY_MARGIN = 0.22;
 const HEIGHT_TOLERANCE = 2;
+const TRAM_TRACK_CLEARANCE = 1.45;
+const TRAM_POLE_CLEARANCE = 0.75;
+const TRAM_WIRE_CLEARANCE = 0.35;
+const TRAM_CELL = 40;
+const tramTrackCells = new Map(), tramPoleCells = new Map(), tramWireCells = new Map();
+const tramKey = (x, z) => `${Math.floor(x / TRAM_CELL)},${Math.floor(z / TRAM_CELL)}`;
+function addTramItem(cells, item, x, z, radius) {
+  for (let cx = Math.floor((x - radius) / TRAM_CELL); cx <= Math.floor((x + radius) / TRAM_CELL); cx++) {
+    for (let cz = Math.floor((z - radius) / TRAM_CELL); cz <= Math.floor((z + radius) / TRAM_CELL); cz++) {
+      const key = `${cx},${cz}`;
+      let list = cells.get(key); if (!list) cells.set(key, (list = []));
+      list.push(item);
+    }
+  }
+}
+for (const track of HK_TRAM_NETWORK.tracks) {
+  for (let index = 3; index < track.points.length; index += 3) {
+    const item = {
+      ax: track.points[index - 3], az: track.points[index - 1],
+      bx: track.points[index], bz: track.points[index + 2]
+    };
+    item.dx = item.bx - item.ax; item.dz = item.bz - item.az; item.lengthSq = item.dx * item.dx + item.dz * item.dz || 1;
+    addTramItem(tramTrackCells, item, (item.ax + item.bx) * 0.5, (item.az + item.bz) * 0.5, Math.hypot(item.dx, item.dz) * 0.5 + TRAM_TRACK_CLEARANCE);
+  }
+}
+for (const span of HK_TRAM_NETWORK.spans) {
+  for (const pole of [span.left, span.right]) addTramItem(tramPoleCells, { x: pole[0], z: pole[2] }, pole[0], pole[2], TRAM_POLE_CLEARANCE);
+  const item = { ax: span.left[0], az: span.left[2], bx: span.right[0], bz: span.right[2] };
+  item.dx = item.bx - item.ax; item.dz = item.bz - item.az; item.lengthSq = item.dx * item.dx + item.dz * item.dz || 1;
+  addTramItem(tramWireCells, item, (item.ax + item.bx) * 0.5, (item.az + item.bz) * 0.5, Math.hypot(item.dx, item.dz) * 0.5 + TRAM_WIRE_CLEARANCE);
+}
+function closestTramItem(cells, x, z, clearance) {
+  let best = null;
+  for (const item of cells.get(tramKey(x, z)) || []) {
+    if (Number.isFinite(item.x)) {
+      const distance = Math.hypot(x - item.x, z - item.z);
+      if (distance < clearance && (!best || distance < best.distance)) best = { item, distance, x: item.x, z: item.z };
+      continue;
+    }
+    const t = Math.max(0, Math.min(1, ((x - item.ax) * item.dx + (z - item.az) * item.dz) / item.lengthSq));
+    const px = item.ax + item.dx * t, pz = item.az + item.dz * t, distance = Math.hypot(x - px, z - pz);
+    if (distance < clearance && (!best || distance < best.distance)) best = { item, distance, x: px, z: pz };
+  }
+  return best;
+}
+function tramConflictAt(x, z) {
+  const track = closestTramItem(tramTrackCells, x, z, TRAM_TRACK_CLEARANCE);
+  const pole = closestTramItem(tramPoleCells, x, z, TRAM_POLE_CLEARANCE);
+  const wire = closestTramItem(tramWireCells, x, z, TRAM_WIRE_CLEARANCE);
+  let nearest = null;
+  for (const [kind, hit, width] of [['tram-track', track, TRAM_TRACK_CLEARANCE * 2], ['tram-pole', pole, TRAM_POLE_CLEARANCE * 2], ['tram-wire', wire, TRAM_WIRE_CLEARANCE * 2]]) {
+    if (hit && (!nearest || hit.distance < nearest.hit.distance)) nearest = { kind, hit, width };
+  }
+  if (!nearest) return null;
+  const { item, distance } = nearest.hit;
+  const length = Math.sqrt(item.lengthSq || 1);
+  return {
+    kind: nearest.kind, distance, width: nearest.width, x: nearest.hit.x, z: nearest.hit.z,
+    leftX: Number.isFinite(item.x) ? 1 : item.dz / length,
+    leftZ: Number.isFinite(item.x) ? 0 : -item.dx / length,
+    height: baseHeight(x, z)
+  };
+}
 
 function baseHeight(x, z) {
   const crossing = crossingSurfaceAt(x, z, 1);
   return crossing?.kind === 'bridge' ? crossing.height : surfaceRoadHeight(x, z);
 }
 
-function conflictAt(x, z) {
+function roadConflictAt(x, z) {
   const baseY = baseHeight(x, z);
   const hit = fullRoadSurfaceAt(x, z, CARRIAGEWAY_MARGIN, baseY);
   if (!hit || Math.abs(hit.height - baseY) > HEIGHT_TOLERANCE) return null;
   return { hit, baseY };
+}
+function conflictAt(x, z) {
+  const road = roadConflictAt(x, z);
+  if (road) return road;
+  const tram = tramConflictAt(x, z);
+  return tram ? { hit: tram, baseY: baseHeight(x, z) } : null;
 }
 
 function clearCandidate(x, z) {
@@ -73,9 +143,12 @@ export async function buildHongKongStreetLightClearance({
   manifestFile = fileURLToPath(new URL('../../../tools/data/hongkong/street-light-clearance-manifest.json', import.meta.url))
 } = {}) {
   const overrides = [], suppressed = [];
+  let tramAdjusted = 0;
   for (let index = 0; index < HK_STREET_LIGHTS.lamps.length; index++) {
     const [x, z, heading] = HK_STREET_LIGHTS.lamps[index];
+    const tramAdjustedSource = !!tramConflictAt(x, z);
     const result = relocate(x, z, heading);
+    if (tramAdjustedSource) tramAdjusted++;
     if (!result) { suppressed.push(index); continue; }
     if (!result.relocated) continue;
     const dx = Math.round((result.x - x) * 100), dz = Math.round((result.z - z) * 100);
@@ -86,29 +159,33 @@ export async function buildHongKongStreetLightClearance({
     if (conflict) { suppressed.push(index); continue; }
     overrides.push([index, dx, dz, baseY]);
   }
-  let remainingCarriagewayConflicts = 0;
+  let remainingCarriagewayConflicts = 0, remainingTramConflicts = 0;
   const moved = new Map(overrides.map((row) => [row[0], row]));
   const hidden = new Set(suppressed);
   for (let index = 0; index < HK_STREET_LIGHTS.lamps.length; index++) {
     if (hidden.has(index)) continue;
     const [x, z] = HK_STREET_LIGHTS.lamps[index], row = moved.get(index);
-    if (conflictAt(x + (row?.[1] || 0) / 100, z + (row?.[2] || 0) / 100)) remainingCarriagewayConflicts++;
+    const finalX = x + (row?.[1] || 0) / 100, finalZ = z + (row?.[2] || 0) / 100;
+    if (roadConflictAt(finalX, finalZ)) remainingCarriagewayConflicts++;
+    if (tramConflictAt(finalX, finalZ)) remainingTramConflicts++;
   }
   const manifest = {
     version: 1,
     source: { sha256: HK_STREET_LIGHTS.source.sha256, records: HK_STREET_LIGHTS.lamps.length },
     derivation: {
-      algorithm: 'segment-normal-then-radial-v1', carriagewayMargin: CARRIAGEWAY_MARGIN,
-      heightTolerance: HEIGHT_TOLERANCE, maxRelocation: MAX_RELOCATION, radialDirections: 16
+      algorithm: 'segment-normal-then-radial-tram-v2', carriagewayMargin: CARRIAGEWAY_MARGIN,
+      heightTolerance: HEIGHT_TOLERANCE, maxRelocation: MAX_RELOCATION, radialDirections: 16,
+      tramTrackClearance: TRAM_TRACK_CLEARANCE, tramPoleClearance: TRAM_POLE_CLEARANCE, tramWireClearance: TRAM_WIRE_CLEARANCE,
+      tramNetworkSha256: HK_TRAM_NETWORK.source.alignmentSha256
     },
     counts: {
       relocated: overrides.length, suppressed: suppressed.length,
       rendered: HK_STREET_LIGHTS.lamps.length - suppressed.length,
-      remainingCarriagewayConflicts
+      tramAdjusted, remainingCarriagewayConflicts, remainingTramConflicts
     }
   };
   const javascript = `// Generated by tools/cities/hongkong/build-street-light-clearance.mjs.\n` +
-    `export const HK_STREET_LIGHT_CLEARANCE = ${JSON.stringify({ version: 1, overrides, suppressed })};\n`;
+    `export const HK_STREET_LIGHT_CLEARANCE = ${JSON.stringify({ version: 1, overrides, suppressed, tramAdjusted })};\n`;
   fs.mkdirSync(path.dirname(outFile), { recursive: true });
   fs.mkdirSync(path.dirname(manifestFile), { recursive: true });
   fs.writeFileSync(outFile, javascript);
