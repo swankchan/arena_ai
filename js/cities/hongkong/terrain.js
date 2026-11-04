@@ -38,6 +38,7 @@ import { TWO_EXCHANGE_GROUND_SAMPLE, isTwoExchangePlazaPoint } from './two-excha
 import { CFA_GROUND_SAMPLE, isCourtOfFinalAppealPoint } from './court-of-final-appeal-architecture.js';
 import { HKCEC_GROUND_SAMPLE, isHkcecPoint } from './hkcec-architecture.js';
 import { TIMES_SQUARE_GROUND_SAMPLE, timesSquareTerrainHeightAt } from './times-square-architecture.js';
+import { HARBOUR_CITY_SITES, harbourCityTerrainHeightAt } from './harbour-city-architecture.js';
 
 function decodeBytes(base64) {
   const binary = atob(base64);
@@ -134,6 +135,14 @@ const HKCEC_PAD_HEIGHT = rawHongKongTerrainHeight(HKCEC_GROUND_SAMPLE.x, HKCEC_G
 // Times Square keeps the higher natural DTM across its commercial site and only raises lower piazza samples to the
 // main-piazza datum. The three tunnel carriageways are excluded and retain their own portal-connected profiles.
 const TIMES_SQUARE_PAD_HEIGHT = rawHongKongTerrainHeight(TIMES_SQUARE_GROUND_SAMPLE.x, TIMES_SQUARE_GROUND_SAMPLE.z);
+// Harbour City's long marine decks and podium pads use the highest raw DTM sample on each exact source ring.
+// These are reproducible construction datums, not surveyed engineering levels; crossing carriageways stay road-priority.
+const HARBOUR_CITY_PAD_HEIGHTS = Object.freeze(Object.fromEntries(HARBOUR_CITY_SITES.map((site) => {
+  let height = rawHongKongTerrainHeight(site.x, site.z);
+  for (let i = 0; i < site.ring.length; i += 2) height = Math.max(height, rawHongKongTerrainHeight(site.ring[i], site.ring[i + 1]));
+  return [site.key, height];
+})));
+export function harbourCityPadHeight(key) { const height = HARBOUR_CITY_PAD_HEIGHTS[key]; if (!Number.isFinite(height)) throw new Error(`Unknown Harbour City pad: ${key}`); return height; }
 
 export function hongKongTerrainHeight(x, z) {
   if (pointInFlatRing(HSBC_SITE.ring, x, z)) return HSBC_PAD_HEIGHT;
@@ -175,7 +184,8 @@ export function hongKongTerrainHeight(x, z) {
   if (isCourtOfFinalAppealPoint(x, z)) return CFA_PAD_HEIGHT;
   if (isHkcecPoint(x, z)) return HKCEC_PAD_HEIGHT;
   const rawHeight = rawHongKongTerrainHeight(x, z);
-  return timesSquareTerrainHeightAt(x, z, rawHeight, TIMES_SQUARE_PAD_HEIGHT);
+  const timesSquareHeight = timesSquareTerrainHeightAt(x, z, rawHeight, TIMES_SQUARE_PAD_HEIGHT);
+  return harbourCityTerrainHeightAt(x, z, timesSquareHeight, HARBOUR_CITY_PAD_HEIGHTS);
 }
 
 export const HONG_KONG_TERRAIN_META = Object.freeze({
@@ -221,6 +231,7 @@ export const HONG_KONG_TERRAIN_META = Object.freeze({
   cfaPadHeight: CFA_PAD_HEIGHT,
   hkcecPadHeight: HKCEC_PAD_HEIGHT,
   timesSquarePadHeight: TIMES_SQUARE_PAD_HEIGHT,
+  harbourCityPadHeights: HARBOUR_CITY_PAD_HEIGHTS,
   tunnelStats: HK_TERRAIN.stats
 });
 
