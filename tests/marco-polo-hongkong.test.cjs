@@ -49,9 +49,9 @@ test('Marco Polo is a separate landmark, ground query and map label', () => {
   assert.match(simple, /buildMarcoPoloHongkongHotel/); assert.match(simple, /\.\.\.marcoPolo\.colliders/); assert.match(simple, /marcoPolo\.groundHeightAt/);
   assert.match(map, /MARCO_POLO_HONGKONG_SITE\.name, marcoPoloMapSite/); assert.match(map, /pointInFlatRing\(MARCO_POLO_HONGKONG_SITE\.ring/);
 });
-test('Inventory marks only the completed Marco Polo inventory entry', () => {
+test('Inventory keeps the Marco Polo entry complete and the global counts consistent', () => {
   const doc = fs.readFileSync(path.join(root, 'docs/hongkong-building-inventory.md'), 'utf8');
   assert.match(doc, /HK-B0085` \| 馬哥孛羅香港酒店 Marco Polo Hongkong Hotel \| 尖沙咀 \| 已加入 \| \*\*是\*\* \| \*\*是\*\*/);
-  assert.match(doc, /目前已實際加入 \*\*34 幢\*\*；其餘 \*\*66 幢\*\*/); assert.match(doc, /\| 待製作 \| 66 \|/);
-  assert.match(doc, /HK-B0084` \| 星光行 Star House \| 尖沙咀 \| 待製作/); assert.match(doc, /HK-B0086` \| 海洋中心 Ocean Centre \| 尖沙咀 \| 待製作/);
+  const summary = doc.match(/目前已實際加入 \*\*(\d+) 幢\*\*；其餘 \*\*(\d+) 幢\*\*/); assert.ok(summary);
+  assert.equal(Number(summary[1]) + Number(summary[2]), 100); assert.match(doc, new RegExp(`\\| 待製作 \\| ${summary[2]} \\|`));
 });

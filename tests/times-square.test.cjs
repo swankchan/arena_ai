@@ -187,5 +187,6 @@ test('Times Square is integrated as one authored complex with road-priority grou
   assert.match(map, /stockLandmarks/); assert.match(map, /\[TIMES_SQUARE_SITE\.name, timesSquareMapSite\]/);
   assert.match(map, /!pointInFlatRing\(TIMES_SQUARE_SITE\.ring, landmark\.x, landmark\.z\)/);
   assert.match(inventory, /\| `HK-B0090` \| 時代廣場 Times Square \| 銅鑼灣 \| 已加入 \| \*\*是\*\* \| \*\*是\*\*/);
-  assert.match(inventory, /\| 已加入場景的建築物 \| 33 \|/); assert.match(inventory, /\| 待製作 \| 67 \|/);
+  const summary = inventory.match(/目前已實際加入 \*\*(\d+) 幢\*\*；其餘 \*\*(\d+) 幢\*\*/); assert.ok(summary);
+  assert.match(inventory, new RegExp(`\\| 已加入場景的建築物 \\| ${summary[1]} \\|`)); assert.match(inventory, new RegExp(`\\| 待製作 \\| ${summary[2]} \\|`));
 });

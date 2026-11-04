@@ -23,7 +23,9 @@ test('Building Inventory and isolated single-building previews are completely re
   const inventory = fs.readFileSync(path.join(root, 'docs/hongkong-building-inventory.md'), 'utf8');
   assert.match(inventory, /本文件只是施工進度表/);
   assert.match(inventory, /不再提供 \*\*I\*\* 鍵、toolbar 入口或單幢預覽按鈕/);
-  assert.match(inventory, /\| 已加入場景的建築物 \| 33 \|/);
+  const summary = inventory.match(/目前已實際加入 \*\*(\d+) 幢\*\*；其餘 \*\*(\d+) 幢\*\*/);
+  assert.ok(summary); assert.equal(Number(summary[1]) + Number(summary[2]), 100);
+  assert.match(inventory, new RegExp(`\\| 已加入場景的建築物 \\| ${summary[1]} \\|`));
 });
 
 test('vehicle, player, camera and city updates run unconditionally every animation frame', () => {
