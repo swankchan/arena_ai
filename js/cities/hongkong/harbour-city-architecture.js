@@ -74,6 +74,7 @@ export const HARBOUR_CITY_RESEARCH_SOURCES = Object.freeze([
   Object.freeze({ url: 'https://www.marcopolohotels.com/en/gateway-hotel-hong-kong', publisher: 'Marco Polo Hotels', evidence: 'Gateway Hotel official address is 13 Canton Road at Haiphong Road, with 400 guestrooms and suites and direct Harbour City connection.' }),
   Object.freeze({ url: 'https://www.marcopolohotels.com/en/prince-hotel-hong-kong/rooms-suites', publisher: 'Marco Polo Hotels', evidence: 'Prince Hotel official room inventory is 394 newly renovated rooms and suites at 23 Canton Road, Harbour City.' }),
   Object.freeze({ url: 'https://www.pacificclub.com.hk/about-us', publisher: 'Pacific Club', evidence: 'Official club history: opened in 1990 on a waterside site projecting towards Victoria Harbour, with sports, recreation, relaxation and dining facilities.' }),
+  Object.freeze({ url: 'https://www.marcopolohotels.com/corporate/news/three_on_canton_at_gateway_hotel_wins_best_buffet_award_from_the_loop_hk.html', publisher: 'Marco Polo Hotels', evidence: 'Gateway Hotel is at the Canton Road / Haiphong Road junction, was fully renovated in December 2012, and Three on Canton is on Level 3.' }),
   Object.freeze({ url: 'https://www.skyscrapercenter.com/complex/2247', publisher: 'CTBUH', evidence: 'The Gateway Towers 1 / 2: 129 m, 36 floors, 1994; Towers 3 / 5 / 6: 129 m, 35 floors, 1998. OSM rounded values are retained separately.' })
 ]);
 
