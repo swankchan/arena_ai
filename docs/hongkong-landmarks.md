@@ -971,6 +971,14 @@
 - **照片導向造型及夜色**：已目視核對政府Film Promotion地點庫的文化中心及Piazza照片。真實ring的港口／廣場邊 **0–9** 加上edge **10** 南段形成連續winged-chute屋面，兩側向高端掀起、中央下凹；外牆是灰粉米色小瓷磚、窄垂直玻璃縫、內斜低牆、重複瓷磚fins及深色凹槽，不是通用尖頂box。內部分區線只作建模，保留完整來源外框；北／東側低行政及門廳有兩道水平玻璃ribbons、細mullions、瓷磚spandrels及平屋頂。Salisbury Road edge **12** 入口有深有蓋foyer、自動門玻璃、圓瓷磚柱、六條弧形 canopy ribs、直接英文字牌、淺台階、獨立斜坡及扶手；官方無障礙資料只支持Salisbury Road落客及門廳自動門方向，沒有虛構OSM入口node。Piazza補上8棵棕櫚、圓花槽及木面長椅，位置按來源邊及各自DTM地面落位。夜間保留暗屋面及收斂冷色牆腳uplight，只有門廳玻璃與連排暖色canopy downlights較亮，整幅高牆不自發光；本地CJK字體未可靠驗收，因此實體字牌採英文。
 - **道路、ground及驗證**：開工時以全港道路中心線及車道半寬掃描精確ring，穿越／相交records為 **0**，所以不改路、不刪路、不改白色標線、信號或海岸。全幢共用約 **5.1691 m** DTM施工平台，這不是已核實工程標高；ground query只在用地內且非道路時套用，外部地形維持原查詢。`tests/cultural-centre.test.cjs` 驗證來源、官方資料口径、道路、雙區面積守恒、曲面峰谷、入口、地台、照片特徵、夜景及整合；隔離Chromium日／夜／入口／Piazza／屋頂五組畫面為 **35 meshes／9,849 triangles／2 line batches／43 colliders**，console errors **0**；海港城、太空館、文化中心及runtime相關回歸 **104／104**，self-contained runtime build成功。
 
+## 尖沙咀鐘樓 Tsim Sha Tsui Clock Tower
+
+- **精確來源及官方資料**：額外尖沙咀組件 `HK-TST-CT` 採 OSM way **37664321 version 17** 的完整 **5頂點、約50.425 m²** footprint及 `height=44／faces=4／bell=yes／roof:shape=dome／tower:type=bell_tower`；主入口使用真實 node **6980052362 version 5**，不是由照片另造門點。[古物古蹟辦事處](https://www.amo.gov.hk/en/historic-buildings/monuments/kowloon/monuments_43/index.html)記鐘樓於 **1915年建成、1990年列為法定古蹟**，屬Edwardian Classical Revival紅磚／花崗岩建築，**44 m塔身另有7 m避雷針**，模型最高點因此為51 m。[官方導賞冊](https://www.amo.gov.hk/filemanager/amo/common/download-area/pamphlet/clock_tower.pdf)所述六層正方形主體、兩層八角形閣樓、1921年運作的四面電鐘及2010年重新放回的一噸銅鐘分列保存；34／37.1／41 m等中層標高只是照片導向視覺分段，不冒充官方測量。
+- **塔身、上部及夜色**：真實ring保留入口邊的小折點，主體使用程序化紅磚、逐層花崗岩隅石、古典檐口及細dentils。只有兩個相對立面沿用照片中的長方木框玻璃窗及三角楣飾，另外兩面維持無長窗；西北真實入口有花崗岩框、三角楣及深色雙扇門。四面均有獨立羅馬字鐘面、刻度及指針。上部有八角紅磚閣樓、菱形窗、白色scroll buttresses、拱形belfry開口、八支白柱、混凝土穹頂及三腳鋼架避雷針。夜間只保留低亮度暖色牆面、鐘面及水柱，不把整幢古蹟洗成自發光白色。AMO維修至2026年底的围板／棚架通知屬臨時狀態，沒有當成永久建築特徵。
+- **噴水池及棕櫚廣場**：已核看AMO塔身及長池照片；多次查詢沒有取得可用精確水池geometry，因此明確採**照片導向**範圍，而不是聲稱OSM沒有水池或虛構精確測量。模型在西南立面外設 **20 × 6.8 m**石質apron、**18 × 4.4 m**長方形暗色水池、窄花崗岩coping、五個中央水柱連弧形噴水及foam rings，兩側共 **10棵**有獨立羽狀葉片的棕櫚；這些尺寸只屬場景視覺比例。水面低於apron頂但高於池底，棕櫚各自以raw DTM落位，沒有用整片填海平台承托。
+- **道路、ground、海岸及鄰近建築**：塔身、apron及水池以全港道路中心線、車道半寬加0.35 m餘量重掃均無相交，clearance後街燈及棕櫚0.75 m檢查亦無衝突，因此不搬路、不刪路、不改標線、信號或交通設施。塔身與apron共用約 **4.5306 m** DTM施工平台，這不是已核實工程標高；selected roads在world ground query仍然優先。apron **112**個及水池 **96**個邊界樣本全部在真實陸地，10棵棕櫚亦在陸地。塔身／apron／水池與文化中心邊界距離約 **27.45／33.84／36.16 m**，與尖沙咀碼頭約 **47.75／31.71／32.58 m**，沒有把其他建築吞入鐘樓footprint。
+- **驗證**：`tests/clock-tower.test.cjs` 覆蓋來源、官方資料、真實入口、道路與街燈、ground、海岸、文化中心／碼頭分隔、照片導向水池、建築細節、夜景及整合。隔離WebGL Chromium日／夜／入口／鳥瞰四組畫面已檢查完整51 m塔頂及全池；最終audit為 **89 meshes／40,114 triangles／30 colliders／1 landmark／0 line batches**，non-finite、console errors及page errors均為 **0**。鐘樓11項專項測試及尖沙咀／海港城／runtime相關回歸合共 **115／115** 通過，self-contained runtime build成功。
+
 ## 程式入口
 
 - `hsbc-headquarters-architecture.js`：滙豐純地理位置、OBB、樓層比例及 collider 座標換算，可在 Node 測試。
@@ -1049,9 +1057,11 @@
 - `space-museum-world.js`：蛋形面板穹頂、弧形瓷磚西翼、blade walls、北入口、斜坡扶手、日夜材質、碰撞及stats。
 - `cultural-centre-architecture.js`：文化中心完整OSM來源、雙區ring、winged-chute峰谷、Salisbury Road入口、共享地台及道路查詢。
 - `cultural-centre-world.js`：雙翼瓷磚屋面、內斜fins基座、玻璃縫、行政ribbons、有蓋門廳、Piazza棕櫚、日夜材質、碰撞及stats。
+- `clock-tower-architecture.js`：鐘樓精確OSM way／真實入口、四個logical facades、照片導向水池／apron／棕櫚、官方資料、道路及ground查詢。
+- `clock-tower-world.js`：紅磚／花崗岩塔身、四面鐘、八角belfry、穹頂及避雷針、長池水柱、羽狀棕櫚、日夜材質、碰撞及stats。
 - `gateway-tower-one-world.js`：港威大廈一座的來源口径、辦公courses、入口、日夜材質、碰撞及stats。
 - `gateway-tower-two-world.js`：港威大廈二座及T1／T2多層互連、道路portals、日夜材質、碰撞及stats。
 - `gateway-tower-three-world.js`：Prudential Tower／T3辦公與服務式住宅幕牆、石質podium、道路portals、日夜材質、碰撞及stats。
 - `gateway-tower-five-world.js`：Tower 5、Prudential雙塔四層互連及三層arch資料口径、浅色格框、道路portals、日夜材質、碰撞及stats。
 - `gateway-tower-six-world.js`：Tower 6獨立辦公塔、弧形幕牆、石質podium、格柵冠頂、日夜材質、碰撞及stats。
-- `simple-world.js`：整合施工清單內三十六個 authored landmarks 及海運大廈／LCX／Gateway組件；普通 `buildings` 仍為 0。
+- `simple-world.js`：整合施工清單內三十六個 authored landmarks、海運大廈／LCX／Gateway組件及太空館／文化中心／鐘樓尖沙咀公共文化組件；普通 `buildings` 仍為 0。

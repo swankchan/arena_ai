@@ -41,6 +41,7 @@ import { TIMES_SQUARE_GROUND_SAMPLE, timesSquareTerrainHeightAt } from './times-
 import { HARBOUR_CITY_SITES, harbourCityTerrainHeightAt } from './harbour-city-architecture.js';
 import { SPACE_MUSEUM_SITES, spaceMuseumTerrainHeightAt } from './space-museum-architecture.js';
 import { CULTURAL_CENTRE_SITE, culturalCentreTerrainHeightAt } from './cultural-centre-architecture.js';
+import { CLOCK_TOWER_SITE, CLOCK_TOWER_GARDEN_SITE, clockTowerTerrainHeightAt } from './clock-tower-architecture.js';
 
 function decodeBytes(base64) {
   const binary = atob(base64);
@@ -161,6 +162,17 @@ const CULTURAL_CENTRE_PAD_HEIGHT = (() => {
   return height;
 })();
 export function culturalCentrePadHeight() { return CULTURAL_CENTRE_PAD_HEIGHT; }
+// The Clock Tower and its small photo-directed pool apron share the highest DTM sample on their construction rings.
+// The wider palm garden keeps its own raw DTM at every tree. No surveyed engineering elevation is claimed.
+const CLOCK_TOWER_PAD_HEIGHT = (() => {
+  let height = -Infinity;
+  for (const site of [CLOCK_TOWER_SITE, CLOCK_TOWER_GARDEN_SITE]) {
+    height = Math.max(height, rawHongKongTerrainHeight(site.x, site.z));
+    for (let i = 0; i < site.ring.length; i += 2) height = Math.max(height, rawHongKongTerrainHeight(site.ring[i], site.ring[i + 1]));
+  }
+  return height;
+})();
+export function clockTowerPadHeight() { return CLOCK_TOWER_PAD_HEIGHT; }
 
 export function hongKongTerrainHeight(x, z) {
   if (pointInFlatRing(HSBC_SITE.ring, x, z)) return HSBC_PAD_HEIGHT;
@@ -205,7 +217,8 @@ export function hongKongTerrainHeight(x, z) {
   const timesSquareHeight = timesSquareTerrainHeightAt(x, z, rawHeight, TIMES_SQUARE_PAD_HEIGHT);
   const harbourCityHeight = harbourCityTerrainHeightAt(x, z, timesSquareHeight, HARBOUR_CITY_PAD_HEIGHTS);
   const spaceMuseumHeight = spaceMuseumTerrainHeightAt(x, z, harbourCityHeight, SPACE_MUSEUM_PAD_HEIGHT);
-  return culturalCentreTerrainHeightAt(x, z, spaceMuseumHeight, CULTURAL_CENTRE_PAD_HEIGHT);
+  const culturalCentreHeight = culturalCentreTerrainHeightAt(x, z, spaceMuseumHeight, CULTURAL_CENTRE_PAD_HEIGHT);
+  return clockTowerTerrainHeightAt(x, z, culturalCentreHeight, CLOCK_TOWER_PAD_HEIGHT);
 }
 
 export const HONG_KONG_TERRAIN_META = Object.freeze({
@@ -254,6 +267,7 @@ export const HONG_KONG_TERRAIN_META = Object.freeze({
   harbourCityPadHeights: HARBOUR_CITY_PAD_HEIGHTS,
   spaceMuseumPadHeight: SPACE_MUSEUM_PAD_HEIGHT,
   culturalCentrePadHeight: CULTURAL_CENTRE_PAD_HEIGHT,
+  clockTowerPadHeight: CLOCK_TOWER_PAD_HEIGHT,
   tunnelStats: HK_TERRAIN.stats
 });
 
