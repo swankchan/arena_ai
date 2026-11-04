@@ -2,7 +2,7 @@
 
 這份文件是香港場景**實際建築物進度總表及 100 幢主要大廈施工清單**，記錄建築物是否已加入、是否精修，以及是否作為 Landmark 整合。`tools/data/hongkong/landmarks.json` 及下表的待製作項目只是來源／候選資料；資料出現在該 JSON 或本清單 **不代表已經加入場景**。
 
-最後整理：**2026-11-04**。目前已實際加入 **35 幢**；其餘 **65 幢**仍是待製作項目，沒有基本體量或精修完成的意思。
+最後整理：**2026-11-04**。100幢施工清單中，目前已實際加入 **36 幢**；其餘 **64 幢**仍是待製作項目，沒有基本體量或精修完成的意思。海運大廈／LCX另作海港城綜合組件整合，不取代或重用清單ID，也不計入上述36／64。
 
 ## 標記定義
 
@@ -19,12 +19,12 @@
 | 項目 | 數量 |
 | --- | ---: |
 | 施工清單總數 | 100 |
-| 已加入場景的建築物 | 35 |
-| 已加入而且精修 | 35 |
+| 已加入場景的建築物 | 36 |
+| 已加入而且精修 | 36 |
 | 已加入但只有基本體量 | 0 |
-| 已加入並作為 Landmark 整合 | 35 |
+| 已加入並作為 Landmark 整合 | 36 |
 | 製作中 | 0 |
-| 待製作 | 65 |
+| 待製作 | 64 |
 
 目前普通建築群仍為 **0**；上表只計實際加入的建築物，不把橋樑、道路構築物或純 OSM 候選資料計算在內。
 
@@ -148,7 +148,7 @@
 | `HK-B0081` | 雙子匯二期 The Twins Tower 2 | 啟德 | 待製作 | 否 | 否 | 120 m | OSM relation **20599095** | — |
 | `HK-B0082` | 香港大會堂高座 Hong Kong City Hall High Block | 中環 | 待製作 | 否 | 否 | 57.7 m | OSM way **25608273** | — |
 | `HK-B0083` | 中電總部 CLP Headquarters | 九龍塘 | 待製作 | 否 | 否 | 57 m | OSM way **1138054767** | — |
-| `HK-B0084` | 星光行 Star House | 尖沙咀 | 待製作 | 否 | 否 | 55 m | OSM way **1169655254** | — |
+| `HK-B0084` | 星光行 Star House | 尖沙咀 | 已加入 | **是** | **是** | 55 m | OSM way **1169655254**（version 4；原始幾何及 tags 另存於 Harbour City 來源模組） | `js/cities/hongkong/star-house-world.js` |
 | `HK-B0085` | 馬哥孛羅香港酒店 Marco Polo Hongkong Hotel | 尖沙咀 | 已加入 | **是** | **是** | 55 m | OSM way **1443753382**（version 3；原始幾何及 tags 另存於 Harbour City 來源模組） | `js/cities/hongkong/marco-polo-hongkong-world.js` |
 | `HK-B0086` | 海洋中心 Ocean Centre | 尖沙咀 | 已加入 | **是** | **是** | 55 m | OSM way **1443753403**（version 2；原始幾何及 tags 另存於 Harbour City 來源模組） | `js/cities/hongkong/ocean-centre-world.js` |
 | `HK-B0087` | 香港朗廷酒店 The Langham Hong Kong | 尖沙咀 | 待製作 | 否 | 否 | 55 m | OSM way **159324344** | — |
@@ -204,6 +204,7 @@
 | 2026-11-03 | `HK-B0030` | Two Exchange Square 精確 OSM way **148554953**、**13.8 × 4.4 m** 照片導向入口前庭，以及地面總站／落客車路（生成道路 **record indices 38087／39176／40776／44601／44602**，不是 OSM way IDs） | 六個地面道路 segments **[38087/0、39176/0、40776/0、40776/1、44601/0、44602/0]** 與 tower ring 相交，涉及 **22 個開放邊**；主入口前庭無道路衝突，site／前庭均無 clearance 後街燈。原 OSM way 沒有入口 node，edge **18** 只作照片導向定位 | 建築及道路均不搬歪，保留瀝青、白色標線及原道路剖面。地面車路範圍開放，只把12支柱放在逐點掃描確認遠離車路的頂點；上蓋 soffit 為地台上 **7.2 m**，對 `roadRibbonProfileAtSegment` 全剖面保守淨空 **6.7512405464244285 m**，大於 **4.7 m** 車輛包絡。ground query 讓所選道路優先 | `tests/two-exchange-square.test.cjs`；Chromium 八個道路取樣的水平碰撞解算位移全部 **0**，道路取樣淨空 **6.774466351634041 m**；入口實撞及最終六視角日夜檢查；全測試 **496／496**，見 `docs/hongkong-landmarks.md` |
 | 2026-11-03 | `HK-B0092` | 終審法院精確 OSM way **42293414** 用地、昃臣道／遮打道／德輔道中周邊車路及 clearance 後街燈 | 以全港道路中心線及車道半寬掃描實際用地 ring；道路及燈柱衝突均為 **0**，無需搬路、搬燈或改白色標線 | 保留原道路及地形查詢；建築平台只覆蓋非道路用地，西向柱廊入口保持可步行通達 | `tests/court-of-final-appeal.test.cjs`；隔離七視角、完整城市日夜多角度及入口實撞 browser 驗證 |
 | 2026-11-03 | `HK-B0043` | 會景閣及 HKCEC 四個精確 OSM rings、港灣道／會展道／有蓋服務車路及隧道 | 新翼／舊翼／中庭／會景閣分別有 **25／30／39／4** 個道路 segment 與 ring 相交；包含地面及 `flags & 4` 隧道，沒有假稱無衝突。四個 rings 的 clearance 後街燈衝突均為 **0** | 建築及全部道路不搬歪、不刪除，保留瀝青、白色標線及各自 profile。上層由地台上 **8 m** 開始；**217** 個地面柱位及 **366** 幅地面幕牆 panels 逐段避開非隧道車路，形成 **84** 個合併牆 colliders。主入口／會景閣入口分別保留 **6.5／15.8 m** 中央有蓋通道，門及紅毯只放在側 bays，舊翼相鄰 edge 6 另為會景閣入口留出 17.0625 m 開口；道路 ground 優先 | `tests/hkcec.test.cjs`、`tests/hkcec-clearance.test.cjs`；完整城市日夜 browser 驗證 |
+| 2026-11-04 | `HK-B0084` | 星光行精確 OSM way **1169655254**、長向 Salisbury Road／Star Annex 入口及周邊車路 | 以全港道路中心線重掃12頂點用地，穿越 records 為 **0**； Harbour City 全部來源 rings 的 clearance 後街燈檢查亦通過。入口採長約 **91.1 m** 的 edge **3**，不是約4.47 m的角位短邊 | 建築、道路、白色標線及街燈均不搬歪；沿用本地DTM參考及5 m施工平台，ground query只在用地內且非道路時套用地台。入口雨篷及紅毯為照片導向視覺比例，不改寫道路高度 | `tests/star-house.test.cjs`；隔離日夜 Chromium smoke，29 meshes／28,932 triangles／143 colliders，console errors 為0 |
 | — | — | — | 現有 HSBC／SCB 暫未補回逐項歷史衝突台帳 | 由下一次相關改動開始逐項記錄 | — |
 
 ## 新增及更新規則

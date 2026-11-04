@@ -1,6 +1,6 @@
 # 香港手建 Landmarks
 
-香港仍採用 `unified-simple` 展示：全港道路及基本地面保留，**不生成普通建築群**。手建地標會逐個加入；目前實際整合 **32 幢**，完整名單及逐幢狀態以 Inventory 為準。
+香港仍採用 `unified-simple` 展示：全港道路及基本地面保留，**不生成普通建築群**。手建地標會逐個加入；100幢施工清單內目前實際整合 **36 幢**，另有海運大廈／LCX綜合組件，完整名單及逐幢狀態以 Inventory 為準。
 
 建築物進度、**精修**與 **Landmark** 獨立標記，以及道路衝突台帳，見 [香港建築物 Inventory](hongkong-building-inventory.md)。
 
@@ -887,6 +887,30 @@
   https://www.openstreetmap.org/way/79444510
   https://www.openstreetmap.org/way/107497692
 
+## 海運大廈／LCX／海運擴建 Ocean Terminal
+
+- **來源及範圍**：採目前 OSM way **112453139 version 14** 的62頂點外框，面積約 **23,201.48 m²**；原始幾何、tags、georef及道路records保存於 `harbour-city-architecture.js`。海運大廈舊樓、L3的 **LCX（OT300）**、2017年海側擴建及屋頂公共甲板屬同一綜合組件，沒有把LCX假做成另一幢浮在海上的建築。
+- **造型**：舊terminal的長向低層體量、商場／LCX入口、舊樓屋頂停車甲板，與Foster + Partners擴建的層層懸挑露台、斜向欄杆／百頁、玻璃大階梯、中央斜向動線及三面環海甲板分別建模。擴建採官方／執行建築師資料的 **五層、2017落成、GFA 9,290 m²**；site area及GFA不混作footprint。舊樓與擴建的精確平面分界沒有假稱已核實。
+- **道路及日夜**：保留全部穿越車路、瀝青、標線及原道路剖面；地面道路bays開放，上層由地台上 **8 m** 開始並逐剖面驗證車輛淨空。日間突出白色露台及海港，夜間只有商場、LCX及公共甲板的柔和暖光；隔離日夜Chromium smoke已通過。
+
+## 星光行／Star Annex Star House
+
+- **來源及資料口径**：`HK-B0084` 採 OSM way **1169655254 version 4**（2025-10-30）的 **12頂點、約4,120.931 m²** footprint，地址為梳士巴利道3號；OSM **55 m／18 levels** 與次要歷史資料的 **1967落成／19-floor** 分開保存。官方海港城樓層指南把 **STAR ANNEX @ Star House** 列為SA商場部分，不是另一座塔樓。
+- **照片導向細節**：四層零售基座上為 **14道可視辦公樓層**，合計對應OSM 18層而非把不同來源相加。外牆是帶深窗洞的灰白混凝土格柵、內退玻璃及細窗棂，少量窗機和夜間辦公燈不等距亮燈。長向Salisbury Road入口使用深色金屬雨篷、長方形發光天花格、玻璃店舖／門框及紅毯，另有Star Annex字牌；屋頂重建照片中的紅色「保誠保險」招牌、支架、機房及 parapet。招牌、窗距及雨篷尺寸是視覺比例，不是測量圖則。
+- **道路／驗證**：主入口用長約 **91.1 m** 的edge **3**，不誤用旁邊僅約4.47 m的角位短邊。全港道路中心線重掃為 **0條穿越**，原道路、標線及街燈不搬歪；施工地台只覆蓋非道路用地。`tests/star-house.test.cjs` 驗證來源、入口、道路、ground、資料口径、造型及整合，另作隔離日夜Chromium檢查。
+
+## 馬哥孛羅香港酒店 Marco Polo Hongkong Hotel
+
+- **來源**：`HK-B0085` 採 OSM way **1443753382 version 3** 的20頂點、約 **6,303.796 m²** 外框；OSM **55 m／18 levels** 與次要酒店歷史資料分列。模型位於海港城實際georef，不用通用酒店盒子取代。
+- **造型**：長向Canton Road立面使用 **14道內退客房樓層**、深色窗格及浅色混凝土框，地面為石材商場／酒店基座。主入口在長邊edge **10**，有透明玻璃雨篷、暖光、酒店字牌及金色馬雕塑；不是把入口放在短角邊。屋頂機房、 parapet 及設備另外建模。
+- **道路**：保留七條原始穿越道路records及其白色標線；地面柱及玻璃逐bay避車，上層由 **6 m soffit** 開始，全部道路剖面保留車輛淨空。日夜browser smoke、七項專屬測試及與OT合跑測試通過。
+
+## 海洋中心 Ocean Centre
+
+- **來源及樓層口径**：`HK-B0086` 採 OSM way **1443753403 version 2** 的 **40頂點、約10,232.178 m²** footprint及 **55 m／18 levels**。官方辦公資料約 **48,000 sq ft典型樓面、2.44 m樓底、17個辦公樓層**；次要資料的 **1977落成、G/F–4/F商場、5/F–17/F辦公** 另列。模型用五個商場視覺樓層至15 m及 **13道辦公ribbon floors**，沒有把不同樓層口径混算。
+- **造型**：深色內退玻璃配連續白色辦公橫帶及細mullions，商場基座有浅色面板、玻璃、百頁及Canton Road高玻璃atrium。入口選長約 **90.4 m** 的edge **34**，三個白色入口portal及雙語海港城／海洋中心字牌按照片方向重建；沒有把無關品牌店招或錯認的文化中心照片套用到本樓。
+- **道路／驗證**：六條原始道路records全部保留，地面玻璃及柱逐bay避車，上層由 **6 m soffit** 開始並扣除0.42 m lintel驗證全剖面淨空。七項專屬測試、隔離日夜browser smoke及完整suite通過。
+
 ## 程式入口
 
 - `hsbc-headquarters-architecture.js`：滙豐純地理位置、OBB、樓層比例及 collider 座標換算，可在 Node 測試。
@@ -951,4 +975,9 @@
 - `court-of-final-appeal-world.js`：終審法院四面拱廊及巨柱、Ionic／Doric 柱式、花崗岩、窗洞、entablature、pediment、皇家紋章、Themis、穹頂鼓座、Crown、中式筒瓦、日夜材質、碰撞及 stats。
 - `hkcec-architecture.js`：HKCEC 新翼／舊翼／中庭及會景閣四個目前 OSM rings、版本、OBB／入口 frames、DTM 地台、避車柱位及地面幕牆、道路／collider 座標換算。
 - `hkcec-world.js`：新翼三層飛鳥曲面屋頂及弧形玻璃、舊翼水平帶及機電屋頂、中庭花園與白色拱桁架、會景閣35層藍綠幕牆、側 bays 入口、日夜材質、道路 portals、碰撞及 stats。
-- `simple-world.js`：只整合這三十二個 authored landmarks；普通 `buildings` 仍為 0。
+- `harbour-city-architecture.js`：海港城各幢獨立OSM來源、共享georef、入口frames、道路records、地台及逐邊碰撞座標換算。
+- `ocean-terminal-world.js`：海運大廈、L3 LCX、2017海側退台擴建、公共屋頂甲板、道路portals、日夜材質、碰撞及stats。
+- `star-house-world.js`：星光行混凝土格柵、Star Annex商場基座、Salisbury Road發光雨篷、紅毯、屋頂招牌、日夜材質、碰撞及stats。
+- `marco-polo-hongkong-world.js`：馬哥孛羅香港酒店內退客房格、石材基座、玻璃雨篷、金色馬雕塑、道路portals、日夜材質、碰撞及stats。
+- `ocean-centre-world.js`：海洋中心白色辦公ribbons、商場面板、玻璃atrium、入口portals、道路portals、日夜材質、碰撞及stats。
+- `simple-world.js`：整合施工清單內三十六個 authored landmarks 及海運大廈／LCX組件；普通 `buildings` 仍為 0。

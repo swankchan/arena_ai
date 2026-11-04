@@ -248,7 +248,7 @@ test('unified simple mode adds only the authored landmarks and keeps generic bui
   assert.match(source, /\.\.\.hkcec\.colliders/);
   assert.match(source, /landmarks: hsbc\.landmarks\.length \+ standardChartered\.landmarks\.length \+ twoIfc\.landmarks\.length \+ icc\.landmarks\.length \+ bankOfChina\.landmarks\.length \+ centralPlaza\.landmarks\.length \+ theCenter\.landmarks\.length \+ ninaTower\.landmarks\.length \+ cheungKong\.landmarks\.length \+ k11Atelier\.landmarks\.length \+ cullinanI\.landmarks\.length \+ cullinanII\.landmarks\.length \+ masterpiece\.landmarks\.length \+ langhamPlace\.landmarks\.length \+ summit\.landmarks\.length \+ hopewell\.landmarks\.length \+ sunHungKai\.landmarks\.length \+ twoPacificPlace\.landmarks\.length \+ airside\.landmarks\.length \+ leeGardenOne\.landmarks\.length \+ oneIfc\.landmarks\.length \+ championTower\.landmarks\.length \+ ckc2\.landmarks\.length \+ qgo\.landmarks\.length \+ conrad\.landmarks\.length \+ hysan\.landmarks\.length \+ twoTaikoo\.landmarks\.length/);
   assert.match(source, /buildings: 0/);
-  for (const name of ['hsbc', 'standardChartered', 'twoIfc', 'icc', 'bankOfChina', 'centralPlaza', 'theCenter', 'ninaTower', 'cheungKong', 'k11Atelier', 'cullinanI', 'cullinanII', 'masterpiece', 'langhamPlace', 'summit', 'hopewell', 'sunHungKai', 'twoPacificPlace', 'airside', 'leeGardenOne', 'oneIfc', 'championTower', 'ckc2', 'qgo', 'conrad', 'hysan', 'twoTaikoo', 'theHenderson', 'oneExchange', 'twoExchange', 'courtOfFinalAppeal', 'hkcec', 'timesSquare', 'oceanTerminal', 'marcoPolo', 'oceanCentre']) {
+  for (const name of ['hsbc', 'standardChartered', 'twoIfc', 'icc', 'bankOfChina', 'centralPlaza', 'theCenter', 'ninaTower', 'cheungKong', 'k11Atelier', 'cullinanI', 'cullinanII', 'masterpiece', 'langhamPlace', 'summit', 'hopewell', 'sunHungKai', 'twoPacificPlace', 'airside', 'leeGardenOne', 'oneIfc', 'championTower', 'ckc2', 'qgo', 'conrad', 'hysan', 'twoTaikoo', 'theHenderson', 'oneExchange', 'twoExchange', 'courtOfFinalAppeal', 'hkcec', 'timesSquare', 'oceanTerminal', 'starHouse', 'marcoPolo', 'oceanCentre']) {
     assert.match(source, new RegExp(`\\.\\.\\.${name}\\.landmarks`), `missing authored landmark list: ${name}`);
   }
   assert.doesNotMatch(source, /landmarks: \[\.\.\.full\.landmarks/);
@@ -608,13 +608,16 @@ test('building inventory independently tracks scene status, refinement and landm
     { id: '`HK-B0029`', status: '已加入', refined: '**是**', landmark: '**是**' },
     { id: '`HK-B0030`', status: '已加入', refined: '**是**', landmark: '**是**' },
     { id: '`HK-B0043`', status: '已加入', refined: '**是**', landmark: '**是**' },
+    { id: '`HK-B0084`', status: '已加入', refined: '**是**', landmark: '**是**' },
     { id: '`HK-B0085`', status: '已加入', refined: '**是**', landmark: '**是**' },
     { id: '`HK-B0086`', status: '已加入', refined: '**是**', landmark: '**是**' },
     { id: '`HK-B0090`', status: '已加入', refined: '**是**', landmark: '**是**' },
     { id: '`HK-B0092`', status: '已加入', refined: '**是**', landmark: '**是**' }
   ]);
-  assert.equal(parsed.filter((row) => row.status === '待製作').length, 65);
-  assert.equal(parsed.filter((row) => row.status === '已加入').length + parsed.filter((row) => row.status === '待製作').length, 100);
+  const countSummary = inventory.match(/目前已實際加入 \*\*(\d+) 幢\*\*；其餘 \*\*(\d+) 幢\*\*/); assert.ok(countSummary);
+  assert.equal(parsed.filter((row) => row.status === '已加入').length, Number(countSummary[1]));
+  assert.equal(parsed.filter((row) => row.status === '待製作').length, Number(countSummary[2]));
+  assert.equal(Number(countSummary[1]) + Number(countSummary[2]), 100);
   assert.ok(parsed.filter((row) => row.status === '待製作').every((row) => row.refined === '否'
     && row.landmark === '否' && row.implementation === '—'), 'OSM candidates are not presented as integrated or refined');
   assert.ok(parsed.every((row) => row.source && row.source !== '—'));
