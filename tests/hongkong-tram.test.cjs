@@ -4,11 +4,12 @@ const os = require('node:os');
 const path = require('node:path');
 const test = require('node:test');
 const root = path.resolve(__dirname, '..');
-let network, manifest, motion, builder;
+let network, manifest, motion, builder, termini;
 test.before(async () => {
   network = (await import('../js/hk-tram-network-data.js')).HK_TRAM_NETWORK;
   manifest = JSON.parse(fs.readFileSync(path.join(root, 'tools/data/hongkong/tram-network-manifest.json'), 'utf8'));
   motion = await import('../js/cities/hongkong/tram-motion.js');
+  termini = (await import('../js/cities/hongkong/tram-termini.js')).getTramTermini();
   builder = await import('../tools/cities/hongkong/build-tram-network.mjs');
 });
 
@@ -28,6 +29,79 @@ test('tramway covers both northern-shore directions, Happy Valley and North Poin
   assert.equal(network.tracks[2].stops.at(-1)[2], 'North Point Road');
   assert.ok(network.tracks.slice(4).every((track) => track.derived === 'official-terminus-crossover' && track.length >= 30));
   assert.ok(network.stats.trackLengthM > 30000 && network.stats.trackLengthM < 32000);
+});
+
+test('all seven official termini have bilingual platforms, shelters and map anchors clear of running rails', () => {
+  assert.deepEqual(termini.map((terminus) => terminus.code).sort(), ['CBT', 'HVT', 'KTT', 'NPT', 'SKT', 'WMT', 'WST']);
+  const platforms = termini.flatMap((terminus) => terminus.platforms);
+  assert.equal(platforms.length, 8, 'Western Market retains its two physically separate official stop positions');
+  assert.equal(termini.find((terminus) => terminus.code === 'WMT').platforms.length, 2);
+  for (const terminus of termini) {
+    assert.match(terminus.name, /總站$/);
+    assert.match(terminus.nameEn, /Terminus$/);
+    for (const platform of terminus.platforms) {
+      assert.ok([platform.anchorX, platform.anchorY, platform.anchorZ, platform.x, platform.y, platform.z, platform.heading, platform.grade].every(Number.isFinite));
+      assert.ok(platform.length >= 8 && platform.width >= 1.8);
+      assert.ok(platform.clearance >= 1.30, `${platform.id} platform envelope clears every tram body and running rail`);
+    }
+  }
+  const runtime = fs.readFileSync(path.join(root, 'js/cities/hongkong/tram.js'), 'utf8');
+  const map = fs.readFileSync(path.join(root, 'js/cities/hongkong/map.js'), 'utf8');
+  assert.match(runtime, /HongKongTramTermini/);
+  assert.match(runtime, /HongKongTramTerminusSign/);
+  assert.match(runtime, /tramTerminusPlatforms/);
+  assert.match(map, /drawTramTermini\(ctx, view/);
+});
+
+test('terminus platforms have continuous exact rail clearance, including curved junction corners', () => {
+  const cross = (ux, uz, vx, vz) => ux * vz - uz * vx;
+  const pointSegment = (px, pz, segment) => {
+    const [ax, az, bx, bz] = segment, dx = bx - ax, dz = bz - az;
+    const t = Math.max(0, Math.min(1, ((px - ax) * dx + (pz - az) * dz) / (dx * dx + dz * dz)));
+    return Math.hypot(px - ax - dx * t, pz - az - dz * t);
+  };
+  const segmentDistance = (a, b) => {
+    const arx = a[2] - a[0], arz = a[3] - a[1], brx = b[2] - b[0], brz = b[3] - b[1];
+    const denominator = cross(arx, arz, brx, brz);
+    if (Math.abs(denominator) > 1e-12) {
+      const qx = b[0] - a[0], qz = b[1] - a[1];
+      const t = cross(qx, qz, brx, brz) / denominator, u = cross(qx, qz, arx, arz) / denominator;
+      if (t >= 0 && t <= 1 && u >= 0 && u <= 1) return 0;
+    }
+    return Math.min(pointSegment(a[0], a[1], b), pointSegment(a[2], a[3], b),
+      pointSegment(b[0], b[1], a), pointSegment(b[2], b[3], a));
+  };
+  const tracks = network.tracks.flatMap((track) => {
+    const segments = [];
+    for (let index = 3; index < track.points.length; index += 3) {
+      const segment = [track.points[index - 3], track.points[index - 1], track.points[index], track.points[index + 2]];
+      if (Math.hypot(segment[2] - segment[0], segment[3] - segment[1]) > 1e-4) segments.push(segment);
+    }
+    return segments;
+  });
+  for (const platform of termini.flatMap((terminus) => terminus.platforms)) {
+    const nx = platform.dz, nz = -platform.dx;
+    const cx = platform.x + nx * platform.side * platform.offset, cz = platform.z + nz * platform.side * platform.offset;
+    const corners = [[-0.5, -0.5], [0.5, -0.5], [0.5, 0.5], [-0.5, 0.5]].map(([along, across]) => [
+      cx + platform.dx * along * platform.length + nx * across * platform.width,
+      cz + platform.dz * along * platform.length + nz * across * platform.width
+    ]);
+    const edges = corners.map((corner, index) => [...corner, ...corners[(index + 1) % 4]]);
+    let exact = Infinity;
+    for (const track of tracks) {
+      const rx = track[0] - cx, rz = track[1] - cz;
+      const startInside = Math.abs(rx * platform.dx + rz * platform.dz) <= platform.length * 0.5 + 1e-8
+        && Math.abs(rx * nx + rz * nz) <= platform.width * 0.5 + 1e-8;
+      const ex = track[2] - cx, ez = track[3] - cz;
+      const endInside = Math.abs(ex * platform.dx + ez * platform.dz) <= platform.length * 0.5 + 1e-8
+        && Math.abs(ex * nx + ez * nz) <= platform.width * 0.5 + 1e-8;
+      if (startInside || endInside) { exact = 0; break; }
+      for (const edge of edges) exact = Math.min(exact, segmentDistance(track, edge));
+      if (exact === 0) break;
+    }
+    assert.ok(exact >= 1.30, `${platform.id} has no rail crossing between footprint samples (exact ${exact.toFixed(3)} m)`);
+    assert.ok(Math.abs(exact - platform.clearance) <= 0.0011, `${platform.id} reports its exact rounded clearance`);
+  }
 });
 
 test('track source is traceable and keeps OSM / official-stop attribution', () => {

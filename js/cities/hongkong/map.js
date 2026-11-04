@@ -3,6 +3,7 @@ import { SCB_MAP_SITE } from './standard-chartered-architecture.js';
 import { HK_FULL_MAP } from '../../hk-full-map-data.js';
 import { HK_FULL_ROADS } from '../../hk-full-roads-data.js';
 import { HK_TRAM_NETWORK } from '../../hk-tram-network-data.js';
+import { getTramTermini } from './tram-termini.js';
 import { AREA_LABELS, locationLabel, nearestRoadNode } from './meta.js';
 import { spawnOnFullRoad } from './full-meta.js';
 
@@ -815,6 +816,35 @@ export class HKGMapSystem {
     ctx.restore();
   }
 
+  drawTramTermini(ctx, view, minimap = false) {
+    if (view.zoom < 0.075) return;
+    const termini = getTramTermini();
+    ctx.save();
+    view.screen(ctx);
+    ctx.textAlign = 'center'; ctx.textBaseline = 'top';
+    for (const terminus of termini) {
+      let labelX = 0, labelY = 0, visible = 0;
+      for (const platform of terminus.platforms) {
+        const x = view.toX(platform.anchorX), y = view.toY(platform.anchorZ);
+        if (x < -30 || x > view.w + 30 || y < -30 || y > view.h + 30) continue;
+        labelX += x; labelY += y;
+        visible++;
+        const radius = minimap ? 2.3 : 4.2;
+        ctx.fillStyle = 'rgba(5, 12, 10, 0.88)'; ctx.beginPath(); ctx.arc(x, y, radius + 1.5, 0, Math.PI * 2); ctx.fill();
+        ctx.fillStyle = MAP.tram; ctx.beginPath(); ctx.arc(x, y, radius, 0, Math.PI * 2); ctx.fill();
+        ctx.fillStyle = '#175b42'; ctx.beginPath(); ctx.arc(x, y, radius * 0.48, 0, Math.PI * 2); ctx.fill();
+      }
+      if (!visible || minimap || view.zoom < 0.26) continue;
+      labelX /= visible; labelY /= visible;
+      const label = view.zoom >= 0.52 ? terminus.name : terminus.code;
+      ctx.font = `700 ${view.zoom >= 0.52 ? 10 : 9}px ${CJK_FONT}`;
+      ctx.lineWidth = 3.2; ctx.strokeStyle = 'rgba(4, 9, 12, 0.92)';
+      ctx.strokeText(label, labelX, labelY + 7);
+      ctx.fillStyle = '#f0d58c'; ctx.fillText(label, labelX, labelY + 7);
+    }
+    ctx.restore();
+  }
+
   drawAreaLabels(ctx, view, minimap) {
     ctx.save();
     view.screen(ctx);
@@ -970,6 +1000,7 @@ export class HKGMapSystem {
 
     const view = new MapView(px, pz, zoom, w, h, dpr);
     view.screen(ctx);
+    this.drawTramTermini(ctx, view, true);
     if (this.waypoint) {
       const wx = view.toX(this.waypoint.x), wy = view.toY(this.waypoint.z);
       if (Math.abs(wx - w / 2) < w || Math.abs(wy - h / 2) < h) drawDashedRoute(ctx, w / 2, h / 2, wx, wy);
@@ -1007,6 +1038,7 @@ export class HKGMapSystem {
     ctx.clearRect(0, 0, this.fullCanvas.width, this.fullCanvas.height);
     ctx.drawImage(stat.canvas, 0, 0);
     view.screen(ctx);
+    this.drawTramTermini(ctx, view, false);
 
     const entity = this.controllerManager.getActiveEntity();
     const px = view.toX(entity.position.x), py = view.toY(entity.position.z);

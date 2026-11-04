@@ -37,6 +37,14 @@ The current profile has a maximum adjacent height step of **0.36 m**, maximum sa
 
 Rail head width is 64 mm. Runtime rail-centre separation is `gauge + railHeadWidth`, leaving the specified 1,067 mm between the inner rail heads. Dark flangeway beds sit below flush steel running surfaces at road level; rails are not raised sleepers or a viaduct. Where the traced track or a derived crossover leaves an existing carriageway ribbon, the runtime adds a narrow asphalt infill immediately below the rail/flangeway surfaces (**5,244 flagged sample points**). The source road ribbons, surveyed markings and crossing data are not replaced or removed.
 
+## Passenger termini
+
+`js/cities/hongkong/tram-termini.js` derives every passenger terminus directly from the official stop records: **Kennedy Town, Shek Tong Tsui, Western Market, Causeway Bay, Happy Valley, North Point and Shau Kei Wan**. Co-located east/west records share one structure, while Western Market retains its two physically separate official stop positions: **seven termini / eight platform sites** in total.
+
+Each site has a low platform, tactile and edge strips, a green arched shelter, glazed windscreens, bench, warm underside lights and a bilingual Chinese/English terminus sign. Platform placement follows local rail pitch and computes continuous rectangle-to-track-segment clearance against every generated track, including curved junction rails passing between point samples; dense junctions use a shorter or further-offset waiting area instead of covering a running rail. Western Market's tightest site consequently uses an **8 m** scene waiting area. These dimensions and shelter details are visual scene reconstructions, not surveyed engineering drawings.
+
+The minimap and full map use the same official stop coordinates for gold/green terminus markers. Full-map zoom reveals stop codes and then the official Chinese terminus names, so the map and 3D scene cannot acquire separate handwritten location lists.
+
 ## Overhead and rolling stock
 
 `js/cities/hongkong/tram.js` builds, per 1 km chunk:
@@ -68,6 +76,8 @@ node --test tests/hongkong-tram.test.cjs
 npm run build:runtime
 ```
 
-The tram tests check coverage, attribution, gauge/voltage, finite geometry, support records, continuous grades, connected termini, trolley contact, moving/dwelling/reversing vehicles, street-light clearance and byte-for-byte deterministic generation.
+The tram tests check coverage, attribution, all seven termini and eight platform sites, platform-to-rail clearance, bilingual signs/map wiring, gauge/voltage, finite geometry, support records, continuous grades, connected termini, trolley contact, moving/dwelling/reversing vehicles, street-light clearance and byte-for-byte deterministic generation.
 
 Browser inspection was performed in the complete Hong Kong city with the WebGL backend at representative mainline, Happy Valley and North Point locations, including day and night views. The inspected run contained 16 moving trams, 19 infrastructure chunks and no page exception; controlled motion probes advanced trams by **45–46 m**. Rails, overhead spans, trolley poles and paved terminus crossovers were visible in the close views, and the existing white lane markings and street-light pools remained present. The only resource error in that run was the already-known external font connection failure.
+
+The rebuilt terminus bundle was also exercised in the complete Hong Kong WebGL scene. The live graph contained **7 termini, 8 platform groups and 8 sign textures**, and all **16 trams** advanced during the motion probe. Station day/night views and the minimap/full-map markers were inspected with no page exception; the only resource error remained the external font connection failure.

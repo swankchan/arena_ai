@@ -3,6 +3,7 @@ import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 import { RoundedBoxGeometry } from 'three/addons/geometries/RoundedBoxGeometry.js';
 import { HK_TRAM_NETWORK } from '../../hk-tram-network-data.js';
 import { advanceTramMotion, createTramMotion, createTramPath, sampleTramPath, sampleTramTrolleyContact } from './tram-motion.js';
+import { getTramTermini } from './tram-termini.js';
 
 // Hong Kong Tramways: 1,067 mm gauge, embedded running rails and a 550 V DC single-trolley-pole overhead.
 // Track geometry is generated separately from real route-relation geometry; this module only renders and animates it.
@@ -235,6 +236,108 @@ function destinationTexture(title, subtitle) {
   return texture;
 }
 
+function terminusTexture(terminus) {
+  if (typeof document === 'undefined') return null;
+  const canvas = document.createElement('canvas'); canvas.width = 1024; canvas.height = 256;
+  const context = canvas.getContext('2d');
+  context.fillStyle = '#12553d'; context.fillRect(0, 0, 1024, 256);
+  context.strokeStyle = '#e5d9b8'; context.lineWidth = 10; context.strokeRect(8, 8, 1008, 240);
+  context.fillStyle = '#fff7dc'; context.textAlign = 'center'; context.textBaseline = 'middle';
+  context.font = '700 78px "Noto Sans TC", sans-serif'; context.fillText(terminus.name, 512, 82);
+  context.font = '600 39px sans-serif'; context.fillText(terminus.nameEn.toUpperCase(), 512, 158);
+  context.fillStyle = '#e5d9b8'; context.font = '700 27px sans-serif';
+  context.fillText(`電車總站  ·  TRAM TERMINUS  ·  ${terminus.code}`, 512, 213);
+  const texture = new THREE.CanvasTexture(canvas); texture.colorSpace = THREE.SRGBColorSpace; texture.anisotropy = 4;
+  return texture;
+}
+
+function createTerminusPlatforms(root, termini) {
+  const group = new THREE.Group(); group.name = 'HongKongTramTermini'; root.add(group);
+  const materials = {
+    platform: new THREE.MeshStandardMaterial({ color: 0x9b9c91, roughness: 0.92, metalness: 0.03 }),
+    edge: new THREE.MeshStandardMaterial({ color: 0xe7e1c9, roughness: 0.75 }),
+    tactile: new THREE.MeshStandardMaterial({ color: 0xd5aa32, roughness: 0.82 }),
+    roof: new THREE.MeshStandardMaterial({ color: 0x185d43, roughness: 0.48, metalness: 0.34 }),
+    frame: new THREE.MeshStandardMaterial({ color: 0x31483e, roughness: 0.42, metalness: 0.68 }),
+    glass: new THREE.MeshStandardMaterial({ color: 0x8fb4b0, roughness: 0.2, metalness: 0.12, transparent: true, opacity: 0.32, depthWrite: false }),
+    bench: new THREE.MeshStandardMaterial({ color: 0x78543a, roughness: 0.72, metalness: 0.08 }),
+    light: new THREE.MeshStandardMaterial({ color: 0xfff0c1, emissive: 0xffd485, emissiveIntensity: 1.25, roughness: 0.3 })
+  };
+  const platforms = [];
+  for (const terminus of termini) {
+    const signMaterial = new THREE.MeshStandardMaterial({
+      color: 0xffffff, map: terminusTexture(terminus), emissive: 0x8db89c, emissiveIntensity: 0.16,
+      roughness: 0.46, side: THREE.DoubleSide
+    });
+    for (const location of terminus.platforms) {
+      const station = new THREE.Group(); station.name = `HongKongTramTerminus:${location.id}`;
+      station.position.set(location.x, location.y, location.z);
+      station.rotation.set(-Math.atan(location.grade), location.heading, 0, 'YXZ');
+      station.userData = { code: terminus.code, name: terminus.name, nameEn: terminus.nameEn, trackId: location.trackId,
+        officialStop: [location.anchorX, location.anchorY, location.anchorZ], railClearanceM: location.clearance };
+      group.add(station);
+      const parts = { platform: [], edge: [], tactile: [], roof: [], frame: [], glass: [], bench: [], light: [] };
+      const x = location.side * location.offset, halfWidth = location.width * 0.5;
+      const innerX = location.side * (location.offset - halfWidth);
+      const roofLength = Math.min(10.5, location.length - 1.2), roofWidth = location.width + 0.28;
+      parts.platform.push(box(location.width, location.height, location.length, x, location.height * 0.5, 0, 0.055));
+      parts.tactile.push(box(0.24, 0.025, location.length - 0.5, innerX + location.side * 0.17, location.height + 0.013, 0));
+      parts.edge.push(box(0.075, 0.028, location.length - 0.25, innerX + location.side * 0.035, location.height + 0.015, 0));
+      for (const end of [-1, 1]) {
+        parts.edge.push(box(location.width - 0.15, 0.025, 0.12, x, location.height + 0.014, end * (location.length * 0.5 - 0.22)));
+      }
+      // Five gently arched metal strips make a continuous shelter roof rather than a floating rectangular sign.
+      for (let index = 0; index < 5; index++) {
+        const u = (index - 2) / 2, strip = box(roofWidth / 5 + 0.035, 0.085, roofLength, 0, 0, 0);
+        strip.rotateZ(Math.atan(-0.32 * u / (roofWidth * 0.5)));
+        strip.translate(x + u * roofWidth * 0.4, 2.86 + 0.16 * (1 - u * u), 0);
+        parts.roof.push(strip);
+      }
+      for (const side of [-1, 1]) {
+        parts.frame.push(box(0.075, 0.11, roofLength, x + side * roofWidth * 0.5, 2.84, 0));
+      }
+      const frameX = location.side * (location.offset + halfWidth * 0.62);
+      for (const end of [-1, 1]) {
+        const z = end * roofLength * 0.42;
+        parts.frame.push(cylinder(0.047, 0.060, 2.57, 8, frameX, 1.525, z));
+        parts.light.push(box(0.16, 0.045, 1.15, x, 2.72, end * roofLength * 0.27));
+      }
+      for (const end of [-1, 1]) {
+        parts.glass.push(box(0.035, 1.55, roofLength * 0.34, frameX, 1.23, end * roofLength * 0.21));
+      }
+      const benchLength = Math.min(3.4, roofLength * 0.42), benchX = location.side * (location.offset + halfWidth * 0.38);
+      parts.bench.push(box(0.43, 0.12, benchLength, benchX, 0.72, 0, 0.035));
+      parts.bench.push(box(0.10, 0.62, benchLength, benchX + location.side * 0.18, 1.00, 0, 0.025));
+      for (const end of [-1, 1]) parts.frame.push(box(0.065, 0.48, 0.065, benchX, 0.45, end * benchLength * 0.36));
+      const signX = innerX + location.side * 0.12;
+      parts.frame.push(box(0.08, 1.50, 5.74, signX, 2.08, 0));
+      const sign = new THREE.Mesh(new THREE.PlaneGeometry(5.6, 1.4), signMaterial);
+      sign.name = `HongKongTramTerminusSign:${location.id}`;
+      sign.rotation.y = -location.side * Math.PI * 0.5;
+      sign.position.set(signX - location.side * 0.047, 2.08, 0);
+      station.add(sign);
+      for (const [kind, list] of Object.entries(parts)) {
+        if (!list.length) continue;
+        const mesh = new THREE.Mesh(mergeParts(list), materials[kind]);
+        mesh.name = `HongKongTramTerminus${kind[0].toUpperCase()}${kind.slice(1)}:${location.id}`;
+        mesh.castShadow = kind !== 'glass' && kind !== 'light'; mesh.receiveShadow = kind === 'platform';
+        const key = `terminus-${kind}`;
+        if (representatives[key]) mesh.userData.sharesPipelineWith = representatives[key]; else representatives[key] = mesh;
+        station.add(mesh);
+      }
+      platforms.push({ group: station, location });
+    }
+  }
+  function updateAt(position) {
+    for (const platform of platforms) {
+      const dx = platform.location.x - position.x, dz = platform.location.z - position.z;
+      platform.group.visible = dx * dx + dz * dz <= DRAW_RANGE * DRAW_RANGE;
+    }
+  }
+  updateAt({ x: 0, z: 0 });
+  return { group, platforms, updateAt };
+}
+
 const tramTemplates = new Map();
 function tramTemplate(color, title, subtitle) {
   const key = `${color}:${title}`;
@@ -349,6 +452,8 @@ export function createHongKongTramway(scene) {
   const root = new THREE.Group(); root.name = 'HongKongTramway'; scene.add(root);
   const paths = HK_TRAM_NETWORK.tracks.map(createTramPath);
   const infrastructure = createInfrastructure(root, paths);
+  const termini = getTramTermini();
+  const terminusPlatforms = createTerminusPlatforms(root, termini);
   const fleet = new THREE.Group(); fleet.name = 'HongKongTramFleet'; root.add(fleet);
   const trams = [];
   const styles = [
@@ -394,17 +499,20 @@ export function createHongKongTramway(scene) {
         tram.mesh.visible = visible; tram.pole.visible = visible; tram.head.visible = visible;
       }
     }
-    if (camera) infrastructure.updateAt(camera);
+    if (camera) { infrastructure.updateAt(camera); terminusPlatforms.updateAt(camera); }
   }
 
   update(0, 0);
   const stats = {
     trams: trams.length, tramTracks: paths.length, tramStops: HK_TRAM_NETWORK.stats.stopAssignments,
+    tramTermini: termini.length, tramTerminusPlatforms: terminusPlatforms.platforms.length,
+    tramTerminusMinRailClearanceM: Math.min(...termini.flatMap((terminus) => terminus.platforms.map((platform) => platform.clearance))),
     tramTrackLengthM: HK_TRAM_NETWORK.stats.trackLengthM, tramGaugeM: HK_TRAM_NETWORK.gauge,
     tramVoltageDC: HK_TRAM_NETWORK.voltageDC, tramSupportSpans: HK_TRAM_NETWORK.stats.supportSpans,
     tramSupportPoles: HK_TRAM_NETWORK.stats.supportPoles, tramContactWireHeightM: HK_TRAM_NETWORK.contactWireHeight,
     tramAsphaltInfillPoints: HK_TRAM_NETWORK.stats.asphaltInfillPoints
   };
   root.userData.stats = stats;
-  return { group: root, infrastructure, trams, paths, stats, update, updateAt: infrastructure.updateAt };
+  return { group: root, infrastructure, termini, terminusPlatforms, trams, paths, stats, update,
+    updateAt: (position) => { infrastructure.updateAt(position); terminusPlatforms.updateAt(position); } };
 }
