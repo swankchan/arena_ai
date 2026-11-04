@@ -39,6 +39,7 @@ import { CFA_GROUND_SAMPLE, isCourtOfFinalAppealPoint } from './court-of-final-a
 import { HKCEC_GROUND_SAMPLE, isHkcecPoint } from './hkcec-architecture.js';
 import { TIMES_SQUARE_GROUND_SAMPLE, timesSquareTerrainHeightAt } from './times-square-architecture.js';
 import { HARBOUR_CITY_SITES, harbourCityTerrainHeightAt } from './harbour-city-architecture.js';
+import { SPACE_MUSEUM_SITES, spaceMuseumTerrainHeightAt } from './space-museum-architecture.js';
 
 function decodeBytes(base64) {
   const binary = atob(base64);
@@ -143,6 +144,14 @@ const HARBOUR_CITY_PAD_HEIGHTS = Object.freeze(Object.fromEntries(HARBOUR_CITY_S
   return [site.key, height];
 })));
 export function harbourCityPadHeight(key) { const height = HARBOUR_CITY_PAD_HEIGHTS[key]; if (!Number.isFinite(height)) throw new Error(`Unknown Harbour City pad: ${key}`); return height; }
+// The two Space Museum wings share one DTM-derived construction datum so their touching shells cannot develop a seam.
+// This is not a surveyed engineering level; every selected road remains road-priority in the world ground query.
+const SPACE_MUSEUM_PAD_HEIGHT = (() => {
+  let height = -Infinity;
+  for (const site of SPACE_MUSEUM_SITES) { height = Math.max(height, rawHongKongTerrainHeight(site.x, site.z)); for (let i = 0; i < site.ring.length; i += 2) height = Math.max(height, rawHongKongTerrainHeight(site.ring[i], site.ring[i + 1])); }
+  return height;
+})();
+export function spaceMuseumPadHeight() { return SPACE_MUSEUM_PAD_HEIGHT; }
 
 export function hongKongTerrainHeight(x, z) {
   if (pointInFlatRing(HSBC_SITE.ring, x, z)) return HSBC_PAD_HEIGHT;
@@ -185,7 +194,8 @@ export function hongKongTerrainHeight(x, z) {
   if (isHkcecPoint(x, z)) return HKCEC_PAD_HEIGHT;
   const rawHeight = rawHongKongTerrainHeight(x, z);
   const timesSquareHeight = timesSquareTerrainHeightAt(x, z, rawHeight, TIMES_SQUARE_PAD_HEIGHT);
-  return harbourCityTerrainHeightAt(x, z, timesSquareHeight, HARBOUR_CITY_PAD_HEIGHTS);
+  const harbourCityHeight = harbourCityTerrainHeightAt(x, z, timesSquareHeight, HARBOUR_CITY_PAD_HEIGHTS);
+  return spaceMuseumTerrainHeightAt(x, z, harbourCityHeight, SPACE_MUSEUM_PAD_HEIGHT);
 }
 
 export const HONG_KONG_TERRAIN_META = Object.freeze({
@@ -232,6 +242,7 @@ export const HONG_KONG_TERRAIN_META = Object.freeze({
   hkcecPadHeight: HKCEC_PAD_HEIGHT,
   timesSquarePadHeight: TIMES_SQUARE_PAD_HEIGHT,
   harbourCityPadHeights: HARBOUR_CITY_PAD_HEIGHTS,
+  spaceMuseumPadHeight: SPACE_MUSEUM_PAD_HEIGHT,
   tunnelStats: HK_TERRAIN.stats
 });
 

@@ -959,6 +959,12 @@
 - **照片導向細節**：已目視核對Dreamstime編輯照片及會所官方資料。長向白色灰泥牆上有深綠長方窗、細白mullions、圓窗、通風窄帶及部分 upper loggia；向海端為 **5隻高拱窗**，配白色fanlight拱線、直棂及放射狀窗花。深白屋簷上有淺綠露台欄杆，向海一段另做 **12.05 m起拱、2.95 m矢高、最高15 m** 的白色筒拱頂及standing seams。陸側edge **3** 為會員入口，配綠框玻璃、雨篷及收斂的紅褐服務核心。`PACIFIC CLUB`／`PC`字牌是程序化外觀，不冒充官方標誌原檔；官方雖列游泳池等設施，但位置未核實，沒有隨意在屋頂加泳池。
 - **piled pier、海岸及道路**：精確海堤ring只做局部甲板、白色open-face wharf fascia、混凝土樁及淺綠欄杆；樁長及甲板 **0.18 m** 是場景構造比例，不是已核實工程標高。ground query只在pier ring內由約 **3.6378 m** DTM參考台升至甲板，不把周邊水面或海岸改成陸地。兩個rings全港道路重掃均為 **0條穿越**，入口12個測試bay無衝突，因此無需改路；原道路、白色標線、交通設施及海岸不搬歪。七項專屬測試驗證雙來源、入口、道路、ground、官方歷史、立面及整合；隔離日夜、向海拱窗及陸側入口四組Chromium畫面為 **38 meshes／42,938 triangles／9 colliders**，console errors為0。
 
+## 香港太空館 Hong Kong Space Museum
+
+- **雙翼來源及官方資料**：額外尖沙咀組件 `HK-TST-SM` 分別採東翼 OSM way **184731572 version 13**（**41頂點、約1,643.266 m²**）及西翼 way **37664428 version 17**（**19頂點、約1,087.635 m²**）；兩個footprints沒有合併成一個通用盒子。東翼保留 **25 m／dome roof／4 roof levels**，西翼保留 **3 levels＋1 underground**，但西翼沒有height tag，模型沒有虛構官方西翼高度。太空館官方資料記 **1977年動工、1980年10月啟用、總建築師李銘根、約8,000 m²**；官方 **23 m** 是天象廳室內半球銀幕直徑，並非外部蛋形殼體直徑，兩者在程式常數及文件中明確分開。
+- **照片導向造型及夜色**：已目視核對香港政府旅遊相片及Getty編輯夜景。東翼以真實41頂點外框生成偏冠頂的蛋形曲面、25 m OSM高度及放射／環向面板縫；西翼以真實19頂點ring生成低平屋頂、向東翼高高掀起並向西端降低的弧形米色瓷磚街牆，另有細瓷磚格、五個屋頂skylight monitors、兩支窄高blade walls及其間高位tiled entablature、深玻璃atrium、玻璃門、mullions及直接貼牆英文字牌；沒有把整幢西翼做成一塊斜頂實心楔體。北向入口採真實 OSM `entrance=yes／door=yes` node **7260839550**（西翼edge **1** 終點，玻璃frontage跨近共線的edges **1–2**），配淺台階、獨立淺斜坡及不銹鋼扶手；外觀尺寸屬照片導向場景比例，不是測繪圖。夜間只有收斂的穹頂uplight、暖色入口玻璃及燈具，不把整個「菠蘿包」變成自發光球體；本地瀏覽器沒有可靠CJK字體，因此實體字牌採清晰英文，沒有聲稱中文招牌字體已驗收。
+- **道路、ground及驗證**：兩個精確rings對全港道路中心線重掃均為 **0條穿越**，因此不搬路、不刪路、不改標線或現有海岸。兩翼共用約 **5.0598 m** DTM施工平台，避免相接殼體出現地台縫；這不是已核實工程標高，selected roads在world ground query仍然優先。`tests/space-museum.test.cjs` 驗證雙來源、23／25 m資料口径、道路、入口、地面、日夜材質、照片特徵及整合；隔離Chromium日／夜／入口／穹頂四組畫面為 **16 meshes／2,706 triangles／2 line batches／64 colliders**，console errors **0**；海港城、太空館及runtime相關回歸 **95／95**，self-contained runtime build成功。
+
 ## 程式入口
 
 - `hsbc-headquarters-architecture.js`：滙豐純地理位置、OBB、樓層比例及 collider 座標換算，可在 Node 測試。
@@ -1033,6 +1039,8 @@
 - `gateway-hotel-world.js`：港威酒店400間客房資料、2012翻新口径、玻璃入口、紅色大堂藝術、Three on Canton及stats。
 - `prince-hotel-world.js`：太子酒店394間客房、2023重開資料、深色直向窗帶、淺色實牆、有蓋落客區、道路淨空及stats。
 - `pacific-club-world.js`：太平洋會雙OSM來源、圓窗／長方窗／拱窗、筒拱頂、會員入口、私人piled pier、海岸ground及stats。
+- `space-museum-architecture.js`：太空館東西翼獨立OSM來源、官方23 m室內銀幕／25 m外部高度口径、北入口、共享地台及道路查詢。
+- `space-museum-world.js`：蛋形面板穹頂、弧形瓷磚西翼、blade walls、北入口、斜坡扶手、日夜材質、碰撞及stats。
 - `gateway-tower-one-world.js`：港威大廈一座的來源口径、辦公courses、入口、日夜材質、碰撞及stats。
 - `gateway-tower-two-world.js`：港威大廈二座及T1／T2多層互連、道路portals、日夜材質、碰撞及stats。
 - `gateway-tower-three-world.js`：Prudential Tower／T3辦公與服務式住宅幕牆、石質podium、道路portals、日夜材質、碰撞及stats。
