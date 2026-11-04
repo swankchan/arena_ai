@@ -40,6 +40,7 @@ import { HKCEC_GROUND_SAMPLE, isHkcecPoint } from './hkcec-architecture.js';
 import { TIMES_SQUARE_GROUND_SAMPLE, timesSquareTerrainHeightAt } from './times-square-architecture.js';
 import { HARBOUR_CITY_SITES, harbourCityTerrainHeightAt } from './harbour-city-architecture.js';
 import { SPACE_MUSEUM_SITES, spaceMuseumTerrainHeightAt } from './space-museum-architecture.js';
+import { CULTURAL_CENTRE_SITE, culturalCentreTerrainHeightAt } from './cultural-centre-architecture.js';
 
 function decodeBytes(base64) {
   const binary = atob(base64);
@@ -152,6 +153,14 @@ const SPACE_MUSEUM_PAD_HEIGHT = (() => {
   return height;
 })();
 export function spaceMuseumPadHeight() { return SPACE_MUSEUM_PAD_HEIGHT; }
+// The Cultural Centre shares one DTM-derived construction datum across its exact civic-building ring.
+// The lower south-east site remains road-safe; this is not a surveyed architectural or engineering level.
+const CULTURAL_CENTRE_PAD_HEIGHT = (() => {
+  const site = CULTURAL_CENTRE_SITE; let height = rawHongKongTerrainHeight(site.x, site.z);
+  for (let i = 0; i < site.ring.length; i += 2) height = Math.max(height, rawHongKongTerrainHeight(site.ring[i], site.ring[i + 1]));
+  return height;
+})();
+export function culturalCentrePadHeight() { return CULTURAL_CENTRE_PAD_HEIGHT; }
 
 export function hongKongTerrainHeight(x, z) {
   if (pointInFlatRing(HSBC_SITE.ring, x, z)) return HSBC_PAD_HEIGHT;
@@ -195,7 +204,8 @@ export function hongKongTerrainHeight(x, z) {
   const rawHeight = rawHongKongTerrainHeight(x, z);
   const timesSquareHeight = timesSquareTerrainHeightAt(x, z, rawHeight, TIMES_SQUARE_PAD_HEIGHT);
   const harbourCityHeight = harbourCityTerrainHeightAt(x, z, timesSquareHeight, HARBOUR_CITY_PAD_HEIGHTS);
-  return spaceMuseumTerrainHeightAt(x, z, harbourCityHeight, SPACE_MUSEUM_PAD_HEIGHT);
+  const spaceMuseumHeight = spaceMuseumTerrainHeightAt(x, z, harbourCityHeight, SPACE_MUSEUM_PAD_HEIGHT);
+  return culturalCentreTerrainHeightAt(x, z, spaceMuseumHeight, CULTURAL_CENTRE_PAD_HEIGHT);
 }
 
 export const HONG_KONG_TERRAIN_META = Object.freeze({
@@ -243,6 +253,7 @@ export const HONG_KONG_TERRAIN_META = Object.freeze({
   timesSquarePadHeight: TIMES_SQUARE_PAD_HEIGHT,
   harbourCityPadHeights: HARBOUR_CITY_PAD_HEIGHTS,
   spaceMuseumPadHeight: SPACE_MUSEUM_PAD_HEIGHT,
+  culturalCentrePadHeight: CULTURAL_CENTRE_PAD_HEIGHT,
   tunnelStats: HK_TERRAIN.stats
 });
 

@@ -965,6 +965,12 @@
 - **照片導向造型及夜色**：已目視核對香港政府旅遊相片及Getty編輯夜景。東翼以真實41頂點外框生成偏冠頂的蛋形曲面、25 m OSM高度及放射／環向面板縫；西翼以真實19頂點ring生成低平屋頂、向東翼高高掀起並向西端降低的弧形米色瓷磚街牆，另有細瓷磚格、五個屋頂skylight monitors、兩支窄高blade walls及其間高位tiled entablature、深玻璃atrium、玻璃門、mullions及直接貼牆英文字牌；沒有把整幢西翼做成一塊斜頂實心楔體。北向入口採真實 OSM `entrance=yes／door=yes` node **7260839550**（西翼edge **1** 終點，玻璃frontage跨近共線的edges **1–2**），配淺台階、獨立淺斜坡及不銹鋼扶手；外觀尺寸屬照片導向場景比例，不是測繪圖。夜間只有收斂的穹頂uplight、暖色入口玻璃及燈具，不把整個「菠蘿包」變成自發光球體；本地瀏覽器沒有可靠CJK字體，因此實體字牌採清晰英文，沒有聲稱中文招牌字體已驗收。
 - **道路、ground及驗證**：兩個精確rings對全港道路中心線重掃均為 **0條穿越**，因此不搬路、不刪路、不改標線或現有海岸。兩翼共用約 **5.0598 m** DTM施工平台，避免相接殼體出現地台縫；這不是已核實工程標高，selected roads在world ground query仍然優先。`tests/space-museum.test.cjs` 驗證雙來源、23／25 m資料口径、道路、入口、地面、日夜材質、照片特徵及整合；隔離Chromium日／夜／入口／穹頂四組畫面為 **16 meshes／2,706 triangles／2 line batches／64 colliders**，console errors **0**；海港城、太空館及runtime相關回歸 **95／95**，self-contained runtime build成功。
 
+## 香港文化中心 Hong Kong Cultural Centre
+
+- **來源及官方資料**：額外尖沙咀組件 `HK-TST-CC` 採目前 OSM way **37664345 version 27**（2025-11-23）的完整 **13頂點、約9,123.452 m²** `building=civic` footprint；來源經緯度、tags及ODbL資料同時保存於專屬模組及本地landmark snapshot。官方LCSD資料為 **1989年11月8日開幕、5.2公頃 waterfront site、82,231 m²總樓面面積**，並包括音樂廳、大劇院、實驗劇場、展覽館及Piazza；5.2公頃是整個中心site，沒有被誤當成上述建築投影面積。OSM沒有height／levels標籤，模型的 **33／35 m雙峰、16 m谷底及16.5 m低行政樓**只屬照片導向視覺比例，不是官方或測量高度。
+- **照片導向造型及夜色**：已目視核對政府Film Promotion地點庫的文化中心及Piazza照片。真實ring的港口／廣場邊 **0–9** 加上edge **10** 南段形成連續winged-chute屋面，兩側向高端掀起、中央下凹；外牆是灰粉米色小瓷磚、窄垂直玻璃縫、內斜低牆、重複瓷磚fins及深色凹槽，不是通用尖頂box。內部分區線只作建模，保留完整來源外框；北／東側低行政及門廳有兩道水平玻璃ribbons、細mullions、瓷磚spandrels及平屋頂。Salisbury Road edge **12** 入口有深有蓋foyer、自動門玻璃、圓瓷磚柱、六條弧形 canopy ribs、直接英文字牌、淺台階、獨立斜坡及扶手；官方無障礙資料只支持Salisbury Road落客及門廳自動門方向，沒有虛構OSM入口node。Piazza補上8棵棕櫚、圓花槽及木面長椅，位置按來源邊及各自DTM地面落位。夜間保留暗屋面及收斂冷色牆腳uplight，只有門廳玻璃與連排暖色canopy downlights較亮，整幅高牆不自發光；本地CJK字體未可靠驗收，因此實體字牌採英文。
+- **道路、ground及驗證**：開工時以全港道路中心線及車道半寬掃描精確ring，穿越／相交records為 **0**，所以不改路、不刪路、不改白色標線、信號或海岸。全幢共用約 **5.1691 m** DTM施工平台，這不是已核實工程標高；ground query只在用地內且非道路時套用，外部地形維持原查詢。`tests/cultural-centre.test.cjs` 驗證來源、官方資料口径、道路、雙區面積守恒、曲面峰谷、入口、地台、照片特徵、夜景及整合；隔離Chromium日／夜／入口／Piazza／屋頂五組畫面為 **35 meshes／9,849 triangles／2 line batches／43 colliders**，console errors **0**；海港城、太空館、文化中心及runtime相關回歸 **104／104**，self-contained runtime build成功。
+
 ## 程式入口
 
 - `hsbc-headquarters-architecture.js`：滙豐純地理位置、OBB、樓層比例及 collider 座標換算，可在 Node 測試。
@@ -1041,6 +1047,8 @@
 - `pacific-club-world.js`：太平洋會雙OSM來源、圓窗／長方窗／拱窗、筒拱頂、會員入口、私人piled pier、海岸ground及stats。
 - `space-museum-architecture.js`：太空館東西翼獨立OSM來源、官方23 m室內銀幕／25 m外部高度口径、北入口、共享地台及道路查詢。
 - `space-museum-world.js`：蛋形面板穹頂、弧形瓷磚西翼、blade walls、北入口、斜坡扶手、日夜材質、碰撞及stats。
+- `cultural-centre-architecture.js`：文化中心完整OSM來源、雙區ring、winged-chute峰谷、Salisbury Road入口、共享地台及道路查詢。
+- `cultural-centre-world.js`：雙翼瓷磚屋面、內斜fins基座、玻璃縫、行政ribbons、有蓋門廳、Piazza棕櫚、日夜材質、碰撞及stats。
 - `gateway-tower-one-world.js`：港威大廈一座的來源口径、辦公courses、入口、日夜材質、碰撞及stats。
 - `gateway-tower-two-world.js`：港威大廈二座及T1／T2多層互連、道路portals、日夜材質、碰撞及stats。
 - `gateway-tower-three-world.js`：Prudential Tower／T3辦公與服務式住宅幕牆、石質podium、道路portals、日夜材質、碰撞及stats。
