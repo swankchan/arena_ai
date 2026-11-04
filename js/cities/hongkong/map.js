@@ -1,7 +1,7 @@
 import { GEO } from '../../hk-geodata.js';
 import { SCB_MAP_SITE } from './standard-chartered-architecture.js';
 import { TIMES_SQUARE_SITE, TIMES_SQUARE_HEIGHT } from './times-square-architecture.js';
-import { OCEAN_TERMINAL_SITE, STAR_HOUSE_SITE, MARCO_POLO_HONGKONG_SITE, OCEAN_CENTRE_SITE, GATEWAY_TOWER_ONE_SITE } from './harbour-city-architecture.js';
+import { OCEAN_TERMINAL_SITE, STAR_HOUSE_SITE, MARCO_POLO_HONGKONG_SITE, OCEAN_CENTRE_SITE, GATEWAY_TOWER_ONE_SITE, GATEWAY_TOWER_TWO_SITE } from './harbour-city-architecture.js';
 import { pointInFlatRing } from './landmark-site.js';
 import { HK_FULL_MAP } from '../../hk-full-map-data.js';
 import { HK_FULL_ROADS } from '../../hk-full-roads-data.js';
@@ -153,14 +153,16 @@ function mapLayers() {
     .filter(([, landmark]) => !pointInFlatRing(STAR_HOUSE_SITE.ring, landmark.x, landmark.z))
     .filter(([, landmark]) => !pointInFlatRing(MARCO_POLO_HONGKONG_SITE.ring, landmark.x, landmark.z))
     .filter(([, landmark]) => !pointInFlatRing(OCEAN_CENTRE_SITE.ring, landmark.x, landmark.z))
-    .filter(([, landmark]) => !pointInFlatRing(GATEWAY_TOWER_ONE_SITE.ring, landmark.x, landmark.z));
+    .filter(([, landmark]) => !pointInFlatRing(GATEWAY_TOWER_ONE_SITE.ring, landmark.x, landmark.z))
+    .filter(([, landmark]) => !pointInFlatRing(GATEWAY_TOWER_TWO_SITE.ring, landmark.x, landmark.z));
   const timesSquareMapSite = { x: TIMES_SQUARE_SITE.x, z: TIMES_SQUARE_SITE.z, h: TIMES_SQUARE_HEIGHT };
   const oceanTerminalMapSite = { x: OCEAN_TERMINAL_SITE.x, z: OCEAN_TERMINAL_SITE.z, h: 24, authored: true };
   const starHouseMapSite = { x: STAR_HOUSE_SITE.x, z: STAR_HOUSE_SITE.z, h: 55, authored: true };
   const marcoPoloMapSite = { x: MARCO_POLO_HONGKONG_SITE.x, z: MARCO_POLO_HONGKONG_SITE.z, h: 55, authored: true };
   const oceanCentreMapSite = { x: OCEAN_CENTRE_SITE.x, z: OCEAN_CENTRE_SITE.z, h: 55, authored: true };
   const gatewayTowerOneMapSite = { x: GATEWAY_TOWER_ONE_SITE.x, z: GATEWAY_TOWER_ONE_SITE.z, h: 129, authored: true };
-  const landmarks = [...stockLandmarks, [SCB_MAP_SITE.name, SCB_MAP_SITE], [TIMES_SQUARE_SITE.name, timesSquareMapSite], ['海運大廈 Ocean Terminal · LCX', oceanTerminalMapSite], ['星光行 Star House · Star Annex', starHouseMapSite], [MARCO_POLO_HONGKONG_SITE.name, marcoPoloMapSite], [OCEAN_CENTRE_SITE.name, oceanCentreMapSite], [GATEWAY_TOWER_ONE_SITE.name, gatewayTowerOneMapSite]]
+  const gatewayTowerTwoMapSite = { x: GATEWAY_TOWER_TWO_SITE.x, z: GATEWAY_TOWER_TWO_SITE.z, h: 129, authored: true };
+  const landmarks = [...stockLandmarks, [SCB_MAP_SITE.name, SCB_MAP_SITE], [TIMES_SQUARE_SITE.name, timesSquareMapSite], ['海運大廈 Ocean Terminal · LCX', oceanTerminalMapSite], ['星光行 Star House · Star Annex', starHouseMapSite], [MARCO_POLO_HONGKONG_SITE.name, marcoPoloMapSite], [OCEAN_CENTRE_SITE.name, oceanCentreMapSite], [GATEWAY_TOWER_ONE_SITE.name, gatewayTowerOneMapSite], [GATEWAY_TOWER_TWO_SITE.name, gatewayTowerTwoMapSite]]
     .filter(([, landmark]) => Number.isFinite(landmark.h) && (landmark.h > 45 || landmark.authored))
     .map(([name, landmark]) => ({ name, ...landmark }))
     .sort((a, b) => b.h - a.h);

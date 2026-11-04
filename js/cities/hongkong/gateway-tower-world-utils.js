@@ -1,7 +1,7 @@
 import * as THREE from 'three/webgpu';
 import {
   harbourCityRingColliders, harbourCitySegmentCollider, harbourCityGroundHeightAt,
-  harbourCityPodiumBayConflict, GATEWAY_PODIUM_HEIGHT,
+  harbourCityPodiumBayConflict, harbourCityLocalToWorld, GATEWAY_PODIUM_HEIGHT,
 } from './harbour-city-architecture.js';
 import {
   store, quad, meshStore, merged, box, beam, point, edgeBox, roofGeometry,
@@ -40,6 +40,37 @@ function addOfficeEntrance(group, site, materials, entrance, title, subtitle) {
   merged(group, metal, materials.metal, `${site.englishName} entrance door frames and handles`);
   addEdgeSign(group, site, edge, title, subtitle, 9.15, Math.min(18, entrance.length * 0.84), 1.4, 0.68,
     { background: '#d5bbb0', foreground: '#293b3e', accent: false });
+}
+
+export function addGatewayInterconnection(parent, siteA, baseA, localA, siteB, baseB, localB, options) {
+  const a = harbourCityLocalToWorld(siteA, localA[0], localA[1]), b = harbourCityLocalToWorld(siteB, localB[0], localB[1]);
+  const dx = b.x - a.x, dz = b.z - a.z, length = Math.hypot(dx, dz), ux = dx / length, uz = dz / length;
+  const mx = (a.x + b.x) / 2, mz = (a.z + b.z) / 2, ry = Math.atan2(-dz, dx), datum = Math.min(baseA, baseB);
+  const group = new THREE.Group(); group.name = options.name; parent.add(group);
+  const frame = new THREE.MeshStandardMaterial({ color: 0xd7c8be, roughness: 0.54, metalness: 0.28 });
+  const glazing = new THREE.MeshStandardMaterial({ color: 0x2a5058, roughness: 0.2, metalness: 0.46, emissive: 0x14292e, emissiveIntensity: 0.22 });
+  const frames = [], glass = [], colliders = [], width = options.width;
+  const cs = Math.cos(ry), sn = Math.sin(ry);
+  for (const level of options.levels) {
+    const y = datum + level;
+    box(glass, [mx, y, mz], [length + 0.7, 2.8, width], ry);
+    for (const dy of [-1.55, 1.55]) box(frames, [mx, y + dy, mz], [length + 0.9, 0.34, width + 0.35], ry);
+    for (let u = -length / 2; u <= length / 2 + 0.01; u += Math.max(1.8, length / 4)) {
+      for (const v of [-width / 2, width / 2]) {
+        const x = mx + ux * u - uz * v, z = mz + uz * u + ux * v;
+        box(frames, [x, y, z], [0.09, 3.2, 0.12], ry);
+      }
+    }
+    const w = length + 0.7, hx = w / 2, hz = width / 2;
+    colliders.push({ shape: 'box', x: mx, z: mz, w, d: width, ry, minY: y - 1.4, maxY: y + 1.4,
+      minX: mx - Math.abs(cs) * hx - Math.abs(sn) * hz, maxX: mx + Math.abs(cs) * hx + Math.abs(sn) * hz,
+      minZ: mz - Math.abs(sn) * hx - Math.abs(cs) * hz, maxZ: mz + Math.abs(sn) * hx + Math.abs(cs) * hz,
+      obb: { cx: mx, cz: mz, hx, hz, cs, sn } });
+  }
+  merged(group, glass, glazing, `${options.name} blue-green glazed links`);
+  merged(group, frames, frame, `${options.name} pale lattice floor frames and mullions`);
+  return { root: group, colliders, stats: { connectedLevels: options.levels.length, clearSpan: length,
+    lowestSoffit: Math.min(...options.levels) - 1.55, datum, width } };
 }
 
 export function buildGatewayTower(scene, sourceSite, sourceEntrance, options) {

@@ -917,6 +917,12 @@
 - **照片導向細節**：沿真實弧形ring鋪設藍綠／銀藍玻璃、銀色橫向spandrel、細鋁mullions及一側內退深色服務豎帶；基座使用粉褐色花崗岩、三層商場玻璃及segmental arch入口。入口為長約 **23.76 m** 的edge **11**，屬照片導向位置而非虛構OSM門節點。屋頂有 parapet、機房及設備；弧形分bay只是渲染幾何，不是實測幕牆圖則。
 - **道路／驗證**：全港道路中心線重掃穿越records為 **0**，入口12個測試bay亦無道路衝突；建築、道路、標線及街燈不搬歪。沿用本地DTM參考及約 **10.0752 m** 施工平台，ground query只在非道路用地套用甲板。`tests/gateway-tower-one.test.cjs` 驗證原始來源、入口、道路、樓層口径、造型及獨立整合；隔離日夜Chromium render為 **21 meshes／46,178 triangles／197 colliders**，console errors為0。
 
+## 港威大廈二座 The Gateway Tower 2
+
+- **來源及樓層口径**：額外海港城組件 `HK-HC-G2` 採 OSM way **152073863 version 3**（2025-10-21）的 **43頂點、約1,680.411 m²** footprint，地址為廣東道25號第2座。OSM／CTBUH **129 m／36層／1994** 與 Wong & Ouyang 的32層辦公雙塔資料分列；可視塔身同樣用三層podium上32道辦公courses，不把不同口径相加。
+- **造型及雙塔連接**：精確弧形ring上有藍綠玻璃、銀色橫帶、細mullions及深色服務豎帶，基座為粉褐花崗岩、商場玻璃及edge **1** 的arch入口。官方只確認T1／T2有多層互連，沒有公布可直接當施工圖的樓層標高；模型因此在兩個真實ring最近角點之間設 **4道可視連接樓層**，淨跨約 **2.393 m**、寬度只作視覺比例，不冒充实測skybridge圖則。
+- **道路／驗證**：保留原始穿越道路records **[37765, 51358]**、瀝青、標線及道路ground；地面商場逐bay避車，上層由 **12 m soffit** 開始。全部衝突剖面扣除0.42 m lintel後最低場景淨空約 **12.6023 m**，高於4.7 m車輛包絡。入口12個測試bay無道路衝突；沿用約 **6.9304 m** DTM施工平台。T1／T2合景隔離日夜Chromium檢查無console errors；T2連同四道連接體為 **23 meshes／48,069 triangles／141 colliders**。
+
 ## 程式入口
 
 - `hsbc-headquarters-architecture.js`：滙豐純地理位置、OBB、樓層比例及 collider 座標換算，可在 Node 測試。
@@ -988,4 +994,5 @@
 - `ocean-centre-world.js`：海洋中心白色辦公ribbons、商場面板、玻璃atrium、入口portals、道路portals、日夜材質、碰撞及stats。
 - `gateway-tower-world-utils.js`：Gateway各塔共用精確弧形ring幕牆、銀色橫帶、服務豎帶、三層粉紅花崗岩podium及arch入口生成器。
 - `gateway-tower-one-world.js`：港威大廈一座的來源口径、辦公courses、入口、日夜材質、碰撞及stats。
+- `gateway-tower-two-world.js`：港威大廈二座及T1／T2多層互連、道路portals、日夜材質、碰撞及stats。
 - `simple-world.js`：整合施工清單內三十六個 authored landmarks 及海運大廈／LCX／Gateway組件；普通 `buildings` 仍為 0。
