@@ -67,6 +67,27 @@ export function addGatewayInterconnection(parent, siteA, baseA, localA, siteB, b
       minZ: mz - Math.abs(sn) * hx - Math.abs(cs) * hz, maxZ: mz + Math.abs(sn) * hx + Math.abs(cs) * hz,
       obb: { cx: mx, cz: mz, hx, hz, cs, sn } });
   }
+  if (options.archFrame) {
+    const bottom = datum + Math.min(...options.levels) - 5, top = datum + Math.max(...options.levels) + 6;
+    for (const u of [-length / 2 - 0.2, length / 2 + 0.2]) for (const v of [-width / 2, width / 2]) {
+      const x = mx + ux * u - uz * v, z = mz + uz * u + ux * v;
+      box(frames, [x, (bottom + top) / 2, z], [0.52, top - bottom, 0.52], ry);
+    }
+    const divisions = Math.max(3, Math.ceil(length / 3));
+    // Pale grid bands surround a taller central dark portal; the middle gap is deliberately left open.
+    for (const gap of [0, 2]) {
+      const y0 = datum + options.levels[gap] + 1.55, y1 = datum + options.levels[gap + 1] - 1.55;
+      for (let i = 1; i < divisions; i += 1) {
+        const u = -length / 2 + length * i / divisions;
+        for (const v of [-width / 2, width / 2]) {
+          const x = mx + ux * u - uz * v, z = mz + uz * u + ux * v;
+          box(frames, [x, (y0 + y1) / 2, z], [0.13, y1 - y0, 0.16], ry);
+        }
+      }
+      for (const f of [1 / 3, 2 / 3]) box(frames, [mx, y0 + (y1 - y0) * f, mz], [length + 0.9, 0.24, width + 0.35], ry);
+    }
+    for (const y of [bottom, top]) box(frames, [mx, y, mz], [length + 0.9, 0.3, width + 0.35], ry);
+  }
   merged(group, glass, glazing, `${options.name} blue-green glazed links`);
   merged(group, frames, frame, `${options.name} pale lattice floor frames and mullions`);
   return { root: group, colliders, stats: { connectedLevels: options.levels.length, clearSpan: length,

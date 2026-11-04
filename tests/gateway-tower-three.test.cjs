@@ -34,7 +34,7 @@ test('Gateway Tower 3 twelve-metre podium preserves every crossing road profile'
 test('Gateway Tower 3 keeps floor conventions and documents the official interconnection evidence', () => {
   const source = fs.readFileSync(path.join(root, 'js/cities/hongkong/gateway-tower-three-world.js'), 'utf8');
   assert.match(source, /GATEWAY_TOWER_THREE_OFFICE_COURSES = 16/); assert.match(source, /GATEWAY_TOWER_THREE_COMPLETION_YEAR = 1998/); assert.match(source, /GATEWAY_TOWER_THREE_APARTMENT_COURSES = 14/);
-  assert.ok(hc.HARBOUR_CITY_RESEARCH_SOURCES.some((s) => /wongouyang/.test(s.url) && /32-storey office towers/.test(s.evidence)));
+  assert.ok(hc.HARBOUR_CITY_RESEARCH_SOURCES.some((s) => /wongouyang/.test(s.url) && /14 serviced-apartment floors over 16 office floors/.test(s.evidence)));
   assert.ok(hc.HARBOUR_CITY_RESEARCH_SOURCES.some((s) => /office\.harbourcity/.test(s.url) && /Tower 5 and Prudential Tower/.test(s.evidence)));
   assert.equal(hc.GATEWAY_TOWER_THREE_SITE.levels, 35);
 });
@@ -46,6 +46,6 @@ test('Gateway Tower 3 has curved office / apartment glazing, stone podium strips
 });
 test('Gateway Tower 3 is independently integrated, mapped and documented', () => {
   const simple = fs.readFileSync(path.join(root, 'js/cities/hongkong/simple-world.js'), 'utf8'), map = fs.readFileSync(path.join(root, 'js/cities/hongkong/map.js'), 'utf8'), inventory = fs.readFileSync(path.join(root, 'docs/hongkong-building-inventory.md'), 'utf8'), landmarks = fs.readFileSync(path.join(root, 'docs/hongkong-landmarks.md'), 'utf8');
-  assert.match(simple, /buildGatewayTowerTwo/); assert.match(simple, /\.\.\.gatewayTowerThree\.colliders/); assert.match(simple, /gatewayTowerThree\.groundHeightAt/); assert.match(simple, /\.\.\.gatewayTowerThree\.stats/);
+  assert.match(simple, /buildGatewayTowerThree/); assert.match(simple, /\.\.\.gatewayTowerThree\.colliders/); assert.match(simple, /gatewayTowerThree\.groundHeightAt/); assert.match(simple, /\.\.\.gatewayTowerThree\.stats/);
   assert.match(map, /GATEWAY_TOWER_THREE_SITE\.name, gatewayTowerThreeMapSite/); assert.match(inventory, /`HK-HC-G3`/); assert.match(landmarks, /港威大廈三座／英國保誠保險大樓 The Gateway Tower 3/);
 });
