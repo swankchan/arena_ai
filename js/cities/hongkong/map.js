@@ -4,6 +4,8 @@ import { HK_FULL_MAP } from '../../hk-full-map-data.js';
 import { HK_FULL_ROADS } from '../../hk-full-roads-data.js';
 import { HK_TRAM_NETWORK } from '../../hk-tram-network-data.js';
 import { getTramTermini } from './tram-termini.js';
+import { STAR_FERRY_ROUTES } from './star-ferry-routes.js';
+import { STAR_FERRY_TERMINALS } from './star-ferry-data.js';
 import { AREA_LABELS, locationLabel, nearestRoadNode } from './meta.js';
 import { spawnOnFullRoad } from './full-meta.js';
 
@@ -31,6 +33,7 @@ const MAP = {
   roadSecondary: '#505c63',
   roadMajor: '#68757c',
   tram: '#c4a56a',
+  ferry: '#83bda5',
   player: '#ffd23f',
   playerHalo: 'rgba(255, 210, 63, 0.24)',
   waypoint: '#ffcf3a',
@@ -88,6 +91,15 @@ function makeTramLayer() {
   for (const track of HK_TRAM_NETWORK.tracks) {
     path.moveTo(track.points[0], track.points[2]);
     for (let index = 3; index < track.points.length; index += 3) path.lineTo(track.points[index], track.points[index + 2]);
+  }
+  return path;
+}
+
+function makeFerryLayer() {
+  const path = new Path2D();
+  for (const route of STAR_FERRY_ROUTES) {
+    path.moveTo(route.a.x, route.a.z);
+    path.lineTo(route.b.x, route.b.z);
   }
   return path;
 }
@@ -171,7 +183,7 @@ function fullMapLayers() {
   }
   const coreOutline = new Path2D();
   coreOutline.rect(GEO.bounds.minX, GEO.bounds.minZ, GEO.bounds.maxX - GEO.bounds.minX, GEO.bounds.maxZ - GEO.bounds.minZ);
-  overviewLayers = { land, parks, woods, roadCasing, roadFill, tram: makeTramLayer(), labelRoads, places: HK_FULL_MAP.places, coreOutline };
+  overviewLayers = { land, parks, woods, roadCasing, roadFill, tram: makeTramLayer(), ferry: makeFerryLayer(), labelRoads, places: HK_FULL_MAP.places, coreOutline };
   return overviewLayers;
 }
 
@@ -524,11 +536,17 @@ export class HKGMapSystem {
         return exact || a[3] - b[3];
       })[0];
     const landmark = mapLayers().landmarks.find((entry) => entry.name.toLowerCase().includes(query));
+    const ferryTerminal = STAR_FERRY_TERMINALS.find((entry) =>
+      entry.name.toLowerCase().includes(query) || entry.nameEn.toLowerCase().includes(query));
     if (place && (place[0].toLowerCase() === query || !roads.length)) {
       this.viewCenterX = place[1];
       this.viewCenterZ = place[2];
       const targetZoom = this.isCore({ x: place[1], z: place[2] }) ? 0.75 : place[3] === 0 ? 0.09 : place[3] === 1 ? 0.16 : 0.28;
       this.viewZoom = Math.max(this.viewZoom, targetZoom);
+    } else if (ferryTerminal && !roads.length) {
+      this.viewCenterX = ferryTerminal.x;
+      this.viewCenterZ = ferryTerminal.z;
+      this.viewZoom = Math.max(this.viewZoom, 1.1);
     } else if (landmark && !roads.length) {
       this.viewCenterX = landmark.x;
       this.viewCenterZ = landmark.z;
@@ -632,6 +650,11 @@ export class HKGMapSystem {
     ctx.strokeStyle = MAP.tram;
     ctx.lineWidth = Math.max(1.1, 0.75 / view.zoom);
     ctx.stroke(L.tram);
+    ctx.strokeStyle = MAP.ferry;
+    ctx.lineWidth = Math.max(2.4, 1.05 / view.zoom);
+    ctx.setLineDash([12, 9]);
+    ctx.stroke(L.ferry);
+    ctx.setLineDash([]);
     ctx.restore();
   }
 
@@ -845,6 +868,28 @@ export class HKGMapSystem {
     ctx.restore();
   }
 
+  drawStarFerryTerminals(ctx, view, minimap = false) {
+    if (view.zoom < 0.055) return;
+    ctx.save();
+    view.screen(ctx);
+    ctx.textAlign = 'center'; ctx.textBaseline = 'top';
+    for (const terminal of STAR_FERRY_TERMINALS) {
+      const x = view.toX(terminal.x), y = view.toY(terminal.z);
+      if (x < -80 || x > view.w + 80 || y < -50 || y > view.h + 50) continue;
+      const radius = minimap ? 2.5 : 4.5;
+      ctx.fillStyle = 'rgba(4, 13, 11, 0.90)'; ctx.beginPath(); ctx.arc(x, y, radius + 1.6, 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = MAP.ferry; ctx.beginPath(); ctx.arc(x, y, radius, 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = '#f3ecda'; ctx.fillRect(x - radius * 0.65, y - radius * 0.22, radius * 1.3, radius * 0.44);
+      if (minimap || view.zoom < 0.24) continue;
+      const label = view.zoom >= 0.50 ? terminal.name : terminal.id === 'central' ? '中環7號' : terminal.id === 'wan-chai' ? '灣仔碼頭' : '尖沙咀碼頭';
+      ctx.font = `700 ${view.zoom >= 0.50 ? 10 : 9}px ${CJK_FONT}`;
+      ctx.lineWidth = 3.2; ctx.strokeStyle = 'rgba(4, 9, 12, 0.92)';
+      ctx.strokeText(label, x, y + 8);
+      ctx.fillStyle = '#bfe2cd'; ctx.fillText(label, x, y + 8);
+    }
+    ctx.restore();
+  }
+
   drawAreaLabels(ctx, view, minimap) {
     ctx.save();
     view.screen(ctx);
@@ -1001,6 +1046,7 @@ export class HKGMapSystem {
     const view = new MapView(px, pz, zoom, w, h, dpr);
     view.screen(ctx);
     this.drawTramTermini(ctx, view, true);
+    this.drawStarFerryTerminals(ctx, view, true);
     if (this.waypoint) {
       const wx = view.toX(this.waypoint.x), wy = view.toY(this.waypoint.z);
       if (Math.abs(wx - w / 2) < w || Math.abs(wy - h / 2) < h) drawDashedRoute(ctx, w / 2, h / 2, wx, wy);
@@ -1039,6 +1085,7 @@ export class HKGMapSystem {
     ctx.drawImage(stat.canvas, 0, 0);
     view.screen(ctx);
     this.drawTramTermini(ctx, view, false);
+    this.drawStarFerryTerminals(ctx, view, false);
 
     const entity = this.controllerManager.getActiveEntity();
     const px = view.toX(entity.position.x), py = view.toY(entity.position.z);

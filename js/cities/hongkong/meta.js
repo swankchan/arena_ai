@@ -1,5 +1,6 @@
 import { GEO } from '../../hk-geodata.js';
 import { SCB_MAP_SITE } from './standard-chartered-architecture.js';
+import { STAR_FERRY_TERMINALS } from './star-ferry-data.js';
 import {
   FULL_BOUNDS,
   FULL_ROAD_NAMES,
@@ -60,20 +61,23 @@ export const AREA_LABELS = [
   ['維多利亞公園', 2927, -11, 2],
   ['遮打花園', 20, 20, 2],
   ['皇后像廣場', 0, 0, 2],
-  ['天星碼頭', 41, -100, 2],
-  ['中環碼頭', -113, -388, 2],
+  ...STAR_FERRY_TERMINALS.map((site) => [site.name, site.x, site.z, 2]),
   ['星光大道', 1450, -1280, 2],
   ['西九文化區', 40, -2200, 2],
   ['啟德', 3600, -4700, 2]
 ];
 
-const LANDMARKS = [...Object.entries(GEO.landmarks), [SCB_MAP_SITE.name, SCB_MAP_SITE]]
-  .map(([name, landmark]) => ({ name, ...landmark }));
+const LANDMARKS = [
+  ...Object.entries(GEO.landmarks),
+  [SCB_MAP_SITE.name, SCB_MAP_SITE],
+  ...STAR_FERRY_TERMINALS.map((site) => [site.name, site])
+].map(([name, landmark]) => ({ name, ...landmark }));
 
 export const PLACE_NAMES = new Set([
   '香港',
   ...AREA_LABELS.map(([name]) => name),
   ...LANDMARKS.map((landmark) => landmark.name),
+  ...STAR_FERRY_TERMINALS.map((site) => site.nameEn),
   ...GEO.parks.map((park) => park.name).filter(Boolean),
   ...Object.values(GEO.pointNames || {}),
   ...FULL_PLACE_NAMES

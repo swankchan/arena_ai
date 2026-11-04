@@ -6,6 +6,7 @@ import {
   normalize, pow, max, texture
 } from 'three/tsl';
 import { getWaterWaveTexture } from '../../tsl-materials.js';
+import { HONG_KONG_HARBOUR_SWELLS } from './harbour-swell.js';
 
 // Victoria Harbour is a sheltered, working harbour rather than an open-ocean surf surface. Four advected FFT wind-sea
 // scales provide chop and sub-pixel slope variance; three longer deep-water swells really displace the mesh and also
@@ -25,12 +26,8 @@ const harbourNoise = Fn(([p]) => {
   return mix(mix(a, b, u.x), mix(c, d, u.x), u.y);
 });
 
-// [wavelength m, amplitude m, direction x/z, phase]. omega=sqrt(g*k) gives each swell its own deep-water period.
-const SWELLS = [
-  [240, 0.13, 0.94, 0.342, 0.4],
-  [165, 0.20, 0.81, -0.586, 2.1],
-  [128, 0.09, 0.98, 0.199, 4.3]
-];
+// The renderer and floating vessels share these exact long-swell values; FFT wind chop remains shader-only.
+const SWELLS = HONG_KONG_HARBOUR_SWELLS;
 
 // vec3(height, dh/dx, dh/dz). Used by both positionNode and the fragment normal, keeping motion and reflections locked.
 const longSwell = Fn(([p]) => {

@@ -58,7 +58,9 @@ export const city = {
       buses: traffic.buses.length,
       walkers: crowd.walkers.length,
       ...tramway.stats,
-      ferries: harbour.ferries.length
+      ferries: harbour.ferries.length,
+      starFerryRoutes: harbour.routes.length,
+      starFerryTerminals: harbour.terminals.length
     };
     console.info('[hongkong] world ready', stats);
 
@@ -68,6 +70,7 @@ export const city = {
       streetLighting: world.streetLighting,
       traffic,
       tramway,
+      harbour,
       trafficAids: world.trafficAids,
       hsbc: world.hsbc,
       standardChartered: world.standardChartered,
