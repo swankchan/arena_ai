@@ -45,7 +45,9 @@ export const PLAZAS = [];
   for (const [name, zN, zS] of [['Times Square', -402, 0], ['Herald Square', 556, 726]]) {
     const a = nearestEnd(zN, false), b = nearestEnd(zS, true);
     if (!a || !b) continue;
-    roads.push({ x0: a[0], z0: a[1], x1: b[0], z1: b[1], r: 9, name: 'BROADWAY', plaza: name });
+    // Clear the complete pedestrianised bow-tie, not just the 18 m rendered centre strip. In particular, the western
+    // edge of Times Square must not grow a building lot while its neighbouring curb island remains intact.
+    roads.push({ x0: a[0], z0: a[1], x1: b[0], z1: b[1], r: 18, name: 'BROADWAY', plaza: name });
     PLAZAS.push({ name, a, b, w: 18 });
   }
 }

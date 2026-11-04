@@ -9,6 +9,8 @@ import { fileURLToPath } from 'node:url';
 const root = fileURLToPath(new URL('../', import.meta.url));
 const original = '{"elements":[{"id":1}]}\n';
 const replacement = '\n {"elements":[{"id":2}]}\n';
+// A CRLF checkout must not leak a carriage return into a generated Unix shebang (`node\r` cannot be executed).
+const unixScript = (source) => source.replaceAll('\r\n', '\n');
 
 function download(responses) {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'overpass test '));
@@ -20,7 +22,7 @@ function download(responses) {
     const calls = path.join(dir, 'calls');
     fs.writeFileSync(output, original);
     fs.writeFileSync(query, '[out:json];node(1);out;');
-    fs.writeFileSync(path.join(bin, 'curl'), `#!${process.execPath}
+    fs.writeFileSync(path.join(bin, 'curl'), unixScript(`#!${process.execPath}
 const fs = require('node:fs');
 const responses = JSON.parse(process.env.TEST_RESPONSES);
 const calls = process.env.TEST_CALLS;
@@ -30,8 +32,8 @@ const response = responses[Math.min(n, responses.length - 1)];
 fs.writeFileSync(process.argv[process.argv.indexOf('-o') + 1], response.body);
 process.stdout.write(String(response.status));
 process.exitCode = response.exitCode || 0;
-`, { mode: 0o755 });
-    fs.writeFileSync(path.join(bin, 'sleep'), '#!/bin/sh\nexit 0\n', { mode: 0o755 });
+`), { mode: 0o755 });
+    fs.writeFileSync(path.join(bin, 'sleep'), unixScript('#!/bin/sh\nexit 0\n'), { mode: 0o755 });
     const result = spawnSync('bash', [path.join(root, 'tools/overpass.sh'), output, query, '1'], {
       encoding: 'utf8',
       env: { ...process.env, PATH: bin + path.delimiter + process.env.PATH, TEST_RESPONSES: JSON.stringify(responses), TEST_CALLS: calls }
