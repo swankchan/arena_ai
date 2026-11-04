@@ -935,6 +935,12 @@
 - **雙塔gateway arch**：建築師說雙塔在 **四個樓層互連**；海港城辦公頁另以 **三層高arch、約55,000 sq ft統一空間** 描述Prudential／Tower 5。兩種口径在程式及本紀錄分列，沒有把「三層arch」改寫成「三道連接樓層」。模型在兩個真實ring相對端之間設四道可視連接樓層、深色玻璃及浅色格外框，中央保留深色門洞；幾何淨跨約 **18.9007 m**。連接位置、10 m寬及四個高度是照片導向視覺比例，55,000 sqft沒有被假換算成arch實測面積。
 - **立面／道路**：共用弧形藍綠幕牆、銀色橫帶、住宅細分窗、深色服務豎帶、石質窄窗podium及開放格柵冠頂；入口為edge **23**。保留穿越record **51365** 的瀝青、標線及道路ground，地面所有衝突bays開放，上層由12 m開始；保守最低場景淨空約 **12.0677 m**，高層arch不落地封路。DTM施工平台約 **4.6202 m**。T3／T5合景隔離日夜Chromium檢查無console errors；T5連同arch為 **27 meshes／59,818 triangles／171 colliders**。
 
+## 港威大廈六座 The Gateway Tower 6
+
+- **來源及樓層口径**：額外組件 `HK-HC-G6` 採 OSM way **152073864 version 4** 的 **32頂點、約2,290.375 m²** footprint，現行tags為廣東道9號Tower 6及 **129 m／35層**，CTBUH記1998。作為Gateway II另外一座獨立辦公樓，可視立面採建築師的 **32層辦公** courses，與T3／T5的16＋14層雙塔口径明確分開。
+- **造型**：真實弧形ring上的藍綠玻璃、銀色橫帶、深色服務豎帶及開放金屬格柵冠頂，配粉褐花崗岩實牆、窄直窗、通風百頁及三層商場基座。主入口為edge **24** 的arch玻璃門框及Tower 6字牌；沒有把T3／T5的雙塔arch複製到本幢。
+- **道路／驗證**：全港道路中心線重掃穿越records為 **0**，入口12個測試bay亦無衝突；原道路、標線及街燈不搬歪。ground query只在非道路用地套用約 **5.1058 m** DTM施工平台，七項專屬測試驗證來源、入口、地面、樓層、造型及整合；隔離日夜Chromium為 **25 meshes／47,378 triangles／201 colliders**，console errors為0。
+
 ## 程式入口
 
 - `hsbc-headquarters-architecture.js`：滙豐純地理位置、OBB、樓層比例及 collider 座標換算，可在 Node 測試。
@@ -1009,4 +1015,5 @@
 - `gateway-tower-two-world.js`：港威大廈二座及T1／T2多層互連、道路portals、日夜材質、碰撞及stats。
 - `gateway-tower-three-world.js`：Prudential Tower／T3辦公與服務式住宅幕牆、石質podium、道路portals、日夜材質、碰撞及stats。
 - `gateway-tower-five-world.js`：Tower 5、Prudential雙塔四層互連及三層arch資料口径、浅色格框、道路portals、日夜材質、碰撞及stats。
+- `gateway-tower-six-world.js`：Tower 6獨立辦公塔、弧形幕牆、石質podium、格柵冠頂、日夜材質、碰撞及stats。
 - `simple-world.js`：整合施工清單內三十六個 authored landmarks 及海運大廈／LCX／Gateway組件；普通 `buildings` 仍為 0。
