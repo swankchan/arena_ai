@@ -205,6 +205,7 @@
 | 2026-11-03 | `HK-B0092` | 終審法院精確 OSM way **42293414** 用地、昃臣道／遮打道／德輔道中周邊車路及 clearance 後街燈 | 以全港道路中心線及車道半寬掃描實際用地 ring；道路及燈柱衝突均為 **0**，無需搬路、搬燈或改白色標線 | 保留原道路及地形查詢；建築平台只覆蓋非道路用地，西向柱廊入口保持可步行通達 | `tests/court-of-final-appeal.test.cjs`；隔離七視角、完整城市日夜多角度及入口實撞 browser 驗證 |
 | 2026-11-03 | `HK-B0043` | 會景閣及 HKCEC 四個精確 OSM rings、港灣道／會展道／有蓋服務車路及隧道 | 新翼／舊翼／中庭／會景閣分別有 **25／30／39／4** 個道路 segment 與 ring 相交；包含地面及 `flags & 4` 隧道，沒有假稱無衝突。四個 rings 的 clearance 後街燈衝突均為 **0** | 建築及全部道路不搬歪、不刪除，保留瀝青、白色標線及各自 profile。上層由地台上 **8 m** 開始；**217** 個地面柱位及 **366** 幅地面幕牆 panels 逐段避開非隧道車路，形成 **84** 個合併牆 colliders。主入口／會景閣入口分別保留 **6.5／15.8 m** 中央有蓋通道，門及紅毯只放在側 bays，舊翼相鄰 edge 6 另為會景閣入口留出 17.0625 m 開口；道路 ground 優先 | `tests/hkcec.test.cjs`、`tests/hkcec-clearance.test.cjs`；完整城市日夜 browser 驗證 |
 | 2026-11-04 | `HK-B0084` | 星光行精確 OSM way **1169655254**、長向 Salisbury Road／Star Annex 入口及周邊車路 | 以全港道路中心線重掃12頂點用地，穿越 records 為 **0**； Harbour City 全部來源 rings 的 clearance 後街燈檢查亦通過。入口採長約 **91.1 m** 的 edge **3**，不是約4.47 m的角位短邊 | 建築、道路、白色標線及街燈均不搬歪；沿用本地DTM參考及5 m施工平台，ground query只在用地內且非道路時套用地台。入口雨篷及紅毯為照片導向視覺比例，不改寫道路高度 | `tests/star-house.test.cjs`；隔離日夜 Chromium smoke，29 meshes／28,932 triangles／143 colliders，console errors 為0 |
+| 2026-11-04 | `HK-HC-G1` | 港威大廈一座精確 OSM way **152073862**、edge **11** 照片導向入口及周邊車路 | 全港道路中心線重掃40頂點用地，穿越records為 **0**；入口12個測試bay亦無道路衝突，沒有把幾何可行性冒稱官方門節點 | 建築、道路、白色標線及街燈均不搬歪；沿用本地DTM參考及施工平台，ground query只在非道路用地套用地台 | `tests/gateway-tower-one.test.cjs`；來源、入口、道路、樓層口径及整合驗證 |
 | — | — | — | 現有 HSBC／SCB 暫未補回逐項歷史衝突台帳 | 由下一次相關改動開始逐項記錄 | — |
 
 ## 新增及更新規則

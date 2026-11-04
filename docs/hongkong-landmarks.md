@@ -911,6 +911,12 @@
 - **造型**：深色內退玻璃配連續白色辦公橫帶及細mullions，商場基座有浅色面板、玻璃、百頁及Canton Road高玻璃atrium。入口選長約 **90.4 m** 的edge **34**，三個白色入口portal及雙語海港城／海洋中心字牌按照片方向重建；沒有把無關品牌店招或錯認的文化中心照片套用到本樓。
 - **道路／驗證**：六條原始道路records全部保留，地面玻璃及柱逐bay避車，上層由 **6 m soffit** 開始並扣除0.42 m lintel驗證全剖面淨空。七項專屬測試、隔離日夜browser smoke及完整suite通過。
 
+## 港威大廈一座 The Gateway Tower 1
+
+- **來源及樓層口径**：額外海港城組件 `HK-HC-G1` 採 OSM way **152073862 version 3**（2025-10-21）的 **40頂點、約1,680.386 m²** 精確外框，地址資料為廣東道25號第1座；OSM／CTBUH的 **129 m／36層／1994** 與建築師 Wong & Ouyang 的 **32層辦公雙塔** 分開保存。可視模型以三層商場基座上 **32道辦公幕牆courses** 表達建築師口径，沒有把36、32及三層podium相加冒充總樓層。
+- **照片導向細節**：沿真實弧形ring鋪設藍綠／銀藍玻璃、銀色橫向spandrel、細鋁mullions及一側內退深色服務豎帶；基座使用粉褐色花崗岩、三層商場玻璃及segmental arch入口。入口為長約 **23.76 m** 的edge **11**，屬照片導向位置而非虛構OSM門節點。屋頂有 parapet、機房及設備；弧形分bay只是渲染幾何，不是實測幕牆圖則。
+- **道路／驗證**：全港道路中心線重掃穿越records為 **0**，入口12個測試bay亦無道路衝突；建築、道路、標線及街燈不搬歪。沿用本地DTM參考及約 **10.0752 m** 施工平台，ground query只在非道路用地套用甲板。`tests/gateway-tower-one.test.cjs` 驗證原始來源、入口、道路、樓層口径、造型及獨立整合；隔離日夜Chromium render為 **21 meshes／46,178 triangles／197 colliders**，console errors為0。
+
 ## 程式入口
 
 - `hsbc-headquarters-architecture.js`：滙豐純地理位置、OBB、樓層比例及 collider 座標換算，可在 Node 測試。
@@ -980,4 +986,6 @@
 - `star-house-world.js`：星光行混凝土格柵、Star Annex商場基座、Salisbury Road發光雨篷、紅毯、屋頂招牌、日夜材質、碰撞及stats。
 - `marco-polo-hongkong-world.js`：馬哥孛羅香港酒店內退客房格、石材基座、玻璃雨篷、金色馬雕塑、道路portals、日夜材質、碰撞及stats。
 - `ocean-centre-world.js`：海洋中心白色辦公ribbons、商場面板、玻璃atrium、入口portals、道路portals、日夜材質、碰撞及stats。
-- `simple-world.js`：整合施工清單內三十六個 authored landmarks 及海運大廈／LCX組件；普通 `buildings` 仍為 0。
+- `gateway-tower-world-utils.js`：Gateway各塔共用精確弧形ring幕牆、銀色橫帶、服務豎帶、三層粉紅花崗岩podium及arch入口生成器。
+- `gateway-tower-one-world.js`：港威大廈一座的來源口径、辦公courses、入口、日夜材質、碰撞及stats。
+- `simple-world.js`：整合施工清單內三十六個 authored landmarks 及海運大廈／LCX／Gateway組件；普通 `buildings` 仍為 0。
