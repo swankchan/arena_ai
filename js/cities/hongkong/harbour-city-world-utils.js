@@ -83,6 +83,10 @@ export function harbourCityPalette(options = {}) {
     warmLight: new THREE.MeshStandardMaterial({ color: 0xffe4ad, emissive: 0xffc66d, emissiveIntensity: .45, roughness: .5 })
   };
 }
+export function warmWindowEmission(material, tint = [1, .72, .36], strength = .9) {
+  material.emissiveNode = color(...tint).mul(attribute('aLit')).mul(nightAmount()).mul(strength);
+}
+
 export function createStreetLevel(site, options = {}) {
   const glass = store(), stone = store(), backing = store(), frames = [], columns = [], colliders = [];
   const soffit = options.soffit ?? 6, customEdges = new Set(options.customEdges ?? []), bayWidth = options.bayWidth ?? HARBOUR_CITY_PODIUM_BAY_WIDTH;

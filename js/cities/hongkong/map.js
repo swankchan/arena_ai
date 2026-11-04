@@ -1,7 +1,7 @@
 import { GEO } from '../../hk-geodata.js';
 import { SCB_MAP_SITE } from './standard-chartered-architecture.js';
 import { TIMES_SQUARE_SITE, TIMES_SQUARE_HEIGHT } from './times-square-architecture.js';
-import { OCEAN_TERMINAL_SITE } from './harbour-city-architecture.js';
+import { OCEAN_TERMINAL_SITE, MARCO_POLO_HONGKONG_SITE } from './harbour-city-architecture.js';
 import { pointInFlatRing } from './landmark-site.js';
 import { HK_FULL_MAP } from '../../hk-full-map-data.js';
 import { HK_FULL_ROADS } from '../../hk-full-roads-data.js';
@@ -149,10 +149,12 @@ function mapLayers() {
   // Replace the two generic OSM tower summaries with one searchable complex label; the authored towers remain distinct in 3D.
   const stockLandmarks = Object.entries(GEO.landmarks)
     .filter(([, landmark]) => !pointInFlatRing(TIMES_SQUARE_SITE.ring, landmark.x, landmark.z))
-    .filter(([, landmark]) => !pointInFlatRing(OCEAN_TERMINAL_SITE.ring, landmark.x, landmark.z));
+    .filter(([, landmark]) => !pointInFlatRing(OCEAN_TERMINAL_SITE.ring, landmark.x, landmark.z))
+    .filter(([, landmark]) => !pointInFlatRing(MARCO_POLO_HONGKONG_SITE.ring, landmark.x, landmark.z));
   const timesSquareMapSite = { x: TIMES_SQUARE_SITE.x, z: TIMES_SQUARE_SITE.z, h: TIMES_SQUARE_HEIGHT };
   const oceanTerminalMapSite = { x: OCEAN_TERMINAL_SITE.x, z: OCEAN_TERMINAL_SITE.z, h: 24, authored: true };
-  const landmarks = [...stockLandmarks, [SCB_MAP_SITE.name, SCB_MAP_SITE], [TIMES_SQUARE_SITE.name, timesSquareMapSite], ['海運大廈 Ocean Terminal · LCX', oceanTerminalMapSite]]
+  const marcoPoloMapSite = { x: MARCO_POLO_HONGKONG_SITE.x, z: MARCO_POLO_HONGKONG_SITE.z, h: 55, authored: true };
+  const landmarks = [...stockLandmarks, [SCB_MAP_SITE.name, SCB_MAP_SITE], [TIMES_SQUARE_SITE.name, timesSquareMapSite], ['海運大廈 Ocean Terminal · LCX', oceanTerminalMapSite], [MARCO_POLO_HONGKONG_SITE.name, marcoPoloMapSite]]
     .filter(([, landmark]) => Number.isFinite(landmark.h) && (landmark.h > 45 || landmark.authored))
     .map(([name, landmark]) => ({ name, ...landmark }))
     .sort((a, b) => b.h - a.h);
