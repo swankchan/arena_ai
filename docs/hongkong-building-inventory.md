@@ -207,6 +207,7 @@
 | 2026-11-04 | `HK-B0084` | 星光行精確 OSM way **1169655254**、長向 Salisbury Road／Star Annex 入口及周邊車路 | 以全港道路中心線重掃12頂點用地，穿越 records 為 **0**； Harbour City 全部來源 rings 的 clearance 後街燈檢查亦通過。入口採長約 **91.1 m** 的 edge **3**，不是約4.47 m的角位短邊 | 建築、道路、白色標線及街燈均不搬歪；沿用本地DTM參考及5 m施工平台，ground query只在用地內且非道路時套用地台。入口雨篷及紅毯為照片導向視覺比例，不改寫道路高度 | `tests/star-house.test.cjs`；隔離日夜 Chromium smoke，29 meshes／28,932 triangles／143 colliders，console errors 為0 |
 | 2026-11-04 | `HK-HC-G1` | 港威大廈一座精確 OSM way **152073862**、edge **11** 照片導向入口及周邊車路 | 全港道路中心線重掃40頂點用地，穿越records為 **0**；入口12個測試bay亦無道路衝突，沒有把幾何可行性冒稱官方門節點 | 建築、道路、白色標線及街燈均不搬歪；沿用本地DTM參考及施工平台，ground query只在非道路用地套用地台 | `tests/gateway-tower-one.test.cjs`；來源、入口、道路、樓層口径及整合驗證 |
 | 2026-11-04 | `HK-HC-G2` | 港威大廈二座精確 OSM way **152073863**、T1／T2連接體及生成道路 **records 37765／51358** | 兩條原始道路與43頂點用地相交；record index不是OSM way ID。地面入口及柱位逐bay避車，四道高層連接不落地封路 | 建築及道路不搬歪，保留瀝青、白色標線及道路ground；地面道路bays開放，上層由12 m開始，扣除lintel後最低場景淨空約12.6023 m | `tests/gateway-tower-two.test.cjs`；來源、道路profile、入口、連接體及整合驗證 |
+| 2026-11-04 | `HK-HC-G3` | Prudential Tower／T3精確 OSM way **152073851**、生成道路 **records 51365／51366** 及石質podium | 兩條原始道路與32頂點用地相交；record index不是OSM way ID。地面石牆、窄窗、百頁、玻璃及柱均須避車，不能以石材立面封死原道路 | 建築及道路不搬歪；所有衝突地面bays保持開敞，上層由12 m開始，保留瀝青、白色標線及道路ground；保守最低場景淨空約12.3219 m | `tests/gateway-tower-three.test.cjs`；來源、道路profile、入口、16＋14層口径及整合驗證 |
 | — | — | — | 現有 HSBC／SCB 暫未補回逐項歷史衝突台帳 | 由下一次相關改動開始逐項記錄 | — |
 
 ## 新增及更新規則

@@ -84,6 +84,7 @@ export function buildGatewayTower(scene, sourceSite, sourceEntrance, options) {
     roof: [0.43, 0.46, 0.46], roughness: 0.2, metalness: 0.46,
   });
   materials.glazing.side = THREE.DoubleSide;
+  materials.interior.side = THREE.DoubleSide;
   const street = createStreetLevel(site, {
     soffit: GATEWAY_PODIUM_HEIGHT, customEdges: [entrance.sourceEdge],
     glassA: [0.055, 0.12, 0.135], glassB: [0.15, 0.27, 0.28], stoneTint: [0.65, 0.49, 0.44],
@@ -95,17 +96,28 @@ export function buildGatewayTower(scene, sourceSite, sourceEntrance, options) {
   merged(group, street.columns, materials.stone, `${site.englishName} road-safe pink-granite podium columns`);
   addOfficeEntrance(group, site, materials, entrance,
     options.entranceTitle || 'THE GATEWAY', options.entranceSubtitle || site.englishName.toUpperCase());
-  const podiumBands = [];
+  const podiumBands = [], podiumLouvres = [], podiumStone = store(), podiumGlass = store();
   for (let edge = 0; edge < site.localRing.length / 2 - 1; edge += 1) {
     if (edge === entrance.sourceEdge) continue;
     const length = edgeLength(site, edge), bays = Math.max(1, Math.ceil(length / 3.15));
+    const p = (t, y, o = 0.13) => point(site, edge, t, y, o);
     for (let bay = 0; bay < bays; bay += 1) {
-      const t = (bay + 0.5) / bays;
-      if (harbourCityPodiumBayConflict(site, edge, bay / bays, (bay + 1) / bays)) continue;
-      for (const y of [4, 8]) edgeBox(podiumBands, site, edge, t, y, 0.12, length / bays - 0.12, 0.22, 0.34);
+      const t0 = bay / bays, t1 = (bay + 1) / bays, t = (bay + 0.5) / bays;
+      if (harbourCityPodiumBayConflict(site, edge, t0, t1)) continue;
+      const v = hash(edge, bay, 981);
+      quad(podiumStone, p(t0 + 0.002, 3.8), p(t1 - 0.002, 3.8), p(t1 - 0.002, 12), p(t0 + 0.002, 12), [0.59 + v * 0.06, 0.43 + v * 0.05, 0.39 + v * 0.05]);
+      const halfWindow = (t1 - t0) * 0.16, wc = t;
+      quad(podiumGlass, p(wc - halfWindow, 4.35, 0.17), p(wc + halfWindow, 4.35, 0.17),
+        p(wc + halfWindow, 11.05, 0.17), p(wc - halfWindow, 11.05, 0.17), [0.11 + v * 0.04, 0.27 + v * 0.05, 0.3 + v * 0.05], 0.04 + v * 0.1);
+      for (const y of [4, 11.75]) edgeBox(podiumBands, site, edge, t, y, 0.19, length / bays - 0.08, 0.22, 0.28);
+      edgeBox(podiumBands, site, edge, wc, 7.7, 0.2, Math.min(1.2, length / bays * 0.36), 0.1, 0.16);
+      if ((edge + bay) % 5 === 0) for (let j = 0; j < 7; j += 1) edgeBox(podiumLouvres, site, edge, wc, 9.95 + j * 0.16, 0.22, Math.min(1.15, length / bays * 0.35), 0.055, 0.12);
     }
   }
+  meshStore(group, podiumStone, materials.interior, `${site.englishName} pink-granite podium stone panels`);
+  meshStore(group, podiumGlass, materials.glazing, `${site.englishName} slender vertical podium window strips`, false);
   merged(group, podiumBands, materials.paleStone, `${site.englishName} three-storey pink-granite podium bands`);
+  merged(group, podiumLouvres, materials.dark, `${site.englishName} podium ventilation louvres`);
   const colliders = absolute(street.colliders, base);
 
   const glass = store(), backing = store(), bands = [], mullions = [], service = [];
@@ -144,9 +156,14 @@ export function buildGatewayTower(scene, sourceSite, sourceEntrance, options) {
 
   const roof = new THREE.Mesh(roofGeometry(site.localRing, site.height), materials.roof);
   roof.name = `${site.englishName} exact-footprint roof`; roof.receiveShadow = true; group.add(roof);
-  const parapet = [], plant = [], dark = [];
+  const parapet = [], plant = [], dark = [], crown = [];
   ringBand(parapet, site, site.height + 0.42, 0.84, 0.02, 0.24);
   ringBand(plant, site, site.height + 0.96, 0.1, 0.03, 0.13);
+  for (let edge = 0; edge < site.localRing.length / 2 - 1; edge += 1) {
+    const length = edgeLength(site, edge), fins = Math.max(1, Math.ceil(length / 1.6));
+    for (let fin = 0; fin <= fins; fin += 1) edgeBox(crown, site, edge, fin / fins, site.height + 1.75, 0.04, 0.075, 3.5, 0.16);
+  }
+  ringBand(crown, site, site.height + 3.52, 0.12, 0.04, 0.17);
   box(plant, [0, site.height + 1.7, 0], [12, 3.4, 8]);
   box(dark, [0, site.height + 3.46, 0], [12.3, 0.16, 8.3]);
   for (const x of [-12, -7.2, -2.4, 2.4, 7.2, 12]) {
@@ -154,6 +171,7 @@ export function buildGatewayTower(scene, sourceSite, sourceEntrance, options) {
     box(dark, [x, site.height + 1.43, -5], [2.15, 0.08, 1.75]);
   }
   merged(group, parapet, materials.paleStone, `${site.englishName} roof parapet`);
+  merged(group, crown, materials.metal, `${site.englishName} open rooftop metal grille crown`);
   merged(group, plant, materials.roof, `${site.englishName} rooftop lift overrun and plant`);
   merged(group, dark, materials.metal, `${site.englishName} rooftop fan grilles`);
   for (const [t0, t1] of [[0, 0.4], [0.6, 1]]) colliders.push(harbourCitySegmentCollider(site,

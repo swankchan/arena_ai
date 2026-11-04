@@ -915,13 +915,19 @@
 
 - **來源及樓層口径**：額外海港城組件 `HK-HC-G1` 採 OSM way **152073862 version 3**（2025-10-21）的 **40頂點、約1,680.386 m²** 精確外框，地址資料為廣東道25號第1座；OSM／CTBUH的 **129 m／36層／1994** 與建築師 Wong & Ouyang 的 **32層辦公雙塔** 分開保存。可視模型以三層商場基座上 **32道辦公幕牆courses** 表達建築師口径，沒有把36、32及三層podium相加冒充總樓層。
 - **照片導向細節**：沿真實弧形ring鋪設藍綠／銀藍玻璃、銀色橫向spandrel、細鋁mullions及一側內退深色服務豎帶；基座使用粉褐色花崗岩、三層商場玻璃及segmental arch入口。入口為長約 **23.76 m** 的edge **11**，屬照片導向位置而非虛構OSM門節點。屋頂有 parapet、機房及設備；弧形分bay只是渲染幾何，不是實測幕牆圖則。
-- **道路／驗證**：全港道路中心線重掃穿越records為 **0**，入口12個測試bay亦無道路衝突；建築、道路、標線及街燈不搬歪。沿用本地DTM參考及約 **10.0752 m** 施工平台，ground query只在非道路用地套用甲板。`tests/gateway-tower-one.test.cjs` 驗證原始來源、入口、道路、樓層口径、造型及獨立整合；隔離日夜Chromium render為 **21 meshes／46,178 triangles／197 colliders**，console errors為0。
+- **道路／驗證**：全港道路中心線重掃穿越records為 **0**，入口12個測試bay亦無道路衝突；建築、道路、標線及街燈不搬歪。沿用本地DTM參考及約 **10.0752 m** 施工平台，ground query只在非道路用地套用甲板。`tests/gateway-tower-one.test.cjs` 驗證原始來源、入口、道路、樓層口径、造型及獨立整合；隔離日夜Chromium render為 **25 meshes／50,494 triangles／197 colliders**，console errors為0。
 
 ## 港威大廈二座 The Gateway Tower 2
 
 - **來源及樓層口径**：額外海港城組件 `HK-HC-G2` 採 OSM way **152073863 version 3**（2025-10-21）的 **43頂點、約1,680.411 m²** footprint，地址為廣東道25號第2座。OSM／CTBUH **129 m／36層／1994** 與 Wong & Ouyang 的32層辦公雙塔資料分列；可視塔身同樣用三層podium上32道辦公courses，不把不同口径相加。
 - **造型及雙塔連接**：精確弧形ring上有藍綠玻璃、銀色橫帶、細mullions及深色服務豎帶，基座為粉褐花崗岩、商場玻璃及edge **1** 的arch入口。官方只確認T1／T2有多層互連，沒有公布可直接當施工圖的樓層標高；模型因此在兩個真實ring最近角點之間設 **4道可視連接樓層**，淨跨約 **2.393 m**、寬度只作視覺比例，不冒充实測skybridge圖則。
-- **道路／驗證**：保留原始穿越道路records **[37765, 51358]**、瀝青、標線及道路ground；地面商場逐bay避車，上層由 **12 m soffit** 開始。全部衝突剖面扣除0.42 m lintel後最低場景淨空約 **12.6023 m**，高於4.7 m車輛包絡。入口12個測試bay無道路衝突；沿用約 **6.9304 m** DTM施工平台。T1／T2合景隔離日夜Chromium檢查無console errors；T2連同四道連接體為 **23 meshes／48,069 triangles／141 colliders**。
+- **道路／驗證**：保留原始穿越道路records **[37765, 51358]**、瀝青、標線及道路ground；地面商場逐bay避車，上層由 **12 m soffit** 開始。全部衝突剖面扣除0.42 m lintel後最低場景淨空約 **12.6023 m**，高於4.7 m車輛包絡。入口12個測試bay無道路衝突；沿用約 **6.9304 m** DTM施工平台。T1／T2合景隔離日夜Chromium檢查無console errors；T2連同四道連接體為 **27 meshes／51,957 triangles／141 colliders**。
+
+## 港威大廈三座／英國保誠保險大樓 The Gateway Tower 3
+
+- **來源、名稱及樓層口径**：額外組件 `HK-HC-G3` 採 OSM way **152073851 version 3** 的 **32頂點、約2,290.426 m²** footprint；現行OSM tags明確寫 `Prudential Tower／T3`、廣東道21號及 **129 m／35層**，CTBUH另記1998。官方辦公頁把Prudential Tower與Tower 5稱為雙塔，因此本幢採建築師對該雙塔的 **16層辦公＋14層服務式住宅** 作30道可視courses；沒有把30、35及三層podium混算，也沒有假稱另取得官方門牌測量。
+- **照片導向細節**：弧形藍綠玻璃、銀灰橫帶、細mullions、西端深色服務豎帶及上方14層較細分的住宅窗格均沿真實ring建模。粉褐花崗岩podium補上照片中的實牆面板、窄直窗、部分通風百頁及三層橫帶；入口為edge **24** 的玻璃拱框及 `PRUDENTIAL TOWER` 字牌。屋頂有機房、 parapet 及開放金屬格柵冠頂，構件比例不是實測圖則。
+- **道路／驗證**：保留穿越records **[51365, 51366]** 及全部道路地面、標線；地面玻璃、實牆、百頁和柱逐bay避車，上層由12 m開始。保守道路範圍剖面扣除lintel後最低淨空約 **12.3219 m**。入口12個測試bay無衝突，DTM施工平台約 **4.9739 m**。隔離日夜Chromium檢查為 **25 meshes／59,008 triangles／177 colliders**，console errors為0。
 
 ## 程式入口
 
@@ -992,7 +998,8 @@
 - `star-house-world.js`：星光行混凝土格柵、Star Annex商場基座、Salisbury Road發光雨篷、紅毯、屋頂招牌、日夜材質、碰撞及stats。
 - `marco-polo-hongkong-world.js`：馬哥孛羅香港酒店內退客房格、石材基座、玻璃雨篷、金色馬雕塑、道路portals、日夜材質、碰撞及stats。
 - `ocean-centre-world.js`：海洋中心白色辦公ribbons、商場面板、玻璃atrium、入口portals、道路portals、日夜材質、碰撞及stats。
-- `gateway-tower-world-utils.js`：Gateway各塔共用精確弧形ring幕牆、銀色橫帶、服務豎帶、三層粉紅花崗岩podium及arch入口生成器。
+- `gateway-tower-world-utils.js`：Gateway各塔共用精確弧形ring幕牆、銀色橫帶、服務豎帶、三層粉紅花崗岩podium、窄直窗、開放格柵冠頂、arch入口及多層連接體生成器。
 - `gateway-tower-one-world.js`：港威大廈一座的來源口径、辦公courses、入口、日夜材質、碰撞及stats。
 - `gateway-tower-two-world.js`：港威大廈二座及T1／T2多層互連、道路portals、日夜材質、碰撞及stats。
+- `gateway-tower-three-world.js`：Prudential Tower／T3辦公與服務式住宅幕牆、石質podium、道路portals、日夜材質、碰撞及stats。
 - `simple-world.js`：整合施工清單內三十六個 authored landmarks 及海運大廈／LCX／Gateway組件；普通 `buildings` 仍為 0。
