@@ -30,7 +30,7 @@ export function buildHarbourCityHotel(scene, site, entrance, options) {
   merged(group, podiumBands, materials.paleStone, `${site.englishName} three podium floor bands`);
   options.addEntrance(group, site, materials, entrance);
 
-  const glass = store(), backing = store(), frames = [], sills = [], darkBands = [];
+  const glass = store(), backing = store(), facadeStone = store(), frames = [], sills = [], darkBands = [];
   const floorHeight = (site.height - options.podiumTop) / options.roomFloors;
   for (let edge = 0; edge < site.localRing.length / 2 - 1; edge += 1) {
     const length = edgeLength(site, edge), bays = Math.max(1, Math.ceil(length / 2.7));
@@ -38,20 +38,28 @@ export function buildHarbourCityHotel(scene, site, entrance, options) {
     for (let floor = 0; floor < options.roomFloors; floor += 1) {
       const y0 = options.podiumTop + floor * floorHeight, y1 = y0 + floorHeight;
       for (let bay = 0; bay < bays; bay += 1) {
-        const t0 = bay / bays, t1 = (bay + 1) / bays, inset = (t1 - t0) * 0.055, v = hash(edge, floor, bay, site.osmId);
-        quad(backing, p(t0, y0, -0.15), p(t1, y0, -0.15), p(t1, y1, -0.15), p(t0, y1, -0.15), [0.09, 0.12, 0.13], 0.02 + v * 0.06);
-        quad(glass, p(t0 + inset, y0 + 0.46, 0.015), p(t1 - inset, y0 + 0.46, 0.015), p(t1 - inset, y1 - 0.4, 0.015), p(t0 + inset, y1 - 0.4, 0.015),
-          options.windowTint(v), v > 0.86 ? 0.25 + v * 0.4 : 0.025);
-        if (options.frameStyle === 'vertical') edgeBox(darkBands, site, edge, (t0 + t1) / 2, y0 + 0.22, 0.03, length / bays, 0.44, 0.22);
-        else edgeBox(sills, site, edge, (t0 + t1) / 2, y0 + 0.35, 0.18, length / bays + 0.03, 0.16, 0.48);
+        const t0 = bay / bays, t1 = (bay + 1) / bays, inset = (t1 - t0) * (options.frameStyle === 'vertical' ? 0.16 : 0.055), v = hash(edge, floor, bay, site.osmId);
+        const core = options.corePanel?.(edge, bay, bays) ?? false;
+        if (core) quad(facadeStone, p(t0, y0, 0.02), p(t1, y0, 0.02), p(t1, y1, 0.02), p(t0, y1, 0.02), options.coreTint ?? [0.58, 0.59, 0.57], 0.015);
+        else {
+          quad(backing, p(t0, y0, -0.15), p(t1, y0, -0.15), p(t1, y1, -0.15), p(t0, y1, -0.15), [0.09, 0.12, 0.13], 0.02 + v * 0.06);
+          quad(glass, p(t0 + inset, y0 + 0.46, 0.015), p(t1 - inset, y0 + 0.46, 0.015), p(t1 - inset, y1 - 0.4, 0.015), p(t0 + inset, y1 - 0.4, 0.015),
+            options.windowTint(v), v > 0.86 ? 0.25 + v * 0.4 : 0.025);
+        }
+        if (options.frameStyle === 'vertical' && !core) edgeBox(darkBands, site, edge, (t0 + t1) / 2, y0 + 0.22, 0.03, length / bays, 0.44, 0.22);
+        else if (options.frameStyle !== 'vertical') edgeBox(sills, site, edge, (t0 + t1) / 2, y0 + 0.35, 0.18, length / bays + 0.03, 0.16, 0.48);
       }
-      if (options.frameStyle === 'vertical') edgeBox(frames, site, edge, 0.5, y0 + 0.11, 0.12, length + 0.04, 0.22, 0.3);
-      else edgeBox(frames, site, edge, 0.5, y0 + 0.16, 0.15, length + 0.05, 0.32, 0.42);
+      if (options.frameStyle !== 'vertical') edgeBox(frames, site, edge, 0.5, y0 + 0.16, 0.15, length + 0.05, 0.32, 0.42);
     }
-    for (let bay = 0; bay <= bays; bay += 1) edgeBox(frames, site, edge, bay / bays, (site.height + options.podiumTop) / 2,
-      0.12, options.frameStyle === 'vertical' ? 0.15 : 0.22, site.height - options.podiumTop, options.frameStyle === 'vertical' ? 0.28 : 0.46);
+    for (let bay = 0; bay <= bays; bay += 1) {
+      const leftCore = bay > 0 && (options.corePanel?.(edge, bay - 1, bays) ?? false), rightCore = bay < bays && (options.corePanel?.(edge, bay, bays) ?? false);
+      if (options.frameStyle === 'vertical' && leftCore && rightCore) continue;
+      edgeBox(frames, site, edge, bay / bays, (site.height + options.podiumTop) / 2,
+        0.12, options.frameStyle === 'vertical' ? 0.15 : 0.22, site.height - options.podiumTop, options.frameStyle === 'vertical' ? 0.28 : 0.46);
+    }
   }
   meshStore(group, backing, materials.interior, `${site.englishName} recessed guestroom backing`);
+  meshStore(group, facadeStone, materials.interior, `${site.englishName} broad pale stone service-core panels`);
   meshStore(group, glass, materials.glazing, `${site.englishName} thirteen articulated guestroom window courses`, false);
   merged(group, darkBands, materials.dark, `${site.englishName} dark horizontal guestroom spandrel bands`);
   merged(group, sills, materials.paleStone, `${site.englishName} projecting white guestroom window surrounds and sills`);

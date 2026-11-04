@@ -917,6 +917,12 @@
 - **照片導向細節**：沿真實鋸齒ring逐bay做出內退深色客房玻璃、突出白色窗框／窗台及連續横向線腳，不使用通用長方酒店盒。三層基座有商業玻璃、浅色石材帶及白色柱。edge **58** 的Canton Road入口為照片導向位置，**不是官方入口節點**；入口有高透明玻璃、白色柱、門框、線性暖光雨篷，玻璃後以抽象紅色立體畫面表現照片中的紅色大堂藝術，另設 `THREE ON CANTON／LEVEL 3` 字牌。字牌及藝術均為程序化外觀，不是官方招牌原檔或室內施工圖。
 - **道路／驗證**：全港道路中心線重掃穿越records為 **0**，入口12個測試bay無衝突；不搬歪道路、白色標線或街燈。沿用約 **5.9304 m** DTM施工平台，ground query只在非道路用地套用地台；上層碰撞由12 m開始，入口只封兩側實牆。七項專屬測試驗證來源、入口、道路、ground、酒店資料、立面及整合；隔離日夜及入口近景Chromium為 **23 meshes／33,063 triangles／251 colliders**，console errors為0。
 
+## 香港太子酒店 Prince Hotel
+
+- **來源及酒店資料**：額外海港城組件 `HK-HC-PH` 採 OSM way **152073861 version 9** 的 **62頂點、約1,830.687 m²** 鋸齒狀真實外框，保留廣東道23號、**55 m／16 levels／min_height 12 m** 等tags。官方客房頁列 **394間新裝修客房及套房**；Wharf Hotels官方新聞確認酒店於 **2023年8月1日重開**，地面大堂有落地玻璃並連接海港城。模型以三層podium上13道客房courses表達OSM 16層口径，394間客房不會被假換算成窗數。
+- **照片導向細節**：已目視核對有 `THE PRINCE HOTEL` 字牌的第三方外觀及入口照片；深色直向客房窗帶、較細密深色横向spandrel、細白色直框及中央大塊淺灰實牆沿真實ring布置，與Gateway Hotel的白色凸框格網明確分開。edge **61** 是照片導向Canton Road入口，**不是官方入口節點**；地面有深跨度porte-cochere、深色金屬／玻璃頂底、線性暖光、四支寬身矩形石柱、內退落地玻璃門及上層商業玻璃。照片來源只作外觀方向，不是實測圖則；沒有加入搜圖中無法可靠核實的店舖品牌。
+- **改路／淨空／驗證**：原始穿越道路 **record 51361** 完整保留，record index不冒稱OSM way ID；不搬歪建築、車路、白色標線或街燈。地面玻璃及柱逐bay避車，上層由 **12 m soffit** 開始，41個實際道路剖面樣本扣除0.42 m lintel後最低場景淨空 **11.7004177411 m**，高於4.7 m車輛包絡；所選道路保持道路ground，不被約 **7.1928 m** DTM施工平台覆蓋。入口12個測試bay無道路衝突；其餘地面外牆共保留 **9個道路開口bay**。七項專屬測試驗證來源、入口、道路、ground、酒店資料、造型及整合；隔離日夜及入口近景Chromium為 **26 meshes／23,558 triangles／236 colliders**，console errors為0。
+
 ## 港威大廈一座 The Gateway Tower 1
 
 - **來源及樓層口径**：額外海港城組件 `HK-HC-G1` 採 OSM way **152073862 version 3**（2025-10-21）的 **40頂點、約1,680.386 m²** 精確外框，地址資料為廣東道25號第1座；OSM／CTBUH的 **129 m／36層／1994** 與建築師 Wong & Ouyang 的 **32層辦公雙塔** 分開保存。可視模型以三層商場基座上 **32道辦公幕牆courses** 表達建築師口径，沒有把36、32及三層podium相加冒充總樓層。
@@ -1019,6 +1025,7 @@
 - `gateway-tower-world-utils.js`：Gateway各塔共用精確弧形ring幕牆、銀色橫帶、服務豎帶、三層粉紅花崗岩podium、窄直窗、開放格柵冠頂、arch入口及多層連接體生成器。
 - `harbour-city-hotel-world-utils.js`：Gateway／Prince酒店共用的精確鋸齒ring、三層podium、13道客房courses、白色框架、屋頂、碰撞及ground工具。
 - `gateway-hotel-world.js`：港威酒店400間客房資料、2012翻新口径、玻璃入口、紅色大堂藝術、Three on Canton及stats。
+- `prince-hotel-world.js`：太子酒店394間客房、2023重開資料、深色直向窗帶、淺色實牆、有蓋落客區、道路淨空及stats。
 - `gateway-tower-one-world.js`：港威大廈一座的來源口径、辦公courses、入口、日夜材質、碰撞及stats。
 - `gateway-tower-two-world.js`：港威大廈二座及T1／T2多層互連、道路portals、日夜材質、碰撞及stats。
 - `gateway-tower-three-world.js`：Prudential Tower／T3辦公與服務式住宅幕牆、石質podium、道路portals、日夜材質、碰撞及stats。
