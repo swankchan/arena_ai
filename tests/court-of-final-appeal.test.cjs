@@ -175,7 +175,7 @@ test('CFA keeps its authored landmark integration and authoritative progress-tab
   const rows = inventory.split(/\r?\n/).filter((line) => /^\| `HK-B\d{4}` /.test(line));
   const entry = rows.find((row) => row.startsWith('| `HK-B0092`'));
   assert.match(entry, /終審法院 The Court of Final Appeal/); assert.match(entry, /已加入/); assert.match(entry, /court-of-final-appeal-world\.js/);
-  assert.equal(rows.filter((row) => row.includes('| 已加入 |')).length, 32);
+  assert.equal(rows.filter((row) => row.includes('| 已加入 |')).length, 33);
   assert.match(rows.find((row) => row.startsWith('| `HK-B0031`')), /待製作/);
   assert.match(rows.find((row) => row.startsWith('| `HK-B0094`')), /待製作/);
 });

@@ -6,6 +6,8 @@ import { fullRoadSurfaceAt } from '../../../js/cities/hongkong/full-meta.js';
 import { crossingSurfaceAt } from '../../../js/cities/hongkong/crossings.js';
 import { surfaceRoadHeight } from '../../../js/cities/hongkong/road-elevation.js';
 import { HK_TRAM_NETWORK } from '../../../js/hk-tram-network-data.js';
+import { TIMES_SQUARE_SITE, timesSquareWorldToLocal, timesSquareLocalToWorld } from '../../../js/cities/hongkong/times-square-architecture.js';
+import { pointInFlatRing } from '../../../js/cities/hongkong/landmark-site.js';
 
 const MAX_RELOCATION = 24;
 const CARRIAGEWAY_MARGIN = 0.22;
@@ -138,6 +140,22 @@ function relocate(x, z, heading) {
   return null;
 }
 
+function clearTimesSquareFootprint(sourceX, sourceZ, dx, dz, baseY) {
+  const finalX = sourceX + dx / 100, finalZ = sourceZ + dz / 100;
+  if (!pointInFlatRing(TIMES_SQUARE_SITE.ring, finalX, finalZ)) return { dx, dz, baseY };
+  const local = timesSquareWorldToLocal(finalX, finalZ);
+  // The affected southern footway lamp is moved back towards the carriageway-side footway, never into the mall.
+  // Every centimetre-quantised candidate is revalidated against both the building and all road / tram clearances.
+  for (let step = 1; step <= 30; step++) {
+    const candidate = timesSquareLocalToWorld(local.x, local.z + step * .1);
+    const candidateDx = Math.round((candidate.x - sourceX) * 100), candidateDz = Math.round((candidate.z - sourceZ) * 100);
+    const x = sourceX + candidateDx / 100, z = sourceZ + candidateDz / 100;
+    if (pointInFlatRing(TIMES_SQUARE_SITE.ring, x, z) || conflictAt(x, z)) continue;
+    return { dx: candidateDx, dz: candidateDz, baseY: Math.round(baseHeight(x, z) * 100) };
+  }
+  return null;
+}
+
 export async function buildHongKongStreetLightClearance({
   outFile = fileURLToPath(new URL('../../../js/hk-street-light-clearance-data.js', import.meta.url)),
   manifestFile = fileURLToPath(new URL('../../../tools/data/hongkong/street-light-clearance-manifest.json', import.meta.url))
@@ -151,12 +169,15 @@ export async function buildHongKongStreetLightClearance({
     if (tramAdjustedSource) tramAdjusted++;
     if (!result) { suppressed.push(index); continue; }
     if (!result.relocated) continue;
-    const dx = Math.round((result.x - x) * 100), dz = Math.round((result.z - z) * 100);
-    const baseY = Math.round(result.baseY * 100);
+    let dx = Math.round((result.x - x) * 100), dz = Math.round((result.z - z) * 100);
+    let baseY = Math.round(result.baseY * 100);
     if (Math.hypot(dx / 100, dz / 100) > MAX_RELOCATION) { suppressed.push(index); continue; }
     // Centimetre quantisation is part of the runtime table, so validate exactly what will be rendered.
     const conflict = conflictAt(x + dx / 100, z + dz / 100);
     if (conflict) { suppressed.push(index); continue; }
+    const landmarkClear = clearTimesSquareFootprint(x, z, dx, dz, baseY);
+    if (!landmarkClear) { suppressed.push(index); continue; }
+    dx = landmarkClear.dx; dz = landmarkClear.dz; baseY = landmarkClear.baseY;
     overrides.push([index, dx, dz, baseY]);
   }
   let remainingCarriagewayConflicts = 0, remainingTramConflicts = 0;
@@ -176,7 +197,8 @@ export async function buildHongKongStreetLightClearance({
       algorithm: 'segment-normal-then-radial-tram-v2', carriagewayMargin: CARRIAGEWAY_MARGIN,
       heightTolerance: HEIGHT_TOLERANCE, maxRelocation: MAX_RELOCATION, radialDirections: 16,
       tramTrackClearance: TRAM_TRACK_CLEARANCE, tramPoleClearance: TRAM_POLE_CLEARANCE, tramWireClearance: TRAM_WIRE_CLEARANCE,
-      tramNetworkSha256: HK_TRAM_NETWORK.source.alignmentSha256
+      tramNetworkSha256: HK_TRAM_NETWORK.source.alignmentSha256,
+      authoredLandmarkFootprints: ['Times Square OSM way 26469269']
     },
     counts: {
       relocated: overrides.length, suppressed: suppressed.length,

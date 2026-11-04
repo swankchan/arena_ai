@@ -2,7 +2,7 @@
 
 這份文件是香港場景**實際建築物進度總表及 100 幢主要大廈施工清單**，記錄建築物是否已加入、是否精修，以及是否作為 Landmark 整合。`tools/data/hongkong/landmarks.json` 及下表的待製作項目只是來源／候選資料；資料出現在該 JSON 或本清單 **不代表已經加入場景**。
 
-最後整理：**2026-11-03**。目前已實際加入 **32 幢**；其餘 **68 幢**仍是待製作項目，沒有基本體量或精修完成的意思。
+最後整理：**2026-11-04**。目前已實際加入 **33 幢**；其餘 **67 幢**仍是待製作項目，沒有基本體量或精修完成的意思。
 
 ## 標記定義
 
@@ -19,12 +19,12 @@
 | 項目 | 數量 |
 | --- | ---: |
 | 施工清單總數 | 100 |
-| 已加入場景的建築物 | 32 |
-| 已加入而且精修 | 32 |
+| 已加入場景的建築物 | 33 |
+| 已加入而且精修 | 33 |
 | 已加入但只有基本體量 | 0 |
-| 已加入並作為 Landmark 整合 | 32 |
+| 已加入並作為 Landmark 整合 | 33 |
 | 製作中 | 0 |
-| 待製作 | 68 |
+| 待製作 | 67 |
 
 目前普通建築群仍為 **0**；上表只計實際加入的建築物，不把橋樑、道路構築物或純 OSM 候選資料計算在內。
 
@@ -57,6 +57,7 @@
 - 金鐘道政府合署高座 **OSM way 41499029 version 13** 是36頂點高座，實際 ring 面積 **1917.488176 m²**，OBB **1984.662561 m²** 只作包絡。OSM **199 m／57層**、CTBUH **198.7 m／47層／1985**、published **56層／62,077 m²** 與1986 opening 分列；入口採用真實 **node 11779198293 entrance=yes**，不另造入口點。
 - 香港港麗酒店 **OSM way 41498759 version 29** 是 **31 個獨立頂點**的弧形酒店／住宅塔身，實際 ring 面積 **1920.415786 m²**，OBB **2589.612402 m²** 只作包絡。OSM **198 m／62層**、CTBUH **198.9 m architectural/to-tip／183.9 m occupied／61層／1990** 分列，模型最高點採 **198.9 m**；法院道入口由官方到達指引及入口相片定向，不冒充 OSM 門節點。
 - 希慎廣場 **OSM way 755914808 version 4** 是 **27 個獨立節點**的 commercial／mall 建築外框，實際 ring 面積 **3853.043734533363 m²**；OBB **5355.810254189192 m²** 只作定向包絡。OSM **197 m／38 levels** 與 CTBUH **204.1 m architectural/to-tip／190.1 m occupied／36層／地下4層／2012** 分列，KPF **66,600 m²** 與 CTBUH **66,511 m²** 亦互不覆寫。五個上層錯位體量是照片導向重建，不冒充 OSM surveyed upper-floor plans。
+- 時代廣場 **OSM way 26469269 version 8** 是 **22 個獨立節點**的商場基座，實際 ring 面積 **6357.6727505784365 m²**；Tower One／Two 分別保存 **way 199045545／199045544** 的13頂點塔身，**way 294351176** 只作 commercial landuse／露天廣場依據，不當第四幢建築。OSM **194／169 m、47／40 levels**、建築師 **33／26個辦公樓層位於14層retail podium** 及次要高度資料 **193.9／168.8 m** 分列，沒有平均或混用。模型的 **60 m podium／6 m road soffit** 是視覺及行車淨空參數，不冒充實測工程標高；三條原有隧道保留完整點列及道路功能。
 - 太古坊二座 **OSM way 710522581 version 8** 是 **52 個獨立節點**的辦公塔身，實際 ring 面積 **2651.4818416275084 m²**；OBB **2725.13649488804 m²** 只作定向包絡。OSM **195 m／46 levels／2022-09**、CTBUH **191 m architectural/to-tip／46層／2022** 及 Swire／Schindler **42層** 分列，模型最高點採 **191 m**。NBBJ **92,000 m²** 與 Swire 約 **1 million sq ft** 不互相覆寫；三個入口均使用真實 OSM entrance nodes。
 - The Henderson **OSM way 26434768 version 17** 是 **58 個獨立節點**的 curved office ring，實際面積 **1713.7690360519955 m²**；OBB 面積只作定向包絡，不是標準層面積。OSM／WSP／Discover Hong Kong **190 m** 與 seele／Lichtvision **200 m** 分列，模型最高點採 **190 m**，不平均或加疊。OSM／ZHA **36層**、官方 workplace **22/F Sky Garden／38/F Summit 38／39/F Cloud 39**、Hip Hing typical **6/F–38/F**、官方 typical **6/F–37/F** 及 seele 宴會廳 **37/38** 均保留各自口径；兩個入口是照片導向，不冒充 OSM 門節點。
 - 交易廣場第一座 **OSM way 32530560 version 11** 是 **43 個獨立節點**的 angular prisms／cylinders 組合 ring，實際面積 **1612.0205610386329 m²**；OBB **1849.6627058764952 m²** 只作定向包絡。OSM／CTBUH **188 m／52層** 與 Emporis 搜尋摘要 **188.01 m architectural／182.03 m main roof** 分列，模型最高點採 **188 m**；摘要正文未成功讀取，不能冒充已讀正文。P&T **162,400 m²** 是整個交易廣場 complex，JLL **600,000 sq ft／13,000 sq ft floor plate** 是 One 租務表述；Savvi **5/F–50/F共45個辦公樓層**只作45道視覺 courses 依據，不改寫官方52層。入口為照片導向，不冒充 OSM 門節點。
@@ -153,7 +154,7 @@
 | `HK-B0087` | 香港朗廷酒店 The Langham Hong Kong | 尖沙咀 | 待製作 | 否 | 否 | 55 m | OSM way **159324344** | — |
 | `HK-B0088` | 香港會議展覽中心新翼 HKCEC New Wing | 灣仔 | 待製作 | 否 | 否 | — | OSM way **26490011** | — |
 | `HK-B0089` | 香港會議展覽中心舊翼 HKCEC Old Wing | 灣仔 | 待製作 | 否 | 否 | — | OSM way **26490161** | — |
-| `HK-B0090` | 時代廣場 Times Square | 銅鑼灣 | 待製作 | 否 | 否 | — | OSM way **26469269** | — |
+| `HK-B0090` | 時代廣場 Times Square | 銅鑼灣 | 已加入 | **是** | **是** | 193.9／168.8 m（雙塔） | OSM ways **26469269／199045545／199045544**；site **294351176** | `js/cities/hongkong/times-square-world.js` |
 | `HK-B0091` | 美利尼依格羅酒店 The Murray, Hong Kong, A Niccolo Hotel | 中環 | 待製作 | 否 | 否 | — | OSM way **85320844** | — |
 | `HK-B0092` | 終審法院 The Court of Final Appeal | 中環 | 已加入 | **是** | **是** | 約40 m | OSM way **42293414** | `court-of-final-appeal-world.js` |
 | `HK-B0093` | 茶具文物館 Flagstaff House Museum of Tea Ware | 中環 | 待製作 | 否 | 否 | — | OSM way **42255475** | — |

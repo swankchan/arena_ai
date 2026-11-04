@@ -18,6 +18,7 @@ import { ONE_EXCHANGE_GROUND_RINGS } from './one-exchange-square-architecture.js
 import { TWO_EXCHANGE_GROUND_RINGS } from './two-exchange-square-architecture.js';
 import { CFA_GROUND_RINGS } from './court-of-final-appeal-architecture.js';
 import { HKCEC_GROUND_RINGS } from './hkcec-architecture.js';
+import { TIMES_SQUARE_GROUND_RINGS } from './times-square-architecture.js';
 import { smoothConstrainedProfileHeights } from './road-profile-smoothing.js';
 
 export const ROAD_SURFACE_OFFSET = 0.025;
@@ -141,7 +142,7 @@ function addTerrainStations(stations, ax, az, dx, dz, offsetX, offsetZ) {
 
 function addPadStations(stations, boundaries, ax, az, dx, dz, offsetX, offsetZ) {
   const x = ax + offsetX, z = az + offsetZ;
-  for (const ring of [HSBC_SITE.ring, SCB_SITE.ring, ICC_SITE.ring, AIRSIDE_SITE.ring, LEE_GARDEN_ONE_SITE.ring, ONE_IFC_SITE.ring, CHAMPION_TOWER_SITE.ring, CKC2_SITE.ring, QGO_SITE.ring, CONRAD_SITE.ring, HYSAN_SITE.ring, TWO_TAIKOO_SITE.ring, ...HENDERSON_GROUND_RINGS, ...ONE_EXCHANGE_GROUND_RINGS, ...TWO_EXCHANGE_GROUND_RINGS, ...CFA_GROUND_RINGS, ...HKCEC_GROUND_RINGS]) {
+  for (const ring of [HSBC_SITE.ring, SCB_SITE.ring, ICC_SITE.ring, AIRSIDE_SITE.ring, LEE_GARDEN_ONE_SITE.ring, ONE_IFC_SITE.ring, CHAMPION_TOWER_SITE.ring, CKC2_SITE.ring, QGO_SITE.ring, CONRAD_SITE.ring, HYSAN_SITE.ring, TWO_TAIKOO_SITE.ring, ...HENDERSON_GROUND_RINGS, ...ONE_EXCHANGE_GROUND_RINGS, ...TWO_EXCHANGE_GROUND_RINGS, ...CFA_GROUND_RINGS, ...HKCEC_GROUND_RINGS, ...TIMES_SQUARE_GROUND_RINGS]) {
     for (let i = 0, j = ring.length - 2; i < ring.length; j = i, i += 2) {
       const px = ring[j], pz = ring[j + 1], ex = ring[i] - px, ez = ring[i + 1] - pz;
       const denominator = dx * ez - dz * ex;

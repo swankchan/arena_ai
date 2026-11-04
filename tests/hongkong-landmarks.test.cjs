@@ -248,7 +248,7 @@ test('unified simple mode adds only the authored landmarks and keeps generic bui
   assert.match(source, /\.\.\.hkcec\.colliders/);
   assert.match(source, /landmarks: hsbc\.landmarks\.length \+ standardChartered\.landmarks\.length \+ twoIfc\.landmarks\.length \+ icc\.landmarks\.length \+ bankOfChina\.landmarks\.length \+ centralPlaza\.landmarks\.length \+ theCenter\.landmarks\.length \+ ninaTower\.landmarks\.length \+ cheungKong\.landmarks\.length \+ k11Atelier\.landmarks\.length \+ cullinanI\.landmarks\.length \+ cullinanII\.landmarks\.length \+ masterpiece\.landmarks\.length \+ langhamPlace\.landmarks\.length \+ summit\.landmarks\.length \+ hopewell\.landmarks\.length \+ sunHungKai\.landmarks\.length \+ twoPacificPlace\.landmarks\.length \+ airside\.landmarks\.length \+ leeGardenOne\.landmarks\.length \+ oneIfc\.landmarks\.length \+ championTower\.landmarks\.length \+ ckc2\.landmarks\.length \+ qgo\.landmarks\.length \+ conrad\.landmarks\.length \+ hysan\.landmarks\.length \+ twoTaikoo\.landmarks\.length/);
   assert.match(source, /buildings: 0/);
-  assert.match(source, /landmarks: \[\.\.\.hsbc\.landmarks, \.\.\.standardChartered\.landmarks, \.\.\.twoIfc\.landmarks, \.\.\.icc\.landmarks, \.\.\.bankOfChina\.landmarks, \.\.\.centralPlaza\.landmarks, \.\.\.theCenter\.landmarks, \.\.\.ninaTower\.landmarks, \.\.\.cheungKong\.landmarks, \.\.\.k11Atelier\.landmarks, \.\.\.cullinanI\.landmarks, \.\.\.cullinanII\.landmarks, \.\.\.masterpiece\.landmarks, \.\.\.langhamPlace\.landmarks, \.\.\.summit\.landmarks, \.\.\.hopewell\.landmarks, \.\.\.sunHungKai\.landmarks, \.\.\.twoPacificPlace\.landmarks, \.\.\.airside\.landmarks, \.\.\.leeGardenOne\.landmarks, \.\.\.oneIfc\.landmarks, \.\.\.championTower\.landmarks, \.\.\.ckc2\.landmarks, \.\.\.qgo\.landmarks, \.\.\.conrad\.landmarks, \.\.\.hysan\.landmarks, \.\.\.twoTaikoo\.landmarks, \.\.\.theHenderson\.landmarks, \.\.\.oneExchange\.landmarks, \.\.\.twoExchange\.landmarks, \.\.\.courtOfFinalAppeal\.landmarks, \.\.\.hkcec\.landmarks\]/);
+  assert.match(source, /landmarks: \[\.\.\.hsbc\.landmarks, \.\.\.standardChartered\.landmarks, \.\.\.twoIfc\.landmarks, \.\.\.icc\.landmarks, \.\.\.bankOfChina\.landmarks, \.\.\.centralPlaza\.landmarks, \.\.\.theCenter\.landmarks, \.\.\.ninaTower\.landmarks, \.\.\.cheungKong\.landmarks, \.\.\.k11Atelier\.landmarks, \.\.\.cullinanI\.landmarks, \.\.\.cullinanII\.landmarks, \.\.\.masterpiece\.landmarks, \.\.\.langhamPlace\.landmarks, \.\.\.summit\.landmarks, \.\.\.hopewell\.landmarks, \.\.\.sunHungKai\.landmarks, \.\.\.twoPacificPlace\.landmarks, \.\.\.airside\.landmarks, \.\.\.leeGardenOne\.landmarks, \.\.\.oneIfc\.landmarks, \.\.\.championTower\.landmarks, \.\.\.ckc2\.landmarks, \.\.\.qgo\.landmarks, \.\.\.conrad\.landmarks, \.\.\.hysan\.landmarks, \.\.\.twoTaikoo\.landmarks, \.\.\.theHenderson\.landmarks, \.\.\.oneExchange\.landmarks, \.\.\.twoExchange\.landmarks, \.\.\.courtOfFinalAppeal\.landmarks, \.\.\.hkcec\.landmarks, \.\.\.timesSquare\.landmarks\]/);
   assert.match(source, /createHongKongTrafficAids\(scene, \{/);
   assert.match(source, /getGroundHeight, getSurfaceHeight: getRoadPaintHeight, surfaceY: FULL_WORLD_HEIGHT\.road/);
   assert.match(source, /\.\.\.trafficAids\.stats/);
@@ -605,9 +605,10 @@ test('building inventory independently tracks scene status, refinement and landm
     { id: '`HK-B0029`', status: '已加入', refined: '**是**', landmark: '**是**' },
     { id: '`HK-B0030`', status: '已加入', refined: '**是**', landmark: '**是**' },
     { id: '`HK-B0043`', status: '已加入', refined: '**是**', landmark: '**是**' },
+    { id: '`HK-B0090`', status: '已加入', refined: '**是**', landmark: '**是**' },
     { id: '`HK-B0092`', status: '已加入', refined: '**是**', landmark: '**是**' }
   ]);
-  assert.equal(parsed.filter((row) => row.status === '待製作').length, 68);
+  assert.equal(parsed.filter((row) => row.status === '待製作').length, 67);
   assert.ok(parsed.filter((row) => row.status === '待製作').every((row) => row.refined === '否'
     && row.landmark === '否' && row.implementation === '—'), 'OSM candidates are not presented as integrated or refined');
   assert.ok(parsed.every((row) => row.source && row.source !== '—'));
@@ -674,8 +675,8 @@ test('building inventory independently tracks scene status, refinement and landm
   assert.match(rows[91], /終審法院 The Court of Final Appeal/);
   assert.match(rows[91], /court-of-final-appeal-world\.js/);
   assert.match(inventory, /\| 施工清單總數 \| 100 \|/);
-  assert.match(inventory, /\| 已加入場景的建築物 \| 32 \|/);
-  assert.match(inventory, /\| 待製作 \| 68 \|/);
+  assert.match(inventory, /\| 已加入場景的建築物 \| 33 \|/);
+  assert.match(inventory, /\| 待製作 \| 67 \|/);
   assert.match(inventory, /367\.4 m†/);
   assert.match(inventory, /沒有 `height` tag/);
   assert.match(inventory, /373\.9 m‡/);

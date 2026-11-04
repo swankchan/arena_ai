@@ -37,6 +37,7 @@ import { ONE_EXCHANGE_GROUND_SAMPLE, isOneExchangePlazaPoint } from './one-excha
 import { TWO_EXCHANGE_GROUND_SAMPLE, isTwoExchangePlazaPoint } from './two-exchange-square-architecture.js';
 import { CFA_GROUND_SAMPLE, isCourtOfFinalAppealPoint } from './court-of-final-appeal-architecture.js';
 import { HKCEC_GROUND_SAMPLE, isHkcecPoint } from './hkcec-architecture.js';
+import { TIMES_SQUARE_GROUND_SAMPLE, timesSquareTerrainHeightAt } from './times-square-architecture.js';
 
 function decodeBytes(base64) {
   const binary = atob(base64);
@@ -130,6 +131,9 @@ const TWO_EXCHANGE_PAD_HEIGHT = rawHongKongTerrainHeight(TWO_EXCHANGE_GROUND_SAM
 const CFA_PAD_HEIGHT = rawHongKongTerrainHeight(CFA_GROUND_SAMPLE.x, CFA_GROUND_SAMPLE.z);
 // HKCEC and the apartment podium share the Old Wing Harbour Road entrance DTM sample. This is a construction datum, not a surveyed road-engineering level.
 const HKCEC_PAD_HEIGHT = rawHongKongTerrainHeight(HKCEC_GROUND_SAMPLE.x, HKCEC_GROUND_SAMPLE.z);
+// Times Square keeps the higher natural DTM across its commercial site and only raises lower piazza samples to the
+// main-piazza datum. The three tunnel carriageways are excluded and retain their own portal-connected profiles.
+const TIMES_SQUARE_PAD_HEIGHT = rawHongKongTerrainHeight(TIMES_SQUARE_GROUND_SAMPLE.x, TIMES_SQUARE_GROUND_SAMPLE.z);
 
 export function hongKongTerrainHeight(x, z) {
   if (pointInFlatRing(HSBC_SITE.ring, x, z)) return HSBC_PAD_HEIGHT;
@@ -170,7 +174,8 @@ export function hongKongTerrainHeight(x, z) {
   if (isTwoExchangePlazaPoint(x, z)) return TWO_EXCHANGE_PAD_HEIGHT;
   if (isCourtOfFinalAppealPoint(x, z)) return CFA_PAD_HEIGHT;
   if (isHkcecPoint(x, z)) return HKCEC_PAD_HEIGHT;
-  return rawHongKongTerrainHeight(x, z);
+  const rawHeight = rawHongKongTerrainHeight(x, z);
+  return timesSquareTerrainHeightAt(x, z, rawHeight, TIMES_SQUARE_PAD_HEIGHT);
 }
 
 export const HONG_KONG_TERRAIN_META = Object.freeze({
@@ -215,6 +220,7 @@ export const HONG_KONG_TERRAIN_META = Object.freeze({
   twoExchangePadHeight: TWO_EXCHANGE_PAD_HEIGHT,
   cfaPadHeight: CFA_PAD_HEIGHT,
   hkcecPadHeight: HKCEC_PAD_HEIGHT,
+  timesSquarePadHeight: TIMES_SQUARE_PAD_HEIGHT,
   tunnelStats: HK_TERRAIN.stats
 });
 
