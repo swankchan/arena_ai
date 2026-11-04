@@ -953,6 +953,12 @@
 - **造型**：真實弧形ring上的藍綠玻璃、銀色橫帶、深色服務豎帶及開放金屬格柵冠頂，配粉褐花崗岩實牆、窄直窗、通風百頁及三層商場基座。主入口為edge **24** 的arch玻璃門框及Tower 6字牌；沒有把T3／T5的雙塔arch複製到本幢。
 - **道路／驗證**：全港道路中心線重掃穿越records為 **0**，入口12個測試bay亦無衝突；原道路、標線及街燈不搬歪。ground query只在非道路用地套用約 **5.1058 m** DTM施工平台，七項專屬測試驗證來源、入口、地面、樓層、造型及整合；隔離日夜Chromium為 **25 meshes／47,378 triangles／201 colliders**，console errors為0。
 
+## 太平洋會 Pacific Club
+
+- **雙來源及資料口径**：額外海港城組件 `HK-HC-PC` 把會所 OSM way **387482610 version 4**（**4頂點、約4,098.394 m²**）與私人海堤 way **1443753442 version 2**（**7頂點、約5,636.251 m²**）分開保存，沒有把pier外框誤當成另一幢建築。兩者保留 **15 m** tag；海堤另保留 `pier=piled`、`access=private` 及 `restricted_berthing`。官方會所資料為 **1990年開業**、臨維港並設餐飲／運動／休憩設施；OSM沒有樓層tag，因此模型**沒有虛構官方樓層數**，只以三組立面高度帶及筒拱頂表達照片外觀。
+- **照片導向細節**：已目視核對Dreamstime編輯照片及會所官方資料。長向白色灰泥牆上有深綠長方窗、細白mullions、圓窗、通風窄帶及部分 upper loggia；向海端為 **5隻高拱窗**，配白色fanlight拱線、直棂及放射狀窗花。深白屋簷上有淺綠露台欄杆，向海一段另做 **12.05 m起拱、2.95 m矢高、最高15 m** 的白色筒拱頂及standing seams。陸側edge **3** 為會員入口，配綠框玻璃、雨篷及收斂的紅褐服務核心。`PACIFIC CLUB`／`PC`字牌是程序化外觀，不冒充官方標誌原檔；官方雖列游泳池等設施，但位置未核實，沒有隨意在屋頂加泳池。
+- **piled pier、海岸及道路**：精確海堤ring只做局部甲板、白色open-face wharf fascia、混凝土樁及淺綠欄杆；樁長及甲板 **0.18 m** 是場景構造比例，不是已核實工程標高。ground query只在pier ring內由約 **3.6378 m** DTM參考台升至甲板，不把周邊水面或海岸改成陸地。兩個rings全港道路重掃均為 **0條穿越**，入口12個測試bay無衝突，因此無需改路；原道路、白色標線、交通設施及海岸不搬歪。七項專屬測試驗證雙來源、入口、道路、ground、官方歷史、立面及整合；隔離日夜、向海拱窗及陸側入口四組Chromium畫面為 **38 meshes／42,938 triangles／9 colliders**，console errors為0。
+
 ## 程式入口
 
 - `hsbc-headquarters-architecture.js`：滙豐純地理位置、OBB、樓層比例及 collider 座標換算，可在 Node 測試。
@@ -1026,6 +1032,7 @@
 - `harbour-city-hotel-world-utils.js`：Gateway／Prince酒店共用的精確鋸齒ring、三層podium、13道客房courses、白色框架、屋頂、碰撞及ground工具。
 - `gateway-hotel-world.js`：港威酒店400間客房資料、2012翻新口径、玻璃入口、紅色大堂藝術、Three on Canton及stats。
 - `prince-hotel-world.js`：太子酒店394間客房、2023重開資料、深色直向窗帶、淺色實牆、有蓋落客區、道路淨空及stats。
+- `pacific-club-world.js`：太平洋會雙OSM來源、圓窗／長方窗／拱窗、筒拱頂、會員入口、私人piled pier、海岸ground及stats。
 - `gateway-tower-one-world.js`：港威大廈一座的來源口径、辦公courses、入口、日夜材質、碰撞及stats。
 - `gateway-tower-two-world.js`：港威大廈二座及T1／T2多層互連、道路portals、日夜材質、碰撞及stats。
 - `gateway-tower-three-world.js`：Prudential Tower／T3辦公與服務式住宅幕牆、石質podium、道路portals、日夜材質、碰撞及stats。
