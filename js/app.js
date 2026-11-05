@@ -633,9 +633,9 @@ async function initApp(cityStub) {
   // 7. TSL RenderPipeline with Half-Res Screen Space Reflections (SSRNode), Bloom & Filmic Toning
   //    Fade out distant and matte surfaces so SSR spends its rays on visible glossy reflections.
   const scenePass = pass(scene, cameraSystem.camera);
-  // This MRT writes HDR colour, view normals and metal/roughness. Multisampling all three attachments makes every
-  // overdrawn landmark especially expensive; keep the geometry and anti-alias the tone-mapped image with FXAA instead.
-  scenePass.options.samples = 0;
+  // The multisampled colour attachments (output, normal, metalRough) only need resolving, never storing: discarding
+  // them spares the GPU writing 3 x 4 samples per pixel to memory every frame (transient, memoryless attachments where
+  // the browser supports them). The multisampled depth stays stored: SSR reads it.
   scenePass.renderTarget.storeMultisampledColorBuffer = false;
   const ssrFade = smoothstep(360.0, 180.0, positionView.z.negate());
   const maxSSRRoughness = 0.75;
@@ -673,7 +673,6 @@ async function initApp(cityStub) {
   const reflections = ssrPass.mul(reflectionMask);
   const colorGrade = createPostProcessing(renderer, scenePassColor, reflections);
   const renderPipeline = new THREE.RenderPipeline(renderer, colorGrade.outputNode);
-  renderPipeline.outputColorTransform = colorGrade.outputColorTransform;
   if (new URLSearchParams(window.location.search).has('debug')) {
     globalThis.__slopTest = { renderPipeline, renderer, lightingSystem, updateCulling, mapSystem, weatherSystem, world };
   }

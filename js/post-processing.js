@@ -14,12 +14,7 @@ import {
   smoothstep,
   length,
   screenUV,
-  screenSize,
-  renderOutput,
-  rtt,
-  If,
-  clamp,
-  abs
+  screenSize
 } from 'three/tsl';
 import { bloom } from 'three/addons/tsl/display/BloomNode.js';
 
@@ -34,54 +29,10 @@ const LOOKS = {
   midnight: { exposure: 1.04, contrast: 1.08, saturation: 1.06, balance: [0.985, 1.00, 1.035], bloom: 0.30, threshold: 1.00 }
 };
 
-// Tone-map into an RGBA8 target, then run FXAA in this display-referred colour space.
-// The scene's three HalfFloat MRT attachments can therefore stay single-sampled without losing silhouette AA.
-function displayFXAA(outputNode) {
-  return Fn(() => {
-    const source = rtt(renderOutput(outputNode), null, null, { type: THREE.UnsignedByteType });
-    const texel = vec2(1, 1).div(screenSize);
-    const lumaWeights = vec3(0.299, 0.587, 0.114);
-    const centre = source.sample(screenUV);
-    const nw = source.sample(screenUV.add(texel.mul(vec2(-1, -1)))).rgb;
-    const ne = source.sample(screenUV.add(texel.mul(vec2(1, -1)))).rgb;
-    const sw = source.sample(screenUV.add(texel.mul(vec2(-1, 1)))).rgb;
-    const se = source.sample(screenUV.add(texel.mul(vec2(1, 1)))).rgb;
-    const lumaNW = dot(nw, lumaWeights), lumaNE = dot(ne, lumaWeights);
-    const lumaSW = dot(sw, lumaWeights), lumaSE = dot(se, lumaWeights);
-    const lumaCentre = dot(centre.rgb, lumaWeights);
-    const lumaMin = min(lumaCentre, min(min(lumaNW, lumaNE), min(lumaSW, lumaSE)));
-    const lumaMax = max(lumaCentre, max(max(lumaNW, lumaNE), max(lumaSW, lumaSE)));
-    const range = lumaMax.sub(lumaMin);
-    const result = centre.rgb.toVar();
-
-    If(range.greaterThanEqual(max(float(0.0312), lumaMax.mul(0.125))), () => {
-      const direction = vec2(
-        lumaSW.add(lumaSE).sub(lumaNW.add(lumaNE)),
-        lumaNW.add(lumaSW).sub(lumaNE.add(lumaSE))
-      ).toVar();
-      const reduce = max(lumaNW.add(lumaNE).add(lumaSW).add(lumaSE).mul(0.03125), float(1 / 128));
-      const reciprocal = float(1).div(min(abs(direction.x), abs(direction.y)).add(reduce));
-      direction.assign(clamp(direction.mul(reciprocal), vec2(-8), vec2(8)).mul(texel));
-
-      const rgbA = source.sample(screenUV.sub(direction.mul(1 / 6))).rgb
-        .add(source.sample(screenUV.add(direction.mul(1 / 6))).rgb).mul(0.5);
-      const rgbB = rgbA.mul(0.5).add(
-        source.sample(screenUV.sub(direction.mul(0.5))).rgb
-          .add(source.sample(screenUV.add(direction.mul(0.5))).rgb).mul(0.25)
-      );
-      const lumaB = dot(rgbB, lumaWeights);
-      const outside = lumaB.lessThan(lumaMin).or(lumaB.greaterThan(lumaMax));
-      result.assign(outside.select(rgbA, rgbB));
-    });
-
-    return vec4(result, centre.a);
-  })();
-}
-
 function createPostProcessing(renderer, sceneColor, reflections) {
   renderer.toneMapping = THREE.ACESFilmicToneMapping;
   // Exposure is applied before bloom so its threshold follows the image's exposed brightness.
-  // displayFXAA performs ACES and the output color-space conversion exactly once before anti-aliasing.
+  // RenderPipeline performs ACES and the output color-space conversion exactly once, after this graph.
   renderer.toneMappingExposure = 1.0;
 
   const exposure = uniform(1.0);
@@ -132,7 +83,7 @@ function createPostProcessing(renderer, sceneColor, reflections) {
   }
 
   applyPreset('golden');
-  return { outputNode: displayFXAA(outputNode), applyPreset, outputColorTransform: false };
+  return { outputNode, applyPreset };
 }
 
 export { createPostProcessing };
