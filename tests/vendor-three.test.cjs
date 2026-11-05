@@ -63,5 +63,5 @@ test('vendored Three.js is licensed and covers the complete application module g
       if (specifier.startsWith('three/addons/')) visit(specifier);
     }
   }
-  assert.equal(visited.size, 18, 'three builds plus every transitive addon dependency are present');
+  assert.equal(visited.size, 20, 'three builds plus every transitive addon dependency are present');
 });

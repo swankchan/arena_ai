@@ -1,6 +1,7 @@
 import * as THREE from 'three/webgpu';
-import { pass, mrt, output, normalView, positionView, metalness, roughness, vec2, smoothstep } from 'three/tsl';
+import { pass, mrt, output, normalView, positionView, metalness, roughness, vec2, smoothstep, velocity, screenUV, screenSize, uniform } from 'three/tsl';
 import { ssr } from 'three/addons/tsl/display/SSRNode.js';
+import { traa } from 'three/addons/tsl/display/TRAANode.js';
 import { createPostProcessing } from './post-processing.js';
 import { ClusteredLighting } from 'three/addons/lighting/ClusteredLighting.js';
 import { isTypingInField } from './city-config.js';
@@ -615,6 +616,27 @@ async function initApp(cityStub) {
     ...Object.values(controllerManager.entities).map((entity) => entity.mesh),
     controllerManager.entities.cyclist?.helmet
   );
+  // Detailed static towers are merged or instanced, so their authored frustumCulled=false would otherwise draw them
+  // behind the camera too. Freeze correct bounds once; moving hierarchies keep their existing dynamic culling policy.
+  const dynamicRootSet = new Set(dynamicRoots.filter(Boolean));
+  const belongsToDynamicRoot = (object) => {
+    for (let current = object; current; current = current.parent) {
+      if (dynamicRootSet.has(current)) return true;
+    }
+    return false;
+  };
+  scene.traverse((object) => {
+    if (!object.isMesh || belongsToDynamicRoot(object)) return;
+    if (object.isInstancedMesh) {
+      object.computeBoundingBox();
+      object.computeBoundingSphere();
+    }
+    if (object.geometry) {
+      object.geometry.computeBoundingBox();
+      object.geometry.computeBoundingSphere();
+    }
+    object.frustumCulled = true;
+  });
   scene.updateMatrixWorld(true);
   scene.matrixWorldAutoUpdate = false;
   markInit('culling');
@@ -630,19 +652,17 @@ async function initApp(cityStub) {
     });
   }
 
-  // 7. TSL RenderPipeline with Half-Res Screen Space Reflections (SSRNode), Bloom & Filmic Toning
-  //    Fade out distant and matte surfaces so SSR spends its rays on visible glossy reflections.
+  // 7. TSL RenderPipeline with Half-Res SSR, Bloom, Filmic Toning & Temporal AA.
+  //    TRAA reconstructs subpixel facade detail without multisampling every MRT attachment.
   const scenePass = pass(scene, cameraSystem.camera);
-  // The multisampled colour attachments (output, normal, metalRough) only need resolving, never storing: discarding
-  // them spares the GPU writing 3 x 4 samples per pixel to memory every frame (transient, memoryless attachments where
-  // the browser supports them). The multisampled depth stays stored: SSR reads it.
-  scenePass.renderTarget.storeMultisampledColorBuffer = false;
+  scenePass.options.samples = 0;
   const ssrFade = smoothstep(360.0, 180.0, positionView.z.negate());
   const maxSSRRoughness = 0.75;
   const sceneMRT = mrt({
     output: output,
     normal: normalView,
-    metalRough: vec2(roughness.lessThan(maxSSRRoughness).select(metalness.mul(ssrFade), 0), roughness)
+    metalRough: vec2(roughness.lessThan(maxSSRRoughness).select(metalness.mul(ssrFade), 0), roughness),
+    velocity
   });
   sceneMRT.setBlendMode('normal', new THREE.BlendMode(THREE.MaterialBlending));
   sceneMRT.setBlendMode('metalRough', new THREE.BlendMode(THREE.MaterialBlending));
@@ -671,10 +691,21 @@ async function initApp(cityStub) {
   // Roughness mip blur must not spread reflections back onto matte or nonreflective surfaces.
   const reflectionMask = scenePassMetalRough.r.greaterThan(0).select(smoothstep(maxSSRRoughness, 0.55, scenePassMetalRough.g), 0);
   const reflections = ssrPass.mul(reflectionMask);
-  const colorGrade = createPostProcessing(renderer, scenePassColor, reflections);
+  // Reconstruct the scene before bloom and grading; RenderPipeline still applies ACES and sRGB exactly once.
+  const temporalScene = traa(scenePassColor, scenePassDepth, scenePass.getTextureNode('velocity'), cameraSystem.camera);
+  // Restore a restrained amount of high-frequency facade contrast after temporal accumulation.
+  const aaSharpness = uniform(0.2);
+  const aaTexture = temporalScene.getTextureNode();
+  const aaTexel = vec2(1).div(screenSize);
+  const aaNeighbours = aaTexture.sample(screenUV.add(vec2(aaTexel.x, 0)))
+    .add(aaTexture.sample(screenUV.sub(vec2(aaTexel.x, 0))))
+    .add(aaTexture.sample(screenUV.add(vec2(0, aaTexel.y))))
+    .add(aaTexture.sample(screenUV.sub(vec2(0, aaTexel.y))));
+  const sharpenedScene = temporalScene.mul(aaSharpness.mul(4).add(1)).sub(aaNeighbours.mul(aaSharpness));
+  const colorGrade = createPostProcessing(renderer, sharpenedScene, reflections);
   const renderPipeline = new THREE.RenderPipeline(renderer, colorGrade.outputNode);
   if (new URLSearchParams(window.location.search).has('debug')) {
-    globalThis.__slopTest = { renderPipeline, renderer, lightingSystem, updateCulling, mapSystem, weatherSystem, world };
+    globalThis.__slopTest = { renderPipeline, renderer, lightingSystem, updateCulling, mapSystem, weatherSystem, world, aaSharpness };
   }
 
   // Initialize the UI and chase camera around the restored player, or the city's spawn.
@@ -801,7 +832,7 @@ async function initApp(cityStub) {
     // Traffic collisions can move the player after controller updates; finalize moving hierarchies here.
     for (const root of dynamicRoots) root.updateMatrixWorld();
 
-    // Render frame via TSL RenderPipeline (SSR + Bloom)
+    // Render frame via TSL RenderPipeline (SSR + Bloom + TRAA)
     if (!warmedUp) {
       // First frame = pipeline warm-up behind the loading screen, for what precompileShaders() can't reach (the shadow
       // map passes): with frustum culling off, every visible material's pipelines compile now instead of stalling the

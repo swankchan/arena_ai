@@ -2,9 +2,9 @@
   "entry": "js/app.js",
   "bundle": "js/app.runtime.js",
   "builder": "esbuild 0.28.2",
-  "sourceHash": "3be807c482f880d2b6342f5d400e1885350632d5628c795e57fce99078bc99fd",
-  "bundleHash": "0c184c2dc955828031e813281be8b80bebca0d43816466c05420267cb05401d4",
-  "bundleBytes": 32398564,
+  "sourceHash": "51e9df005373d6fd5c86aad89d329b8b4143173b443679f852d0c6db54b242e0",
+  "bundleHash": "7a99490bb9bb1e2ad6394564d93df1720314406d44c059569b5fb728ae7991be",
+  "bundleBytes": 32413405,
   "externalImports": [],
   "inputs": [
     "index.html",
@@ -208,10 +208,12 @@
     "vendor/three/examples/jsm/tsl/display/BloomNode.js",
     "vendor/three/examples/jsm/tsl/display/ImportanceSampledEnvironment.js",
     "vendor/three/examples/jsm/tsl/display/SSRNode.js",
+    "vendor/three/examples/jsm/tsl/display/TRAANode.js",
     "vendor/three/examples/jsm/tsl/display/boxBlur.js",
     "vendor/three/examples/jsm/tsl/lighting/ClusteredLightsNode.js",
     "vendor/three/examples/jsm/tsl/utils/RNoise.js",
     "vendor/three/examples/jsm/tsl/utils/SpecularHelpers.js",
+    "vendor/three/examples/jsm/tsl/utils/TAAUtils.js",
     "vendor/three/examples/jsm/utils/BufferGeometryUtils.js"
   ]
 }
