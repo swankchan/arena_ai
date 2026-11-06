@@ -50,3 +50,23 @@ test('HK-B0089 Old Wing refinement adds separate pale balcony ribbons without ch
   assert.equal(world.stats.hkcecGroundFacadeColliders, 84);
   assert.equal(world.stats.hkcecColliders, 452);
 });
+
+test('HK-B0043 Convention Plaza Apartments reads as projecting silver ribbon courses from the harbour', () => {
+  const stats = world.stats;
+  assert.ok(stats.hkcecApartmentGlassPanels > 900, `glass panels ${stats.hkcecApartmentGlassPanels}`);
+  assert.ok(stats.hkcecApartmentCourseBands >= stats.hkcecApartmentVisualCourses * 4);
+  assert.ok(stats.hkcecApartmentMullions >= stats.hkcecApartmentGlassPanels / 4);
+  assert.equal(stats.hkcecApartmentCornerPilasters, 2 * (h.HKCEC_APARTMENT_SITE.localRing.length / 2 - 1));
+  const names = [];
+  world.group.traverse((object) => { if (object.name) names.push(object.name); });
+  for (const name of ['ApartmentsProjectingSilverCourseBands', 'ApartmentsSilverVerticalMullions',
+    'ApartmentsFullHeightChamferCornerPilasters', 'ApartmentsBlueGreenGlass35Courses']) {
+    assert.ok(names.some((n) => n.includes(name)), name);
+  }
+  // The courses must recede into the building: glass sits behind the projecting bands, and the bands stop at the roof.
+  const apartment = world.group.getObjectByName('ConventionPlazaApartments');
+  assert.ok(apartment);
+  const box = new THREE.Box3().setFromObject(apartment);
+  assert.ok(Number.isFinite(box.min.x) && Number.isFinite(box.max.y));
+  assert.ok(box.max.y <= h.HKCEC_APARTMENT_HEIGHT + 6, `apartment crown ${box.max.y}`);
+});

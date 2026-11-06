@@ -73,29 +73,50 @@ function textPlane(text, width, height, fontSize = 64, foreground = '#edf4f2', b
   const mesh = new THREE.Mesh(new THREE.PlaneGeometry(width, height), material); mesh.name = `Sign:${text}`; return mesh;
 }
 
+// Convention Plaza Apartments (會景閣) reads from the harbour as stacked silver ribbons of glass, not as a plain
+// prism: every residential course carries a projecting pale band, the chamfered corners are picked out by full
+// height silver pilasters, and the glass sits well back in a deep teal so the banding stays legible at distance.
+function ribbonBox(parts, ring, edge, t0, t1, y, height, projection) {
+  const i = edge * 2, mid = (t0 + t1) / 2, { nx, nz, ry } = hkcecEdgeOutward(ring, edge);
+  const ax = lerp(ring[i], ring[i + 2], t0), az = lerp(ring[i + 1], ring[i + 3], t0);
+  const bx = lerp(ring[i], ring[i + 2], t1), bz = lerp(ring[i + 1], ring[i + 3], t1);
+  const length = Math.hypot(bx - ax, bz - az);
+  if (length < 0.02) return;
+  const cx = (ax + bx) / 2 + nx * projection * .5, cz = (az + bz) / 2 + nz * projection * .5;
+  box(parts, [cx, y, cz], [length, height, projection], ry);
+}
+
 function createApartmentFacade() {
-  const glass = store(), bands = store(), frames = store(); let glassPanels = 0, horizontalBands = 0, verticalMullions = 0;
+  const glass = store(), bands = store(), frames = store(), ribs = [];
+  // The bands and mullions are real extruded boxes, not flat quads, so they are merged separately.
+  const ribGeometries = [], mullionGeometries = [];
+  let glassPanels = 0, horizontalBands = 0, verticalMullions = 0;
   const ring = HKCEC_APARTMENT_SITE.localRing, height = HKCEC_APARTMENT_MAIN_ROOF - HKCEC_APARTMENT_PODIUM_TOP;
   for (let edge = 0; edge < ring.length / 2 - 1; edge++) {
     const length = hkcecEdgeOutward(ring, edge).length, bays = Math.max(1, Math.ceil(length / HKCEC_APARTMENT_TARGET_PANEL_WIDTH));
     for (let course = 0; course < HKCEC_APARTMENT_VISUAL_COURSES; course++) {
       const y0 = HKCEC_APARTMENT_PODIUM_TOP + height * course / HKCEC_APARTMENT_VISUAL_COURSES;
       const y1 = HKCEC_APARTMENT_PODIUM_TOP + height * (course + 1) / HKCEC_APARTMENT_VISUAL_COURSES;
-      const bandHeight = course % 5 === 0 ? .92 : .72, variation = (hash(edge, course, 1) - .5) * .04;
-      facadeQuad(bands, ring, edge, 0, 1, y0, y0 + bandHeight, .055, tint([.69, .72, .70], variation)); horizontalBands++;
+      // Every fifth course is a deeper structural band, matching the photographed slab rhythm.
+      const major = course % 5 === 0, bandHeight = major ? 1.35 : .86, variation = (hash(edge, course, 1) - .5) * .05;
+      ribbonBox(ribGeometries, ring, edge, 0, 1, y0 + bandHeight * .5, bandHeight, major ? .92 : .62);
+      horizontalBands++;
       for (let bay = 0; bay < bays; bay++) {
         const t0 = (bay + .018) / bays, t1 = (bay + .982) / bays;
         const lit = hash(edge, course, bay, 2) < .19 ? .25 + hash(edge, course, bay, 3) * .72 : 0;
-        const colour = tint([.26, .47, .52], (hash(edge, course, bay, 4) - .5) * .09);
-        facadeQuad(glass, ring, edge, t0, t1, y0 + bandHeight + .035, y1 - .045, .075, colour, lit); glassPanels++;
-        facadeQuad(frames, ring, edge, Math.max(0, t0 - .0025), Math.min(1, t0 + .0025), y0 + bandHeight, y1, .095, [.63, .70, .70]); verticalMullions++;
+        const colour = tint([.085, .255, .315], (hash(edge, course, bay, 4) - .5) * .055 + variation);
+        facadeQuad(glass, ring, edge, t0, t1, y0 + bandHeight + .035, y1 - .045, .03, colour, lit); glassPanels++;
+        ribbonBox(mullionGeometries, ring, edge, t0 - .0025, t0 + .0025, (y0 + bandHeight + y1) * .5, y1 - y0 - bandHeight, .30); verticalMullions++;
       }
-      facadeQuad(frames, ring, edge, 0, 1, y1 - .035, y1 + .025, .10, [.74, .77, .75]);
     }
-    // Narrow pale ribs articulate the photographed chamfered corners without turning the tower into a generic rectangular prism.
-    facadeQuad(bands, ring, edge, 0, .012, HKCEC_APARTMENT_PODIUM_TOP, HKCEC_APARTMENT_MAIN_ROOF, .12, [.73, .75, .72]);
+    // Full-height silver pilasters at both ends of every edge pick out the chamfered corners as strong verticals.
+    for (const t of [0, 1]) {
+      const p = pointOnRing(ring, edge, t, 0, .16);
+      box(ribs, [p[0], HKCEC_APARTMENT_PODIUM_TOP + height * .5, p[2]], [.86, height, .86]);
+    }
   }
-  return { glass, bands, frames, glassPanels, horizontalBands, verticalMullions };
+  return { glass, bands, frames, ribs, ribGeometries, mullionGeometries,
+    glassPanels, horizontalBands, verticalMullions, cornerPilasters: ribs.length };
 }
 
 function createApartmentCrown(materials) {
@@ -209,7 +230,10 @@ function newWingShellRange(z, shell) {
 }
 function newWingShellPoint(z, t, shell) {
   const section = newWingSection(z); if (!section) return [0, 0, 0]; const [left, right] = section, x = lerp(left, right, t);
-  const b = HKCEC_NEW_WING_SITE.localBounds, longitudinal = .82 + .18 * Math.sin(Math.PI * (z - b.minZ) / (b.maxZ - b.minZ));
+  // The signature roof is a flying wing: the three shells sweep up towards BOTH ends of the long axis and dip in the
+  // middle, so the harbour silhouette lifts at the corners instead of reading as a plain dome.
+  const b = HKCEC_NEW_WING_SITE.localBounds, along = (z - b.minZ) / Math.max(.001, b.maxZ - b.minZ);
+  const longitudinal = .90 + .10 * Math.cos(2 * Math.PI * along);
   const [start, end] = newWingShellRange(z, shell), u = (t - start) / Math.max(.001, end - start);
   const y = shell === 'main' ? 30 + 24 * longitudinal * Math.pow(Math.max(0, Math.sin(Math.PI * u)), .72)
     : 27 + 8 * Math.pow(Math.max(0, Math.sin(Math.PI * u)), .8);
@@ -220,6 +244,44 @@ function newWingRoofHeightAt(x, z) {
   for (const shell of ['left', 'main', 'right']) { const [start, end] = newWingShellRange(z, shell); if (t >= start && t <= end) height = Math.max(height, newWingShellPoint(z, t, shell)[1]); }
   return height;
 }
+// The aluminium roof does not stop at the glass line: it cantilevers out over the harbour curtain wall as a
+// projecting eave, which is the sharpest silhouette cue on the seaward elevation.
+const HKCEC_NEW_WING_EAVE_SPRING = 27;
+function createNewWingEave(materials) {
+  const group = new THREE.Group(); group.name = 'HKCECNewWingAluminiumCantileveredHarbourEave';
+  const store_ = store(), lip = [], soffitStore = store();
+  const ring = HKCEC_NEW_WING_SITE.localRing; const profile = [[0, 0], [.55, .34], [1.5, .62], [2.7, .72]];
+  let panels = 0;
+  for (let edge = 0; edge < ring.length / 2 - 1; edge++) {
+    const length = hkcecEdgeOutward(ring, edge).length; if (length < .4) continue;
+    const steps = Math.max(1, Math.ceil(length / 3));
+    for (let step = 0; step < steps; step++) {
+      const t0 = step / steps, t1 = (step + 1) / steps;
+      const shade = tint([.80, .82, .79], (hash(edge, step, 7) - .5) * .05);
+      for (let k = 0; k < profile.length - 1; k++) {
+        const [o0, y0] = profile[k], [o1, y1] = profile[k + 1];
+        quad(store_, pointOnRing(ring, edge, t0, HKCEC_NEW_WING_EAVE_SPRING + y0, o0),
+          pointOnRing(ring, edge, t1, HKCEC_NEW_WING_EAVE_SPRING + y0, o0),
+          pointOnRing(ring, edge, t1, HKCEC_NEW_WING_EAVE_SPRING + y1, o1),
+          pointOnRing(ring, edge, t0, HKCEC_NEW_WING_EAVE_SPRING + y1, o1), shade);
+        // Underside of the cantilever, in the darker soffit tone so the overhang reads in silhouette.
+        quad(soffitStore, pointOnRing(ring, edge, t0, HKCEC_NEW_WING_EAVE_SPRING - 1.1, 0),
+          pointOnRing(ring, edge, t1, HKCEC_NEW_WING_EAVE_SPRING - 1.1, 0),
+          pointOnRing(ring, edge, t1, HKCEC_NEW_WING_EAVE_SPRING + y1 - .05, o1),
+          pointOnRing(ring, edge, t0, HKCEC_NEW_WING_EAVE_SPRING + y1 - .05, o1), tint([.46, .48, .47], (hash(edge, step, 3) - .5) * .04));
+        panels++;
+      }
+      const [o, y] = profile.at(-1);
+      beam(lip, pointOnRing(ring, edge, t0, HKCEC_NEW_WING_EAVE_SPRING + y - .16, o),
+        pointOnRing(ring, edge, t1, HKCEC_NEW_WING_EAVE_SPRING + y - .16, o), .30, .34);
+    }
+  }
+  meshStore(group, store_, materials.white, 'NewWingHK-B0088CantileveredEaveUpperSurface');
+  meshStore(group, soffitStore, materials.soffit, 'NewWingHK-B0088CantileveredEaveSoffit');
+  merged(group, lip, materials.silver, 'NewWingHK-B0088CantileveredEaveLip');
+  return { group, panels, projection: profile.at(-1)[0] };
+}
+
 function createNewWingRoof(materials) {
   const group = new THREE.Group(); group.name = 'HKCECNewWingThreeLayerFlyingBirdRoof'; const roofStore = store(), seams = [], fascia = [];
   const b = HKCEC_NEW_WING_SITE.localBounds, zs = [];
@@ -430,7 +492,11 @@ export function buildHkcec(root, { groundOffset = 0 } = {}) {
   const materials = { glass, whiteVertex, frames, roofMetal, silver, white, dark, soffit, roof, paving, planter, clearGlass, leaves, wood, carpet, light };
 
   const apartmentGroup = new THREE.Group(); apartmentGroup.name = 'ConventionPlazaApartments'; apartmentGroup.userData.osm = { type: 'way', id: HKCEC_APARTMENT_OSM_SOURCE.id }; apartmentGroup.position.set(HKCEC_APARTMENT_SITE.x, groundOffset, HKCEC_APARTMENT_SITE.z); apartmentGroup.rotation.y = HKCEC_APARTMENT_SITE.ry; complex.add(apartmentGroup);
-  const apartment = createApartmentFacade(); meshStore(apartmentGroup, apartment.glass, glass, 'ApartmentsBlueGreenGlass35Courses'); meshStore(apartmentGroup, apartment.bands, whiteVertex, 'ApartmentsBroadSilverHorizontalBandsAndCornerRibs'); meshStore(apartmentGroup, apartment.frames, frames, 'ApartmentsFineVerticalMullionsAndTransoms');
+  const apartment = createApartmentFacade();
+  meshStore(apartmentGroup, apartment.glass, glass, 'ApartmentsBlueGreenGlass35Courses');
+  merged(apartmentGroup, apartment.ribGeometries, whiteVertex, 'ApartmentsProjectingSilverCourseBands');
+  merged(apartmentGroup, apartment.mullionGeometries, whiteVertex, 'ApartmentsSilverVerticalMullions');
+  merged(apartmentGroup, apartment.ribs, whiteVertex, 'ApartmentsFullHeightChamferCornerPilasters');
   const crown = createApartmentCrown(materials); apartmentGroup.add(crown.group);
   const apartmentEntrance = createEntrance(HKCEC_APARTMENT_SITE, HKCEC_APARTMENT_ENTRANCE, materials, true); apartmentGroup.add(apartmentEntrance.group);
 
@@ -448,6 +514,7 @@ export function buildHkcec(root, { groundOffset = 0 } = {}) {
   const newFacade = createNewWingFacade(); meshStore(newGroup, newFacade.glass, glass, 'NewWingCurvedHarbourGlassWall'); meshStore(newGroup, newFacade.bands, whiteVertex, 'NewWingWhiteHorizontalWindowBands'); meshStore(newGroup, newFacade.frames, frames, 'NewWingCurvedWallMullions');
   shapeMesh(newGroup, HKCEC_NEW_WING_SITE.localRing, HKCEC_COVERED_ROAD_SOFFIT, soffit, 'NewWingRoadClearUpperPodiumSoffit');
   const newRoof = createNewWingRoof(materials); newGroup.add(newRoof.group);
+  const newEave = createNewWingEave(materials); newGroup.add(newEave.group);
   const newRefinement = createNewWingRefinement(materials); newGroup.add(newRefinement.group);
   const newColumns = createColonnade(HKCEC_NEW_WING_SITE, HKCEC_COLUMN_POSITIONS.newWing, materials, 'NewWing'); newGroup.add(newColumns.group);
   const newGround = createGroundFacade(HKCEC_NEW_WING_SITE, HKCEC_GROUND_FACADE_SEGMENTS.newWing, 'NewWing');
@@ -480,8 +547,9 @@ export function buildHkcec(root, { groundOffset = 0 } = {}) {
     hkcecApartmentHeight: HKCEC_APARTMENT_HEIGHT, hkcecApartmentOsmLevels: HKCEC_APARTMENT_OSM_LEVELS, hkcecApartmentOsmMinLevel: HKCEC_APARTMENT_OSM_MIN_LEVEL,
     hkcecApartmentCompletionYear: HKCEC_APARTMENT_COMPLETION_YEAR, hkcecApartmentOfficialResidentialLevels: HKCEC_APARTMENT_OFFICIAL_RESIDENTIAL_LEVELS,
     hkcecApartmentOfficialResidentialFloorRange: `${HKCEC_APARTMENT_OFFICIAL_FIRST_RESIDENTIAL_LEVEL}–${HKCEC_APARTMENT_OFFICIAL_LAST_RESIDENTIAL_LEVEL}`, hkcecApartmentOfficialApproxUnits: HKCEC_APARTMENT_OFFICIAL_APPROX_UNITS,
-    hkcecApartmentVisualCourses: HKCEC_APARTMENT_VISUAL_COURSES, hkcecApartmentGlassPanels: apartment.glassPanels, hkcecApartmentHorizontalBands: apartment.horizontalBands, hkcecApartmentVerticalMullions: apartment.verticalMullions,
+    hkcecApartmentVisualCourses: HKCEC_APARTMENT_VISUAL_COURSES, hkcecApartmentGlassPanels: apartment.glassPanels, hkcecApartmentCourseBands: apartment.horizontalBands, hkcecApartmentMullions: apartment.verticalMullions, hkcecApartmentCornerPilasters: apartment.cornerPilasters, hkcecApartmentFacadeMaterial: 'projecting silver courses over recessed blue-green glass',
     hkcecNewWingRoofShells: newRoof.shells, hkcecNewWingCurvedGlassPanels: newFacade.curvedPanels, hkcecNewWingGlassPanels: newFacade.panels, hkcecNewWingRoofSeams: newRoof.standingSeams,
+    hkcecNewWingEavePanels: newEave.panels, hkcecNewWingEaveProjectionMetres: newEave.projection,
     hkcecNewWingRefined: true, hkcecNewWingInventoryId: 'HK-B0088', hkcecNewWingFineFacadeFins: newRefinement.finCount, hkcecNewWingRoofRibs: newRefinement.roofRibs,
     hkcecOldWingGlassPanels: oldFacade.panels, hkcecOldWingRoofPlantUnits: oldRoof.units, hkcecOldWingRoofFans: oldRoof.fanCount,
     hkcecOldWingRefined: true, hkcecOldWingInventoryId: 'HK-B0089', hkcecOldWingBalconySlabs: oldRefinement.slabCount, hkcecOldWingBalconyRailSegments: oldRefinement.railSegments,
