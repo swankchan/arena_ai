@@ -464,10 +464,16 @@ test('Standard Chartered has seven sandwich slabs and right-trapezoid facade-att
   assert.ok(collider.obb && collider.maxY === SCB_HEIGHT);
 });
 
-test('the hand-built Standard Chartered model includes the photographed identifiers without bundled photo assets', () => {
+test('the clean-rebuild Standard Chartered model includes the photographed identifiers without bundled photo assets', () => {
   const source = fs.readFileSync(path.join(root, 'js/cities/hongkong/standard-chartered-world.js'), 'utf8');
   assert.match(source, /group\.position\.set\(SCB_MODEL_ORIGIN\.x, groundOffset, SCB_MODEL_ORIGIN\.z\)/);
   assert.match(source, /SCBSteppedTowerTiers/);
+  assert.match(source, /scbModelGeneration: 2/);
+  assert.match(source, /SCBRoseGlassFloorTransoms/);
+  assert.match(source, /SCBRoseGlassVerticalMullions/);
+  assert.match(source, /SCBSideElevationStoneRibs/);
+  assert.match(source, /SCBEntranceStoneThresholds/);
+  assert.match(source, /actual jamb \/ head \/ threshold frames/);
   assert.match(source, /SCBSandwichStepStonePiers/);
   assert.match(source, /SCBSandwichStepRoseGlassChannels/);
   assert.match(source, /SCBFrontStonePiers/);
