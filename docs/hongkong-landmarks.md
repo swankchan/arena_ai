@@ -864,12 +864,13 @@
 
 - **範圍及身份**：用戶所稱「會展閣」按名稱及官方物業資料理解為 **會景閣 Convention Plaza Apartments（`HK-B0043`）**；不是同在上蓋、仍待製作的 **會展廣場辦公大樓（`HK-B0034`、way 107497689）**，也不是 Grand Hyatt 或 Renaissance Harbour View。今次一個 Landmark 同時包括會景閣及其所連接的 HKCEC 新翼、舊翼和中庭，四個建築元件各自保留，沒有把兩幢上蓋物業合併或把場館偷換成其他 inventory ID。
 - **精確用地及版本**：`hkcec-architecture.js` 保存四個目前 OSM ways 的原始經緯度、node IDs、tags、API 版本、extract hash 及 ODbL attribution：新翼 **26490011 v20**（64 geometry rows、**34,600.3389 m²**）、舊翼 **26490161 v13**（31 rows、**19,189.8889 m²**）、中庭 **79444510 v14**（25 rows、**11,484.9640 m²**）及會景閣 **107497692 v8**（14 rows、**1,797.5302 m²**）。各 ring 用同一城市 georef 及 minimum-area OBB 建 frame，逐點 round-trip 測試，不以一個長方體覆蓋整片會展用地。
-- **新翼飛鳥屋頂及幕牆**：SOM／Wong & Ouyang 的 1997 新翼資料及實看照片支持海鳥概念、中央大拱頂和兩側較低外挑翼頂，而不是單一半圓拱殼。模型用三層獨立曲面銀灰金屬屋頂、中央約 **80 m** 視覺跨距、**1,121** 段企口、曲面白色檐口及 **55 m** 總高控制；曲面玻璃有 **1,064** 幅面板，其中 **266** 幅延伸至非等高屋頂下緣。SOM 的 **6層／55 m／158,000 m²／80 m clear span** 與 OSM `building:levels=5`、`roof:levels=2` 分列，沒有混成假精確工程剖面。
-- **舊翼及中庭**：舊翼採淺灰水平厚帶、藍綠 ribbon glazing、**900** 幅窗板、平屋頂機房、天窗及 **19** 組機電風扇。中庭按 `building=bridge` 保持地面車路上蓋性質，以三層玻璃、**690** 幅面板、屋頂花園、**9** 道白色拱桁架、縱向 purlins、曲面玻璃、9 棵樹及6張長椅表達2009擴建；Wong & Ouyang 的官方 **3層／19,400 m²／約80 m跨距** 與 OSM `building:levels=8`、`fixme=Check floors` 不互相覆寫。
+- **新翼飛鳥屋頂及幕牆**：SOM／Wong & Ouyang 的 1997 新翼資料及實看照片支持海鳥概念、中央大拱頂和兩側較低外挑翼頂，而不是單一半圓拱殼。模型用三層獨立曲面銀灰金屬屋頂、中央約 **80 m** 視覺跨距、**1,121** 段企口、曲面白色檐口及 **55 m** 總高控制；曲面玻璃有 **1,064** 幅面板，其中 **266** 幅延伸至非等高屋頂下緣。SOM 的 **6層／55 m／158,000 m²／80 m clear span** 與 OSM `building:levels=5`、`roof:levels=2` 分列，沒有混成假精確工程剖面。**HK-B0088 本輪補精修**：另加 **504** 條細曲面牆 fins 及 **180** 段橫向白色屋頂 ribs，對應相片中密集直棂和飛鳥屋面結構；仍屬 HKCEC 綜合組件，不新增 Landmark。
+- **舊翼及中庭**：舊翼採淺灰水平厚帶、藍綠 ribbon glazing、**900** 幅窗板、平屋頂機房、天窗及 **19** 組機電風扇。**HK-B0089 本輪補精修**：在海向長 source edges 24／25 加 **93** 段淺色弧形露台板、深色欄杆及圓角端部，表達相片中的層層白色弧形露台；不修改原 footprint 或道路 collider。中庭按 `building=bridge` 保持地面車路上蓋性質，以三層玻璃、**690** 幅面板、屋頂花園、**9** 道白色拱桁架、縱向 purlins、曲面玻璃、9 棵樹及6張長椅表達2009擴建；Wong & Ouyang 的官方 **3層／19,400 m²／約80 m跨距** 與 OSM `building:levels=8`、`fixme=Check floors` 不互相覆寫。
 - **會景閣立面及屋頂**：OSM `height=164`、`building:levels=47`、`building:min_level=10` 與官方1989落成、約600個服務式住宅及 **11–46樓共35個住宅樓層** 分開保存。塔身由地台上 **34 m** 起，精確13邊折角 ring 上有 **35 courses、5,110 幅藍綠玻璃、5,110 條細直棂及455道寬淺灰水平帶**。主屋面 **158 m**、低矮機電冠頂止於 **164 m** 是保守視覺控制；全塔屋頂沒有另稱已核實竣工圖，亦不添加無依據尖頂。
 - **入口、道路及碰撞**：新翼／舊翼／中庭／會景閣的道路掃描分別保留 **25／30／39／4** 個衝突 segment，不刪全港道路、隧道或白色標線。上蓋 soffit 為地台上 **8 m**，高於 **4.7 m** 車輛包絡；地面只放經全港非隧道道路逐點掃描的 **217** 支柱及 **366** 幅安全幕牆 panels，後者合成 **84** 個 OBB colliders。港灣道主入口及會景閣入口採照片導向 source edges **9／11**，不是假稱 OSM 門節點；分別保留 **6.5／15.8 m** 中央有蓋通道，玻璃門、石材側牆及會景閣紅毯放在側 bays，圓柱及字牌不橫封車道。總計 **452 colliders** 接入 world。
 - **地勢及日夜**：四座共用舊翼港灣道入口的 raw DTM 採樣 **5.000 m**，非道路平台 **5.150 m**；這是場景施工 datum，不是已核實道路工程標高。`terrain.js`、`road-elevation.js` 及 `simple-world.js` 讓所選道路保持原 profile 並優先於 plaza。日間為銀灰金屬、淺灰水平帶及藍綠反光玻璃；夜間僅部分窗格以 `aLit` 產生暖光，入口 canopy 有柔和暖燈，整幢石材及屋頂不均勻自發光。
-- **最終瀏覽器驗證**：最新 runtime 在 Chromium／WebGL **700×500** 完成日間全景、無遮擋會景閣、會景閣入口、HKCEC 主入口及夜景共 **5 views** 實看。全景城市為 **32 landmarks**；本綜合 Landmark 保持 **1 entry／4 components**，實際為 **58 meshes、81,676 triangles、452 colliders**，`invalidValues=0`。地面 **366 panels／84 OBB** 與統計一致；主入口及會景閣旁兩條真實車路的中央／左右共 **6** 個取樣全部保持道路 ground **5.025 m**、地面碰撞阻擋 **0**，兩個入口中央通道取樣阻擋亦為 **0**。入口門牆、圓柱、紅毯及字牌另由全段道路測試檢查，字牌置於 canopy 外緣而不再被 slab 遮擋。page exception 為 **0**；只有既有 Google Fonts 外部 request `ERR_CONNECTION_CLOSED`。HKCEC 架構／道路／入口專測 **13／13**，完整 `node --test tests/*.test.cjs` 為 **519／519 pass**。
+- **先前瀏覽器驗證（歷史紀錄，非本輪驗收）**：當時 runtime 在 Chromium／WebGL **700×500** 完成日間全景、無遮擋會景閣、會景閣入口、HKCEC 主入口及夜景共 **5 views** 實看。全景城市為 **32 landmarks**；本綜合 Landmark 保持 **1 entry／4 components**，實際為 **58 meshes、81,676 triangles、452 colliders**，`invalidValues=0`。地面 **366 panels／84 OBB** 與統計一致；主入口及會景閣旁兩條真實車路的中央／左右共 **6** 個取樣全部保持道路 ground **5.025 m**、地面碰撞阻擋 **0**，兩個入口中央通道取樣阻擋亦為 **0**。入口門牆、圓柱、紅毯及字牌另由全段道路測試檢查，字牌置於 canopy 外緣而不再被 slab 遮擋。page exception 為 **0**；只有既有 Google Fonts 外部 request `ERR_CONNECTION_CLOSED`。HKCEC 架構／道路／入口專測 **13／13**，完整 `node --test tests/*.test.cjs` 為 **519／519 pass**。
+- **本輪 Node 驗證（不是瀏覽器目測）**：`tests/hkcec-refinement.test.cjs` **2／2**、`tests/hkcec.test.cjs` **7／7**、`tests/hkcec-clearance.test.cjs` **6／6** 通過；New Wing／Old Wing 精修後隔離 build 為 **64 meshes／264,310 vertices／88,216 triangles／452 colliders／0 non-finite**，地面仍為 **366 panels／84 OBB**。
 - **資產**：所有曲面、幕牆、桁架、屋頂設備、花園、入口及雙語字牌均為程序化 geometry／Canvas。研究照片只作外觀及比例依據，沒有打包進應用程式，也不依賴外鏈圖片或下載 GLTF。
 
 ### 參考資料
@@ -1076,11 +1077,11 @@
 
 - **來源與分區**：愛丁堡廣場5號，採額外公共文化組件 ID，不改變100幢清單統計。高座 **OSM way 25608273 v16**、低座 **101959153 v8**、整體場地 **101959040 v13**、Memorial Garden **46870356 v10** 及無名附屬建築 **101959243 v4** 分開保存原始節點、經緯度、tags、版本及 ODbL 署名。高座12個獨立頂點／**712.298610 m²**，低座19個／**4,291.589323 m²**，整體場地31個／**13,672.176 m²**；場地只用於 ground／道路審計，沒有拉成一幢大方盒。
 - **官方資料與高度口径**：[古物古蹟辦事處](https://www.amo.gov.hk/en/historic-buildings/monuments/hong-kong-island/monuments_132/index.html)確認 **1962-03-02** 開幕、**2022** 年列為法定古蹟，以及高低座、Memorial Garden、有蓋步道和12面 Memorial Shrine。高座 **57.7 m／12 levels**、低座 **21.9 m／3 levels** 是 OSM 標籤；附屬建築4.2 m、花園設施及外置樓梯尺寸只屬照片導向，沒有冒充實測。
-- **照片研究與立面**：核看 AMO／LCSD 及正確的大會堂外觀參考圖，剔除不相關建築；[LegCo heritage assessment](https://www.legco.gov.hk/yr2022/english/brief/devbcho1bcr141_20220520-e.pdf) 支持低座 L 形、花崗岩、北向窗帶、西向菱形窗及高座白色模數窗格。高座使用白牆、逐格深色玻璃窗、突出混凝土 fins、天台 parapet／plant 及外置樓梯；低座保留完整 L 形 ring，分別處理玻璃帶、中央實牆 auditorium、側翼玻璃、花崗岩接縫及菱形窗，不再以整幅通用實板覆蓋來源立面。
+- **照片研究與立面**：核看 AMO／LCSD 及正確的大會堂外觀參考圖，剔除不相關建築；[LegCo heritage assessment](https://www.legco.gov.hk/yr2022/english/brief/devbcho1bcr141_20220520-e.pdf) 支持低座 L 形、花崗岩、北向窗帶、西向菱形窗及高座白色模數窗格。高座使用白牆、逐格深色玻璃窗、突出混凝土 fins、天台 parapet／plant 及外置樓梯；低座保留完整 L 形 ring，分別處理玻璃帶、中央實牆 auditorium、側翼玻璃、花崗岩接縫及菱形窗，不再以整幅通用實板覆蓋來源立面。**HK-B0082** 本輪再補 20 條深模數 fins、24 道樓層陰影縫及12邊天台 coping；**HK-B0100** 補12個花崗岩菱形窗框、9道深遮陽板及17組天窗 curb，兩個原 ID 均有獨立 stats／測試，仍屬 `HK-CENTRAL-CH` 公共組件。
 - **入口及有蓋連接**：高座兩門使用真實 **nodes 11774406410／11774406411**，低座兩門使用 **11774418675／11774406423**，沒有加上硬編 facade offset。門、雨篷和地面碰撞開口使用同一來源頂點；四道門在頂點兩側各1.55 m均通過無地面碰撞檢查。高低座另有明確標為照片導向的 edge **6／17** 連接門，42.56 m 有蓋步道真正由兩個來源牆面連接，不是停在附屬建築附近的花園小路。
 - **花園與附屬細節**：精確 Memorial Garden ring 內有草坪、鋪裝、綠籬、長椅、青銅紀念雕塑及12面石質神龕／低斜屋頂／牌匾。神龕中心及尺寸屬照片導向，沒有假稱獨立 OSM footprint。另有獨立單層附屬建築、通風百頁、服務門、有蓋柱廊、入口字牌及有限暖光；研究照片不打包成材質。
 - **道路、ground、街燈與碰撞**：三個建築 rings 的全港道路中心線及 `width/2+0.35 m` 掃描均為 **0**；整體場地保留18條道路記錄，Memorial Garden亦獨立檢查。共用 **5.3179828255 m** DTM採樣 datum 不是工程標高，所選道路維持原道路 ground。legacy generic-lot mode 以整體場地抑制通用建築，街燈生成鏈納入建築及神龕淨空；clearance 後剩餘衝突 **0**。
-- **驗證**：`tests/city-hall.test.cjs` **9／9** 通過，涵蓋五個來源、官方資料、道路、四個真實入口、DTM、街燈、立面／花園／步道、整合及 Node geometry。隔離 Node build 為 **66 meshes／24,888 vertices／62 colliders／2 landmarks／0 non-finite**；本環境沒有 Chromium，以上不是瀏覽器目測聲明。
+- **驗證**：`tests/city-hall.test.cjs` **9／9** 通過，涵蓋五個來源、官方資料、道路、四個真實入口、DTM、街燈、立面／花園／步道、整合及 Node geometry；同一測試亦逐項檢查 HK-B0082／B0100 精修 stats。本輪隔離 Node build 為 **83 meshes／28,128 vertices／14,073 triangles／62 colliders／2 landmarks／0 non-finite**；本環境沒有 Chromium，以上不是瀏覽器目測聲明。
 
 ## 香港中央圖書館 Hong Kong Central Library `HK-CENTRAL-LIBRARY`：知識之門、雙樓梯及地球噴泉（2026-11-06）
 
@@ -1091,6 +1092,21 @@
 - **道路、ground、街燈與碰撞**：建築、雙樓梯 arrival 及噴泉的全港道路中心線和 `width/2+0.35 m` 掃描均為 **0**；外圍場地保留道路記錄 **45333** 並讓所選道路優先。共用 **7.2220955363 m** raw-DTM 採樣 datum，不是工程標高；legacy generic-lot mode 抑制外圍場地通用建築，街燈生成鏈納入建築、arrival 及噴泉淨空，clearance 後剩餘衝突 **0**。入口兩側各有真實碰撞開口及上層 lintel，噴泉使用實際 base 的獨立碰撞。
 - **驗證**：`tests/central-library.test.cjs` **8／8** 通過，涵蓋完整來源、官方／視覺口径、道路、DTM、淨空、立面／入口／噴泉、整合及 Node geometry。隔離 Node build 為 **39 meshes／48,800 vertices／14 colliders／1 landmark／0 non-finite**；以 `groundOffset:5` 測試 collider 範圍 **5–63.8 m**。全港 canvas-stub integration smoke 為 **8,245 meshes／22,295,476 vertices／39,405 colliders／80 landmarks／0 non-finite**，兩幢 ground 分別回傳大會堂 **5.3179828255 m**、圖書館 **7.2220955363 m**。完整 suite **786／786**，self-contained runtime **33,308,385 bytes／248 modules**。本環境沒有 Chromium，以上不是瀏覽器目測聲明。
 - **資料**：建築 https://www.openstreetmap.org/way/856995407 ；場地 https://www.openstreetmap.org/way/856995408 ；官方簡介及地下平面見上。研究照片只作觀察，沒有打包或作貼圖。
+
+## 茶具文物館 Flagstaff House Museum of Tea Ware `HK-B0093`：香港公園內的 Greek Revival 精修（2026-11-06）
+
+- **範圍及來源**：茶具文物館仍是香港公園的一個組件，不新增獨立 Landmark，也不重用其他 `HK-B` ID。`flagstaff-house-architecture.js` 保存直接 OSM API way **42255475 v15** 的幾何、tags、ODbL 來源及入口 nodes **13389904935／13389904936**；active park ring 與直接投影核對差少於 **1 mm**（既有 georef 常數差），沒有搬歪建築。
+- **照片／官方研究**：香港藝術館及 LCSD 資料確認 **1844–1846**、兩層、Greek Revival 及法定古蹟身份；實看照片用於白色古典線腳、深色木窗／百葉、柱廊、中央拱形高窗、紅棕色瓦屋顶及煙囪。照片只作研究，沒有打包成貼圖或外部 asset。
+- **專用精修**：新增 `flagstaff-house-world.js`，不再以通用 heritage 雙面百葉盒代替整幢建築。精確來源薄殼及 DTM retaining foundation 保留；另建 **156** 幅窗板、**212** 塊百葉、**25** 條地面柱廊柱、兩段坡瓦屋顶及三支煙囪，並有門廊、古典門框、拱形上窗及雙語館名牌。
+- **入口、ground 與碰撞**：兩個門中心直接使用真實 OSM vertex；相鄰 source edge 同步開口，person-height 無阻擋，門上牆仍有碰撞。公園 ground 繼續使用可追溯 DTM／施工 datum，所有新增 collider 中心不佔車路；不是把 DEM 寫成工程標高。
+- **驗證**：`tests/flagstaff-house.test.cjs` **4／4** 及 `tests/major-parks.test.cjs` **15／15** 通過，涵蓋來源、專用細節、入口開口、道路淨空、有限幾何及香港公園整合。完整香港公園 Node build 為 **80 meshes／125,794 vertices／0 non-finite**（這是整個公園，不是單幢面數）；本環境沒有 Chromium，不是瀏覽器目測驗收。
+
+### 資料
+
+- 香港藝術館 Flagstaff House：<https://hk.art.museum/en/web/ma/about-the-museum1.html>
+- LCSD 香港公園 heritage：<https://hkp.lcsd.gov.hk/en/facilities/heritage>
+- 直接 OSM 來源：<https://www.openstreetmap.org/api/0.6/way/42255475/full.json>
+- 照片研究分類：<https://commons.wikimedia.org/wiki/Category:Flagstaff_House>
 
 ## 程式入口
 
@@ -1164,7 +1180,7 @@
 - `court-of-final-appeal-architecture.js`：終審法院七頂點 OSM 用地、OBB／facade frames、照片導向入口、DTM 平台及 ground／collider 座標換算。
 - `court-of-final-appeal-world.js`：終審法院四面拱廊及巨柱、Ionic／Doric 柱式、花崗岩、窗洞、entablature、pediment、皇家紋章、Themis、穹頂鼓座、Crown、中式筒瓦、日夜材質、碰撞及 stats。
 - `hkcec-architecture.js`：HKCEC 新翼／舊翼／中庭及會景閣四個目前 OSM rings、版本、OBB／入口 frames、DTM 地台、避車柱位及地面幕牆、道路／collider 座標換算。
-- `hkcec-world.js`：新翼三層飛鳥曲面屋頂及弧形玻璃、舊翼水平帶及機電屋頂、中庭花園與白色拱桁架、會景閣35層藍綠幕牆、側 bays 入口、日夜材質、道路 portals、碰撞及 stats。
+- `hkcec-world.js`：新翼三層飛鳥曲面屋頂及弧形玻璃、HK-B0088 細牆 fins／屋頂 ribs、舊翼水平帶及 HK-B0089 弧形露台、機電屋頂、中庭花園與白色拱桁架、會景閣35層藍綠幕牆、側 bays 入口、日夜材質、道路 portals、碰撞及 stats。
 - `harbour-city-architecture.js`：海港城各幢獨立OSM來源、共享georef、入口frames、道路records、地台及逐邊碰撞座標換算。
 - `ocean-terminal-world.js`：海運大廈、L3 LCX、2017海側退台擴建、公共屋頂甲板、道路portals、日夜材質、碰撞及stats。
 - `star-house-world.js`：星光行混凝土格柵、Star Annex商場基座、Salisbury Road發光雨篷、紅毯、屋頂招牌、日夜材質、碰撞及stats。
@@ -1197,7 +1213,9 @@
 - `gateway-tower-six-world.js`：Tower 6獨立辦公塔、弧形幕牆、石質podium、格柵冠頂、日夜材質、碰撞及stats。
 - `civic-world-utils.js`：來源邊 chain frame、精確 ring 牆／屋顶、框架窗格及合併幾何工具。
 - `city-hall-architecture.js`：大會堂五個 OSM rings、真實入口、照片導向連接／神龕、道路、ground、generic suppression 及街燈淨空。
-- `city-hall-world.js`：大會堂高低座立面、附屬建築、Memorial Garden、12面神龕、有蓋高低座連接、入口、碰撞及 stats。
+- `city-hall-world.js`：大會堂高低座立面、HK-B0082 深模數 fins、HK-B0100 菱形窗框／遮陽板、附屬建築、Memorial Garden、12面神龕、有蓋高低座連接、入口、碰撞及 stats。
+- `flagstaff-house-architecture.js`：茶具文物館直接 OSM v15 來源、兩個真實入口 node、研究資料及來源核對。
+- `flagstaff-house-world.js`：茶具文物館專用 Greek Revival 柱廊、古典線腳、木窗百葉、拱窗、紅瓦屋顶、煙囪、入口開口及碰撞。
 - `central-library-architecture.js`：中央圖書館建築／外圍場地 OSM rings、主立面、照片導向入口／雙樓梯／噴泉、道路、ground、generic suppression 及街燈淨空。
 - `central-library-world.js`：中央圖書館黃色 GRC、藍綠玻璃、Gate to Knowledge 六柱、三角山花、七樓實牆、Window of Hope、雙樓梯、地球噴泉、碰撞及 stats。
-- `simple-world.js`：整合施工清單內三十六個 authored landmarks、海運大廈／LCX／Gateway組件、太空館／文化中心／大會堂／中央圖書館／鐘樓公共文化組件、半島酒店、喜來登酒店、港青酒店、九龍香格里拉、添馬政府總部建築群、1881 Heritage、九龍站凱旋門及擎天半島；普通 `buildings` 仍為 0。
+- `simple-world.js`：整合施工清單內三十六個正式獨立 authored landmarks，以及大會堂高低座、HKCEC 新舊翼、茶具文物館五個已精修組件；另整合海運大廈／LCX／Gateway組件、太空館／文化中心／中央圖書館／鐘樓公共文化組件、半島酒店、喜來登酒店、港青酒店、九龍香格里拉、添馬政府總部建築群、1881 Heritage、九龍站凱旋門及擎天半島；普通 `buildings` 仍為 0。

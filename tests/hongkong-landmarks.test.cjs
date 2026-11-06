@@ -634,11 +634,16 @@ test('building inventory independently tracks scene status, refinement and landm
     { id: '`HK-B0029`', status: '已加入', refined: '**是**', landmark: '**是**' },
     { id: '`HK-B0030`', status: '已加入', refined: '**是**', landmark: '**是**' },
     { id: '`HK-B0043`', status: '已加入', refined: '**是**', landmark: '**是**' },
+    { id: '`HK-B0082`', status: '已加入', refined: '**是**', landmark: '否' },
     { id: '`HK-B0084`', status: '已加入', refined: '**是**', landmark: '**是**' },
     { id: '`HK-B0085`', status: '已加入', refined: '**是**', landmark: '**是**' },
     { id: '`HK-B0086`', status: '已加入', refined: '**是**', landmark: '**是**' },
+    { id: '`HK-B0088`', status: '已加入', refined: '**是**', landmark: '否' },
+    { id: '`HK-B0089`', status: '已加入', refined: '**是**', landmark: '否' },
     { id: '`HK-B0090`', status: '已加入', refined: '**是**', landmark: '**是**' },
-    { id: '`HK-B0092`', status: '已加入', refined: '**是**', landmark: '**是**' }
+    { id: '`HK-B0092`', status: '已加入', refined: '**是**', landmark: '**是**' },
+    { id: '`HK-B0093`', status: '已加入', refined: '**是**', landmark: '否' },
+    { id: '`HK-B0100`', status: '已加入', refined: '**是**', landmark: '否' }
   ]);
   const countSummary = inventory.match(/目前已實際加入 \*\*(\d+) 幢\*\*；其餘 \*\*(\d+) 幢\*\*/); assert.ok(countSummary);
   assert.equal(parsed.filter((row) => row.status === '已加入').length, Number(countSummary[1]));
@@ -721,4 +726,12 @@ test('building inventory independently tracks scene status, refinement and landm
   assert.match(inventory, /OSM ways \*\*112284860／112284790／492365420\*\*（目前 API buildings/);
   assert.match(inventory, /OSM way \*\*64897826\*\*（目前 API building/);
   assert.doesNotMatch(inventory, /塔身 footprint 待核/);
+  const status = fs.readFileSync(path.join(root, 'docs/hongkong-building-status.md'), 'utf8');
+  const statusIds = status.split('\n').filter((line) => /^\| `HK-B\d{4}` /.test(line)).map((line) => line.split('|')[1].trim());
+  assert.equal(statusIds.length, 100); assert.equal(new Set(statusIds).size, 100);
+  for (const id of ['HK-B0082', 'HK-B0088', 'HK-B0089', 'HK-B0093', 'HK-B0100']) {
+    const row = status.split('\n').find((line) => line.startsWith('| `' + id + '`'));
+    assert.ok(row, `${id} missing from status report`);
+    assert.match(row, /已加入・已精修/);
+  }
 });

@@ -2,7 +2,9 @@
 
 這份文件是香港場景**實際建築物進度總表及 100 幢主要大廈施工清單**，記錄建築物是否已加入、是否精修，以及是否作為 Landmark 整合。`tools/data/hongkong/landmarks.json` 及下表的待製作項目只是來源／候選資料；資料出現在該 JSON 或本清單 **不代表已經加入場景**。
 
-最後整理：**2026-11-06**。100幢施工清單中，目前已實際加入 **36 幢**；其餘 **64 幢**仍是待製作項目，沒有基本體量或精修完成的意思。海運大廈／LCX、大會堂及中央圖書館另作公共／綜合組件整合，不取代或重用清單ID，也不計入上述36／64。
+最後整理：**2026-11-06**。100幢施工清單中，目前已實際加入 **41 幢**；其餘 **59 幢**仍是待製作項目，沒有基本體量或精修完成的意思。其中 **36 幢**是正式獨立 Landmark，另外 **5 幢**（大會堂高／低座、HKCEC 新／舊翼、茶具文物館）已在公共／綜合組件生成並完成本輪精修；組件不取代或重用其他清單ID。海運大廈／LCX 及中央圖書館仍另作公共組件整合，不把公共設施額外計數。
+
+**往後施工規則**：任何新樓必須在同一輪完成基本建模、照片／可靠資料研究、材質與辨識特徵、精修、地面／道路淨空／碰撞及測試；不再留下「已起樓但未精修」的半成品。
 
 ## 標記定義
 
@@ -19,12 +21,12 @@
 | 項目 | 數量 |
 | --- | ---: |
 | 施工清單總數 | 100 |
-| 已加入場景的建築物 | 36 |
-| 已加入而且精修 | 36 |
+| 已加入場景的建築物 | 41 |
+| 已加入而且精修 | 41 |
 | 已加入但只有基本體量 | 0 |
 | 已加入並作為 Landmark 整合 | 36 |
 | 製作中 | 0 |
-| 待製作 | 64 |
+| 待製作 | 59 |
 
 目前普通建築群仍為 **0**；上表只計實際加入的建築物，不把橋樑、道路構築物或純 OSM 候選資料計算在內。
 
@@ -146,25 +148,25 @@
 | `HK-B0079` | 啟匯 Harbourside HQ | 啟德 | 待製作 | 否 | 否 | 85 m | OSM way **198558927** | — |
 | `HK-B0080` | 雙子匯一期 The Twins Tower 1 | 啟德 | 待製作 | 否 | 否 | 80 m | OSM relation **20599094** | — |
 | `HK-B0081` | 雙子匯二期 The Twins Tower 2 | 啟德 | 待製作 | 否 | 否 | 120 m | OSM relation **20599095** | — |
-| `HK-B0082` | 香港大會堂高座 Hong Kong City Hall High Block | 中環 | 待製作 | 否 | 否 | 57.7 m | OSM way **25608273** | — |
+| `HK-B0082` | 香港大會堂高座 Hong Kong City Hall High Block | 中環 | 已加入 | **是** | 否 | 57.7 m | OSM way **25608273** | `js/cities/hongkong/city-hall-world.js` |
 | `HK-B0083` | 中電總部 CLP Headquarters | 九龍塘 | 待製作 | 否 | 否 | 57 m | OSM way **1138054767** | — |
 | `HK-B0084` | 星光行 Star House | 尖沙咀 | 已加入 | **是** | **是** | 55 m | OSM way **1169655254**（version 4；原始幾何及 tags 另存於 Harbour City 來源模組） | `js/cities/hongkong/star-house-world.js` |
 | `HK-B0085` | 馬哥孛羅香港酒店 Marco Polo Hongkong Hotel | 尖沙咀 | 已加入 | **是** | **是** | 55 m | OSM way **1443753382**（version 3；原始幾何及 tags 另存於 Harbour City 來源模組） | `js/cities/hongkong/marco-polo-hongkong-world.js` |
 | `HK-B0086` | 海洋中心 Ocean Centre | 尖沙咀 | 已加入 | **是** | **是** | 55 m | OSM way **1443753403**（version 2；原始幾何及 tags 另存於 Harbour City 來源模組） | `js/cities/hongkong/ocean-centre-world.js` |
 | `HK-B0087` | 香港朗廷酒店 The Langham Hong Kong | 尖沙咀 | 待製作 | 否 | 否 | 55 m | OSM way **159324344** | — |
-| `HK-B0088` | 香港會議展覽中心新翼 HKCEC New Wing | 灣仔 | 待製作 | 否 | 否 | — | OSM way **26490011** | — |
-| `HK-B0089` | 香港會議展覽中心舊翼 HKCEC Old Wing | 灣仔 | 待製作 | 否 | 否 | — | OSM way **26490161** | — |
+| `HK-B0088` | 香港會議展覽中心新翼 HKCEC New Wing | 灣仔 | 已加入 | **是** | 否 | — | OSM way **26490011** | `js/cities/hongkong/hkcec-world.js` |
+| `HK-B0089` | 香港會議展覽中心舊翼 HKCEC Old Wing | 灣仔 | 已加入 | **是** | 否 | — | OSM way **26490161** | `js/cities/hongkong/hkcec-world.js` |
 | `HK-B0090` | 時代廣場 Times Square | 銅鑼灣 | 已加入 | **是** | **是** | 193.9／168.8 m（雙塔） | OSM ways **26469269／199045545／199045544**；site **294351176** | `js/cities/hongkong/times-square-world.js` |
 | `HK-B0091` | 美利尼依格羅酒店 The Murray, Hong Kong, A Niccolo Hotel | 中環 | 待製作 | 否 | 否 | — | OSM way **85320844** | — |
 | `HK-B0092` | 終審法院 The Court of Final Appeal | 中環 | 已加入 | **是** | **是** | 約40 m | OSM way **42293414** | `court-of-final-appeal-world.js` |
-| `HK-B0093` | 茶具文物館 Flagstaff House Museum of Tea Ware | 中環 | 待製作 | 否 | 否 | — | OSM way **42255475** | — |
+| `HK-B0093` | 茶具文物館 Flagstaff House Museum of Tea Ware | 中環 | 已加入 | **是** | 否 | — | OSM way **42255475**（version 15；兩個入口 node 已核） | `js/cities/hongkong/flagstaff-house-world.js` |
 | `HK-B0094` | 法國外方傳道會大樓 French Mission Building | 中環 | 待製作 | 否 | 否 | — | OSM way **85320697** | — |
 | `HK-B0095` | 利園二期 Lee Garden Two | 銅鑼灣 | 待製作 | 否 | 否 | — | OSM way **199305182** | — |
 | `HK-B0096` | 東角中心 East Point Centre | 銅鑼灣 | 待製作 | 否 | 否 | — | OSM way **294141091** | — |
 | `HK-B0097` | 圓方 Elements | 西九龍 | 待製作 | 否 | 否 | 30 m | OSM way **1415166820** | — |
 | `HK-B0098` | 戲曲中心 Xiqu Centre | 西九龍 | 待製作 | 否 | 否 | — | OSM way **545997140** | — |
 | `HK-B0099` | K11人文購物藝術館 K11 MUSEA | 尖沙咀 | 待製作 | 否 | 否 | 37 m | OSM way **1044263638** | — |
-| `HK-B0100` | 香港大會堂低座 Hong Kong City Hall Low Block | 中環 | 待製作 | 否 | 否 | 21.9 m | OSM way **101959153** | — |
+| `HK-B0100` | 香港大會堂低座 Hong Kong City Hall Low Block | 中環 | 已加入 | **是** | 否 | 21.9 m | OSM way **101959153** | `js/cities/hongkong/city-hall-world.js` |
 
 各幢已加入建築的造型、參考資料、碰撞及地面處理細節，統一參看 [香港手建 Landmarks](hongkong-landmarks.md)。程序化外觀尺寸不應當成實測圖則。
 
