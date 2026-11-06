@@ -107,14 +107,14 @@ class CityAudioSources {
     return dx * dx + dy * dy + dz * dz;
   }
 
-  motor(id, kind, x, y, z, speed, load, heading, police, player, seed, blocked, gain = 1, range = kind === 'helicopter' ? 500 : 160, verticalSpeed = 0) {
+  motor(id, kind, x, y, z, speed, load, heading, police, player, seed, blocked, gain = 1, range = kind === 'helicopter' || kind === 'drone' ? 500 : 160, verticalSpeed = 0) {
     const d2 = this.distanceSq(x, y, z);
     if (!Number.isFinite(d2)) return;
     if (police && d2 <= SIREN_RANGE * SIREN_RANGE) {
       const siren = this.sirens.take(d2);
       if (siren) writeMotor(siren, id, 'siren', x, y, z, speed, load, heading, player, seed, blocked, 1, 200);
     }
-    const reach = kind === 'helicopter' ? range : MOTOR_RANGE;
+    const reach = kind === 'helicopter' || kind === 'drone' ? range : MOTOR_RANGE;
     if (d2 > reach * reach) return;
     const item = this.motors.take(player ? -1 : d2);
     if (!item) return;
@@ -179,13 +179,13 @@ class CityAudioSources {
       } else {
         // Inactive bicycles stop updating and are silent, even if their stored speed is left over from riding.
         if (!player && entity.type === 'cyclist') continue;
-        const kind = entity.type === 'car' ? 'sedan' : entity.type;
-        const helicopter = kind === 'helicopter';
+        const kind = player && entity.type === 'helicopter' ? 'drone' : entity.type === 'car' ? 'sedan' : entity.type;
+        const helicopter = kind === 'helicopter' || kind === 'drone';
         const verticalSpeed = player && helicopter ? helicopterVerticalSpeed(entity) : 0;
         const load = player ? helicopter ? helicopterLoad(entity, keys, verticalSpeed) : driveLoad(keys, entity.speed, kind === 'cyclist') : 0;
         const gain = player ? 1 : helicopter ? 0.22 : 0.5;
         const range = helicopter ? (player ? 500 : 200) : 160;
-        this.motor(entity, kind, x, y + (helicopter ? 2.66 : 0.7), z, player ? entity.speed : 0, load, entity.heading,
+        this.motor(entity, kind, x, y + (kind === 'drone' ? 1.55 : helicopter ? 2.66 : 0.7), z, player ? entity.speed : 0, load, entity.heading,
           false, player, seedAt(i), false, gain, range, verticalSpeed);
       }
     }

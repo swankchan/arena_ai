@@ -298,7 +298,7 @@ function smoothParameter(parameter, timeConstant = 0.07, epsilon = 0.0001, snapI
 }
 
 export function createMotorVoice(context, resources, kind, output) {
-  if (!['sedan', 'suv', 'bus', 'helicopter', 'cyclist', 'siren'].includes(kind)) {
+  if (!['sedan', 'suv', 'bus', 'helicopter', 'drone', 'cyclist', 'siren'].includes(kind)) {
     throw new RangeError(`Unknown motor voice: ${kind}`);
   }
   const nodes = [];
@@ -445,7 +445,8 @@ export function createMotorVoice(context, resources, kind, output) {
       roadFrequency((900 + Math.min(1, rolling) * 1000) * doppler, now);
       noiseRate(doppler * (0.96 + variation * 0.08), now);
     };
-  } else if (kind === 'helicopter') {
+  } else if (kind === 'helicopter' || kind === 'drone') {
+    const drone = kind === 'drone';
     const rotor = loop(resources.rotor);
     const rotorFilter = filter('lowpass', 1500, 0.5);
     const rotorGain = gain();
@@ -477,17 +478,17 @@ export function createMotorVoice(context, resources, kind, output) {
       const descent = clamp(-verticalSpeed / 10, 0, 1) * Math.min(1, speed / 10) * (1 - flight * 0.6);
       // A governed rotor changes speed very little: collective/forward flight primarily strengthen the blade slap
       // and turbulent wash. The pressure loop and its noise envelope share the same phase and playback rate.
-      const rate = (0.994 + variation * 0.012 - load * 0.012 + flight * 0.004) * doppler;
+      const rate = (drone ? 2.12 + variation * 0.02 + load * 0.08 + flight * 0.06 : 0.994 + variation * 0.012 - load * 0.012 + flight * 0.004) * doppler;
       rotorRate(rate, now);
       envelopeRate(rate, now);
-      rotorLevel(0.32 + load * 0.18 + descent * 0.12 + flight * 0.025, now);
-      rotorCutoff((1150 + load * 700 + descent * 1800) * doppler, now);
-      washLevel(0.022 + load * 0.025, now);
-      bladeLevel(0.18 + load * 0.25 + descent * 0.25, now);
-      washCutoff((800 + load * 650 + flight * 900) * doppler, now);
-      turbineFrequency((2000 + load * 900) * doppler, now);
-      turbineLevel(0.055 + load * 0.055, now);
-      turbineRate((0.92 + load * 0.16) * doppler, now);
+      rotorLevel(drone ? 0.18 + load * 0.12 + flight * 0.03 : 0.32 + load * 0.18 + descent * 0.12 + flight * 0.025, now);
+      rotorCutoff(((drone ? 2400 : 1150) + load * 700 + descent * 1800) * doppler, now);
+      washLevel(drone ? 0.012 + load * 0.014 : 0.022 + load * 0.025, now);
+      bladeLevel(drone ? 0.035 + load * 0.05 : 0.18 + load * 0.25 + descent * 0.25, now);
+      washCutoff(((drone ? 1600 : 800) + load * 650 + flight * 900) * doppler, now);
+      turbineFrequency(((drone ? 3600 : 2000) + load * 900) * doppler, now);
+      turbineLevel((drone ? 0.035 : 0.055) + load * 0.055, now);
+      turbineRate(((drone ? 1.65 : 0.92) + load * 0.16) * doppler, now);
       noiseRate(doppler, now);
     };
   } else if (kind === 'cyclist') {

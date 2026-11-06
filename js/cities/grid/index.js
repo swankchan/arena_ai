@@ -397,7 +397,7 @@ export const city = {
         person: 'Pedestrian',
         car: 'Grid City Cab',
         cyclist: 'Grid City Cyclist',
-        helicopter: 'Sightseeing Helicopter'
+        helicopter: 'Camera Drone'
       },
       player: {
         bounds: BOUNDS,

@@ -1,6 +1,6 @@
 # Slop New York
 
-A city simulation built with [three.js](https://threejs.org/), WebGPURenderer, and TSL. Pick a city on the home screen and explore it on foot, by car, by bicycle, or by helicopter.
+A city simulation built with [three.js](https://threejs.org/), WebGPURenderer, and TSL. Pick a city on the home screen and explore it on foot, by car, by bicycle, or by camera drone.
 
 [Try it live](https://mrdoob.github.io/slop-newyork/)
 
@@ -20,7 +20,7 @@ Add `?city=hongkong` (or `?city=grid`, `?city=newyork`) to the URL to skip the p
 | `5`–`0`, `V` / `Shift+V` | Camera presets, cycle cameras |
 | `W` `A` `S` `D` | Move / steer |
 | `Space` | Jump / ascend |
-| `Q` `C` | Descend (helicopter) |
+| `Q` `C` | Descend (camera drone) |
 | `B` | Horn |
 | `N` | Toggle sound |
 | `M` | Full-screen map; Hong Kong opens centred on the player with a 30 km radius |
@@ -82,6 +82,8 @@ Cities are packs loaded on demand:
 | `player` | Ground adapter: `{ bounds, getGroundHeight(x, z, mode), isPointOnSidewalk(x, z) }` |
 | `createMap(...)`, `createAudio(...)` | Optional map overlay and audio system |
 
+The flight button uses a four-rotor camera drone. Its simulation top speed is **288 km/h**; `helicopter` remains only as the backwards-compatible internal mode key.
+
 Without a `player` adapter the controllers use Manhattan's real blocks and shoreline. New York keeps exactly that behaviour.
 
 ## Taxi styles
@@ -104,7 +106,7 @@ Two rules keep a generated city drivable and its traffic physical:
 
 **Traffic keeps its route; contacts come from the shared solver.** Cars advance kinematically along the road graph, then resolve car-to-car and car-to-player contacts with `js/vehicle-physics.js` (`vehicleContact`, `sweptVehicleContact`, `resolveVehicleContact`), exactly as New York does. Keep a contact correction as a decaying positional `push` so a struck car visibly moves but settles back into its lane instead of leaving the graph. Pass `controllerManager` through the city `update` and run the traffic collision pass after the controllers have moved the player.
 
-Add following before enabling contacts: cap a car's speed by the gap to the leader on the same link and direction. Without it, collision-enabled traffic spends its time rear-ending the car in front. `tests/hongkong-collision.test.cjs` covers separation, momentum, player push-out, helicopter/distance ignores, and following caps.
+Add following before enabling contacts: cap a car's speed by the gap to the leader on the same link and direction. Without it, collision-enabled traffic spends its time rear-ending the car in front. `tests/hongkong-collision.test.cjs` covers separation, momentum, player push-out, drone/distance ignores, and following caps.
 
 ## Geographic data
 

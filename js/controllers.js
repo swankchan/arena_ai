@@ -14,10 +14,10 @@ import {
   buildCarSidePatch,
   buildSteerableWheelGeo,
   createLoftedCarMaterial,
-  buildHelicopterBodyGeometry,
-  buildHelicopterMainRotorGeometry,
-  buildHelicopterTailRotorGeometry,
-  createLoftedHelicopterMaterial
+  DRONE_ROTOR_SITES,
+  buildDroneBodyGeometry,
+  buildDroneRotorGeometry,
+  createDroneMaterial
 } from './actor-models.js';
 import { DEFAULT_TAXI_STYLE, getTaxiStyle } from './taxi-styles.js';
 import { PersonCrowd, PersonRig } from './pedestrians.js';
@@ -80,7 +80,7 @@ function collisionBody(mode, radius, heading, margin = 0) {
     extX: car ? Math.abs(cos) * hx + Math.abs(sin) * hz : radius + margin,
     extZ: car ? Math.abs(sin) * hx + Math.abs(cos) * hz : radius + margin,
     bottom: mode === 'helicopter' ? -0.25 : 0,
-    top: mode === 'helicopter' ? 3.2 : car ? 1.8 : 1.9
+    top: mode === 'helicopter' ? 1.8 : car ? 1.8 : 1.9
   };
 }
 
@@ -238,7 +238,7 @@ class ThirdPersonControllerManager {
       person: this.createPersonEntity(),
       car: this.createCarEntity(),
       cyclist: this.createCyclistEntity(),
-      helicopter: this.createHelicopterEntity()
+      helicopter: this.createDroneEntity()
     };
 
     Object.values(this.entities).forEach((ent) => {
@@ -411,18 +411,18 @@ class ThirdPersonControllerManager {
   findTeleportPosition(x, z, heading, altitude, referenceY = 0) {
     if (!Number.isFinite(x) || !Number.isFinite(z)) return null;
     const heli = this.activeMode === 'helicopter';
-    const radius = heli ? 4.5 : this.activeMode === 'person' ? 0.48 : 0.65;
+    const radius = heli ? 4.3 : this.activeMode === 'person' ? 0.48 : 0.65;
     const sinH = Math.sin(heading), cosH = Math.cos(heading);
     const shape = collisionBody(this.activeMode, radius, heading, 0.1);
     const reach = Math.max(shape.extX, shape.extZ);
     const margin = heli ? 6000 : 0;
     const bounds = this.world?.bounds ?? ISLAND_BOUNDS;
     const entity = this.getActiveEntity();
-    // Conservative body cylinders, including the taxi's corners, bicycle wheels and helicopter tail/rotor.
-    const body = { person: [0.48, 1.9], car: [2.4, 1.9], cyclist: [1.0, 1.9], helicopter: [6.2, 3.2] };
+    // Conservative body cylinders, including the taxi's corners, bicycle wheels and quadcopter rotor discs.
+    const body = { person: [0.48, 1.9], car: [2.4, 1.9], cyclist: [1.0, 1.9], helicopter: [4.3, 1.8] };
     const others = Object.values(this.entities).filter(e => e !== entity).map(e => ({
       x: e.position.x, z: e.position.z, radius: body[e.type][0],
-      bottom: e.position.y - (e.type === 'helicopter' ? 0.7 : 0), top: e.position.y + body[e.type][1]
+      bottom: e.position.y - (e.type === 'helicopter' ? 0.25 : 0), top: e.position.y + body[e.type][1]
     }));
     const cameraBack = Math.cos(0.09) * entity.chaseDistance;
     const cameraUp = entity.chaseHeight + Math.sin(0.09) * entity.chaseDistance * 0.85;
@@ -819,85 +819,74 @@ class ThirdPersonControllerManager {
   }
 
   // =========================================================================
-  // 4. HELICOPTER (3D LOFTED MANHATTAN SIGHTSEEING TWIN-TURBINE CHOPPER)
+  // 4. CAMERA DRONE (QUADCOPTER; INTERNAL MODE KEY REMAINS "helicopter")
   // =========================================================================
-  createHelicopterEntity() {
+  createDroneEntity() {
     const root = new THREE.Group();
-    root.name = 'PlayerHelicopter';
+    root.name = 'PlayerCameraDrone';
 
     const tiltPivot = new THREE.Group();
     root.add(tiltPivot);
 
-    const heliLoftMat = createLoftedHelicopterMaterial();
-    const blurDiscMat = new THREE.MeshBasicNodeMaterial({
+    const droneMaterial = createDroneMaterial();
+    const body = new THREE.Mesh(buildDroneBodyGeometry(), droneMaterial);
+    body.name = 'DroneHullFourArmsAndCameraGimbal';
+    body.castShadow = true;
+    body.receiveShadow = true;
+    tiltPivot.add(body);
+
+    const blurDiscMaterial = new THREE.MeshBasicNodeMaterial({
       color: 0xc8d8e8,
       transparent: true,
-      opacity: 0.13,
+      opacity: 0.09,
       side: THREE.DoubleSide,
       depthWrite: false
     });
+    const rotorGeometry = buildDroneRotorGeometry();
+    const blurGeometry = new THREE.CylinderGeometry(1.06, 1.06, 0.008, 32);
+    const rotorPivots = [];
+    for (const [x, y, z] of DRONE_ROTOR_SITES) {
+      const pivot = new THREE.Group();
+      pivot.position.set(x, y, z);
+      pivot.userData.spinDirection = Math.sign(x * z);
+      const rotor = new THREE.Mesh(rotorGeometry, droneMaterial);
+      rotor.castShadow = true;
+      pivot.add(rotor);
+      const blur = new THREE.Mesh(blurGeometry, blurDiscMaterial);
+      blur.name = 'DroneRotorBlurDisc';
+      pivot.add(blur);
+      tiltPivot.add(pivot);
+      rotorPivots.push(pivot);
+    }
 
-    // 1. 3D Lofted Monocoque Fuselage + Tailboom + Twin-Turbine Cowling + Swept Fin + Stabilizers + Tubular Skids
-    const heliBodyGeo = buildHelicopterBodyGeometry();
-    const heliBodyMesh = new THREE.Mesh(heliBodyGeo, heliLoftMat);
-    heliBodyMesh.castShadow = true;
-    heliBodyMesh.receiveShadow = true;
-    tiltPivot.add(heliBodyMesh);
-
-    // 2. 4-Blade Main Rotor Assembly with Swashplate, Hub Dome & Yellow Safety Blade Tips
-    const mainRotorPivot = new THREE.Group();
-    mainRotorPivot.position.set(0, 2.66, -0.35);
-    const mainRotorGeo = buildHelicopterMainRotorGeometry();
-    const mainRotorMesh = new THREE.Mesh(mainRotorGeo, heliLoftMat);
-    mainRotorMesh.castShadow = true;
-    mainRotorPivot.add(mainRotorMesh);
-
-    const blurDisc = new THREE.Mesh(new THREE.CylinderGeometry(4.85, 4.85, 0.015, 32), blurDiscMat);
-    mainRotorPivot.add(blurDisc);
-    tiltPivot.add(mainRotorPivot);
-
-    // 3. 4-Blade Tail Rotor Assembly on Swept Vertical Fin
-    const tailRotorPivot = new THREE.Group();
-    tailRotorPivot.position.set(0.18, 2.02, -5.62);
-    const tailRotorGeo = buildHelicopterTailRotorGeometry();
-    const tailRotorMesh = new THREE.Mesh(tailRotorGeo, heliLoftMat);
-    tailRotorPivot.add(tailRotorMesh);
-    tiltPivot.add(tailRotorPivot);
-
-    // 4. FAA Port (Red), Starboard (Green) & Anti-Collision Fin Beacon (Red) Navigation Strobes
-    const navRed = new THREE.Mesh(
-      new THREE.SphereGeometry(0.036, 8, 8),
-      new THREE.MeshBasicNodeMaterial({ color: 0xff2b2b })
-    );
-    navRed.position.set(-1.09, 1.54, -4.35);
-    const navGreen = new THREE.Mesh(
-      new THREE.SphereGeometry(0.036, 8, 8),
-      new THREE.MeshBasicNodeMaterial({ color: 0x22ff66 })
-    );
-    navGreen.position.set(1.09, 1.54, -4.35);
-    const navTail = new THREE.Mesh(
-      new THREE.SphereGeometry(0.042, 8, 8),
-      new THREE.MeshBasicNodeMaterial({ color: 0xff3b2b })
-    );
-    navTail.position.set(0, 2.84, -6.04);
-    tiltPivot.add(navRed, navGreen, navTail);
+    // Port / starboard navigation lights and two rear white strobes are attached to the motor arms.
+    const navGeometry = new THREE.SphereGeometry(0.07, 8, 6);
+    for (const [x, z, tint] of [
+      [-1.95, 1.95, 0xff2b2b], [1.95, 1.95, 0x22ff66],
+      [-1.95, -1.95, 0xd8ecff], [1.95, -1.95, 0xd8ecff]
+    ]) {
+      const light = new THREE.Mesh(navGeometry, new THREE.MeshBasicNodeMaterial({ color: tint }));
+      light.position.set(x, 1.3, z);
+      light.name = 'DroneNavigationLight';
+      tiltPivot.add(light);
+    }
 
     this.scene.add(root);
 
     return {
       type: 'helicopter',
-      label: 'Sightseeing Helicopter',
+      label: 'Camera Drone',
       mesh: root,
       tiltPivot,
-      mainRotorPivot,
-      tailRotorPivot,
+      rotorPivots,
+      collisionRadius: 4.3,
       position: new THREE.Vector3(-110, 96, SPAWN_Z - 60),
       heading: 0.62,
       speed: 0,
       verticalSpeed: 0,
       pitchAngle: 0,
       rollAngle: 0,
-      cameraTargetOffset: new THREE.Vector3(0, 1.55, 0),
+      cameraTargetOffset: new THREE.Vector3(0, 1.15, 0),
       chaseDistance: 11.4,
       chaseHeight: 3.3
     };
@@ -1093,8 +1082,7 @@ class ThirdPersonControllerManager {
 
   update(dt, elapsed) {
     const heli = this.entities.helicopter;
-    heli.mainRotorPivot.rotation.y += dt * 24.0;
-    heli.tailRotorPivot.rotation.x += dt * 32.0;
+    for (const rotor of heli.rotorPivots) rotor.rotation.y += dt * 54 * rotor.userData.spinDirection;
 
     if (this.activeMode === 'person') {
       this.updatePerson(dt, elapsed);
@@ -1319,8 +1307,8 @@ class ThirdPersonControllerManager {
 
   updateHelicopter(dt, elapsed) {
     const h = this.entities.helicopter;
-    const maxHorizSpeed = 52.0;
-    const maxVertSpeed = 16.0;
+    const maxHorizSpeed = 80.0;
+    const maxVertSpeed = 24.0;
 
     let fwdInput = 0;
     if (this.keys.forward) fwdInput = this.keys.forward;
@@ -1335,20 +1323,20 @@ class ThirdPersonControllerManager {
     else if (this.keys.down) vertInput = -this.keys.down;
 
     if (fwdInput !== 0) {
-      h.speed += fwdInput * 24.0 * dt;
+      h.speed += fwdInput * 36.0 * dt;
       h.speed = Math.max(-maxHorizSpeed * 0.6, Math.min(maxHorizSpeed, h.speed));
     } else {
       h.speed *= Math.max(0, 1 - dt * 1.8);
     }
 
     if (vertInput !== 0) {
-      h.verticalSpeed += vertInput * 22.0 * dt;
+      h.verticalSpeed += vertInput * 28.0 * dt;
       h.verticalSpeed = Math.max(-maxVertSpeed, Math.min(maxVertSpeed, h.verticalSpeed));
     } else {
       h.verticalSpeed *= Math.max(0, 1 - dt * 3.5);
     }
 
-    h.heading += yawInput * 1.45 * dt;
+    h.heading += yawInput * 1.65 * dt;
 
     h.position.x += Math.sin(h.heading) * h.speed * dt;
     h.position.z += Math.cos(h.heading) * h.speed * dt;
@@ -1358,16 +1346,16 @@ class ThirdPersonControllerManager {
       this.reportCollision(h, groundCollider, 'ground', h.position.x, 0.25, h.position.z, 0, 1, 0, -h.verticalSpeed);
     }
     h.position.y = Math.max(0.25, Math.min(380, h.position.y));
-    this.resolveHorizontalCollision(h.position, 4.5, null, h);
+    this.resolveHorizontalCollision(h.position, h.collisionRadius ?? 4.3, null, h);
 
-    const targetPitch = (h.speed / maxHorizSpeed) * 0.24;
-    const targetRoll = -yawInput * 0.28;
+    const targetPitch = (h.speed / maxHorizSpeed) * 0.32;
+    const targetRoll = -yawInput * 0.22;
     h.pitchAngle += (targetPitch - h.pitchAngle) * Math.min(1, dt * 5);
     h.rollAngle += (targetRoll - h.rollAngle) * Math.min(1, dt * 5);
 
     h.tiltPivot.rotation.x = h.pitchAngle;
     h.tiltPivot.rotation.z = h.rollAngle;
-    h.tiltPivot.position.y = Math.sin(elapsed * 2.6) * 0.18;
+    h.tiltPivot.position.y = Math.sin(elapsed * 3.4) * 0.08;
   }
 }
 

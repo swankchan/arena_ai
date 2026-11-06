@@ -245,6 +245,22 @@ test('car accelerates gradually to full speed and preserves coasting and braking
   assert.ok(braking.car.position.z > 9.8 && braking.car.position.z < 10.6, 'preserve the roughly ten-metre stopping distance');
 });
 
+test('camera drone accelerates to the faster 288 km/h simulation limit', () => {
+  const { controller } = keyboardHarness();
+  const drone = {
+    position: { x: 0, y: 96, z: 0 }, heading: 0, speed: 0, verticalSpeed: 0,
+    pitchAngle: 0, rollAngle: 0, collisionRadius: 4.3,
+    tiltPivot: { rotation: { x: 0, z: 0 }, position: { y: 0 } }
+  };
+  controller.entities = { helicopter: drone };
+  controller.resolveHorizontalCollision = () => {};
+  controller.keys.forward = true;
+  for (let i = 0; i < 300; i++) controller.updateHelicopter(1 / 60, i / 60);
+  assert.equal(drone.speed, 80);
+  assert.equal(drone.speed * 3.6, 288);
+  assert.equal(drone.collisionRadius, 4.3);
+});
+
 test('car body pitch follows uphill and downhill road grades at the axles', () => {
   for (const grade of [0.18, -0.14]) {
     const sim = carDynamicsHarness();
@@ -531,7 +547,7 @@ test('teleport checks all overlapping buildings instead of leaving a sequential 
       const result = controller.teleportActiveTo(11, 5, 0);
       assert.notDeepEqual({ ...result }, { x: 11, z: 5 });
       const before = [ent.position.x, ent.position.z];
-      const radius = mode === 'helicopter' ? 4.5 : mode === 'person' ? 0.48 : 0.65;
+      const radius = mode === 'helicopter' ? 4.3 : mode === 'person' ? 0.48 : 0.65;
       controller.resolveHorizontalCollision(ent.position, radius, mode === 'car' ? ent : null);
       assert.deepEqual([ent.position.x, ent.position.z], before, `${mode} must already be collision-free`);
       assert.equal(ent.position.y, mode === 'helicopter' ? 120 : controller.getGroundHeight(result.x, result.z, mode));
@@ -547,7 +563,7 @@ test('teleports use oriented building footprints without rejecting clear corners
     assert.deepEqual({ ...controller.teleportActiveTo(7, 7, 0.6) }, { x: 7, z: 7 });
     const actual = controller.teleportActiveTo(0, 0, 0.6);
     const before = [actual.x, actual.z];
-    controller.resolveHorizontalCollision(ent.position, mode === 'helicopter' ? 4.5 : mode === 'person' ? 0.48 : 0.65,
+    controller.resolveHorizontalCollision(ent.position, mode === 'helicopter' ? 4.3 : mode === 'person' ? 0.48 : 0.65,
       mode === 'car' ? ent : null);
     assert.deepEqual([ent.position.x, ent.position.z], before);
   }
@@ -613,21 +629,21 @@ test('movement and teleports pass underneath elevated building sections', () => 
     controller.getGroundHeight = () => 0;
     const y = mode === 'helicopter' ? 0.25 : 0;
     Object.assign(ent.position, { x: 5, y, z: 5 });
-    controller.resolveHorizontalCollision(ent.position, mode === 'helicopter' ? 4.5 : 0.65, mode === 'car' ? ent : null);
+    controller.resolveHorizontalCollision(ent.position, mode === 'helicopter' ? 4.3 : 0.65, mode === 'car' ? ent : null);
     assert.deepEqual([ent.position.x, ent.position.z], [5, 5], `${mode} fits below the overhang`);
     assert.deepEqual({ ...controller.teleportActiveTo(5, 5, 0, y) }, { x: 5, z: 5 });
   }
 });
 
 test('building clearance uses the full player height beneath an overhang', () => {
-  for (const [mode, height] of [['person', 1.9], ['car', 1.8], ['cyclist', 1.9], ['helicopter', 3.2]]) {
+  for (const [mode, height] of [['person', 1.9], ['car', 1.8], ['cyclist', 1.9], ['helicopter', 1.8]]) {
     const y = mode === 'helicopter' ? 0.25 : 0;
     const { controller, ent } = teleportHarness(mode, [{
       minX: 0, maxX: 10, minZ: 0, maxZ: 10, minY: y + height - 0.1, maxY: 30
     }]);
     controller.getGroundHeight = () => 0;
     Object.assign(ent.position, { x: 5, y, z: 5 });
-    controller.resolveHorizontalCollision(ent.position, mode === 'helicopter' ? 4.5 : 0.65, mode === 'car' ? ent : null);
+    controller.resolveHorizontalCollision(ent.position, mode === 'helicopter' ? 4.3 : 0.65, mode === 'car' ? ent : null);
     assert.notDeepEqual([ent.position.x, ent.position.z], [5, 5], `${mode} intersects the underside`);
     assert.notDeepEqual({ ...controller.teleportActiveTo(5, 5, 0, y) }, { x: 5, z: 5 });
   }
@@ -639,16 +655,16 @@ test('players above a roof are clear once their body bottoms clear it', () => {
     controller.getGroundHeight = () => 10.1;
     const y = mode === 'helicopter' ? 10.35 : 10.1;
     Object.assign(ent.position, { x: 5, y, z: 5 });
-    controller.resolveHorizontalCollision(ent.position, mode === 'helicopter' ? 4.5 : 0.65, mode === 'car' ? ent : null);
+    controller.resolveHorizontalCollision(ent.position, mode === 'helicopter' ? 4.3 : 0.65, mode === 'car' ? ent : null);
     assert.deepEqual([ent.position.x, ent.position.z], [5, 5], `${mode} clears the visible roof`);
     assert.deepEqual({ ...controller.teleportActiveTo(5, 5, 0, y) }, { x: 5, z: 5 });
   }
 });
 
-test('helicopter skids cannot pass through a roof below the body origin', () => {
+test('drone landing gear cannot pass through a roof below the body origin', () => {
   const { controller, ent } = teleportHarness('helicopter', [{ minX: 0, maxX: 10, minZ: 0, maxZ: 10, maxY: 10 }]);
   Object.assign(ent.position, { x: 5, y: 10.2, z: 5 });
-  controller.resolveHorizontalCollision(ent.position, 4.5);
+  controller.resolveHorizontalCollision(ent.position, 4.3);
   assert.notDeepEqual([ent.position.x, ent.position.z], [5, 5]);
   assert.notDeepEqual({ ...controller.teleportActiveTo(5, 5, 0, 10.2) }, { x: 5, z: 5 });
 });

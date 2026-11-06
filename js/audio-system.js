@@ -259,7 +259,7 @@ class CityAudioSystem {
         // Retiring voices count against the budget, so rapid source changes cannot temporarily double the graph.
         if (pool.size >= limit) continue;
         const emitter = new SpatialEmitter(this.context, this.mix, this.reflections, this.acoustics,
-          siren ? 9 : source.kind === 'helicopter' ? 12 : 4, siren ? 0.9 : 0, siren);
+          siren ? 9 : source.kind === 'helicopter' || source.kind === 'drone' ? 12 : 4, siren ? 0.9 : 0, siren);
         slot = { emitter, voice: createMotorVoice(this.context, this.resources, siren ? 'siren' : source.kind, emitter.input),
           distance: 0, x: source.x, y: source.y, z: source.z, fresh: true };
         pool.set(source.id, slot);
@@ -488,7 +488,7 @@ class CityAudioSystem {
       }
     }
     for (const source of sources.motors) {
-      if (source.player || source.kind === 'helicopter' || source.kind === 'cyclist') continue;
+      if (source.player || source.kind === 'helicopter' || source.kind === 'drone' || source.kind === 'cyclist') continue;
       const state = this.state(source, now);
       state.stopped = source.blocked ? state.stopped + dt : 0;
       if (state.stopped > 4 && now > state.horn && now - this.lastHorn > 3) {

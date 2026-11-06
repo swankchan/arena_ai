@@ -123,7 +123,7 @@ export const city = {
         person: '行人',
         car: '香港的士',
         cyclist: '單車',
-        helicopter: '觀光直升機'
+        helicopter: '航拍無人機'
       },
 
       player: {

@@ -115,7 +115,7 @@ async function initApp(cityStub) {
   const colliders = world.colliders ?? [];
   const dynamicRoots = [];
 
-  // 4. Initialize Third-Person Controllers (Person, Car, Cyclist, Helicopter) & Multi-Camera System
+  // 4. Initialize Third-Person Controllers (Person, Car, Cyclist, Camera Drone) & Multi-Camera System
   const controllerManager = new ThirdPersonControllerManager(scene, colliders, world.player ?? null, world.theme ?? city.theme ?? null);
   // Cities can rename the HUD labels of the shared actors (e.g. Grid City has no yellow cabs).
   const entityLabels = world.entityLabels ?? city.entityLabels;
@@ -231,7 +231,7 @@ async function initApp(cityStub) {
     helicopter: [[['W', 'S'], 'Pitch'], [['A', 'D'], 'Yaw'], [['Space', 'E'], 'Ascend'], [['Q', 'C'], 'Descend']]
   };
   // Top speeds in km/h (controllers.js caps them at 8.2, 200 / 3.6, 19 & 52 m/s): full scale of the speed meter
-  const topSpeedKph = { person: 30, car: 200, cyclist: 68, helicopter: 187 };
+  const topSpeedKph = { person: 30, car: 200, cyclist: 68, helicopter: 288 };
 
   // Cities may expose only a subset of the cameras (Grid City has no Manhattan scenic rigs).
   const cameraPresets = world.cameraPresets ?? city.cameraPresets ?? null;
