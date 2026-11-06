@@ -45,6 +45,7 @@ import { CLOCK_TOWER_SITE, CLOCK_TOWER_GARDEN_SITE, clockTowerTerrainHeightAt } 
 import { PENINSULA_GROUND_SITES, peninsulaTerrainHeightAt } from './peninsula-hotel-architecture.js';
 import { tstHotelHighestRawDatum } from './tst-hotel-site.js';
 import { SHERATON_GROUND_SITES, sheratonTerrainHeightAt } from './sheraton-hotel-architecture.js';
+import { SALISBURY_GROUND_SITES, salisburyTerrainHeightAt } from './salisbury-ymca-architecture.js';
 
 function decodeBytes(base64) {
   const binary = atob(base64);
@@ -182,6 +183,8 @@ const PENINSULA_PAD_HEIGHT = tstHotelHighestRawDatum(PENINSULA_GROUND_SITES, raw
 export function peninsulaPadHeight() { return PENINSULA_PAD_HEIGHT; }
 const SHERATON_PAD_HEIGHT = tstHotelHighestRawDatum(SHERATON_GROUND_SITES, rawHongKongTerrainHeight);
 export function sheratonPadHeight() { return SHERATON_PAD_HEIGHT; }
+const SALISBURY_PAD_HEIGHT = tstHotelHighestRawDatum(SALISBURY_GROUND_SITES, rawHongKongTerrainHeight);
+export function salisburyPadHeight() { return SALISBURY_PAD_HEIGHT; }
 
 export function hongKongTerrainHeight(x, z) {
   if (pointInFlatRing(HSBC_SITE.ring, x, z)) return HSBC_PAD_HEIGHT;
@@ -229,7 +232,8 @@ export function hongKongTerrainHeight(x, z) {
   const culturalCentreHeight = culturalCentreTerrainHeightAt(x, z, spaceMuseumHeight, CULTURAL_CENTRE_PAD_HEIGHT);
   const clockTowerHeight = clockTowerTerrainHeightAt(x, z, culturalCentreHeight, CLOCK_TOWER_PAD_HEIGHT);
   const peninsulaHeight = peninsulaTerrainHeightAt(x, z, clockTowerHeight, PENINSULA_PAD_HEIGHT);
-  return sheratonTerrainHeightAt(x, z, peninsulaHeight, SHERATON_PAD_HEIGHT);
+  const sheratonHeight = sheratonTerrainHeightAt(x, z, peninsulaHeight, SHERATON_PAD_HEIGHT);
+  return salisburyTerrainHeightAt(x, z, sheratonHeight, SALISBURY_PAD_HEIGHT);
 }
 
 export const HONG_KONG_TERRAIN_META = Object.freeze({
@@ -281,6 +285,7 @@ export const HONG_KONG_TERRAIN_META = Object.freeze({
   clockTowerPadHeight: CLOCK_TOWER_PAD_HEIGHT,
   peninsulaPadHeight: PENINSULA_PAD_HEIGHT,
   sheratonPadHeight: SHERATON_PAD_HEIGHT,
+  salisburyPadHeight: SALISBURY_PAD_HEIGHT,
   tunnelStats: HK_TERRAIN.stats
 });
 

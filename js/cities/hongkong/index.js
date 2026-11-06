@@ -107,6 +107,7 @@ export const city = {
       timesSquare: world.timesSquare,
       peninsulaHotel: world.peninsulaHotel,
       sheratonHotel: world.sheratonHotel,
+      salisburyYMCA: world.salisburyYMCA,
       landmarks: world.landmarks,
       stats,
       teleports: TELEPORTS,

@@ -997,6 +997,16 @@
 - **道路、街燈及地面**：精確建築 ring 和 **14 × 5.2 m** 照片導向入口雨篷均以全港道路中心線及 `width/2+0.35 m` 重掃，center／corridor 均為 **0**；clearance 後街燈在兩個範圍亦為 **0**。因此不搬路、不改標線／信號、不搬燈，也不搬歪建築。DTM 採樣形成的施工平台為 **5.164158550106379 m**，是可重算場景 datum，不是工程標高；ground query、道路剖面、碰撞及模型 base 一致。
 - **驗證**：`tests/sheraton-hotel.test.cjs` 覆蓋精確來源、無高度tag的誠實處理、上層體量 containment、入口／J4、道路／街燈、DTM、立面／標誌／泳池及整合。Node geometry smoke 為 **32 meshes／54,059 triangles／114 colliders／0 non-finite vertices**，主入口地面碰撞命中 **0**；沒有打包外部照片。
 
+## 港青酒店 The Salisbury–YMCA of Hong Kong `HK-TST-YMCA`：雙圓角塔樓（2026-11-06）
+
+- **身份與精確來源**：梳士巴利道41號，使用官方名稱 **The Salisbury – YMCA of Hong Kong／港青酒店**，不是另一機構「中華基督教青年會」的物業，也不誤用其他 YMCA 酒店。目前 OSM way **152073872 v5**（source timestamp **2026-07-29T06:24:03Z**）保存完整13個獨立頂點、節點及tags；ring 面積 **2739.7279235477326 m²**。現名、舊名、Wikidata及地址均保留。
+- **高度與體量口径**：OSM `height=15／building:levels=4` 作為來源裙樓標籤保存；附近沒有可當成雙塔精確依據的獨立 building/part ways。兩座上塔 **68／61 m**、中央連接體 **43 m** 全部是照片導向場景體量，不是官方高度。輔助歷史資料的「1989年重建為16層」只作交叉參考，沒有變成虛構的精確樓高或兩個 OSM footprints。
+- **照片導向細節**：官方 YMCA 頁確認身份及地址，另查看 Oyster 等外形參考圖。精確深灰裙樓上有小方窗、地面玻璃、紅色 YMCA 三角標誌及「THE SALISBURY · YMCA OF HONG KONG」字樣；兩座不等高白色圓角塔樓由較低中央體連接。每塔24段圓角 ring、逐窗格玻璃、窗框及連續繞角白色橫帶均為實際幾何，日間不是一張貼圖，夜間只有有限客房及入口暖光。
+- **上層 containment**：兩塔寬18 m、深23 m、圓角4.2 m，中央連接體20 × 22 m；所有上層邊界逐段取樣均在精確裙樓 ring 內。上層 position、尺寸及高度明確標為 photo-derived，沒有假稱來自 OSM。
+- **入口與道路**：主入口採最接近已命名 Salisbury Road 車路的長向 source edge **9**，有玻璃門、金屬雨篷、柱、暖色 downlights 及字牌；不是虛構 OSM door node。精確建築和 **12 × 3.0 m** 雨篷 clearance ring 的全港道路中心線／`width/2+0.35 m` 掃描均為 **0**，clearance 後街燈亦為 **0**，所以不搬路、不改標線／信號或搬燈。
+- **地面與碰撞**：模型及地面查詢共用 **5 m** DTM採樣施工平台，這不是已核實工程標高；外部地形不變。主入口有真實開口，地面碰撞命中 **0**；兩塔、中央體、裙樓及雨篷柱的碰撞使用同一 base。
+- **驗證**：`tests/salisbury-ymca.test.cjs` 覆蓋來源、官方機構身份、雙塔／中央體 containment、入口方向、道路／街燈、DTM、紅色標誌／圓角橫帶及整合。Node geometry smoke 為 **29 meshes／94,765 triangles／124 colliders／0 non-finite vertices**；沒有打包外部照片。
+
 ## 程式入口
 
 - `hsbc-headquarters-architecture.js`：滙豐純地理位置、OBB、樓層比例及 collider 座標換算，可在 Node 測試。
@@ -1082,9 +1092,11 @@
 - `peninsula-hotel-world.js`：半島歷史拱廊、客房立面、quoins／線腳、條紋遮篷、塔樓玻璃帶、helipad、噴泉前庭、日夜材質、碰撞及stats。
 - `sheraton-hotel-architecture.js`：喜來登精確OSM podium、照片導向上層長板、Nathan Road入口／J4區分、無高度tag口径及官方泳池資料。
 - `sheraton-hotel-world.js`：喜來登混凝土客房格網、S徽章／字樣刀片牆、入口雨篷、Level 18泳池／三個Jacuzzis、日夜材質、碰撞及stats。
+- `salisbury-ymca-architecture.js`：港青酒店精確OSM裙樓、照片導向雙圓角塔樓／中央體、Salisbury Road入口及來源口径。
+- `salisbury-ymca-world.js`：港青深灰裙樓、紅色YMCA標誌、雙不等高白色圓角塔樓、連續橫帶、入口、日夜材質、碰撞及stats。
 - `gateway-tower-one-world.js`：港威大廈一座的來源口径、辦公courses、入口、日夜材質、碰撞及stats。
 - `gateway-tower-two-world.js`：港威大廈二座及T1／T2多層互連、道路portals、日夜材質、碰撞及stats。
 - `gateway-tower-three-world.js`：Prudential Tower／T3辦公與服務式住宅幕牆、石質podium、道路portals、日夜材質、碰撞及stats。
 - `gateway-tower-five-world.js`：Tower 5、Prudential雙塔四層互連及三層arch資料口径、浅色格框、道路portals、日夜材質、碰撞及stats。
 - `gateway-tower-six-world.js`：Tower 6獨立辦公塔、弧形幕牆、石質podium、格柵冠頂、日夜材質、碰撞及stats。
-- `simple-world.js`：整合施工清單內三十六個 authored landmarks、海運大廈／LCX／Gateway組件、太空館／文化中心／鐘樓公共文化組件、半島酒店及喜來登酒店；普通 `buildings` 仍為 0。
+- `simple-world.js`：整合施工清單內三十六個 authored landmarks、海運大廈／LCX／Gateway組件、太空館／文化中心／鐘樓公共文化組件、半島酒店、喜來登酒店及港青酒店；普通 `buildings` 仍為 0。
