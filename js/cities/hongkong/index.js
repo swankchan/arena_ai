@@ -96,6 +96,7 @@ export const city = {
       championTower: world.championTower,
       ckc2: world.ckc2,
       qgo: world.qgo,
+      centralGovernment: world.centralGovernment,
       conrad: world.conrad,
       hysan: world.hysan,
       twoTaikoo: world.twoTaikoo,

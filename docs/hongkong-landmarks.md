@@ -1018,6 +1018,21 @@
 - **街燈與地面**：source lamp indexes **118698／118699** 原本在立面內，現由可重算 clearance generator 分別向北移至附近行人路，位移約 **3.40／3.60 m**，不壓制燈、不落入車路；建築及主雨篷的clearance後街燈均為 **0**。全港重新生成後仍有 **0 carriageway／tram conflicts**。模型採 **5.322815587860802 m** DTM採樣施工平台，這不是工程標高；道路走廊及外部地形維持原查詢。
 - **驗證**：`tests/kowloon-shangri-la.test.cjs` 覆蓋精確來源、官方身份／建築師樓層、上層containment、兩類入口、原始道路／淨空、兩燈搬移、DTM、三面凸窗／標誌及整合。Node geometry smoke 為 **30 meshes／165,605 triangles／179 colliders／3,775玻璃panes／0 non-finite vertices**，主入口地面碰撞命中 **0**；沒有打包外部照片。最終完整suite為 **697／698**，唯一失敗仍是既有 `landmarks.json` **4697≠4696** 台帳差異；self-contained runtime已重建，runtime＋專屬focused tests **10／10**。
 
+## 添馬政府總部 `HK-ADM-CGO`：Open Door、行政長官辦公室及立法會綜合大樓（2026-11-06）
+
+- **位置與來源**：添美道2號，採額外 ID，不佔用或改寫 `HK-B0001–B0100`。政府總部 **site way 918333902**、西翼 **relation 8366346**、東翼 **way 101959166**、會議廳 **way 142227308**、裙樓 **way 995099219**、行政長官辦公室 **way 101959219** 及立法會綜合大樓 **way 925188472** 分開保存原始經緯度與 tags；政府總部 site 不可當成立法會 footprint。西翼 relation 的16頂點外環及四邊內空洞均保留，沒有用長方玻璃塔取代。
+- **高度口径**：Gammon 與 Building Journal 的政府辦公樓 **120 m／27層**、低座 **25.1 m／4層**、立法會 **52.3 m／10層**分列；OSM 東翼另標23層、西翼27層，行政長官辦公室則採 OSM **37 m／4層**。視覺幕牆 courses 不改寫這些來源層數，也不把 `building:min_level` 當成米制標高。
+- **Open Door**：西翼外環、內環立面及東翼按真實斜向 rings 生成；內空洞由低座至上部連接體底保持真正開敞，上方另做 **3層**高架連接體。照片導向的 **88 m** 場景 soffit 不是實測工程標高。厚實浅色 reveal、格柵天花、可步行石板、雙語入口字牌及門形開口都有實際幾何。
+- **立面與屋頂**：灰紫玻璃、spandrel、逐幅 vision panel、連續 double-skin fins、較深結構 fins、橫框、屋面百頁及欄杆均為手建幾何。全建築群共有 **11,209** 幅玻璃 panels 及 **601** 支主要雙層幕牆 fins；日間保持深色反射玻璃，夜間只有少量暖色辦公窗。
+- **立法會及行政長官辦公室**：立法會使用完整不規則 source ring 的弧形低座，另加照片導向高座、圓柱玻璃會議廳、橫豎窗框及外挑橢圓 disc roof；高座與會議廳包絡均在來源 ring 內，但不冒稱有獨立 OSM 上層平面。行政長官辦公室保留四角落來源、地面入口及三道上層幕牆、厚屋頂檐口和雙語門牌。
+- **道路與地面**：政府 site 保留生成道路 records **38667／39082／40192**，裙樓實際穿越為 **38667**；CEO 及 LegCo 分別記錄路肩 **43101／38665**，record index 不當 OSM way ID。裙樓有 **6個開放道路 bays**，道路 ground 不被平台覆蓋；516個路肩樣本對7.2 m soffit 扣除0.42 m lintel 的最低場景淨空為 **6.732303047607236 m**，大於4.7 m車輛包絡。共享 **6.672940839968518 m** DTM 施工 datum 可由原地形重算，不是實測工程標高。
+- **碰撞及驗證**：外牆、內空洞、地面柱／門牆、立法會高座及會議廳分層碰撞，不用整座落地盒子封閉 Open Door 或道路。`tests/central-government.test.cjs` 共10項通過；Node geometry 為 **94 meshes／170,210 vertices／72,326 triangles／697 colliders／0 non-finite**。這是幾何及整合驗證，**不是瀏覽器畫面目測驗收**。
+- **照片與資料**：實看 HOK 政府總部外觀及 Open Door 底部照片，辨識門形、厚框、深色雙層幕牆及立法會 disc；照片只作研究，沒有成為貼圖或打包資產。
+  - HOK：https://www.hok.com/projects/view/tamar-government-complex-hong-kong/
+  - Gammon：https://www.gammonconstruction.com/en/project-details.php?project_id=92
+  - Building Journal：http://www.building.com.hk/downpdf.asp?id=188
+  - OSM：https://www.openstreetmap.org/way/918333902 及 https://www.openstreetmap.org/relation/8366346
+
 ## 程式入口
 
 - `hsbc-headquarters-architecture.js`：滙豐純地理位置、OBB、樓層比例及 collider 座標換算，可在 Node 測試。
@@ -1066,6 +1081,9 @@
 - `ckc2-world.js`：二期藍玻窗格、五層 jumbo-glass 裙樓、兩道設備帶、紅色 `CKC II` 冠頂、BMU、入口螺旋裝置、日夜材質、碰撞及 stats。
 - `qgo-architecture.js`：金鐘道政府合署高座36頂點 OSM 來源、來源高度／層數、真實入口 node、雙地台、道路走廊及 portal／collider 座標換算。
 - `qgo-world.js`：高座綠色窗帶、白色混凝土及遮陽板、機電百頁、開敞道路裙樓、法院道自動電梯入口、LED龍形冠頂、日夜材質、碰撞及 stats。
+- `authored-landmark-site.js`：新增手建地標共用OSM provenance、georef／OBB、照片導向 rings、道路走廊及DTM工具。
+- `central-government-architecture.js`：添馬政府總部各獨立來源、西翼內空洞、高度口径、入口frames及道路records。
+- `central-government-world.js`：Open Door三層連接體、雙層幕牆、立法會disc／會議廳、行政長官辦公室、入口、道路portals、日夜材質、碰撞及stats。
 - `conrad-architecture.js`：港麗31頂點弧形 OSM 來源、來源高度／層數、法院道入口 frame、三級台階、道路走廊及 collider 座標換算。
 - `conrad-world.js`：港麗藍綠弧形玻璃、白色 ribbons／主 fins、單一設備帶、紅色曲面冠頂字牌、法院道大理石 porte-cochere、日夜材質、碰撞及 stats。
 - `hysan-place-architecture.js`：希慎27頂點 OSM 來源、分列高度／層數／面積、五個錯位體量、三層花園、四個來源入口、道路走廊及 collider 座標換算。
@@ -1112,4 +1130,4 @@
 - `gateway-tower-three-world.js`：Prudential Tower／T3辦公與服務式住宅幕牆、石質podium、道路portals、日夜材質、碰撞及stats。
 - `gateway-tower-five-world.js`：Tower 5、Prudential雙塔四層互連及三層arch資料口径、浅色格框、道路portals、日夜材質、碰撞及stats。
 - `gateway-tower-six-world.js`：Tower 6獨立辦公塔、弧形幕牆、石質podium、格柵冠頂、日夜材質、碰撞及stats。
-- `simple-world.js`：整合施工清單內三十六個 authored landmarks、海運大廈／LCX／Gateway組件、太空館／文化中心／鐘樓公共文化組件、半島酒店、喜來登酒店、港青酒店及九龍香格里拉；普通 `buildings` 仍為 0。
+- `simple-world.js`：整合施工清單內三十六個 authored landmarks、海運大廈／LCX／Gateway組件、太空館／文化中心／鐘樓公共文化組件、半島酒店、喜來登酒店、港青酒店、九龍香格里拉及添馬政府總部建築群；普通 `buildings` 仍為 0。

@@ -47,6 +47,8 @@ import { tstHotelHighestRawDatum } from './tst-hotel-site.js';
 import { SHERATON_GROUND_SITES, sheratonTerrainHeightAt } from './sheraton-hotel-architecture.js';
 import { SALISBURY_GROUND_SITES, salisburyTerrainHeightAt } from './salisbury-ymca-architecture.js';
 import { KOWLOON_SHANGRI_LA_GROUND_SITES, kowloonShangriLaTerrainHeightAt } from './kowloon-shangri-la-architecture.js';
+import { CGO_GROUND_SITES, centralGovernmentTerrainHeightAt } from './central-government-architecture.js';
+import { authoredHighestRawDatum } from './authored-landmark-site.js';
 
 function decodeBytes(base64) {
   const binary = atob(base64);
@@ -188,6 +190,10 @@ const KOWLOON_SHANGRI_LA_PAD_HEIGHT = tstHotelHighestRawDatum(KOWLOON_SHANGRI_LA
 export function kowloonShangriLaPadHeight() { return KOWLOON_SHANGRI_LA_PAD_HEIGHT; }
 const SALISBURY_PAD_HEIGHT = tstHotelHighestRawDatum(SALISBURY_GROUND_SITES, rawHongKongTerrainHeight);
 export function salisburyPadHeight() { return SALISBURY_PAD_HEIGHT; }
+// Tamar's civic buildings share a reproducible DTM-derived construction datum. The original access roads
+// keep their own profiles; this is not a surveyed engineering or road level.
+const CENTRAL_GOVERNMENT_PAD_HEIGHT = authoredHighestRawDatum(CGO_GROUND_SITES, rawHongKongTerrainHeight);
+export function centralGovernmentPadHeight() { return CENTRAL_GOVERNMENT_PAD_HEIGHT; }
 
 export function hongKongTerrainHeight(x, z) {
   if (pointInFlatRing(HSBC_SITE.ring, x, z)) return HSBC_PAD_HEIGHT;
@@ -237,7 +243,8 @@ export function hongKongTerrainHeight(x, z) {
   const peninsulaHeight = peninsulaTerrainHeightAt(x, z, clockTowerHeight, PENINSULA_PAD_HEIGHT);
   const sheratonHeight = sheratonTerrainHeightAt(x, z, peninsulaHeight, SHERATON_PAD_HEIGHT);
   const salisburyHeight = salisburyTerrainHeightAt(x, z, sheratonHeight, SALISBURY_PAD_HEIGHT);
-  return kowloonShangriLaTerrainHeightAt(x, z, salisburyHeight, KOWLOON_SHANGRI_LA_PAD_HEIGHT);
+  const kowloonShangriLaHeight = kowloonShangriLaTerrainHeightAt(x, z, salisburyHeight, KOWLOON_SHANGRI_LA_PAD_HEIGHT);
+  return centralGovernmentTerrainHeightAt(x, z, kowloonShangriLaHeight, CENTRAL_GOVERNMENT_PAD_HEIGHT);
 }
 
 export const HONG_KONG_TERRAIN_META = Object.freeze({
@@ -291,6 +298,7 @@ export const HONG_KONG_TERRAIN_META = Object.freeze({
   sheratonPadHeight: SHERATON_PAD_HEIGHT,
   salisburyPadHeight: SALISBURY_PAD_HEIGHT,
   kowloonShangriLaPadHeight: KOWLOON_SHANGRI_LA_PAD_HEIGHT,
+  centralGovernmentPadHeight: CENTRAL_GOVERNMENT_PAD_HEIGHT,
   tunnelStats: HK_TERRAIN.stats
 });
 

@@ -9,6 +9,7 @@ import { PENINSULA_HERITAGE_SITE, PENINSULA_TOWER_SITE, PENINSULA_TOWER_HEIGHT }
 import { SHERATON_SITE, SHERATON_MODEL_HEIGHT } from './sheraton-hotel-architecture.js';
 import { SALISBURY_SITE, SALISBURY_TOWER_MODEL_HEIGHTS } from './salisbury-ymca-architecture.js';
 import { KOWLOON_SHANGRI_LA_SITE, KOWLOON_SHANGRI_LA_MODEL_HEIGHT } from './kowloon-shangri-la-architecture.js';
+import { CGO_SITE, CEO_SITE, LEGCO_SITE, CGO_OFFICE_HEIGHT, CEO_HEIGHT, LEGCO_HEIGHT } from './central-government-architecture.js';
 import { pointInFlatRing } from './landmark-site.js';
 import { HK_FULL_MAP } from '../../hk-full-map-data.js';
 import { HK_FULL_ROADS } from '../../hk-full-roads-data.js';
@@ -176,7 +177,10 @@ function mapLayers() {
     .filter(([, landmark]) => !pointInFlatRing(PENINSULA_TOWER_SITE.ring, landmark.x, landmark.z))
     .filter(([, landmark]) => !pointInFlatRing(SHERATON_SITE.ring, landmark.x, landmark.z))
     .filter(([, landmark]) => !pointInFlatRing(SALISBURY_SITE.ring, landmark.x, landmark.z))
-    .filter(([, landmark]) => !pointInFlatRing(KOWLOON_SHANGRI_LA_SITE.ring, landmark.x, landmark.z));
+    .filter(([, landmark]) => !pointInFlatRing(KOWLOON_SHANGRI_LA_SITE.ring, landmark.x, landmark.z))
+    .filter(([, landmark]) => !pointInFlatRing(CGO_SITE.ring, landmark.x, landmark.z))
+    .filter(([, landmark]) => !pointInFlatRing(CEO_SITE.ring, landmark.x, landmark.z))
+    .filter(([, landmark]) => !pointInFlatRing(LEGCO_SITE.ring, landmark.x, landmark.z));
   const timesSquareMapSite = { x: TIMES_SQUARE_SITE.x, z: TIMES_SQUARE_SITE.z, h: TIMES_SQUARE_HEIGHT };
   const oceanTerminalMapSite = { x: OCEAN_TERMINAL_SITE.x, z: OCEAN_TERMINAL_SITE.z, h: 24, authored: true };
   const starHouseMapSite = { x: STAR_HOUSE_SITE.x, z: STAR_HOUSE_SITE.z, h: 55, authored: true };
@@ -196,7 +200,10 @@ function mapLayers() {
   const sheratonHotelMapSite = { x: SHERATON_SITE.x, z: SHERATON_SITE.z, h: SHERATON_MODEL_HEIGHT, authored: true };
   const salisburyYMCAMapSite = { x: SALISBURY_SITE.x, z: SALISBURY_SITE.z, h: Math.max(...SALISBURY_TOWER_MODEL_HEIGHTS), authored: true };
   const kowloonShangriLaMapSite = { x: KOWLOON_SHANGRI_LA_SITE.x, z: KOWLOON_SHANGRI_LA_SITE.z, h: KOWLOON_SHANGRI_LA_MODEL_HEIGHT, authored: true };
-  const landmarks = [...stockLandmarks, [SCB_MAP_SITE.name, SCB_MAP_SITE], [TIMES_SQUARE_SITE.name, timesSquareMapSite], ['海運大廈 Ocean Terminal · LCX', oceanTerminalMapSite], ['星光行 Star House · Star Annex', starHouseMapSite], [MARCO_POLO_HONGKONG_SITE.name, marcoPoloMapSite], [OCEAN_CENTRE_SITE.name, oceanCentreMapSite], [PRINCE_HOTEL_SITE.name, princeHotelMapSite], [GATEWAY_TOWER_ONE_SITE.name, gatewayTowerOneMapSite], [GATEWAY_TOWER_TWO_SITE.name, gatewayTowerTwoMapSite], [GATEWAY_TOWER_THREE_SITE.name, gatewayTowerThreeMapSite], [GATEWAY_TOWER_FIVE_SITE.name, gatewayTowerFiveMapSite], [GATEWAY_TOWER_SIX_SITE.name, gatewayTowerSixMapSite], [PACIFIC_CLUB_SITE.name, pacificClubMapSite], ['香港太空館 Hong Kong Space Museum', spaceMuseumMapSite], [CULTURAL_CENTRE_SITE.name, culturalCentreMapSite], [CLOCK_TOWER_SITE.name, clockTowerMapSite], ['香港半島酒店 The Peninsula Hong Kong', peninsulaHotelMapSite], [SHERATON_SITE.name, sheratonHotelMapSite], [SALISBURY_SITE.name, salisburyYMCAMapSite], [KOWLOON_SHANGRI_LA_SITE.name, kowloonShangriLaMapSite]]
+  const centralGovernmentMapSite = { x: CGO_SITE.x, z: CGO_SITE.z, h: CGO_OFFICE_HEIGHT, authored: true };
+  const chiefExecutiveOfficeMapSite = { x: CEO_SITE.x, z: CEO_SITE.z, h: CEO_HEIGHT, authored: true };
+  const legislativeCouncilMapSite = { x: LEGCO_SITE.x, z: LEGCO_SITE.z, h: LEGCO_HEIGHT, authored: true };
+  const landmarks = [...stockLandmarks, [SCB_MAP_SITE.name, SCB_MAP_SITE], [TIMES_SQUARE_SITE.name, timesSquareMapSite], ['海運大廈 Ocean Terminal · LCX', oceanTerminalMapSite], ['星光行 Star House · Star Annex', starHouseMapSite], [MARCO_POLO_HONGKONG_SITE.name, marcoPoloMapSite], [OCEAN_CENTRE_SITE.name, oceanCentreMapSite], [PRINCE_HOTEL_SITE.name, princeHotelMapSite], [GATEWAY_TOWER_ONE_SITE.name, gatewayTowerOneMapSite], [GATEWAY_TOWER_TWO_SITE.name, gatewayTowerTwoMapSite], [GATEWAY_TOWER_THREE_SITE.name, gatewayTowerThreeMapSite], [GATEWAY_TOWER_FIVE_SITE.name, gatewayTowerFiveMapSite], [GATEWAY_TOWER_SIX_SITE.name, gatewayTowerSixMapSite], [PACIFIC_CLUB_SITE.name, pacificClubMapSite], ['香港太空館 Hong Kong Space Museum', spaceMuseumMapSite], [CULTURAL_CENTRE_SITE.name, culturalCentreMapSite], [CLOCK_TOWER_SITE.name, clockTowerMapSite], ['香港半島酒店 The Peninsula Hong Kong', peninsulaHotelMapSite], [SHERATON_SITE.name, sheratonHotelMapSite], [SALISBURY_SITE.name, salisburyYMCAMapSite], [KOWLOON_SHANGRI_LA_SITE.name, kowloonShangriLaMapSite], [CGO_SITE.name, centralGovernmentMapSite], [CEO_SITE.name, chiefExecutiveOfficeMapSite], [LEGCO_SITE.name, legislativeCouncilMapSite]]
     .filter(([, landmark]) => Number.isFinite(landmark.h) && (landmark.h > 45 || landmark.authored))
     .map(([name, landmark]) => ({ name, ...landmark }))
     .sort((a, b) => b.h - a.h);

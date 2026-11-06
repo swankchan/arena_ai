@@ -46,6 +46,7 @@ import { buildOneInternationalFinanceCentre } from './one-ifc-world.js';
 import { buildChampionTower } from './champion-tower-world.js';
 import { buildCkc2 } from './ckc2-world.js';
 import { buildQgo } from './qgo-world.js';
+import { buildCentralGovernmentComplex } from './central-government-world.js';
 import { buildConrad } from './conrad-world.js';
 import { buildHysanPlace } from './hysan-place-world.js';
 import { buildTwoTaikooPlace } from './two-taikoo-place-world.js';
@@ -143,6 +144,8 @@ export function buildSimpleHongKongWorld(scene, { setStatus = () => {} } = {}) {
   const ckc2 = buildCkc2(scene, { groundOffset: HONG_KONG_TERRAIN_META.ckc2PadHeight });
   setStatus('Building Queensway Government Offices’ ribbon windows and rooftop dragon...');
   const qgo = buildQgo(scene, { groundOffset: HONG_KONG_TERRAIN_META.qgoPadHeight, entranceGroundOffset: HONG_KONG_TERRAIN_META.qgoEntrancePadHeight });
+  setStatus('Building Tamar’s Open Door, Chief Executive’s Office and Legislative Council Complex...');
+  const centralGovernment = buildCentralGovernmentComplex(scene, { groundOffset: HONG_KONG_TERRAIN_META.centralGovernmentPadHeight });
   setStatus('Building Conrad Hong Kong’s curved ribbons, white fins and Supreme Court Road porte-cochere...');
   const conrad = buildConrad(scene, { groundOffset: HONG_KONG_TERRAIN_META.conradPadHeight, entranceGroundOffset: HONG_KONG_TERRAIN_META.conradEntrancePadHeight });
   setStatus('Building Hysan Place’s shifting volumes, sky gardens and diagonal express escalators...');
@@ -268,8 +271,10 @@ export function buildSimpleHongKongWorld(scene, { setStatus = () => {} } = {}) {
     const championTowerGround = !groundUsesRoad ? championTower.groundHeightAt(x, z, oneIfcGround) : oneIfcGround;
     const ckc2Ground = !groundUsesRoad ? ckc2.groundHeightAt(x, z, championTowerGround) : championTowerGround;
     const qgoGround = !groundUsesRoad ? qgo.groundHeightAt(x, z, ckc2Ground) : ckc2Ground;
+    // Tamar keeps every original access road on its own profile below the civic buildings and Open Door.
+    const centralGovernmentGround = !groundUsesRoad ? centralGovernment.groundHeightAt(x, z, qgoGround) : qgoGround;
     // Conrad's open arrival level keeps every selected road; the fixed tower is never moved to fit a carriageway.
-    const conradGround = !groundUsesRoad ? conrad.groundHeightAt(x, z, qgoGround) : qgoGround;
+    const conradGround = !groundUsesRoad ? conrad.groundHeightAt(x, z, centralGovernmentGround) : centralGovernmentGround;
     // Hysan's parking-access record remains a road through the open ground-level portal.
     const hysanGround = !groundUsesRoad ? hysan.groundHeightAt(x, z, conradGround) : conradGround;
     // Two Taikoo Place keeps both surface mouths and the selected service tunnel on their own road profiles.
@@ -341,6 +346,7 @@ export function buildSimpleHongKongWorld(scene, { setStatus = () => {} } = {}) {
     ...championTower.stats,
     ...ckc2.stats,
     ...qgo.stats,
+    ...centralGovernment.stats,
     ...conrad.stats,
     ...hysan.stats,
     ...twoTaikoo.stats,
@@ -375,7 +381,7 @@ export function buildSimpleHongKongWorld(scene, { setStatus = () => {} } = {}) {
     landMeshes: full.stats.fullLandRings,
     blocks: 0,
     parks: full.stats.fullParks,
-    landmarks: hsbc.landmarks.length + standardChartered.landmarks.length + twoIfc.landmarks.length + icc.landmarks.length + bankOfChina.landmarks.length + centralPlaza.landmarks.length + theCenter.landmarks.length + ninaTower.landmarks.length + cheungKong.landmarks.length + k11Atelier.landmarks.length + cullinanI.landmarks.length + cullinanII.landmarks.length + masterpiece.landmarks.length + langhamPlace.landmarks.length + summit.landmarks.length + hopewell.landmarks.length + sunHungKai.landmarks.length + twoPacificPlace.landmarks.length + airside.landmarks.length + leeGardenOne.landmarks.length + oneIfc.landmarks.length + championTower.landmarks.length + ckc2.landmarks.length + qgo.landmarks.length + conrad.landmarks.length + hysan.landmarks.length + twoTaikoo.landmarks.length + theHenderson.landmarks.length + oneExchange.landmarks.length + twoExchange.landmarks.length + courtOfFinalAppeal.landmarks.length + hkcec.landmarks.length + timesSquare.landmarks.length + oceanTerminal.landmarks.length + starHouse.landmarks.length + marcoPolo.landmarks.length + oceanCentre.landmarks.length + princeHotel.landmarks.length + gatewayTowerOne.landmarks.length + gatewayTowerTwo.landmarks.length + gatewayTowerThree.landmarks.length + gatewayTowerFive.landmarks.length + gatewayTowerSix.landmarks.length + pacificClub.landmarks.length + spaceMuseum.landmarks.length + culturalCentre.landmarks.length + clockTower.landmarks.length + peninsulaHotel.landmarks.length + sheratonHotel.landmarks.length + salisburyYMCA.landmarks.length + kowloonShangriLa.landmarks.length + hongKongPark.landmarks.length + kowloonPark.landmarks.length + victoriaPark.landmarks.length,
+    landmarks: hsbc.landmarks.length + standardChartered.landmarks.length + twoIfc.landmarks.length + icc.landmarks.length + bankOfChina.landmarks.length + centralPlaza.landmarks.length + theCenter.landmarks.length + ninaTower.landmarks.length + cheungKong.landmarks.length + k11Atelier.landmarks.length + cullinanI.landmarks.length + cullinanII.landmarks.length + masterpiece.landmarks.length + langhamPlace.landmarks.length + summit.landmarks.length + hopewell.landmarks.length + sunHungKai.landmarks.length + twoPacificPlace.landmarks.length + airside.landmarks.length + leeGardenOne.landmarks.length + oneIfc.landmarks.length + championTower.landmarks.length + ckc2.landmarks.length + qgo.landmarks.length + centralGovernment.landmarks.length + conrad.landmarks.length + hysan.landmarks.length + twoTaikoo.landmarks.length + theHenderson.landmarks.length + oneExchange.landmarks.length + twoExchange.landmarks.length + courtOfFinalAppeal.landmarks.length + hkcec.landmarks.length + timesSquare.landmarks.length + oceanTerminal.landmarks.length + starHouse.landmarks.length + marcoPolo.landmarks.length + oceanCentre.landmarks.length + princeHotel.landmarks.length + gatewayTowerOne.landmarks.length + gatewayTowerTwo.landmarks.length + gatewayTowerThree.landmarks.length + gatewayTowerFive.landmarks.length + gatewayTowerSix.landmarks.length + pacificClub.landmarks.length + spaceMuseum.landmarks.length + culturalCentre.landmarks.length + clockTower.landmarks.length + peninsulaHotel.landmarks.length + sheratonHotel.landmarks.length + salisburyYMCA.landmarks.length + kowloonShangriLa.landmarks.length + hongKongPark.landmarks.length + kowloonPark.landmarks.length + victoriaPark.landmarks.length,
     lots: 0,
     buildings: 0,
     skippedLots: 0,
@@ -387,7 +393,7 @@ export function buildSimpleHongKongWorld(scene, { setStatus = () => {} } = {}) {
 
   return {
     root: scene,
-    colliders: [...full.colliders, ...crossings.colliders, ...hsbc.colliders, ...standardChartered.colliders, ...twoIfc.colliders, ...icc.colliders, ...bankOfChina.colliders, ...centralPlaza.colliders, ...theCenter.colliders, ...ninaTower.colliders, ...cheungKong.colliders, ...k11Atelier.colliders, ...cullinanI.colliders, ...cullinanII.colliders, ...masterpiece.colliders, ...langhamPlace.colliders, ...summit.colliders, ...hopewell.colliders, ...sunHungKai.colliders, ...twoPacificPlace.colliders, ...airside.colliders, ...leeGardenOne.colliders, ...oneIfc.colliders, ...championTower.colliders, ...ckc2.colliders, ...qgo.colliders, ...conrad.colliders, ...hysan.colliders, ...twoTaikoo.colliders, ...theHenderson.colliders, ...oneExchange.colliders, ...twoExchange.colliders, ...courtOfFinalAppeal.colliders, ...hkcec.colliders, ...timesSquare.colliders, ...oceanTerminal.colliders, ...starHouse.colliders, ...marcoPolo.colliders, ...oceanCentre.colliders, ...princeHotel.colliders, ...gatewayTowerOne.colliders, ...gatewayTowerTwo.colliders, ...gatewayTowerThree.colliders, ...gatewayTowerFive.colliders, ...gatewayTowerSix.colliders, ...pacificClub.colliders, ...spaceMuseum.colliders, ...culturalCentre.colliders, ...clockTower.colliders, ...peninsulaHotel.colliders, ...sheratonHotel.colliders, ...salisburyYMCA.colliders, ...kowloonShangriLa.colliders, ...hongKongPark.colliders, ...kowloonPark.colliders, ...victoriaPark.colliders],
+    colliders: [...full.colliders, ...crossings.colliders, ...hsbc.colliders, ...standardChartered.colliders, ...twoIfc.colliders, ...icc.colliders, ...bankOfChina.colliders, ...centralPlaza.colliders, ...theCenter.colliders, ...ninaTower.colliders, ...cheungKong.colliders, ...k11Atelier.colliders, ...cullinanI.colliders, ...cullinanII.colliders, ...masterpiece.colliders, ...langhamPlace.colliders, ...summit.colliders, ...hopewell.colliders, ...sunHungKai.colliders, ...twoPacificPlace.colliders, ...airside.colliders, ...leeGardenOne.colliders, ...oneIfc.colliders, ...championTower.colliders, ...ckc2.colliders, ...qgo.colliders, ...centralGovernment.colliders, ...conrad.colliders, ...hysan.colliders, ...twoTaikoo.colliders, ...theHenderson.colliders, ...oneExchange.colliders, ...twoExchange.colliders, ...courtOfFinalAppeal.colliders, ...hkcec.colliders, ...timesSquare.colliders, ...oceanTerminal.colliders, ...starHouse.colliders, ...marcoPolo.colliders, ...oceanCentre.colliders, ...princeHotel.colliders, ...gatewayTowerOne.colliders, ...gatewayTowerTwo.colliders, ...gatewayTowerThree.colliders, ...gatewayTowerFive.colliders, ...gatewayTowerSix.colliders, ...pacificClub.colliders, ...spaceMuseum.colliders, ...culturalCentre.colliders, ...clockTower.colliders, ...peninsulaHotel.colliders, ...sheratonHotel.colliders, ...salisburyYMCA.colliders, ...kowloonShangriLa.colliders, ...hongKongPark.colliders, ...kowloonPark.colliders, ...victoriaPark.colliders],
     bounds: full.bounds,
     stats,
     personSpawn: { ...SPAWN.person },
@@ -427,6 +433,7 @@ export function buildSimpleHongKongWorld(scene, { setStatus = () => {} } = {}) {
     championTower,
     ckc2,
     qgo,
+    centralGovernment,
     conrad,
     hysan,
     twoTaikoo,
@@ -458,7 +465,7 @@ export function buildSimpleHongKongWorld(scene, { setStatus = () => {} } = {}) {
     kowloonPark,
     victoriaPark,
     treeField: majorParkTrees,
-    landmarks: [...hsbc.landmarks, ...standardChartered.landmarks, ...twoIfc.landmarks, ...icc.landmarks, ...bankOfChina.landmarks, ...centralPlaza.landmarks, ...theCenter.landmarks, ...ninaTower.landmarks, ...cheungKong.landmarks, ...k11Atelier.landmarks, ...cullinanI.landmarks, ...cullinanII.landmarks, ...masterpiece.landmarks, ...langhamPlace.landmarks, ...summit.landmarks, ...hopewell.landmarks, ...sunHungKai.landmarks, ...twoPacificPlace.landmarks, ...airside.landmarks, ...leeGardenOne.landmarks, ...oneIfc.landmarks, ...championTower.landmarks, ...ckc2.landmarks, ...qgo.landmarks, ...conrad.landmarks, ...hysan.landmarks, ...twoTaikoo.landmarks, ...theHenderson.landmarks, ...oneExchange.landmarks, ...twoExchange.landmarks, ...courtOfFinalAppeal.landmarks, ...hkcec.landmarks, ...timesSquare.landmarks, ...oceanTerminal.landmarks, ...starHouse.landmarks, ...marcoPolo.landmarks, ...oceanCentre.landmarks, ...princeHotel.landmarks, ...gatewayTowerOne.landmarks, ...gatewayTowerTwo.landmarks, ...gatewayTowerThree.landmarks, ...gatewayTowerFive.landmarks, ...gatewayTowerSix.landmarks, ...pacificClub.landmarks, ...spaceMuseum.landmarks, ...culturalCentre.landmarks, ...clockTower.landmarks, ...peninsulaHotel.landmarks, ...sheratonHotel.landmarks, ...salisburyYMCA.landmarks, ...kowloonShangriLa.landmarks, ...hongKongPark.landmarks, ...kowloonPark.landmarks, ...victoriaPark.landmarks],
+    landmarks: [...hsbc.landmarks, ...standardChartered.landmarks, ...twoIfc.landmarks, ...icc.landmarks, ...bankOfChina.landmarks, ...centralPlaza.landmarks, ...theCenter.landmarks, ...ninaTower.landmarks, ...cheungKong.landmarks, ...k11Atelier.landmarks, ...cullinanI.landmarks, ...cullinanII.landmarks, ...masterpiece.landmarks, ...langhamPlace.landmarks, ...summit.landmarks, ...hopewell.landmarks, ...sunHungKai.landmarks, ...twoPacificPlace.landmarks, ...airside.landmarks, ...leeGardenOne.landmarks, ...oneIfc.landmarks, ...championTower.landmarks, ...ckc2.landmarks, ...qgo.landmarks, ...centralGovernment.landmarks, ...conrad.landmarks, ...hysan.landmarks, ...twoTaikoo.landmarks, ...theHenderson.landmarks, ...oneExchange.landmarks, ...twoExchange.landmarks, ...courtOfFinalAppeal.landmarks, ...hkcec.landmarks, ...timesSquare.landmarks, ...oceanTerminal.landmarks, ...starHouse.landmarks, ...marcoPolo.landmarks, ...oceanCentre.landmarks, ...princeHotel.landmarks, ...gatewayTowerOne.landmarks, ...gatewayTowerTwo.landmarks, ...gatewayTowerThree.landmarks, ...gatewayTowerFive.landmarks, ...gatewayTowerSix.landmarks, ...pacificClub.landmarks, ...spaceMuseum.landmarks, ...culturalCentre.landmarks, ...clockTower.landmarks, ...peninsulaHotel.landmarks, ...sheratonHotel.landmarks, ...salisburyYMCA.landmarks, ...kowloonShangriLa.landmarks, ...hongKongPark.landmarks, ...kowloonPark.landmarks, ...victoriaPark.landmarks],
     trafficAids
   };
 }
