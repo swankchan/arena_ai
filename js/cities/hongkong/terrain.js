@@ -49,6 +49,7 @@ import { SALISBURY_GROUND_SITES, salisburyTerrainHeightAt } from './salisbury-ym
 import { KOWLOON_SHANGRI_LA_GROUND_SITES, kowloonShangriLaTerrainHeightAt } from './kowloon-shangri-la-architecture.js';
 import { CGO_GROUND_SITES, centralGovernmentTerrainHeightAt } from './central-government-architecture.js';
 import { HERITAGE_1881_GROUND_SITES, heritage1881TerrainHeightAt } from './heritage-1881-architecture.js';
+import { THE_ARCH_GROUND_SITES, theArchTerrainHeightAt } from './the-arch-architecture.js';
 import { authoredHighestRawDatum } from './authored-landmark-site.js';
 
 function decodeBytes(base64) {
@@ -199,6 +200,9 @@ export function centralGovernmentPadHeight() { return CENTRAL_GOVERNMENT_PAD_HEI
 // No retained carriageway centre vertex intersects these rings; this is not a surveyed heritage-site level.
 const HERITAGE_1881_PAD_HEIGHT = authoredHighestRawDatum(HERITAGE_1881_GROUND_SITES, rawHongKongTerrainHeight);
 export function heritage1881PadHeight() { return HERITAGE_1881_PAD_HEIGHT; }
+// The Arch's exact estate ring supplies one DTM datum; its retained station roads keep their own profiles.
+const THE_ARCH_PAD_HEIGHT = authoredHighestRawDatum(THE_ARCH_GROUND_SITES, rawHongKongTerrainHeight);
+export function theArchPadHeight() { return THE_ARCH_PAD_HEIGHT; }
 
 export function hongKongTerrainHeight(x, z) {
   if (pointInFlatRing(HSBC_SITE.ring, x, z)) return HSBC_PAD_HEIGHT;
@@ -250,7 +254,8 @@ export function hongKongTerrainHeight(x, z) {
   const salisburyHeight = salisburyTerrainHeightAt(x, z, sheratonHeight, SALISBURY_PAD_HEIGHT);
   const kowloonShangriLaHeight = kowloonShangriLaTerrainHeightAt(x, z, salisburyHeight, KOWLOON_SHANGRI_LA_PAD_HEIGHT);
   const centralGovernmentHeight = centralGovernmentTerrainHeightAt(x, z, kowloonShangriLaHeight, CENTRAL_GOVERNMENT_PAD_HEIGHT);
-  return heritage1881TerrainHeightAt(x, z, centralGovernmentHeight, HERITAGE_1881_PAD_HEIGHT);
+  const heritage1881Height = heritage1881TerrainHeightAt(x, z, centralGovernmentHeight, HERITAGE_1881_PAD_HEIGHT);
+  return theArchTerrainHeightAt(x, z, heritage1881Height, THE_ARCH_PAD_HEIGHT);
 }
 
 export const HONG_KONG_TERRAIN_META = Object.freeze({
@@ -306,6 +311,7 @@ export const HONG_KONG_TERRAIN_META = Object.freeze({
   kowloonShangriLaPadHeight: KOWLOON_SHANGRI_LA_PAD_HEIGHT,
   centralGovernmentPadHeight: CENTRAL_GOVERNMENT_PAD_HEIGHT,
   heritage1881PadHeight: HERITAGE_1881_PAD_HEIGHT,
+  theArchPadHeight: THE_ARCH_PAD_HEIGHT,
   tunnelStats: HK_TERRAIN.stats
 });
 

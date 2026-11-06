@@ -105,6 +105,6 @@ test('Conrad is integrated as the twenty-fifth authored landmark without generic
   const simple = fs.readFileSync(path.join(root, 'js/cities/hongkong/simple-world.js'), 'utf8');
   const debug = fs.readFileSync(path.join(root, 'js/cities/hongkong/index.js'), 'utf8');
   assert.match(simple, /buildConrad\(scene/); assert.match(simple, /\.\.\.conrad\.stats/); assert.match(simple, /\.\.\.conrad\.colliders/);
-  assert.match(simple, /qgo\.landmarks\.length \+ centralGovernment\.landmarks\.length \+ heritage1881\.landmarks\.length \+ conrad\.landmarks\.length/); assert.match(simple, /buildings: 0/);
+  assert.match(simple, /qgo\.landmarks\.length \+ centralGovernment\.landmarks\.length \+ heritage1881\.landmarks\.length \+ theArch\.landmarks\.length \+ conrad\.landmarks\.length/); assert.match(simple, /buildings: 0/);
   assert.match(debug, /conrad: world\.conrad/);
 });

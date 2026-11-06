@@ -1046,6 +1046,19 @@
 - **驗證**：`tests/heritage-1881.test.cjs` 共 **10項通過**；Node geometry 為 **48 meshes／393,512 vertices／216,966 triangles／149 colliders／0 non-finite**，共有 **637個拱形開口、998支主樓欄杆立柱**。這是來源、ground、碰撞及Node幾何驗證，**不是瀏覽器畫面目測驗收**。
 - **資料**：古物古蹟辦事處 https://www.amo.gov.hk/en/historic-buildings/monuments/kowloon/monuments_51/index.html ；建築照片研究 https://fpf.ccidahk.gov.hk/en/location/detail.php?id=1546 ；時間球資料 https://www.cityintime.hk/en/article/tsim-sha-tsui-kowloon-park-drive-ca-1900/ ；OSM https://www.openstreetmap.org/way/184553178 及 https://www.openstreetmap.org/relation/2460795 。
 
+## 九龍站凱旋門 `HK-KLN-ARCH`：四座住宅塔、真拱門中空及圓孔冠頂（2026-11-06）
+
+- **位置與來源**：柯士甸道西1號，採額外 ID，不改寫100幢 inventory。保存住宅地段 **way 25608819（24點）**，以及 **Skytower 1047822851（11點）／Suntower 294457120（29點）／Moontower 294457121（27點）／Startower 1047822850（12點）** 四套獨立外形；地段是 `landuse=residential`，沒有冒充單一建築 footprint。
+- **高度與層數**：四座均保留 OSM **231 m／64層／min_height 20 m／building:min_level 4**；上部視覺住宅幕牆為 **60 courses**，不把來源層數和視覺分格混為一談。二手資料對Sun–Moon相接樓層有62/F及69/F兩種說法，因此連接體只標作照片導向，不宣稱有精確工程樓層。
+- **真正拱門**：Sun及Moon來源環之間本來就有無建築的中央位置；模型不在下方填一個玻璃盒。**174 m soffit** 以上做照片導向 **62 × 22 m** 高架會所／上部連接體，下方一直保持真正開空；深銅色底板及肋梁只在高處。會所4層是視覺口径，上部住宅連接體延至207 m。
+- **近頂圓孔**：207–231 m冠頂兩側保留住宅翼，前後兩塊异形板都用有實際 hole 的 `ExtrudeGeometry`，形成 **半徑3.2 m圓孔**，另有金屬圓框及頂梁；不是貼一個黑色圓形假窗。Node測試同時檢查兩塊geometry確有shape hole及圓孔中心無佔用collider。
+- **住宅立面**：四座按原來源環逐層生成綠藍玻璃趟門、銅紅spandrel、突出露台、開放欄杆、橫框及淡色結構豎 fins，屋頂另有不超越231 m的開放矩形框架。全部共有 **24,834幅玻璃 panels** 及 **140支主要結構 fins**，日間保持住宅反光玻璃，夜間只有部分暖窗。
+- **基座及入口**：地段環只作照片／地段導向bulk podium依據，沒有改稱OSM建築環；四層基座以銅色板、玻璃及南面临街入口棚為主。道路上方保留 **41個開放道路 bays** 及 **6個入口 bays**，Austin Road West有雙語入口字牌。
+- **道路與淨空**：保留並記錄 estate records **41226／42618／47295／50428／50726／50727／50730／50731／51124–51127**，record index不當OSM ID。Sun及Star等塔身道路走廊亦分開保存；塔身從20 m開始，地面道路不被落地塔碰撞封閉。共享DTM datum為 **6.196010572952247 m**；**2,908個**道路路肩樣本對7.2 m soffit扣除0.42 m lintel的最低淨空為 **6.755651367304475 m**，大於4.7 m。
+- **碰撞與街燈**：地面portal、基座上層、四座20 m以上塔環、174 m以上連接體及冠頂側翼分層碰撞；拱門和圓孔沒有被整座box封死。estate及四座塔的 clearance 後街燈衝突均為 **0**。
+- **驗證**：`tests/the-arch.test.cjs` 共 **10項通過**；Node geometry為 **73 meshes／1,806,368 vertices／873,612 triangles／350 colliders／0 non-finite**。這是來源、道路、ground及Node幾何驗證，**不是瀏覽器畫面目測驗收**。
+- **資料**：四座來源分別見 https://www.openstreetmap.org/way/294457120 、https://www.openstreetmap.org/way/294457121 、https://www.openstreetmap.org/way/1047822851 、https://www.openstreetmap.org/way/1047822850 ；設計摘要 https://skyscraperpage.com/cities/?buildingID=7288 及 https://cementaid.com/project/the-arch-kowloon-station/ 。實看低角度基座及海港方向全樓照片；照片只作研究，沒有打包或作貼圖。
+
 ## 程式入口
 
 - `hsbc-headquarters-architecture.js`：滙豐純地理位置、OBB、樓層比例及 collider 座標換算，可在 Node 測試。
@@ -1099,6 +1112,8 @@
 - `central-government-world.js`：Open Door三層連接體、雙層幕牆、立法會disc／會議廳、行政長官辦公室、入口、道路portals、日夜材質、碰撞及stats。
 - `heritage-1881-architecture.js`：1881 compound／商場／主樓來源、現行三層證據、訊號塔及兩組步行樓梯ground。
 - `heritage-1881-world.js`：三層內外拱廊、拱石、欄杆、平台樓梯井、雙坡屋頂、Round House、時間球、颱風桅杆、噴泉及碰撞。
+- `the-arch-architecture.js`：凱旋門地段／四座來源、道路走廊、Sun–Moon連接體及高度／樓層口径。
+- `the-arch-world.js`：銅紅露台、綠藍玻璃、道路安全基座、真拱門、高架會所、圓孔冠頂、碰撞及stats。
 - `conrad-architecture.js`：港麗31頂點弧形 OSM 來源、來源高度／層數、法院道入口 frame、三級台階、道路走廊及 collider 座標換算。
 - `conrad-world.js`：港麗藍綠弧形玻璃、白色 ribbons／主 fins、單一設備帶、紅色曲面冠頂字牌、法院道大理石 porte-cochere、日夜材質、碰撞及 stats。
 - `hysan-place-architecture.js`：希慎27頂點 OSM 來源、分列高度／層數／面積、五個錯位體量、三層花園、四個來源入口、道路走廊及 collider 座標換算。
@@ -1145,4 +1160,4 @@
 - `gateway-tower-three-world.js`：Prudential Tower／T3辦公與服務式住宅幕牆、石質podium、道路portals、日夜材質、碰撞及stats。
 - `gateway-tower-five-world.js`：Tower 5、Prudential雙塔四層互連及三層arch資料口径、浅色格框、道路portals、日夜材質、碰撞及stats。
 - `gateway-tower-six-world.js`：Tower 6獨立辦公塔、弧形幕牆、石質podium、格柵冠頂、日夜材質、碰撞及stats。
-- `simple-world.js`：整合施工清單內三十六個 authored landmarks、海運大廈／LCX／Gateway組件、太空館／文化中心／鐘樓公共文化組件、半島酒店、喜來登酒店、港青酒店、九龍香格里拉、添馬政府總部建築群及1881 Heritage；普通 `buildings` 仍為 0。
+- `simple-world.js`：整合施工清單內三十六個 authored landmarks、海運大廈／LCX／Gateway組件、太空館／文化中心／鐘樓公共文化組件、半島酒店、喜來登酒店、港青酒店、九龍香格里拉、添馬政府總部建築群、1881 Heritage及九龍站凱旋門；普通 `buildings` 仍為 0。
