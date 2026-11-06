@@ -48,6 +48,7 @@ import { SHERATON_GROUND_SITES, sheratonTerrainHeightAt } from './sheraton-hotel
 import { SALISBURY_GROUND_SITES, salisburyTerrainHeightAt } from './salisbury-ymca-architecture.js';
 import { MONG_KOK_STADIUM_SITE, mongKokStadiumTerrainHeightAt } from './mong-kok-stadium-architecture.js';
 import { HONG_KONG_STADIUM_SITE, hongKongStadiumTerrainHeightAt } from './hong-kong-stadium-architecture.js';
+import { LAI_YUEN_SITE, laiYuenTerrainHeightAt } from './lai-yuen-architecture.js';
 import { KOWLOON_SHANGRI_LA_GROUND_SITES, kowloonShangriLaTerrainHeightAt } from './kowloon-shangri-la-architecture.js';
 import { CGO_GROUND_SITES, centralGovernmentTerrainHeightAt } from './central-government-architecture.js';
 import { HERITAGE_1881_GROUND_SITES, heritage1881TerrainHeightAt } from './heritage-1881-architecture.js';
@@ -206,6 +207,9 @@ export function mongKokStadiumPadHeight() { return MONG_KOK_STADIUM_PAD_HEIGHT; 
 // Hong Kong Stadium's So Kon Po bowl and its source block share one reproducible DTM datum.
 const HONG_KONG_STADIUM_PAD_HEIGHT = authoredHighestRawDatum([HONG_KONG_STADIUM_SITE], rawHongKongTerrainHeight);
 export function hongKongStadiumPadHeight() { return HONG_KONG_STADIUM_PAD_HEIGHT; }
+// HISTORICAL RECONSTRUCTION: 荔園 Lai Yuen (1949-1997) shares one reproducible DTM datum over its modelled outline.
+const LAI_YUEN_PAD_HEIGHT = authoredHighestRawDatum([LAI_YUEN_SITE], rawHongKongTerrainHeight);
+export function laiYuenPadHeight() { return LAI_YUEN_PAD_HEIGHT; }
 const CENTRAL_GOVERNMENT_PAD_HEIGHT = authoredHighestRawDatum(CGO_GROUND_SITES, rawHongKongTerrainHeight);
 export function centralGovernmentPadHeight() { return CENTRAL_GOVERNMENT_PAD_HEIGHT; }
 // 1881's source compound, retail podium and Main Building share one reproducible DTM construction datum.
@@ -287,7 +291,8 @@ export function hongKongTerrainHeight(x, z) {
   const centralLibraryHeight = centralLibraryTerrainHeightAt(x, z, cityHallHeight, CENTRAL_LIBRARY_PAD_HEIGHT);
   const stadiumHeight = mongKokStadiumTerrainHeightAt(x, z, centralLibraryHeight, MONG_KOK_STADIUM_PAD_HEIGHT);
   const bigStadiumHeight = hongKongStadiumTerrainHeightAt(x, z, stadiumHeight, HONG_KONG_STADIUM_PAD_HEIGHT);
-  return airportTerrainHeightAt(AIRPORT_TERRAIN_SITES, AIRPORT_PAD_HEIGHTS, x, z, bigStadiumHeight);
+  const laiYuenHeight = laiYuenTerrainHeightAt(x, z, bigStadiumHeight, LAI_YUEN_PAD_HEIGHT);
+  return airportTerrainHeightAt(AIRPORT_TERRAIN_SITES, AIRPORT_PAD_HEIGHTS, x, z, laiYuenHeight);
 }
 
 export const HONG_KONG_TERRAIN_META = Object.freeze({
@@ -343,6 +348,7 @@ export const HONG_KONG_TERRAIN_META = Object.freeze({
   kowloonShangriLaPadHeight: KOWLOON_SHANGRI_LA_PAD_HEIGHT,
   mongKokStadiumPadHeight: MONG_KOK_STADIUM_PAD_HEIGHT,
   hongKongStadiumPadHeight: HONG_KONG_STADIUM_PAD_HEIGHT,
+  laiYuenPadHeight: LAI_YUEN_PAD_HEIGHT,
   centralGovernmentPadHeight: CENTRAL_GOVERNMENT_PAD_HEIGHT,
   heritage1881PadHeight: HERITAGE_1881_PAD_HEIGHT,
   theArchPadHeight: THE_ARCH_PAD_HEIGHT,
