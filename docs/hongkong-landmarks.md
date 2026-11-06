@@ -1072,6 +1072,16 @@
 - **驗證**：`tests/sorrento.test.cjs` 共 **10項通過**，Sorrento／The Arch／Conrad／landmarks相關回歸 **39／39**；Node geometry為 **71 meshes／1,626,592 vertices／748,097 triangles／513 colliders／0 non-finite**。這是來源、道路、ground、碰撞及Node幾何驗證，**不是瀏覽器畫面目測驗收**。
 - **資料**：裙樓 https://www.openstreetmap.org/way/25608839 ；五塔 https://www.openstreetmap.org/way/200726103 、https://www.openstreetmap.org/way/200720178 、https://www.openstreetmap.org/way/200720170 、https://www.openstreetmap.org/way/200720177 、https://www.openstreetmap.org/way/200720176 ；二手屋苑摘要 https://www.28hse.com/estate/detail/sorrento-2581 。已實看海港方向全樓及裙樓外觀照片；旋轉照片先按正確方向理解，室內listing照片不採用。研究照片沒有打包或作貼圖。
 
+## 香港大會堂 Hong Kong City Hall `HK-CENTRAL-CH`：高低座、紀念花園及有蓋連接（2026-11-06）
+
+- **來源與分區**：愛丁堡廣場5號，採額外公共文化組件 ID，不改變100幢清單統計。高座 **OSM way 25608273 v16**、低座 **101959153 v8**、整體場地 **101959040 v13**、Memorial Garden **46870356 v10** 及無名附屬建築 **101959243 v4** 分開保存原始節點、經緯度、tags、版本及 ODbL 署名。高座12個獨立頂點／**712.298610 m²**，低座19個／**4,291.589323 m²**，整體場地31個／**13,672.176 m²**；場地只用於 ground／道路審計，沒有拉成一幢大方盒。
+- **官方資料與高度口径**：[古物古蹟辦事處](https://www.amo.gov.hk/en/historic-buildings/monuments/hong-kong-island/monuments_132/index.html)確認 **1962-03-02** 開幕、**2022** 年列為法定古蹟，以及高低座、Memorial Garden、有蓋步道和12面 Memorial Shrine。高座 **57.7 m／12 levels**、低座 **21.9 m／3 levels** 是 OSM 標籤；附屬建築4.2 m、花園設施及外置樓梯尺寸只屬照片導向，沒有冒充實測。
+- **照片研究與立面**：核看 AMO／LCSD 及正確的大會堂外觀參考圖，剔除不相關建築；[LegCo heritage assessment](https://www.legco.gov.hk/yr2022/english/brief/devbcho1bcr141_20220520-e.pdf) 支持低座 L 形、花崗岩、北向窗帶、西向菱形窗及高座白色模數窗格。高座使用白牆、逐格深色玻璃窗、突出混凝土 fins、天台 parapet／plant 及外置樓梯；低座保留完整 L 形 ring，分別處理玻璃帶、中央實牆 auditorium、側翼玻璃、花崗岩接縫及菱形窗，不再以整幅通用實板覆蓋來源立面。
+- **入口及有蓋連接**：高座兩門使用真實 **nodes 11774406410／11774406411**，低座兩門使用 **11774418675／11774406423**，沒有加上硬編 facade offset。門、雨篷和地面碰撞開口使用同一來源頂點；四道門在頂點兩側各1.55 m均通過無地面碰撞檢查。高低座另有明確標為照片導向的 edge **6／17** 連接門，42.56 m 有蓋步道真正由兩個來源牆面連接，不是停在附屬建築附近的花園小路。
+- **花園與附屬細節**：精確 Memorial Garden ring 內有草坪、鋪裝、綠籬、長椅、青銅紀念雕塑及12面石質神龕／低斜屋頂／牌匾。神龕中心及尺寸屬照片導向，沒有假稱獨立 OSM footprint。另有獨立單層附屬建築、通風百頁、服務門、有蓋柱廊、入口字牌及有限暖光；研究照片不打包成材質。
+- **道路、ground、街燈與碰撞**：三個建築 rings 的全港道路中心線及 `width/2+0.35 m` 掃描均為 **0**；整體場地保留18條道路記錄，Memorial Garden亦獨立檢查。共用 **5.3179828255 m** DTM採樣 datum 不是工程標高，所選道路維持原道路 ground。legacy generic-lot mode 以整體場地抑制通用建築，街燈生成鏈納入建築及神龕淨空；clearance 後剩餘衝突 **0**。
+- **驗證**：`tests/city-hall.test.cjs` **9／9** 通過，涵蓋五個來源、官方資料、道路、四個真實入口、DTM、街燈、立面／花園／步道、整合及 Node geometry。隔離 Node build 為 **66 meshes／24,888 vertices／61 colliders／2 landmarks／0 non-finite**；本環境沒有 Chromium，以上不是瀏覽器目測聲明。
+
 ## 程式入口
 
 - `hsbc-headquarters-architecture.js`：滙豐純地理位置、OBB、樓層比例及 collider 座標換算，可在 Node 測試。
@@ -1175,4 +1185,7 @@
 - `gateway-tower-three-world.js`：Prudential Tower／T3辦公與服務式住宅幕牆、石質podium、道路portals、日夜材質、碰撞及stats。
 - `gateway-tower-five-world.js`：Tower 5、Prudential雙塔四層互連及三層arch資料口径、浅色格框、道路portals、日夜材質、碰撞及stats。
 - `gateway-tower-six-world.js`：Tower 6獨立辦公塔、弧形幕牆、石質podium、格柵冠頂、日夜材質、碰撞及stats。
-- `simple-world.js`：整合施工清單內三十六個 authored landmarks、海運大廈／LCX／Gateway組件、太空館／文化中心／鐘樓公共文化組件、半島酒店、喜來登酒店、港青酒店、九龍香格里拉、添馬政府總部建築群、1881 Heritage、九龍站凱旋門及擎天半島；普通 `buildings` 仍為 0。
+- `civic-world-utils.js`：來源邊 chain frame、精確 ring 牆／屋顶、框架窗格及合併幾何工具。
+- `city-hall-architecture.js`：大會堂五個 OSM rings、真實入口、照片導向連接／神龕、道路、ground、generic suppression 及街燈淨空。
+- `city-hall-world.js`：大會堂高低座立面、附屬建築、Memorial Garden、12面神龕、有蓋高低座連接、入口、碰撞及 stats。
+- `simple-world.js`：整合施工清單內三十六個 authored landmarks、海運大廈／LCX／Gateway組件、太空館／文化中心／大會堂／鐘樓公共文化組件、半島酒店、喜來登酒店、港青酒店、九龍香格里拉、添馬政府總部建築群、1881 Heritage、九龍站凱旋門及擎天半島；普通 `buildings` 仍為 0。

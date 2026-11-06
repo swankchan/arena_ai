@@ -11,6 +11,7 @@ import {
   KOWLOON_SHANGRI_LA_SITE, kowloonShangriLaWorldToLocal, kowloonShangriLaLocalToWorld,
 } from '../../../js/cities/hongkong/kowloon-shangri-la-architecture.js';
 import { majorParkLampConflictAt } from '../../../js/cities/hongkong/major-parks-architecture.js';
+import { cityHallLampConflictAt } from '../../../js/cities/hongkong/city-hall-architecture.js';
 import { pointInFlatRing } from '../../../js/cities/hongkong/landmark-site.js';
 import {
   AIRPORT_BUILDING_SITES, AIRPORT_RUNWAYS, AIRPORT_TAXIWAYS, AIRPORT_GATES, airportWorldToLocal,
@@ -253,6 +254,23 @@ function clearMajorParkFeatures(sourceX, sourceZ, dx, dz, baseY) {
   return null;
 }
 
+function clearCityHallFeatures(sourceX, sourceZ, dx, dz, baseY) {
+  const finalX = sourceX + dx / 100, finalZ = sourceZ + dz / 100;
+  if (!cityHallLampConflictAt(finalX, finalZ)) return { dx, dz, baseY };
+  // Keep lamps on the civic footways, outside the exact High/Low/annex rings and the 12-sided shrine.
+  for (const radius of [1.5, 3, 5, 8, 12, 16, 20, 24]) {
+    for (let step = 0; step < 16; step++) {
+      const angle = step * Math.PI / 8;
+      const candidateDx = Math.round((finalX + Math.sin(angle) * radius - sourceX) * 100);
+      const candidateDz = Math.round((finalZ + Math.cos(angle) * radius - sourceZ) * 100);
+      const x = sourceX + candidateDx / 100, z = sourceZ + candidateDz / 100;
+      if (cityHallLampConflictAt(x, z) || conflictAt(x, z)) continue;
+      return { dx: candidateDx, dz: candidateDz, baseY: Math.round(baseHeight(x, z) * 100) };
+    }
+  }
+  return null;
+}
+
 function clearAuthoredLandmarkFootprints(sourceX, sourceZ, dx, dz, baseY) {
   const timesSquare = clearTimesSquareFootprint(sourceX, sourceZ, dx, dz, baseY);
   if (!timesSquare) return null;
@@ -260,7 +278,9 @@ function clearAuthoredLandmarkFootprints(sourceX, sourceZ, dx, dz, baseY) {
   if (!kowloonShangriLa) return null;
   const majorParks = clearMajorParkFeatures(sourceX, sourceZ, kowloonShangriLa.dx, kowloonShangriLa.dz, kowloonShangriLa.baseY);
   if (!majorParks) return null;
-  return clearAirportFeatures(sourceX, sourceZ, majorParks.dx, majorParks.dz, majorParks.baseY);
+  const airport = clearAirportFeatures(sourceX, sourceZ, majorParks.dx, majorParks.dz, majorParks.baseY);
+  if (!airport) return null;
+  return clearCityHallFeatures(sourceX, sourceZ, airport.dx, airport.dz, airport.baseY);
 }
 
 export async function buildHongKongStreetLightClearance({
@@ -287,7 +307,7 @@ export async function buildHongKongStreetLightClearance({
     if (!result.relocated && dx === 0 && dz === 0) continue;
     overrides.push([index, dx, dz, baseY]);
   }
-  let remainingCarriagewayConflicts = 0, remainingTramConflicts = 0, remainingMajorParkFeatureConflicts = 0, remainingAirportFeatureConflicts = 0;
+  let remainingCarriagewayConflicts = 0, remainingTramConflicts = 0, remainingMajorParkFeatureConflicts = 0, remainingAirportFeatureConflicts = 0, remainingCityHallFeatureConflicts = 0;
   const moved = new Map(overrides.map((row) => [row[0], row]));
   const hidden = new Set(suppressed);
   for (let index = 0; index < HK_STREET_LIGHTS.lamps.length; index++) {
@@ -298,6 +318,7 @@ export async function buildHongKongStreetLightClearance({
     if (tramConflictAt(finalX, finalZ)) remainingTramConflicts++;
     if (majorParkLampConflictAt(finalX, finalZ)) remainingMajorParkFeatureConflicts++;
     if (airportLampConflictAt(finalX, finalZ)) remainingAirportFeatureConflicts++;
+    if (cityHallLampConflictAt(finalX, finalZ)) remainingCityHallFeatureConflicts++;
   }
   const manifest = {
     version: 1,
@@ -307,13 +328,13 @@ export async function buildHongKongStreetLightClearance({
       heightTolerance: HEIGHT_TOLERANCE, maxRelocation: MAX_RELOCATION, radialDirections: 16,
       tramTrackClearance: TRAM_TRACK_CLEARANCE, tramPoleClearance: TRAM_POLE_CLEARANCE, tramWireClearance: TRAM_WIRE_CLEARANCE,
       tramNetworkSha256: HK_TRAM_NETWORK.source.alignmentSha256,
-      authoredLandmarkFootprints: ['Times Square OSM way 26469269', 'Kowloon Shangri-La OSM way 29403978', 'Hong Kong Park OSM way 42255430 authored facilities and paths', 'Kowloon Park OSM way 4977404 authored facilities and paths', 'Victoria Park OSM way 4182605 authored facilities and paths', 'HKIA source terminal/tower footprints, runway/taxiway pavement and aircraft stand envelopes'],
+      authoredLandmarkFootprints: ['Times Square OSM way 26469269', 'Kowloon Shangri-La OSM way 29403978', 'Hong Kong Park OSM way 42255430 authored facilities and paths', 'Kowloon Park OSM way 4977404 authored facilities and paths', 'Victoria Park OSM way 4182605 authored facilities and paths', 'HKIA source terminal/tower footprints, runway/taxiway pavement and aircraft stand envelopes', 'Hong Kong City Hall OSM ways 25608273, 101959153 and 101959243 plus the 12-sided Memorial Shrine'],
       kowloonShangriLaFacadeMargin: .55
     },
     counts: {
       relocated: overrides.length, suppressed: suppressed.length,
       rendered: HK_STREET_LIGHTS.lamps.length - suppressed.length,
-      tramAdjusted, remainingCarriagewayConflicts, remainingTramConflicts, remainingMajorParkFeatureConflicts, remainingAirportFeatureConflicts
+      tramAdjusted, remainingCarriagewayConflicts, remainingTramConflicts, remainingMajorParkFeatureConflicts, remainingAirportFeatureConflicts, remainingCityHallFeatureConflicts
     }
   };
   const javascript = `// Generated by tools/cities/hongkong/build-street-light-clearance.mjs.\n` +

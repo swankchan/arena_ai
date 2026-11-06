@@ -20,7 +20,8 @@
       "Hong Kong Park OSM way 42255430 authored facilities and paths",
       "Kowloon Park OSM way 4977404 authored facilities and paths",
       "Victoria Park OSM way 4182605 authored facilities and paths",
-      "HKIA source terminal/tower footprints, runway/taxiway pavement and aircraft stand envelopes"
+      "HKIA source terminal/tower footprints, runway/taxiway pavement and aircraft stand envelopes",
+      "Hong Kong City Hall OSM ways 25608273, 101959153 and 101959243 plus the 12-sided Memorial Shrine"
     ],
     "kowloonShangriLaFacadeMargin": 0.55
   },
@@ -32,6 +33,7 @@
     "remainingCarriagewayConflicts": 0,
     "remainingTramConflicts": 0,
     "remainingMajorParkFeatureConflicts": 0,
-    "remainingAirportFeatureConflicts": 0
+    "remainingAirportFeatureConflicts": 0,
+    "remainingCityHallFeatureConflicts": 0
   }
 }
