@@ -1080,7 +1080,17 @@
 - **入口及有蓋連接**：高座兩門使用真實 **nodes 11774406410／11774406411**，低座兩門使用 **11774418675／11774406423**，沒有加上硬編 facade offset。門、雨篷和地面碰撞開口使用同一來源頂點；四道門在頂點兩側各1.55 m均通過無地面碰撞檢查。高低座另有明確標為照片導向的 edge **6／17** 連接門，42.56 m 有蓋步道真正由兩個來源牆面連接，不是停在附屬建築附近的花園小路。
 - **花園與附屬細節**：精確 Memorial Garden ring 內有草坪、鋪裝、綠籬、長椅、青銅紀念雕塑及12面石質神龕／低斜屋頂／牌匾。神龕中心及尺寸屬照片導向，沒有假稱獨立 OSM footprint。另有獨立單層附屬建築、通風百頁、服務門、有蓋柱廊、入口字牌及有限暖光；研究照片不打包成材質。
 - **道路、ground、街燈與碰撞**：三個建築 rings 的全港道路中心線及 `width/2+0.35 m` 掃描均為 **0**；整體場地保留18條道路記錄，Memorial Garden亦獨立檢查。共用 **5.3179828255 m** DTM採樣 datum 不是工程標高，所選道路維持原道路 ground。legacy generic-lot mode 以整體場地抑制通用建築，街燈生成鏈納入建築及神龕淨空；clearance 後剩餘衝突 **0**。
-- **驗證**：`tests/city-hall.test.cjs` **9／9** 通過，涵蓋五個來源、官方資料、道路、四個真實入口、DTM、街燈、立面／花園／步道、整合及 Node geometry。隔離 Node build 為 **66 meshes／24,888 vertices／61 colliders／2 landmarks／0 non-finite**；本環境沒有 Chromium，以上不是瀏覽器目測聲明。
+- **驗證**：`tests/city-hall.test.cjs` **9／9** 通過，涵蓋五個來源、官方資料、道路、四個真實入口、DTM、街燈、立面／花園／步道、整合及 Node geometry。隔離 Node build 為 **66 meshes／24,888 vertices／62 colliders／2 landmarks／0 non-finite**；本環境沒有 Chromium，以上不是瀏覽器目測聲明。
+
+## 香港中央圖書館 Hong Kong Central Library `HK-CENTRAL-LIBRARY`：知識之門、雙樓梯及地球噴泉（2026-11-06）
+
+- **來源與分區**：銅鑼灣高士威道66號，作額外公共文化組件，不改變100幢施工清單統計。建築採 **OSM way 856995407 v5**，外圍場地採 **856995408 v5**；兩個 rings 的原始經緯度、節點、tags、版本及 ODbL 署名分開保存。建築10個獨立頂點／**5,724.673747 m²**，外圍場地9個／**8,140.451108 m²**；外圍場地不是第二個實心建築盒。
+- **官方資料與高度口径**：[香港公共圖書館簡介](https://www.hkpl.gov.hk/en/about-us/HKCL/intro.html)確認 **2001** 年啟用、**12-storey**、**9,400 m²** 用地及 **33,800 m²** 樓面；OSM 建築 tag 是 **11 levels**，兩種樓層口径不互相覆寫。模型 **58.8 m**、8.4 m podium、4.35 m floor height 是照片導向視覺控制，不是官方實測高度。
+- **照片研究與立面**：[Building Journal 建築專訪](http://www.building.hk/feature/07_01centrally.htm)及 HKPL 外觀資料支持黃色 GRC、淺綠玻璃、三角 pediment、Gate to Knowledge 左右各三條 Ionic columns、七樓實牆、後方 Window of Hope、深色側翼屋顶及雙語字牌。模型使用實際幾何窗格、六柱柱身／柱頭渦卷、三角山花、七樓 GRC 帶及後方拱窗，不以照片貼圖代替建築。
+- **入口與周邊**：主立面是來源 **edges 7＋8**，長約 **70.315716 m**；主門位於兩邊共享頂點，依 HKPL [地下平面](https://www.hkpl.gov.hk/en/about-us/HKCL/floor-plan/Ground.html)及照片定向，**沒有假稱 OSM entrance=yes node**。兩道入口樓梯、無障礙中央到達、30 × 9 m clearance apron、5.2 m 半徑地球噴泉、旋轉地球、噴水柱、種植槽及旗桿均為照片導向；這些設施不是虛構的 OSM footprint。
+- **道路、ground、街燈與碰撞**：建築、雙樓梯 arrival 及噴泉的全港道路中心線和 `width/2+0.35 m` 掃描均為 **0**；外圍場地保留道路記錄 **45333** 並讓所選道路優先。共用 **7.2220955363 m** raw-DTM 採樣 datum，不是工程標高；legacy generic-lot mode 抑制外圍場地通用建築，街燈生成鏈納入建築、arrival 及噴泉淨空，clearance 後剩餘衝突 **0**。入口兩側各有真實碰撞開口及上層 lintel，噴泉使用實際 base 的獨立碰撞。
+- **驗證**：`tests/central-library.test.cjs` **8／8** 通過，涵蓋完整來源、官方／視覺口径、道路、DTM、淨空、立面／入口／噴泉、整合及 Node geometry。隔離 Node build 為 **39 meshes／48,800 vertices／14 colliders／1 landmark／0 non-finite**；以 `groundOffset:5` 測試 collider 範圍 **5–63.8 m**。全港 canvas-stub integration smoke 為 **8,245 meshes／22,295,476 vertices／39,405 colliders／80 landmarks／0 non-finite**，兩幢 ground 分別回傳大會堂 **5.3179828255 m**、圖書館 **7.2220955363 m**。完整 suite **786／786**，self-contained runtime **33,308,385 bytes／248 modules**。本環境沒有 Chromium，以上不是瀏覽器目測聲明。
+- **資料**：建築 https://www.openstreetmap.org/way/856995407 ；場地 https://www.openstreetmap.org/way/856995408 ；官方簡介及地下平面見上。研究照片只作觀察，沒有打包或作貼圖。
 
 ## 程式入口
 
@@ -1188,4 +1198,6 @@
 - `civic-world-utils.js`：來源邊 chain frame、精確 ring 牆／屋顶、框架窗格及合併幾何工具。
 - `city-hall-architecture.js`：大會堂五個 OSM rings、真實入口、照片導向連接／神龕、道路、ground、generic suppression 及街燈淨空。
 - `city-hall-world.js`：大會堂高低座立面、附屬建築、Memorial Garden、12面神龕、有蓋高低座連接、入口、碰撞及 stats。
-- `simple-world.js`：整合施工清單內三十六個 authored landmarks、海運大廈／LCX／Gateway組件、太空館／文化中心／大會堂／鐘樓公共文化組件、半島酒店、喜來登酒店、港青酒店、九龍香格里拉、添馬政府總部建築群、1881 Heritage、九龍站凱旋門及擎天半島；普通 `buildings` 仍為 0。
+- `central-library-architecture.js`：中央圖書館建築／外圍場地 OSM rings、主立面、照片導向入口／雙樓梯／噴泉、道路、ground、generic suppression 及街燈淨空。
+- `central-library-world.js`：中央圖書館黃色 GRC、藍綠玻璃、Gate to Knowledge 六柱、三角山花、七樓實牆、Window of Hope、雙樓梯、地球噴泉、碰撞及 stats。
+- `simple-world.js`：整合施工清單內三十六個 authored landmarks、海運大廈／LCX／Gateway組件、太空館／文化中心／大會堂／中央圖書館／鐘樓公共文化組件、半島酒店、喜來登酒店、港青酒店、九龍香格里拉、添馬政府總部建築群、1881 Heritage、九龍站凱旋門及擎天半島；普通 `buildings` 仍為 0。

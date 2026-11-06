@@ -108,6 +108,7 @@ export const city = {
       twoExchange: world.twoExchange,
       courtOfFinalAppeal: world.courtOfFinalAppeal,
       cityHall: world.cityHall,
+      centralLibrary: world.centralLibrary,
       hkcec: world.hkcec,
       timesSquare: world.timesSquare,
       peninsulaHotel: world.peninsulaHotel,

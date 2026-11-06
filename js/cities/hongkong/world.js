@@ -18,6 +18,7 @@ import { isDetailedCore, isTerritoryLand, isTerritoryRoad } from './full-meta.js
 import { createHongKongTrafficAids } from './traffic-aids.js';
 import { buildSimpleHongKongWorld } from './simple-world.js';
 import { cityHallGenericLotConflict } from './city-hall-architecture.js';
+import { centralLibraryGenericLotConflict } from './central-library-architecture.js';
 import {
   createHongKongHarbourWaterMaterial,
   createHongKongHarbourWaterGeometry
@@ -450,6 +451,7 @@ export function buildDetailedHongKongWorld(scene, { setStatus = () => {} } = {})
     const w = Math.max(4, landmark.w || 0, Math.sqrt(landmark.area || 0));
     const d = Math.max(4, landmark.d || 0, Math.sqrt(landmark.area || 0));
     if (cityHallGenericLotConflict({ x: landmark.x, z: landmark.z, w, d, ry: 0 })) continue;
+    if (centralLibraryGenericLotConflict({ x: landmark.x, z: landmark.z, w, d, ry: 0 })) continue;
     landmarks.push({
       name, x: landmark.x, z: landmark.z, w, d, h: landmark.h,
       bounds: {
@@ -586,6 +588,7 @@ export function buildDetailedHongKongWorld(scene, { setStatus = () => {} } = {})
     if (area < 30) return;
     const x = lot.x, z = lot.z;
     if (cityHallGenericLotConflict(lot)) { skippedLots++; return; }
+    if (centralLibraryGenericLotConflict(lot)) { skippedLots++; return; }
     if (landmarkAt(x, z)) { skippedLots++; return; }
     if (blockPark > 0.6) { skippedLots++; return; }
     lotCount++;

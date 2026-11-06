@@ -2,7 +2,7 @@
 
 這份文件是香港場景**實際建築物進度總表及 100 幢主要大廈施工清單**，記錄建築物是否已加入、是否精修，以及是否作為 Landmark 整合。`tools/data/hongkong/landmarks.json` 及下表的待製作項目只是來源／候選資料；資料出現在該 JSON 或本清單 **不代表已經加入場景**。
 
-最後整理：**2026-11-04**。100幢施工清單中，目前已實際加入 **36 幢**；其餘 **64 幢**仍是待製作項目，沒有基本體量或精修完成的意思。海運大廈／LCX另作海港城綜合組件整合，不取代或重用清單ID，也不計入上述36／64。
+最後整理：**2026-11-06**。100幢施工清單中，目前已實際加入 **36 幢**；其餘 **64 幢**仍是待製作項目，沒有基本體量或精修完成的意思。海運大廈／LCX、大會堂及中央圖書館另作公共／綜合組件整合，不取代或重用清單ID，也不計入上述36／64。
 
 ## 標記定義
 
@@ -223,7 +223,8 @@
 | 2026-11-06 | `HK-TST-1881` | compound way **184553178**、商場 way **184553177**、主樓 relation **2460795** 及照片／地段導向 Round House | 主樓與商場來源環均無 retained road-centre 交點；主樓／商場／訊號塔 clearance 後街燈衝突 **0**，compound 外圍街燈不因area邊界被刪除 | 不搬路、不降低建築；南面五段零售 portal 開放，36級主樓梯及72級訊號塔弧形梯有同步步行ground | `tests/heritage-1881.test.cjs` 10項通過；Node **48 meshes／393,512 vertices／216,966 triangles／149 colliders／0 non-finite**，不是畫面目測驗收 |
 | 2026-11-06 | `HK-KLN-ARCH` | 地段 way **25608819**；Sky／Sun／Moon／Star ways **1047822851／294457120／294457121／1047822850** | estate records **41226／42618／47295／50428／50726／50727／50730／50731／51124–51127**；record index不當OSM ID；estate及四塔街燈衝突 **0** | 基座 **41個道路 bays** 開放，塔身從20 m開始；2,908個路肩樣本最低場景淨空 **6.755651367304475 m** 大於4.7 m；原道路profile及ground保持優先 | `tests/the-arch.test.cjs` 10項通過；Node **73 meshes／1,806,368 vertices／873,612 triangles／350 colliders／0 non-finite**；拱門及圓孔無封閉collider，不是畫面目測驗收 |
 | 2026-11-06 | `HK-KLN-SORRENTO` | 裙樓 way **25608839**；T1／T2／T3／T5／T6 ways **200726103／200720178／200720170／200720177／200720176** | 裙樓保留28條道路records；record index不當OSM ID；裙樓及五塔 clearance 後街燈衝突 **0** | 基座 **76個道路 bays＋7個入口 bays** 開放，五塔從20 m開始；4,661個路肩樣本最低場景淨空 **7.315100549803548 m** 大於4.7 m，2,376個車輛高度樣本無佔用collider；原道路profile及ground保持優先 | `tests/sorrento.test.cjs` 10項通過；Node **71 meshes／1,626,592 vertices／748,097 triangles／513 colliders／0 non-finite**；不是畫面目測驗收 |
-| 2026-11-06 | `HK-CENTRAL-CH` | 香港大會堂高座 way **25608273 v16**、低座 **101959153 v8**、整體場地 **101959040 v13**、Memorial Garden **46870356 v10**、附屬建築 **101959243 v4** | 三個建築 rings 的道路中心線及 `width/2+0.35 m` 走廊衝突均為 **0**；整體場地保留 **18** 條道路記錄作道路優先檢查，沒有把場地當成單一建築。clearance 後街燈在建築及12面神龕衝突為 **0** | 不搬歪建築、不刪路或改標線；場地採可重算 DTM datum，所選車路保持道路 ground。四個來源入口門及高低座有蓋連接均有實際碰撞開口，沒有用硬編門位移或整幅石牆封住 | `tests/city-hall.test.cjs` **9／9**；Node geometry **66 meshes／24,888 vertices／61 colliders／0 non-finite**，不是瀏覽器目測驗收 |
+| 2026-11-06 | `HK-CENTRAL-CH` | 香港大會堂高座 way **25608273 v16**、低座 **101959153 v8**、整體場地 **101959040 v13**、Memorial Garden **46870356 v10**、附屬建築 **101959243 v4** | 三個建築 rings 的道路中心線及 `width/2+0.35 m` 走廊衝突均為 **0**；整體場地保留 **18** 條道路記錄作道路優先檢查，沒有把場地當成單一建築。clearance 後街燈在建築及12面神龕衝突為 **0** | 不搬歪建築、不刪路或改標線；場地採可重算 DTM datum，所選車路保持道路 ground。四個來源入口門及高低座有蓋連接均有實際碰撞開口，沒有用硬編門位移或整幅石牆封住 | `tests/city-hall.test.cjs` **9／9**；Node geometry **66 meshes／24,888 vertices／62 colliders／0 non-finite**，不是瀏覽器目測驗收 |
+| 2026-11-06 | `HK-CENTRAL-LIBRARY` | 香港中央圖書館建築 way **856995407 v5**、外圍場地 **856995408 v5**、照片／地下平面導向入口雙樓梯及地球噴泉 | 建築、30 × 9 m arrival 及5.2 m半徑噴泉的道路中心線／`width/2+0.35 m` 掃描均為 **0**；外圍場地保留道路記錄 **45333**，clearance 後街燈衝突 **0** | 不搬歪建築、不刪路或改標線；外圍場地只作 ground／道路審計，採可重算 **7.2220955363 m** DTM datum，所選道路保持道路 ground。官方 **2001／12 storeys／9,400 m²／33,800 m²** 與 OSM **11 levels**、照片導向 **58.8 m** 體量分列 | `tests/central-library.test.cjs` **8／8**；Node geometry **39 meshes／48,800 vertices／14 colliders／0 non-finite**，不是瀏覽器目測驗收 |
 | — | — | — | 現有 HSBC／SCB 暫未補回逐項歷史衝突台帳 | 由下一次相關改動開始逐項記錄 | — |
 
 ## 新增及更新規則
