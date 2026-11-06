@@ -475,6 +475,11 @@ test('the hand-built Standard Chartered model includes the photographed identifi
   assert.match(source, /SCBOctagonalWindowLouvres/);
   assert.match(source, /SCBGoldEntranceSurrounds/);
   assert.match(source, /SCBTallEntranceGlazing/);
+  assert.match(source, /SCBOctagonalEntrancePulls/);
+  assert.match(source, /SCBGraniteFloorNosings/);
+  assert.match(source, /SCBOpenSteppedTerraceParapets/);
+  assert.match(source, /SCBRecessedRoseGlassChannelReveals/);
+  assert.match(source, /champagne plaque with dark blue lettering/);
   assert.match(source, /SCBDesVoeuxRoadEntranceSteps/);
   assert.match(source, /SCBEntranceRaisedLandings/);
   assert.doesNotMatch(source, /SCBEntranceTriangularConnector/);

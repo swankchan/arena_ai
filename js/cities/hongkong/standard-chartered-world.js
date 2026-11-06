@@ -182,9 +182,15 @@ function createScbEntranceSignTexture() {
   const canvas = document.createElement('canvas');
   canvas.width = 1024; canvas.height = 256;
   const ctx = canvas.getContext('2d');
-  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  // The current entrance has a champagne plaque with dark blue lettering and the original blue/green device;
+  // it is not a floating white label on the glass.
+  ctx.fillStyle = '#c9c1aa';
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+  ctx.strokeStyle = '#918363';
+  ctx.lineWidth = 10;
+  ctx.strokeRect(5, 5, canvas.width - 10, canvas.height - 10);
   drawStandardCharteredDevice(ctx, 22, 22, 130, 212);
-  ctx.fillStyle = '#f0eee5';
+  ctx.fillStyle = '#15568b';
   ctx.textBaseline = 'middle';
   ctx.font = '600 65px Arial, Helvetica, sans-serif';
   ctx.fillText('Standard Chartered', 176, 100);
@@ -243,12 +249,39 @@ export function buildStandardCharteredBankBuilding(root, { groundOffset = 0 } = 
   const ribbon = createScbRibbonFacadeMaterial();
   const frontGlass = createScbFrontGlassMaterial();
   const unitBox = new THREE.BoxGeometry(1, 1, 1);
+  const cutStone = new THREE.MeshStandardMaterial({ color: 0xb7a69b, roughness: 0.64, metalness: 0.07 });
+  const shadowReveal = new THREE.MeshStandardMaterial({ color: 0x665f5a, roughness: 0.4, metalness: 0.34 });
+  const floorNosings = [], frontReveals = [], terraceParapets = [];
 
   const tierBoxes = SCB_TIERS.map((tier) => ({
     x: 0, y: (SCB_BASE_Y + tier.roofY) * 0.5, z: tier.z,
     w: SCB_WIDTH, h: tier.roofY - SCB_BASE_Y, d: tier.depth, tone: 0.56
   }));
   addFacadeBoxes(group, ribbon, tierBoxes, 'SCBSteppedTowerTiers');
+
+  // Rebuild the side elevations as genuinely layered stone / ribbon-window construction. Thin projecting floor
+  // nosings catch daylight independently of the procedural window shader, especially on the long oblique views.
+  for (const tier of SCB_TIERS) {
+    for (let y = SCB_BASE_Y + SCB_FLOOR_HEIGHT; y < tier.roofY - 0.3; y += SCB_FLOOR_HEIGHT) {
+      for (const side of [-1, 1]) {
+        floorNosings.push({
+          x: side * (SCB_WIDTH * 0.5 + 0.07), y, z: tier.z,
+          sx: 0.18, sy: 0.13, sz: tier.depth + 0.12
+        });
+      }
+    }
+    // Open terrace parapets follow every stepped slab; they are not solid boxes filling the roof terraces.
+    for (const side of [-1, 1]) {
+      terraceParapets.push({
+        x: side * (SCB_WIDTH * 0.5 - 0.11), y: tier.roofY + 0.88, z: tier.z,
+        sx: 0.22, sy: 0.88, sz: tier.depth
+      });
+      terraceParapets.push({
+        x: 0, y: tier.roofY + 0.88, z: tier.z + side * (tier.depth * 0.5 - 0.11),
+        sx: SCB_WIDTH, sy: 0.88, sz: 0.22
+      });
+    }
+  }
 
   // North elevation: three stone blades, two recessed rose-glass channels, and solid podium infills between the blades.
   const frontRoofY = SCB_TIERS[0].roofY;
@@ -267,6 +300,15 @@ export function buildStandardCharteredBankBuilding(root, { groundOffset = 0 } = 
     w: SCB_FRONT_GLASS_WIDTH, h: frontRoofY - SCB_PODIUM_HEIGHT, d: 0.15, tone: 0.72
   }));
   addFacadeBoxes(group, frontGlass, glassChannels, 'SCBFrontRoseGlassChannels');
+  for (const x of SCB_FRONT_GLASS_X) {
+    for (const side of [-1, 1]) {
+      frontReveals.push({
+        x: x + side * (SCB_FRONT_GLASS_WIDTH * 0.5 + 0.055),
+        y: (SCB_PODIUM_HEIGHT + frontRoofY) * 0.5, z: SCB_FRONT_Z - 0.25,
+        sx: 0.11, sy: frontRoofY - SCB_PODIUM_HEIGHT, sz: 0.36
+      });
+    }
+  }
 
   // Every exposed step face repeats the same stone / rose-glass / stone sandwich language. Front-facing bands climb
   // towards slab 4; rear-facing bands descend away from it, making seven actual volumes rather than a facade decal.
@@ -285,6 +327,9 @@ export function buildStandardCharteredBankBuilding(root, { groundOffset = 0 } = 
         x, y: (lowerY + tier.roofY) * 0.5, z: boundaryZ + side * 0.075,
         w: SCB_FRONT_GLASS_WIDTH, h: tier.roofY - lowerY, d: 0.15, tone: 0.72
       });
+    }
+    for (let y = lowerY + SCB_FLOOR_HEIGHT; y < tier.roofY - 0.2; y += SCB_FLOOR_HEIGHT) {
+      floorNosings.push({ x: 0, y, z: boundaryZ + side * 0.2, sx: SCB_WIDTH, sy: 0.11, sz: 0.14 });
     }
   };
   for (let i = 1; i <= 3; i++) addSandwichStepFace(SCB_TIERS[i], SCB_TIERS[i - 1], -1);
@@ -324,7 +369,7 @@ export function buildStandardCharteredBankBuilding(root, { groundOffset = 0 } = 
   group.add(westCrownLogo);
 
   // Three octagonal, horizontally louvred windows directly above the tall gold-framed entrance glazing.
-  const octagonSites = SCB_FRONT_PIER_X.map((x) => ({ x, y: SCB_OCTAGON_Y, z: SCB_FRONT_Z - 0.58 }));
+  const octagonSites = SCB_FRONT_PIER_X.map((x) => ({ x, y: SCB_OCTAGON_Y, z: SCB_FRONT_Z - 0.58, sx: 1.08, sy: 0.78 }));
   const darkGlass = new THREE.MeshStandardNodeMaterial({
     color: 0x263033, roughness: 0.28, metalness: 0.38, side: THREE.DoubleSide
   });
@@ -333,17 +378,17 @@ export function buildStandardCharteredBankBuilding(root, { groundOffset = 0 } = 
   const octagonMetal = new THREE.MeshStandardMaterial({ color: 0x807b72, roughness: 0.4, metalness: 0.46 });
   addInstances(
     group, createOctagonFrameGeometry(), octagonMetal,
-    SCB_FRONT_PIER_X.map((x) => ({ x, y: SCB_OCTAGON_Y, z: SCB_FRONT_Z - 0.72 })),
+    SCB_FRONT_PIER_X.map((x) => ({ x, y: SCB_OCTAGON_Y, z: SCB_FRONT_Z - 0.72, sx: 1.08, sy: 0.78 })),
     'SCBOctagonalWindowFrames'
   );
   const louvres = [];
   const louvreWidths = [2.08, 2.55, 2.78, 2.88, 2.78, 2.55, 2.08];
   for (const x of SCB_FRONT_PIER_X) {
     for (let i = 0; i < 7; i++) {
-      louvres.push({ x, y: SCB_OCTAGON_Y + (i - 3) * 0.35, z: SCB_FRONT_Z - 0.75, sx: louvreWidths[i], sy: 0.065, sz: 0.075 });
+      louvres.push({ x, y: SCB_OCTAGON_Y + (i - 3) * 0.275, z: SCB_FRONT_Z - 0.75, sx: louvreWidths[i] * 1.08, sy: 0.055, sz: 0.075 });
     }
     for (const dx of [-0.48, 0.48]) {
-      louvres.push({ x: x + dx, y: SCB_OCTAGON_Y, z: SCB_FRONT_Z - 0.755, sx: 0.065, sy: 2.4, sz: 0.07 });
+      louvres.push({ x: x + dx, y: SCB_OCTAGON_Y, z: SCB_FRONT_Z - 0.755, sx: 0.055, sy: 1.88, sz: 0.07 });
     }
   }
   addInstances(group, unitBox, octagonMetal, louvres, 'SCBOctagonalWindowLouvres');
@@ -367,6 +412,16 @@ export function buildStandardCharteredBankBuilding(root, { groundOffset = 0 } = 
     }
   }
   addInstances(group, unitBox, gold, entranceMullions, 'SCBGoldEntranceMullions');
+  const entrancePulls = [];
+  for (const x of SCB_FRONT_PIER_X) {
+    for (const dx of [-0.3, 0.3]) {
+      entrancePulls.push({ x: x + dx, y: SCB_ENTRANCE_BASE_Y + 1.35, z: SCB_FRONT_Z - 0.57, sx: 0.12, sy: 0.12 });
+    }
+  }
+  addInstances(group, createOctagonFrameGeometry(), gold, entrancePulls, 'SCBOctagonalEntrancePulls');
+  addInstances(group, unitBox, cutStone, floorNosings, 'SCBGraniteFloorNosings');
+  addInstances(group, unitBox, cutStone, terraceParapets, 'SCBOpenSteppedTerraceParapets');
+  addInstances(group, unitBox, shadowReveal, frontReveals, 'SCBRecessedRoseGlassChannelReveals');
 
   const entranceSign = new THREE.Mesh(
     new THREE.PlaneGeometry(3.3, 0.825),
@@ -515,7 +570,7 @@ export function buildStandardCharteredBankBuilding(root, { groundOffset = 0 } = 
   }
 
   const colliders = SCB_TIERS.map((tier) => scbLocalCollider({
-    x: 0, z: tier.z, w: SCB_WIDTH, d: tier.depth, minY: SCB_BASE_Y, maxY: tier.roofY + 0.45
+    x: 0, z: tier.z, w: SCB_WIDTH, d: tier.depth, minY: SCB_BASE_Y, maxY: tier.roofY + 1.35
   }));
   colliders.push(scbLocalCollider({
     x: SCB_SIGN_FIN.x, z: SCB_SIGN_FIN.z, w: SCB_SIGN_FIN.w, d: SCB_SIGN_FIN.d,
@@ -551,7 +606,10 @@ export function buildStandardCharteredBankBuilding(root, { groundOffset = 0 } = 
     scbSandwichStepFaces: sandwichStepGlass.length / SCB_FRONT_GLASS_X.length,
     scbFrontStonePiers: SCB_FRONT_PIER_X.length,
     scbFrontGlassChannels: SCB_FRONT_GLASS_X.length,
+    scbFacadeFloorNosings: floorNosings.length,
+    scbOpenTerraceParapets: terraceParapets.length,
     scbOctagonalWindows: SCB_FRONT_PIER_X.length,
+    scbOctagonalEntrancePulls: entrancePulls.length,
     scbGoldEntrances: SCB_FRONT_PIER_X.length,
     scbEntranceSteps: SCB_STAIR_COUNT,
     scbEntranceStairRun: SCB_STAIR_RUN,
