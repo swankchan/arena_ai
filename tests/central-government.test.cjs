@@ -179,3 +179,47 @@ test('Node geometry is finite and the source void has no occupied collider below
   assert.deepEqual(occupiedAtDoorCentre, []);
   assert.ok(world.colliders.some((c) => c.minY >= 5 + cgo.CGO_OPEN_DOOR_SOFFIT));
 });
+
+test('the "Door Always Open" is a real carved breezeway through the West Wing, not a painted panel', () => {
+  const door = cgo.CGO_DOOR_OPENING;
+  // Both faces it passes through are exact source geometry: the outer relation ring and the mapped inner void.
+  assert.equal(door.outerEdge, 11); assert.equal(door.innerEdge, 1);
+  assert.equal(cgo.CGO_WEST_SITE.localRing.length / 2 - 1, 16);
+  assert.equal(cgo.CGO_WEST_INNER_LOCAL_RING.length / 2 - 1, 4);
+  assert.equal(door.y0, cgo.CGO_LOW_BLOCK_HEIGHT); assert.equal(door.y1, cgo.CGO_OPEN_DOOR_SOFFIT);
+  assert.ok(door.y1 - door.y0 > 60, 'the opening must be full height, not one storey');
+  // Width is measured on the real 42.9 m north facade rather than asserted as a round number.
+  const ring = cgo.CGO_WEST_SITE.localRing, i = door.outerEdge * 2;
+  const facade = Math.hypot(ring[i + 2] - ring[i], ring[i + 3] - ring[i + 1]);
+  assert.ok(Math.abs(facade - 42.9) < 0.2); assert.ok(Math.abs(door.widthMetres - (door.t1Outer - door.t0Outer) * facade) < 0.01);
+  assert.ok(door.widthMetres > 15 && door.widthMetres < 26);
+
+  // The passage is open ground: no collider and no geometry may fill the slot between the two faces.
+  const site = cgo.CGO_WEST_SITE;
+  const midpoint = (edgeRing, edge, t) => {
+    const k = edge * 2, ax = edgeRing[k], az = edgeRing[k + 1], bx = edgeRing[k + 2], bz = edgeRing[k + 3];
+    const cs = Math.cos(site.ry), sn = Math.sin(site.ry), lx = ax + (bx - ax) * t, lz = az + (bz - az) * t;
+    return { x: site.x + cs * lx + sn * lz, z: site.z - sn * lx + cs * lz };
+  };
+  const outer = midpoint(ring, door.outerEdge, (door.t0Outer + door.t1Outer) / 2);
+  const inner = midpoint(cgo.CGO_WEST_INNER_LOCAL_RING, door.innerEdge, (door.t0Inner + door.t1Inner) / 2);
+  const samples = [];
+  for (let step = 1; step < 8; step++) {
+    const t = step / 8;
+    samples.push({ x: outer.x + (inner.x - outer.x) * t, z: outer.z + (inner.z - outer.z) * t });
+  }
+  const world = fs.readFileSync(path.join(root, 'js/cities/hongkong/central-government-world.js'), 'utf8');
+  assert.match(world, /doorSkipBay\(CGO_DOOR_OPENING\.outerEdge/);
+  assert.match(world, /doorSkipBay\(CGO_DOOR_OPENING\.innerEdge/);
+  assert.match(world, /doorTop: CGO_DOOR_OPENING\.y1/);
+  assert.match(world, /doorAwareRingColliders/);
+  assert.match(world, /Open Door — pale jamb piers on both facades/);
+  assert.match(world, /Open Door — walkable stone passage floor/);
+  // Every sample of the breezeway is inside the West Wing footprint, and the inner mouth reaches the mapped void so
+  // the corridor is a real through-route rather than a recess.
+  assert.ok(samples.every((p) => inside(cgo.CGO_WEST_SITE.ring, p.x, p.z)));
+  assert.ok(inside(cgo.CGO_OPEN_DOOR_SITE.ring, inner.x, inner.z));
+  assert.ok(!inside(cgo.CGO_OPEN_DOOR_SITE.ring, outer.x, outer.z));
+  const depth = Math.hypot(inner.x - outer.x, inner.z - outer.z);
+  assert.ok(Math.abs(depth - door.passageDepthMetres) < 0.1);
+});

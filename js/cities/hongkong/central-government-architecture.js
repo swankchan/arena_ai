@@ -128,6 +128,17 @@ export const CGO_OPEN_DOOR_SITE = Object.freeze({
   evidence: 'The inner ring of OSM relation 8366346; this is a void, not another building footprint.',
 });
 
+// The recognisable "Door Always Open": a full-height breezeway from the harbour frontage into the mapped inner
+// void of the West Wing. Both faces it passes through are exact source geometry - the outer relation ring edge 11
+// (42.9 m north facade) and the inner-ring edge 1 (47.0 m courtyard wall) - so the 24.4 m deep passage sits where
+// OSM already places the void. The three-storey link above 88 m remains the door head. Rocco Design's "Door Always
+// Open" concept and the published breezeway description direct the opening; no OSM portal footprint is claimed.
+export const CGO_DOOR_OPENING = Object.freeze({
+  outerEdge: 11, innerEdge: 1, t0Outer: 0.26, t1Outer: 0.74, t0Inner: 0.2, t1Inner: 0.8,
+  y0: CGO_LOW_BLOCK_HEIGHT, y1: CGO_OPEN_DOOR_SOFFIT,
+  widthMetres: 20.6, passageDepthMetres: 24.4, clearanceMetres: 4.7,
+});
+
 function southernLongEdge(site) {
   let best = -Infinity, result = 0;
   for (let edge = 0; edge < site.localRing.length / 2 - 1; edge++) {

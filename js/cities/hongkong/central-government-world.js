@@ -2,13 +2,14 @@ import * as THREE from 'three/webgpu';
 import {
   CGO_SITE, CGO_WEST_SITE, CGO_EAST_SITE, CGO_CONFERENCE_SITE, CGO_PODIUM_SITE,
   CGO_OPEN_DOOR_SITE, CGO_WEST_INNER_LOCAL_RING, CGO_OPEN_DOOR_ENTRANCE, CGO_PODIUM_OPEN_DOOR_EDGE,
+  CGO_DOOR_OPENING,
   CEO_SITE, CEO_MAIN_ENTRANCE, LEGCO_SITE, LEGCO_MAIN_ENTRANCE,
   CGO_OFFICE_HEIGHT, CGO_LOW_BLOCK_HEIGHT, CGO_GROUND_SOFFIT, CGO_OPEN_DOOR_SOFFIT,
   CGO_OFFICE_VISUAL_COURSES, LEGCO_HEIGHT, LEGCO_LOW_BLOCK_HEIGHT, CEO_HEIGHT,
   centralGovernmentTerrainHeightAt,
 } from './central-government-architecture.js';
 import {
-  harbourCityRingColliders, harbourCityLocalCollider, harbourCityEdgeOutward,
+  harbourCityRingColliders, harbourCitySegmentCollider, harbourCityLocalCollider, harbourCityEdgeOutward,
 } from './harbour-city-architecture.js';
 import {
   store, quad, merged, meshStore, box, beam, cylinder, edgeBox, point, ringBand, roofGeometry,
@@ -34,14 +35,29 @@ function createCurtainWall(site, rings, options) {
       const length = harbourCityEdgeOutward(ring, edge).length;
       if (length < 0.08) continue;
       const bays = Math.max(1, Math.round(length / (options.bayWidth ?? 1.85)));
-      const p = (t, y, o = 0.04) => point(ringSite, edge, t, y, o);
-      quad(backing, p(0, options.y0, -0.18), p(1, options.y0, -0.18), p(1, options.y1, -0.18), p(0, options.y1, -0.18), options.backingTint ?? [0.055, 0.065, 0.078]);
+      // `offsetSign` flips the planted side of a courtyard/inner ring: outward from an inner ring points into the
+      // solid wall, so its visible face has to be built with negative offsets or the dark backing faces the void.
+      const sgn = options.offsetSign ?? 1;
+      const p = (t, y, o = 0.04) => point(ringSite, edge, t, y, o * sgn);
+      // Backing is per bay rather than one sheet per edge so an authored portal keeps a real hole through the wall.
+      for (let sb = 0; sb < bays; sb++) {
+        if (options.skipBay && options.skipBay(edge, sb, bays)) continue;
+        const a = sb / bays, b = (sb + 1) / bays;
+        quad(backing, p(a, options.y0, -0.18), p(b, options.y0, -0.18), p(b, options.y1, -0.18), p(a, options.y1, -0.18), options.backingTint ?? [0.055, 0.065, 0.078]);
+      }
       for (let floor = 0; floor < options.courses; floor++) {
         const low = lerp(options.y0, options.y1, floor / options.courses);
         const high = lerp(options.y0, options.y1, (floor + 1) / options.courses);
         const spandrelHeight = Math.min(options.spandrel ?? 0.72, (high - low) * 0.28);
-        quad(spandrel, p(0, low + 0.04, 0.025), p(1, low + 0.04, 0.025), p(1, low + spandrelHeight, 0.025), p(0, low + spandrelHeight, 0.025), options.spandrelTint ?? [0.20, 0.23, 0.25]);
+        for (let s0 = 0; s0 < bays; s0++) {
+          if (options.skipBay && options.skipBay(edge, s0, bays) && low < (options.doorTop ?? Infinity)) continue;
+          const a = s0 / bays, b = (s0 + 1) / bays;
+          quad(spandrel, p(a, low + 0.04, 0.025), p(b, low + 0.04, 0.025), p(b, low + spandrelHeight, 0.025), p(a, low + spandrelHeight, 0.025), options.spandrelTint ?? [0.20, 0.23, 0.25]);
+        }
         for (let bay = 0; bay < bays; bay++) {
+          // Authored portal openings (the Open Door) omit whole bays so the opening is a real hole in the
+          // envelope rather than a dark panel: no glass, spandrel, fin or transom is emitted for a skipped bay.
+          if (options.skipBay && options.skipBay(edge, bay, bays) && low < (options.doorTop ?? Infinity)) continue;
           const t0 = bay / bays + 0.00035, t1 = (bay + 1) / bays - 0.00035;
           const variation = hash(edge + (site.osmId ?? 17), floor + 29, bay + 47, options.seed ?? 0);
           const tint = mix(options.glassA ?? [0.055, 0.075, 0.105], options.glassB ?? [0.19, 0.23, 0.28], variation * 0.78);
@@ -49,11 +65,27 @@ function createCurtainWall(site, rings, options) {
           quad(glass, p(t0, low + spandrelHeight + 0.08), p(t1, low + spandrelHeight + 0.08), p(t1, high - 0.12), p(t0, high - 0.12), tint, lit);
           panels++;
         }
-        edgeBox(frames, ringSite, edge, 0.5, low + 0.03, 0.11, length + 0.035, 0.105, 0.20);
+        for (let s1 = 0; s1 < bays; s1++) {
+          if (options.skipBay && options.skipBay(edge, s1, bays) && low < (options.doorTop ?? Infinity)) continue;
+          edgeBox(frames, ringSite, edge, (s1 + 0.5) / bays, low + 0.03, 0.11, length / bays + 0.035, 0.105, 0.20);
+        }
       }
+      const doorTop = options.doorTop ?? Infinity;
+      const carved = (bay) => options.skipBay && bay >= 0 && bay < bays && options.skipBay(edge, bay, bays);
       for (let bay = 0; bay <= bays; bay++) {
-        const t = bay / bays, q = p(t, (options.y0 + options.y1) * 0.5, 0.17);
-        box(bay % 4 === 0 ? deepFins : frames, q, [bay % 4 === 0 ? 0.12 : 0.065, options.y1 - options.y0, bay % 4 === 0 ? 0.52 : 0.24], harbourCityEdgeOutward(ring, edge).ry);
+        const t = bay / bays, ry = harbourCityEdgeOutward(ring, edge).ry;
+        const width = bay % 4 === 0 ? 0.12 : 0.065, depth = bay % 4 === 0 ? 0.52 : 0.24;
+        // A fin inside the opening would rebuild the wall it is meant to articulate, so interior boundaries stop at
+        // the door head and only the two jambs keep a full-height fin.
+        const interior = carved(bay - 1) && carved(bay);
+        if (interior && doorTop < options.y1) {
+          const headHeight = options.y1 - doorTop;
+          if (headHeight > 0.2) {
+            box(bay % 4 === 0 ? deepFins : frames, p(t, (doorTop + options.y1) * 0.5, 0.17), [width, headHeight, depth], ry); fins++;
+          }
+          continue;
+        }
+        box(bay % 4 === 0 ? deepFins : frames, p(t, (options.y0 + options.y1) * 0.5, 0.17), [width, options.y1 - options.y0, depth], ry);
         fins++;
       }
     }
@@ -110,6 +142,54 @@ function addOpenDoorSoffit(group, materials) {
     { background: '#e2e4df', foreground: '#28343a', accent: '#7d8b8e' });
 }
 
+// A real breezeway instead of a dark panel: whole facade bays are deleted from the outer north facade and from the
+// facing courtyard wall, then lined with pale jambs, a threshold and a soffit so the 24.4 m deep passage reads as
+// the design's Open Door from the harbour frontage. The three-storey link above 88 m stays as the door head.
+function doorSkipBay(edge, t0, t1) {
+  return (candidateEdge, bay, bays) => {
+    if (candidateEdge !== edge) return false;
+    const middle = (bay + 0.5) / bays;
+    return middle > t0 && middle < t1;
+  };
+}
+
+function addOpenDoorPassage(root, base, materials) {
+  const o = CGO_DOOR_OPENING, site = CGO_WEST_SITE;
+  const group = new THREE.Group();
+  group.name = 'Central Government Offices Open Door breezeway';
+  group.position.set(site.x, base, site.z); group.rotation.y = site.ry; root.add(group);
+  const jambs = [], frames = [], hangers = [], threshold = [];
+  const outerLength = harbourCityEdgeOutward(site.localRing, o.outerEdge).length;
+  const innerLength = harbourCityEdgeOutward(CGO_WEST_INNER_LOCAL_RING, o.innerEdge).length;
+  // Pale structural jambs and deep reveal linings on both faces of the passage.
+  for (const t of [o.t0Outer, o.t1Outer]) {
+    edgeBox(jambs, site, o.outerEdge, t, (o.y0 + o.y1) * 0.5, 0.26, 1.35, o.y1 - o.y0, 0.8);
+  }
+  for (const t of [o.t0Inner, o.t1Inner]) {
+    edgeBox(jambs, CGO_OPEN_DOOR_SITE, o.innerEdge, t, (o.y0 + o.y1) * 0.5, -0.2, 1.2, o.y1 - o.y0, 0.7);
+  }
+  edgeBox(frames, site, o.outerEdge, (o.t0Outer + o.t1Outer) * 0.5, o.y1 - 0.55, 0.14,
+    (o.t1Outer - o.t0Outer) * outerLength, 1.1, 1.7);
+  edgeBox(frames, site, o.outerEdge, (o.t0Outer + o.t1Outer) * 0.5, o.y0 + 0.45, 0.14,
+    (o.t1Outer - o.t0Outer) * outerLength, 0.9, 1.7);
+  edgeBox(frames, site, o.innerEdge, (o.t0Inner + o.t1Inner) * 0.5, o.y1 - 0.5, 0.1,
+    (o.t1Inner - o.t0Inner) * innerLength, 1.0, 1.4);
+  for (let k = 1; k < 7; k++) {
+    const t = o.t0Outer + (o.t1Outer - o.t0Outer) * k / 7;
+    edgeBox(hangers, site, o.outerEdge, t, o.y1 - 1.05, 0.18, 0.3, 1.0, 1.4);
+  }
+  // Walkable stone threshold across the whole passage, tying the courtyard paving to the harbour frontage.
+  for (let step = 0; step < 10; step++) {
+    const outer = o.t0Outer + (o.t1Outer - o.t0Outer) * (step + 0.5) / 10;
+    const at = point(site, o.outerEdge, outer, 0.04, -6.0 - step * 2.2);
+    box(threshold, at, [15.4, 0.08, 2.3]);
+  }
+  merged(group, jambs, materials.paleStone, 'Open Door — pale jamb piers on both facades');
+  merged(group, frames, materials.paleStone, 'Open Door — pale head beams and threshold framing');
+  merged(group, hangers, materials.metal, 'Open Door — head mullion hangers');
+  merged(group, threshold, materials.stone, 'Open Door — walkable stone passage floor', false);
+}
+
 function addDoorPaving(group, materials) {
   const site = CGO_OPEN_DOOR_SITE, bounds = { minX: Infinity, maxX: -Infinity, minZ: Infinity, maxZ: -Infinity };
   for (let i = 0; i < site.localRing.length; i += 2) {
@@ -122,6 +202,16 @@ function addDoorPaving(group, materials) {
     box(tiles, [x, 0.035, z], [1.94, 0.07, 1.94]);
   }
   merged(group, tiles, materials.stone, 'CGC Open Door — walkable stone paving below the open breezeway', false);
+}
+
+// Collider that matches the carved passage: the wall is solid either side of the opening and the three-storey head
+// above it, but the opening itself stays open from the low-block roof line to the soffit.
+function doorAwareRingColliders(site, edge, t0, t1, doorTop, base, solidMin, solidMax, depth) {
+  return [
+    harbourCitySegmentCollider(site, edge, 0, t0, base + solidMin, base + solidMax, depth),
+    harbourCitySegmentCollider(site, edge, t1, 1, base + solidMin, base + solidMax, depth),
+    harbourCitySegmentCollider(site, edge, t0, t1, base + doorTop, base + solidMax, depth),
+  ];
 }
 
 function buildCgo(root, base, materials) {
@@ -140,16 +230,23 @@ function buildCgo(root, base, materials) {
   const west = addCurtainWall(groups.west, CGO_WEST_SITE, [CGO_WEST_SITE.localRing], {
     y0: CGO_LOW_BLOCK_HEIGHT, y1: CGO_OFFICE_HEIGHT, courses: CGO_OFFICE_VISUAL_COURSES, bayWidth: 1.8, seed: 11,
     glassA: [0.045, 0.052, 0.077], glassB: [0.16, 0.17, 0.22], spandrelTint: [0.16, 0.17, 0.20],
-  }, materials, 'CGC West Wing exact outer relation ring');
+    skipBay: doorSkipBay(CGO_DOOR_OPENING.outerEdge, CGO_DOOR_OPENING.t0Outer, CGO_DOOR_OPENING.t1Outer),
+    doorTop: CGO_DOOR_OPENING.y1,
+  }, materials, 'CGC West Wing exact outer relation ring with the Open Door carved through it');
+  // Courtyard faces are pale stone with recessed windows rather than dark curtain glass: the courtyard is what a
+  // viewer sees through the Open Door, so keeping it light is what makes the opening read at city scale.
   const westReveal = addCurtainWall(groups.west, CGO_WEST_SITE, [CGO_WEST_INNER_LOCAL_RING], {
     y0: CGO_LOW_BLOCK_HEIGHT, y1: CGO_OPEN_DOOR_SOFFIT, courses: 16, bayWidth: 1.8, seed: 12,
-    glassA: [0.045, 0.055, 0.075], glassB: [0.18, 0.20, 0.24], spandrelTint: [0.19, 0.20, 0.22],
-  }, materials, 'CGC West Wing source void below the link');
+    offsetSign: -1,
+    glassA: [0.34, 0.35, 0.34], glassB: [0.52, 0.53, 0.51], spandrelTint: [0.58, 0.58, 0.54],
+    skipBay: doorSkipBay(CGO_DOOR_OPENING.innerEdge, CGO_DOOR_OPENING.t0Inner, CGO_DOOR_OPENING.t1Inner),
+    doorTop: CGO_DOOR_OPENING.y1,
+  }, materials, 'CGC West Wing source void below the link with the inner mouth of the Open Door');
   const link = addCurtainWall(groups.west, CGO_WEST_SITE, [CGO_WEST_INNER_LOCAL_RING], {
     y0: CGO_OPEN_DOOR_SOFFIT, y1: CGO_OFFICE_HEIGHT, courses: 3, bayWidth: 1.8, seed: 13, spandrel: 1.25,
     glassA: [0.055, 0.07, 0.09], glassB: [0.20, 0.23, 0.27], spandrelTint: [0.26, 0.28, 0.30],
   }, materials, 'CGC three-level elevated link above the Open Door');
-  addOpenDoorSoffit(groups.west, materials); addDoorPaving(groups.west, materials); addRoof(groups.west, CGO_WEST_SITE, CGO_OFFICE_HEIGHT, materials, 'CGC West Wing and high link', { plantWidth: 18, plantDepth: 6 });
+  addOpenDoorSoffit(groups.west, materials); addDoorPaving(groups.west, materials); addOpenDoorPassage(root, base, materials); addRoof(groups.west, CGO_WEST_SITE, CGO_OFFICE_HEIGHT, materials, 'CGC West Wing and high link', { plantWidth: 18, plantDepth: 6 });
 
   const east = addCurtainWall(groups.east, CGO_EAST_SITE, [CGO_EAST_SITE.localRing], {
     y0: CGO_GROUND_SOFFIT, y1: CGO_OFFICE_HEIGHT, courses: 27, bayWidth: 1.8, seed: 21,
@@ -163,10 +260,19 @@ function buildCgo(root, base, materials) {
   }, materials, 'CGC Conference Hall four-level low block');
   addRoof(groups.conference, CGO_CONFERENCE_SITE, CGO_LOW_BLOCK_HEIGHT, materials, 'CGC Conference Hall', { plantWidth: 10, plantDepth: 4 });
 
+  const door = CGO_DOOR_OPENING;
+  const westSolid = harbourCityRingColliders(CGO_WEST_SITE, base + CGO_LOW_BLOCK_HEIGHT, base + CGO_OFFICE_HEIGHT, 0.48)
+    .filter((_, index) => index !== door.outerEdge)
+    .concat(doorAwareRingColliders(CGO_WEST_SITE, door.outerEdge, door.t0Outer, door.t1Outer, door.y1, base,
+      CGO_LOW_BLOCK_HEIGHT, CGO_OFFICE_HEIGHT, 0.48));
+  const voidSolid = harbourCityRingColliders(CGO_OPEN_DOOR_SITE, base + CGO_LOW_BLOCK_HEIGHT, base + CGO_OPEN_DOOR_SOFFIT, 0.48)
+    .filter((_, index) => index !== door.innerEdge)
+    .concat(doorAwareRingColliders(CGO_OPEN_DOOR_SITE, door.innerEdge, door.t0Inner, door.t1Inner, door.y1, base,
+      CGO_LOW_BLOCK_HEIGHT, CGO_OPEN_DOOR_SOFFIT, 0.48));
   const colliders = [
     ...absolute(street.colliders, base),
-    ...harbourCityRingColliders(CGO_WEST_SITE, base + CGO_LOW_BLOCK_HEIGHT, base + CGO_OFFICE_HEIGHT, 0.48),
-    ...harbourCityRingColliders(CGO_OPEN_DOOR_SITE, base + CGO_LOW_BLOCK_HEIGHT, base + CGO_OPEN_DOOR_SOFFIT, 0.48),
+    ...westSolid,
+    ...voidSolid,
     ...harbourCityRingColliders(CGO_OPEN_DOOR_SITE, base + CGO_OPEN_DOOR_SOFFIT, base + CGO_OFFICE_HEIGHT, 0.48),
     ...harbourCityRingColliders(CGO_EAST_SITE, base + CGO_GROUND_SOFFIT, base + CGO_OFFICE_HEIGHT, 0.48),
     ...harbourCityRingColliders(CGO_CONFERENCE_SITE, base + CGO_GROUND_SOFFIT, base + CGO_LOW_BLOCK_HEIGHT, 0.48),
