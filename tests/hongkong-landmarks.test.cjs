@@ -81,11 +81,15 @@ test('three stepped bays and five suspension levels preserve the open public pla
   assert.ok(elevated.obb && Number.isFinite(elevated.obb.cs) && Number.isFinite(elevated.obb.sn));
 });
 
-test('the hand-built HSBC model includes its photographic identifying features without bundled photo assets', () => {
+test('the clean-rebuild HSBC model includes its photographic identifying features without bundled photo assets', () => {
   const source = fs.readFileSync(path.join(root, 'js/cities/hongkong/hsbc-headquarters-world.js'), 'utf8');
   assert.match(source, /group\.position\.set\(HSBC_SITE\.x, groundOffset, HSBC_SITE\.z\)/);
   assert.match(source, /HSBCInvertedVSuspensionTrusses/);
   assert.match(source, /HSBCExposedSteelMasts/);
+  assert.match(source, /HSBCStructuralMastLacing/);
+  assert.match(source, /HSBCIndependentOfficeFloorPlates/);
+  assert.match(source, /hsbcModelGeneration: 2/);
+  assert.match(source, /createIBeamGeometry/);
   assert.match(source, /HSBCOvalSunscoopCrown/);
   assert.match(source, /HSBCBronzeLions/);
   assert.match(source, /HSBCLeftBronzeLionOpenMouth/);
