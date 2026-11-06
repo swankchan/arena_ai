@@ -3,10 +3,11 @@ const test = require('node:test');
 const fs = require('node:fs');
 const path = require('node:path');
 const root = path.join(__dirname, '..');
-let heritage, terrain, siteUtils, authored, roads, lamps, clearance;
+let heritage, terrain, elevation, siteUtils, authored, roads, lamps, clearance;
 test.before(async () => {
   heritage = await import('../js/cities/hongkong/heritage-1881-architecture.js');
   terrain = await import('../js/cities/hongkong/terrain.js');
+  elevation = await import('../js/cities/hongkong/road-elevation.js');
   siteUtils = await import('../js/cities/hongkong/landmark-site.js');
   authored = await import('../js/cities/hongkong/authored-landmark-site.js');
   roads = (await import('../js/hk-full-roads-data.js')).HK_FULL_ROADS.roads;
@@ -77,6 +78,13 @@ test('1881 building rings have no retained road-centre intersections and no clea
   for (const site of [heritage.HERITAGE_1881_MALL, heritage.FWD_HOUSE_1881, heritage.ROUND_HOUSE_1881]) {
     assert.deepEqual(finalLamps.filter((lamp) => inside(site.ring, lamp.x, lamp.z)).map((lamp) => lamp.index), []);
   }
+  // The only rendered compound lamp keeps its XY clearance, but its stored base must follow the authored DTM pad.
+  // This regresses the stale 5.03 m base that buried the lamp 1.20 m below the 6.23 m surface after the 1881 pad landed.
+  const override = clearance.overrides.find((row) => row[0] === 117133), source = lamps[117133];
+  assert.ok(override); const x = source[0] + override[1] / 100, z = source[1] + override[2] / 100;
+  assert.ok(inside(heritage.HERITAGE_1881_COMPOUND.ring, x, z));
+  assert.ok(!inside(heritage.HERITAGE_1881_MALL.ring, x, z)); assert.ok(!inside(heritage.FWD_HOUSE_1881.ring, x, z));
+  assert.equal(override[3], Math.round(elevation.surfaceRoadHeight(x, z) * 100));
 });
 
 test('the shared 1881 DTM pad is reproducible and does not claim an engineering elevation', () => {
