@@ -105,6 +105,7 @@ export const city = {
       courtOfFinalAppeal: world.courtOfFinalAppeal,
       hkcec: world.hkcec,
       timesSquare: world.timesSquare,
+      peninsulaHotel: world.peninsulaHotel,
       landmarks: world.landmarks,
       stats,
       teleports: TELEPORTS,

@@ -1,5 +1,6 @@
 import { GEO } from '../../hk-geodata.js';
 import { SCB_MAP_SITE } from './standard-chartered-architecture.js';
+import { PENINSULA_TOWER_SITE, PENINSULA_TOWER_HEIGHT } from './peninsula-hotel-architecture.js';
 import { STAR_FERRY_TERMINALS } from './star-ferry-data.js';
 import {
   FULL_BOUNDS,
@@ -70,6 +71,7 @@ export const AREA_LABELS = [
 const LANDMARKS = [
   ...Object.entries(GEO.landmarks),
   [SCB_MAP_SITE.name, SCB_MAP_SITE],
+  ['香港半島酒店 The Peninsula Hong Kong', { x: PENINSULA_TOWER_SITE.x, z: PENINSULA_TOWER_SITE.z, h: PENINSULA_TOWER_HEIGHT, authored: true }],
   ...STAR_FERRY_TERMINALS.map((site) => [site.name, site])
 ].map(([name, landmark]) => ({ name, ...landmark }));
 

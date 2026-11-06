@@ -215,6 +215,7 @@
 | 2026-11-04 | `HK-HC-G3` | Prudential Tower／T3精確 OSM way **152073851**、生成道路 **records 51365／51366** 及石質podium | 兩條原始道路與32頂點用地相交；record index不是OSM way ID。地面石牆、窄窗、百頁、玻璃及柱均須避車，不能以石材立面封死原道路 | 建築及道路不搬歪；所有衝突地面bays保持開敞，上層由12 m開始，保留瀝青、白色標線及道路ground；保守最低場景淨空約12.3219 m | `tests/gateway-tower-three.test.cjs`；來源、道路profile、入口、16＋14層口径及整合驗證 |
 | 2026-11-04 | `HK-HC-G5` | Tower 5精確 OSM way **152073809**、Prudential／T5高層arch及生成道路 **record 51365** | 原始道路穿越32頂點用地；record index不是OSM way ID。地面石牆、窗及柱逐bay避車；四道高層連接及格框不使用落地盒子封路 | 建築及道路不搬歪，保留瀝青、標線及道路ground；地面衝突bays開放，上層由12 m開始，保守最低場景淨空約12.0677 m | `tests/gateway-tower-five.test.cjs`；來源、arch兩種資料口径、道路profile、入口及整合驗證 |
 | 2026-11-04 | `HK-HC-G6` | 港威大廈六座精確 OSM way **152073864**、edge **24** 入口及周邊道路 | 全港道路中心線重掃32頂點用地，穿越records為 **0**；入口12個測試bay無衝突。T3／T5雙塔arch不屬於本幢，沒有跨site複製 | 建築、道路、白色標線及街燈不搬歪；沿用DTM施工平台，ground query只在非道路用地套用地台 | `tests/gateway-tower-six.test.cjs`；來源、入口、地面、32層辦公口径及整合驗證 |
+| 2026-11-06 | `HK-TST-PH` | 香港半島酒店 heritage way **120833435 v12**、tower way **152073879 v4**、照片導向前庭及 access-road records **44092／44093／44094／44096／44097** | 兩個精確建築 rings 的道路中心線及 `width/2+0.35 m` 走廊衝突均為 **0**；前庭保留五條現有無名通道，record index 不當 OSM way ID。三個 rings 的 clearance 後街燈均為 **0** | 不搬歪建築、不刪路、不搬燈或改標線／信號；五條前庭通道維持連通及道路 ground，terrain pad 避開車路，酒店鋪裝只留在入口側。噴泉由 polygon centroid 移至照片導向入口外 **6.7 m**，256點邊界掃描確認不侵入車路 | `tests/peninsula-hotel.test.cjs`；雙來源、道路／街燈、噴泉淨空、入口碰撞、DTM、日夜材質及整合驗證；Node geometry **43 meshes／119,361 triangles／90 colliders／0 non-finite** |
 | — | — | — | 現有 HSBC／SCB 暫未補回逐項歷史衝突台帳 | 由下一次相關改動開始逐項記錄 | — |
 
 ## 新增及更新規則

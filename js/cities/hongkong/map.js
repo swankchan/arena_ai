@@ -5,6 +5,7 @@ import { OCEAN_TERMINAL_SITE, STAR_HOUSE_SITE, MARCO_POLO_HONGKONG_SITE, OCEAN_C
 import { SPACE_MUSEUM_EAST_SITE, SPACE_MUSEUM_WEST_SITE } from './space-museum-architecture.js';
 import { CULTURAL_CENTRE_SITE } from './cultural-centre-architecture.js';
 import { CLOCK_TOWER_SITE, CLOCK_TOWER_TOTAL_HEIGHT } from './clock-tower-architecture.js';
+import { PENINSULA_HERITAGE_SITE, PENINSULA_TOWER_SITE, PENINSULA_TOWER_HEIGHT } from './peninsula-hotel-architecture.js';
 import { pointInFlatRing } from './landmark-site.js';
 import { HK_FULL_MAP } from '../../hk-full-map-data.js';
 import { HK_FULL_ROADS } from '../../hk-full-roads-data.js';
@@ -167,7 +168,9 @@ function mapLayers() {
     .filter(([, landmark]) => !pointInFlatRing(SPACE_MUSEUM_EAST_SITE.ring, landmark.x, landmark.z))
     .filter(([, landmark]) => !pointInFlatRing(SPACE_MUSEUM_WEST_SITE.ring, landmark.x, landmark.z))
     .filter(([, landmark]) => !pointInFlatRing(CULTURAL_CENTRE_SITE.ring, landmark.x, landmark.z))
-    .filter(([, landmark]) => !pointInFlatRing(CLOCK_TOWER_SITE.ring, landmark.x, landmark.z));
+    .filter(([, landmark]) => !pointInFlatRing(CLOCK_TOWER_SITE.ring, landmark.x, landmark.z))
+    .filter(([, landmark]) => !pointInFlatRing(PENINSULA_HERITAGE_SITE.ring, landmark.x, landmark.z))
+    .filter(([, landmark]) => !pointInFlatRing(PENINSULA_TOWER_SITE.ring, landmark.x, landmark.z));
   const timesSquareMapSite = { x: TIMES_SQUARE_SITE.x, z: TIMES_SQUARE_SITE.z, h: TIMES_SQUARE_HEIGHT };
   const oceanTerminalMapSite = { x: OCEAN_TERMINAL_SITE.x, z: OCEAN_TERMINAL_SITE.z, h: 24, authored: true };
   const starHouseMapSite = { x: STAR_HOUSE_SITE.x, z: STAR_HOUSE_SITE.z, h: 55, authored: true };
@@ -183,7 +186,8 @@ function mapLayers() {
   const spaceMuseumMapSite = { x: SPACE_MUSEUM_EAST_SITE.x, z: SPACE_MUSEUM_EAST_SITE.z, h: 25, authored: true };
   const culturalCentreMapSite = { x: CULTURAL_CENTRE_SITE.x, z: CULTURAL_CENTRE_SITE.z, h: 35, authored: true };
   const clockTowerMapSite = { x: CLOCK_TOWER_SITE.x, z: CLOCK_TOWER_SITE.z, h: CLOCK_TOWER_TOTAL_HEIGHT, authored: true };
-  const landmarks = [...stockLandmarks, [SCB_MAP_SITE.name, SCB_MAP_SITE], [TIMES_SQUARE_SITE.name, timesSquareMapSite], ['海運大廈 Ocean Terminal · LCX', oceanTerminalMapSite], ['星光行 Star House · Star Annex', starHouseMapSite], [MARCO_POLO_HONGKONG_SITE.name, marcoPoloMapSite], [OCEAN_CENTRE_SITE.name, oceanCentreMapSite], [PRINCE_HOTEL_SITE.name, princeHotelMapSite], [GATEWAY_TOWER_ONE_SITE.name, gatewayTowerOneMapSite], [GATEWAY_TOWER_TWO_SITE.name, gatewayTowerTwoMapSite], [GATEWAY_TOWER_THREE_SITE.name, gatewayTowerThreeMapSite], [GATEWAY_TOWER_FIVE_SITE.name, gatewayTowerFiveMapSite], [GATEWAY_TOWER_SIX_SITE.name, gatewayTowerSixMapSite], [PACIFIC_CLUB_SITE.name, pacificClubMapSite], ['香港太空館 Hong Kong Space Museum', spaceMuseumMapSite], [CULTURAL_CENTRE_SITE.name, culturalCentreMapSite], [CLOCK_TOWER_SITE.name, clockTowerMapSite]]
+  const peninsulaHotelMapSite = { x: PENINSULA_TOWER_SITE.x, z: PENINSULA_TOWER_SITE.z, h: PENINSULA_TOWER_HEIGHT, authored: true };
+  const landmarks = [...stockLandmarks, [SCB_MAP_SITE.name, SCB_MAP_SITE], [TIMES_SQUARE_SITE.name, timesSquareMapSite], ['海運大廈 Ocean Terminal · LCX', oceanTerminalMapSite], ['星光行 Star House · Star Annex', starHouseMapSite], [MARCO_POLO_HONGKONG_SITE.name, marcoPoloMapSite], [OCEAN_CENTRE_SITE.name, oceanCentreMapSite], [PRINCE_HOTEL_SITE.name, princeHotelMapSite], [GATEWAY_TOWER_ONE_SITE.name, gatewayTowerOneMapSite], [GATEWAY_TOWER_TWO_SITE.name, gatewayTowerTwoMapSite], [GATEWAY_TOWER_THREE_SITE.name, gatewayTowerThreeMapSite], [GATEWAY_TOWER_FIVE_SITE.name, gatewayTowerFiveMapSite], [GATEWAY_TOWER_SIX_SITE.name, gatewayTowerSixMapSite], [PACIFIC_CLUB_SITE.name, pacificClubMapSite], ['香港太空館 Hong Kong Space Museum', spaceMuseumMapSite], [CULTURAL_CENTRE_SITE.name, culturalCentreMapSite], [CLOCK_TOWER_SITE.name, clockTowerMapSite], ['香港半島酒店 The Peninsula Hong Kong', peninsulaHotelMapSite]]
     .filter(([, landmark]) => Number.isFinite(landmark.h) && (landmark.h > 45 || landmark.authored))
     .map(([name, landmark]) => ({ name, ...landmark }))
     .sort((a, b) => b.h - a.h);
