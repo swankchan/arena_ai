@@ -97,6 +97,7 @@ export const city = {
       ckc2: world.ckc2,
       qgo: world.qgo,
       centralGovernment: world.centralGovernment,
+      heritage1881: world.heritage1881,
       conrad: world.conrad,
       hysan: world.hysan,
       twoTaikoo: world.twoTaikoo,

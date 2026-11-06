@@ -1033,6 +1033,19 @@
   - Building Journal：http://www.building.com.hk/downpdf.asp?id=188
   - OSM：https://www.openstreetmap.org/way/918333902 及 https://www.openstreetmap.org/relation/8366346
 
+## 1881 Heritage／前水警總部 `HK-TST-1881`：三層拱廊主樓、庭院平台及大包米訊號塔（2026-11-06）
+
+- **位置與來源**：尖沙咀廣東道2A，採額外 ID，不佔用 `HK-B0001–B0100`。完整保存 compound **way 184553178（26點）**、商場平台 **way 184553177（54點）** 及富衛1881公館主樓 **relation 2460795（26點外環＋9點內庭院）**；compound 面積約 **11,770.29 m²** 是地段邊界，不當成單一建築物。
+- **層數證據分開**：OSM 主樓仍標 `building:levels=2`、`height=26`、`layer=3`，商場標3層／12 m／layer 2。古物古蹟辦事處明確記載主樓原為兩層、1920年代加建第三層，現行照片亦見三排拱廊，因此模型做 **3層現行主樓拱廊**，同時保留原始2層 tag，沒有竄改來源。`layer` 只是疊放次序，不是米制標高。
+- **高度口径**：場景把主樓26 m來源值作為共享施工 datum 以上的整體主樓高度，**不再把12 m商場平台叠加成38 m**；這是明示的視覺整合口径，不冒稱實測工程標高。共享DTM施工 datum 為 **6.133281901137451 m**，可由來源中心及頂點重算。
+- **主樓手建細節**：按外環及內庭院環做三層實際拱形玻璃、12段弧形拱石、柱頭、隅石、內外拱廊、露台欄杆及逐條扶手；中央地面入口和內庭院保持可進入。南端有深灰色雙坡屋頂、屋面縫、古典檐口及1881字牌，不是白色長方盒。
+- **商場與行走路線**：三層商場平台沿54點不規則來源環生成，中央樓梯井及南面五段 portal 實際留空。**36級**主樓大典禮樓梯連接上下平台；ground query 對每級、主樓內庭院及上層商場平台回傳相應高度，而非只有視覺樓梯。
+- **大包米訊號塔**：西南 Round House 沒有假稱取得獨立OSM footprint；其照片／地段導向圓平台及樓梯全部在主地段環內。手建石砌圓基座、16個拱形商舖、白色微錐塔身、**8個圓窗**、挑簷托座、淺圓頂、 **1.83 m時間球**、相鄰颱風桅杆及 **72級弧形外樓梯**。弧形樓梯ground同步逐級上升。
+- **庭院及日夜材質**：暖白石材、深色拱形玻璃、灰石板瓦、金屬時間球及少量夜間暖光分開；另有圓形花崗石噴泉、真水面及 **17支水柱**。全部為幾何／程序材質，研究照片沒有成為貼圖或打包資產。
+- **道路與街燈**：主樓及商場來源環沒有 retained road-centre 交點，無需搬路或降低建築；主樓、商場及訊號塔範圍的 clearance 後街燈衝突為 **0**。compound 外圍原有街燈不因地段邊界而盲目刪除。
+- **驗證**：`tests/heritage-1881.test.cjs` 共 **10項通過**；Node geometry 為 **48 meshes／393,512 vertices／216,966 triangles／149 colliders／0 non-finite**，共有 **637個拱形開口、998支主樓欄杆立柱**。這是來源、ground、碰撞及Node幾何驗證，**不是瀏覽器畫面目測驗收**。
+- **資料**：古物古蹟辦事處 https://www.amo.gov.hk/en/historic-buildings/monuments/kowloon/monuments_51/index.html ；建築照片研究 https://fpf.ccidahk.gov.hk/en/location/detail.php?id=1546 ；時間球資料 https://www.cityintime.hk/en/article/tsim-sha-tsui-kowloon-park-drive-ca-1900/ ；OSM https://www.openstreetmap.org/way/184553178 及 https://www.openstreetmap.org/relation/2460795 。
+
 ## 程式入口
 
 - `hsbc-headquarters-architecture.js`：滙豐純地理位置、OBB、樓層比例及 collider 座標換算，可在 Node 測試。
@@ -1084,6 +1097,8 @@
 - `authored-landmark-site.js`：新增手建地標共用OSM provenance、georef／OBB、照片導向 rings、道路走廊及DTM工具。
 - `central-government-architecture.js`：添馬政府總部各獨立來源、西翼內空洞、高度口径、入口frames及道路records。
 - `central-government-world.js`：Open Door三層連接體、雙層幕牆、立法會disc／會議廳、行政長官辦公室、入口、道路portals、日夜材質、碰撞及stats。
+- `heritage-1881-architecture.js`：1881 compound／商場／主樓來源、現行三層證據、訊號塔及兩組步行樓梯ground。
+- `heritage-1881-world.js`：三層內外拱廊、拱石、欄杆、平台樓梯井、雙坡屋頂、Round House、時間球、颱風桅杆、噴泉及碰撞。
 - `conrad-architecture.js`：港麗31頂點弧形 OSM 來源、來源高度／層數、法院道入口 frame、三級台階、道路走廊及 collider 座標換算。
 - `conrad-world.js`：港麗藍綠弧形玻璃、白色 ribbons／主 fins、單一設備帶、紅色曲面冠頂字牌、法院道大理石 porte-cochere、日夜材質、碰撞及 stats。
 - `hysan-place-architecture.js`：希慎27頂點 OSM 來源、分列高度／層數／面積、五個錯位體量、三層花園、四個來源入口、道路走廊及 collider 座標換算。
@@ -1130,4 +1145,4 @@
 - `gateway-tower-three-world.js`：Prudential Tower／T3辦公與服務式住宅幕牆、石質podium、道路portals、日夜材質、碰撞及stats。
 - `gateway-tower-five-world.js`：Tower 5、Prudential雙塔四層互連及三層arch資料口径、浅色格框、道路portals、日夜材質、碰撞及stats。
 - `gateway-tower-six-world.js`：Tower 6獨立辦公塔、弧形幕牆、石質podium、格柵冠頂、日夜材質、碰撞及stats。
-- `simple-world.js`：整合施工清單內三十六個 authored landmarks、海運大廈／LCX／Gateway組件、太空館／文化中心／鐘樓公共文化組件、半島酒店、喜來登酒店、港青酒店、九龍香格里拉及添馬政府總部建築群；普通 `buildings` 仍為 0。
+- `simple-world.js`：整合施工清單內三十六個 authored landmarks、海運大廈／LCX／Gateway組件、太空館／文化中心／鐘樓公共文化組件、半島酒店、喜來登酒店、港青酒店、九龍香格里拉、添馬政府總部建築群及1881 Heritage；普通 `buildings` 仍為 0。
