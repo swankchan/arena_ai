@@ -21,6 +21,18 @@
     "roads_minor_ne.json": 2869,
     "coastline.json": 98,
     "parks.json": 2971,
-    "landmarks.json": 4696
+    "landmarks.json": 4697
+  },
+  "landmarkSupplements": {
+    "file": "landmark-supplements.json",
+    "sha256": "fbd84811659cee0b997df863d2fe7237dfea4a2f68c2ee2a5dd81935729e9b29",
+    "baseCount": 4696,
+    "declaredIds": [
+      "way:37664345"
+    ],
+    "count": 1,
+    "ids": [
+      "way:37664345"
+    ]
   }
 }

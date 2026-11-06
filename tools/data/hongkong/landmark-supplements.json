@@ -1,0 +1,106 @@
+{
+  "source": {
+    "dataset": "OpenStreetMap supplemental authored landmark geometry",
+    "attribution": "© OpenStreetMap contributors",
+    "license": "ODbL 1.0",
+    "basePbfSha256": "c6fd49e15358616f46e3f00efb041ef2dfe6df470274b6074bc6492f3e406224",
+    "sourceTimestamp": null,
+    "note": "The source way has no height or building:levels tag, so the base landmark filter does not select it. No OSM version is invented."
+  },
+  "supplements": [
+    {
+      "id": "way:37664345",
+      "sourceUrl": "https://www.openstreetmap.org/way/37664345",
+      "addedByCommit": "fe0fbdd",
+      "reason": "Hong Kong Cultural Centre is a named civic arts centre required by the authored landmark; preserve it as an explicit supplement rather than broadening the base extraction filter or deleting the building.",
+      "element": {
+        "type": "way",
+        "id": 37664345,
+        "tags": {
+          "addr:street": "梳士巴利道 Salisbury Road",
+          "addr:street:en": "Salisbury Road",
+          "addr:street:wikidata": "Q4035576",
+          "addr:street:zh": "梳士巴利道",
+          "amenity": "arts_centre",
+          "building": "civic",
+          "name": "香港文化中心 Hong Kong Cultural Centre",
+          "name:de": "Hong Kong Cultural Centre",
+          "name:en": "Hong Kong Cultural Centre",
+          "name:fr": "Centre culturel de Hong Kong",
+          "name:he": "מרכז התרבות של הונג קונג",
+          "name:ja": "香港文化中心",
+          "name:ja-Hira": "ホンコンぶんかちゅうしん",
+          "name:ko": "홍콩문화센터",
+          "name:ru": "Гонконгский культурный центр",
+          "name:zh": "香港文化中心",
+          "name:zh-Latn-pinyin": "Xiānggǎng Wénhuà Zhōngxīn",
+          "phone": "+852 2734 2009",
+          "start_date": "1989",
+          "tourism": "yes",
+          "website": "https://www.lcsd.gov.hk/en/hkcc/index.html",
+          "wikidata": "Q598086",
+          "wikimedia_commons": "Category:Hong Kong Cultural Centre",
+          "wikipedia": "en:Hong Kong Cultural Centre"
+        },
+        "geometry": [
+          {
+            "lat": 22.29417,
+            "lon": 114.16957
+          },
+          {
+            "lat": 22.29388,
+            "lon": 114.16959
+          },
+          {
+            "lat": 22.29381,
+            "lon": 114.1699
+          },
+          {
+            "lat": 22.293782,
+            "lon": 114.169992
+          },
+          {
+            "lat": 22.293743,
+            "lon": 114.170073
+          },
+          {
+            "lat": 22.2937,
+            "lon": 114.170139
+          },
+          {
+            "lat": 22.293655,
+            "lon": 114.17019
+          },
+          {
+            "lat": 22.293609,
+            "lon": 114.170229
+          },
+          {
+            "lat": 22.29356,
+            "lon": 114.17026
+          },
+          {
+            "lat": 22.293201,
+            "lon": 114.17045
+          },
+          {
+            "lat": 22.293235,
+            "lon": 114.170855
+          },
+          {
+            "lat": 22.294041,
+            "lon": 114.170785
+          },
+          {
+            "lat": 22.294248,
+            "lon": 114.170612
+          },
+          {
+            "lat": 22.29417,
+            "lon": 114.16957
+          }
+        ]
+      }
+    }
+  ]
+}

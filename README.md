@@ -133,6 +133,8 @@ python3 tools/cities/hongkong/extract_pbf.py \
   --south 22.2655 --west 114.1315 --north 22.3370 --east 114.2120
 ```
 
+Named OSM landmarks that the generic `height` / `building:levels` filter misses belong in `tools/data/hongkong/landmark-supplements.json`, with full source geometry, attribution, source URL and a reason. The extractor applies that file by default when present (or accepts `--landmark-supplements`) and records the base count, supplement IDs and file checksum in `extraction-manifest.json`; cache counts must not be hand-edited to hide an untracked addition.
+
 ## Make it your own
 
 Fork it, remix it, improve it, break it. Make games, animations, films, experiments, or something completely different. Use it as a starting point and take it wherever you want. Have fun!

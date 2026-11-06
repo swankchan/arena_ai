@@ -44,6 +44,56 @@ def is_landmark_relation(tags):
     return bool(tags.get("building") and tags.get("name") and tags.get("height"))
 
 
+def apply_landmark_supplements(caches, supplement_path, base_pbf_sha256):
+    """Append explicitly researched OSM landmarks that the generic height-based filter misses.
+
+    Supplements are full source elements, not synthesized geometry. They remain separate from the
+    base PBF ledger so a manual cache addition can never silently change the extraction counts.
+    """
+    raw = supplement_path.read_bytes()
+    payload = json.loads(raw)
+    source = payload.get("source", {})
+    if source.get("basePbfSha256") != base_pbf_sha256:
+        raise RuntimeError("landmark supplements describe a different base PBF")
+    if not source.get("attribution") or not source.get("license"):
+        raise RuntimeError("landmark supplements require attribution and license metadata")
+    elements = caches["landmarks.json"]
+    base_count = len(elements)
+    existing = {(element["type"], element["id"]) for element in elements}
+    if len(existing) != base_count:
+        raise RuntimeError("base landmark cache contains duplicate elements")
+    applied_ids, declared_ids = [], []
+    for entry in payload.get("supplements", []):
+        element = entry.get("element", {})
+        element_type, element_id = element.get("type"), element.get("id")
+        if element_type not in {"way", "relation"} or not isinstance(element_id, int):
+            raise RuntimeError("invalid supplemental landmark element")
+        key = (element_type, element_id)
+        declared = f"{element_type}:{element_id}"
+        if entry.get("id") != declared or not entry.get("sourceUrl") or not entry.get("reason"):
+            raise RuntimeError(f"supplement {declared} lacks identity, source URL or reason")
+        if element_type == "way" and len(element.get("geometry", [])) < 2:
+            raise RuntimeError(f"supplement {declared} has no way geometry")
+        if element_type == "relation" and not element.get("members"):
+            raise RuntimeError(f"supplement {declared} has no relation members")
+        declared_ids.append(declared)
+        if key in existing:
+            continue
+        elements.append(element)
+        existing.add(key)
+        applied_ids.append(declared)
+    if not declared_ids:
+        raise RuntimeError("landmark supplement file is empty")
+    return {
+        "file": supplement_path.name,
+        "sha256": hashlib.sha256(raw).hexdigest(),
+        "baseCount": base_count,
+        "declaredIds": declared_ids,
+        "count": len(applied_ids),
+        "ids": applied_ids,
+    }
+
+
 class RelationCollector(osmium.SimpleHandler):
     def __init__(self, include_places=False):
         super().__init__()
@@ -188,6 +238,8 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--input", required=True, type=Path)
     parser.add_argument("--out-dir", required=True, type=Path)
+    parser.add_argument("--landmark-supplements", type=Path,
+                        help="explicit OSM landmarks missed by the generic filter; defaults to out-dir/landmark-supplements.json when present")
     parser.add_argument("--places", action="store_true", help="also extract named place nodes and island relations for the full-Hong-Kong atlas")
     for name in ("south", "west", "north", "east"):
         parser.add_argument(f"--{name}", required=True, type=float)
@@ -213,6 +265,10 @@ def main():
     extractor = CacheExtractor(bounds, collector.relations, collector.member_refs, source, include_places=args.places)
     extractor.apply_file(str(args.input), locations=True)
     args.out_dir.mkdir(parents=True, exist_ok=True)
+    supplement_path = args.landmark_supplements or args.out_dir / "landmark-supplements.json"
+    supplement_manifest = None
+    if supplement_path.exists():
+        supplement_manifest = apply_landmark_supplements(extractor.caches, supplement_path, digest)
     counts = extractor.write(args.out_dir)
     manifest = {
         **source,
@@ -221,6 +277,8 @@ def main():
         "relationCandidates": len(collector.relations),
         "counts": counts,
     }
+    if supplement_manifest:
+        manifest["landmarkSupplements"] = supplement_manifest
     with (args.out_dir / "extraction-manifest.json").open("w", encoding="utf-8") as handle:
         json.dump(manifest, handle, ensure_ascii=False, indent=2)
         handle.write("\n")

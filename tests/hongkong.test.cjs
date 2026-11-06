@@ -1,6 +1,7 @@
 const assert = require('node:assert/strict');
 const { readFileSync } = require('node:fs');
 const { join } = require('node:path');
+const { createHash } = require('node:crypto');
 const test = require('node:test');
 const { loadModule } = require('./helpers/module.cjs');
 
@@ -91,6 +92,34 @@ test('Geofabrik extraction preserves provenance and complete nonempty cache laye
     }
     assert.equal(ids.size, cache.elements.length, `${filename} has no duplicate elements`);
   }
+
+  const supplementBytes = read('tools/data/hongkong/landmark-supplements.json');
+  const supplements = JSON.parse(supplementBytes), ledger = manifest.landmarkSupplements;
+  assert.ok(ledger, 'manual landmark additions have an explicit supplement ledger');
+  assert.equal(ledger.file, 'landmark-supplements.json');
+  assert.equal(ledger.sha256, createHash('sha256').update(supplementBytes).digest('hex'));
+  assert.equal(ledger.baseCount, 4696); assert.equal(ledger.count, 1);
+  assert.equal(ledger.baseCount + ledger.count, manifest.counts['landmarks.json']);
+  assert.deepEqual(ledger.ids, ['way:37664345']); assert.deepEqual(ledger.declaredIds, ledger.ids);
+  assert.equal(supplements.source.basePbfSha256, manifest.sha256);
+  const landmarks = JSON.parse(read('tools/data/hongkong/landmarks.json'));
+  for (const supplement of supplements.supplements) {
+    const element = supplement.element, matches = landmarks.elements.filter((candidate) => candidate.type === element.type && candidate.id === element.id);
+    assert.equal(matches.length, 1, `${supplement.id} is preserved exactly once`);
+    assert.deepEqual(matches[0], element, `${supplement.id} keeps its canonical supplement geometry and tags`);
+    assert.match(supplement.sourceUrl, /openstreetmap\.org\/way\/37664345/);
+    assert.match(supplement.reason, /base extraction filter|deleting the building/);
+  }
+});
+
+test('PBF regeneration applies audited landmark supplements by default', () => {
+  const extractor = read('tools/cities/hongkong/extract_pbf.py');
+  assert.match(extractor, /def apply_landmark_supplements\(/);
+  assert.match(extractor, /source\.get\("basePbfSha256"\) != base_pbf_sha256/);
+  assert.match(extractor, /supplement_path = args\.landmark_supplements or args\.out_dir \/ "landmark-supplements\.json"/);
+  assert.match(extractor, /manifest\["landmarkSupplements"\] = supplement_manifest/);
+  const readme = read('README.md');
+  assert.match(readme, /landmark-supplements\.json/); assert.match(readme, /cache counts must not be hand-edited/);
 });
 
 test('street, park and place names are Chinese', () => {
