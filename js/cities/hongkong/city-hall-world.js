@@ -129,6 +129,32 @@ function addCoveredLinkDoor(group, site, link, mats, label) {
   merged(group, canopy, mats.white, `${label} covered-link canopy`);
 }
 
+function addHighBlockRefinement(group, site, mats) {
+  // HK-B0082: the High Block is a gridded modernist concrete frame, not a plain glass
+  // curtain wall.  These deeper fins and recessed shadow joints follow the two photographed
+  // long elevations and stay subordinate to the exact OSM shell and its entrance openings.
+  const fins = [], shadowJoints = [], coping = [];
+  let finCount = 0, jointCount = 0;
+  for (const edges of [[1, 2, 3, 4, 5, 6], [10, 11]]) {
+    const frame = civicChainFrame(site, edges), bays = Math.max(1, Math.round(frame.length / 3.6));
+    for (let b = 0; b <= bays; b++) {
+      const u = -frame.length * .5 + b / bays * frame.length;
+      civicFrameBox(fins, frame, u, 29.55, .18, .17, 48.5, .24); finCount++;
+    }
+    for (let row = 0; row < 12; row++) {
+      civicFrameBox(shadowJoints, frame, 0, 5.02 + row * 4.42, .16, frame.length - .35, .075, .09); jointCount++;
+    }
+  }
+  for (let edge = 0; edge < site.localRing.length / 2 - 1; edge++) {
+    const frame = civicChainFrame(site, [edge]);
+    civicFrameBox(coping, frame, 0, CITY_HALL_HIGH_HEIGHT + .58, .12, frame.length + .18, .16, .42);
+  }
+  merged(group, fins, mats.white, 'City Hall High Block HK-B0082 deep modular concrete facade fins');
+  merged(group, shadowJoints, mats.dark, 'City Hall High Block HK-B0082 recessed floor shadow joints', false);
+  merged(group, coping, mats.frame, 'City Hall High Block HK-B0082 continuous roof coping');
+  return { finCount, jointCount, copingEdges: site.localRing.length / 2 - 1 };
+}
+
 function buildHighBlock(root, base, mats, colliders) {
   const site = CITY_HALL_HIGH_SITE, group = new THREE.Group(); group.name = 'Hong Kong City Hall High Block — OSM way 25608273';
   group.position.set(site.x, base, site.z); group.rotation.y = site.ry; root.add(group);
@@ -169,6 +195,7 @@ function buildHighBlock(root, base, mats, colliders) {
   }
   merged(group, roofParts, mats.white, 'City Hall High Block roof parapet and lift overrun');
   merged(group, roofDark, mats.dark, 'City Hall High Block roof vents', false);
+  const refinement = addHighBlockRefinement(group, site, mats);
   addRingCollidersWithEntrance(colliders, site, base, CITY_HALL_HIGH_HEIGHT, 11, 0, .18, [
     { edge: 10, t: 1, width: .18 },
     { edge: 3, t: 0, width: 1.7 / harbourCityEdgeOutward(site.localRing, 3).length },
@@ -178,7 +205,7 @@ function buildHighBlock(root, base, mats, colliders) {
     { edge: 4, t: 0, width: Math.max(0, 1.7 - harbourCityEdgeOutward(site.localRing, 3).length) / harbourCityEdgeOutward(site.localRing, 4).length },
     { edge: 6, t: CITY_HALL_HIGH_GARDEN_LINK.t, width: 2 / CITY_HALL_HIGH_GARDEN_LINK.length }
   ]);
-  return { root: group, site, entrance: CITY_HALL_HIGH_MAIN_ENTRANCE };
+  return { root: group, site, entrance: CITY_HALL_HIGH_MAIN_ENTRANCE, refinement };
 }
 
 function diamondPanel(frame, u, y, offset, width, height, material, name) {
@@ -411,6 +438,9 @@ export function buildCityHall(scene, { groundOffset } = {}) {
       cityHallHighSourceWay: CITY_HALL_HIGH_SITE.osmId, cityHallLowSourceWay: CITY_HALL_LOW_SITE.osmId,
       cityHallAnnexSourceWay: CITY_HALL_ANNEX_SITE.osmId, cityHallGardenSourceWay: CITY_HALL_MEMORIAL_GARDEN_SITE.osmId,
       cityHallHighHeight: CITY_HALL_HIGH_HEIGHT, cityHallLowHeight: CITY_HALL_LOW_HEIGHT,
+      cityHallHighRefined: true, cityHallHighInventoryId: 'HK-B0082',
+      cityHallHighFacadeFins: highBlock.refinement.finCount, cityHallHighShadowJoints: highBlock.refinement.jointCount,
+      cityHallHighRoofCopingEdges: highBlock.refinement.copingEdges,
       cityHallHighLevels: CITY_HALL_HIGH_SITE.levels, cityHallLowLevels: CITY_HALL_LOW_SITE.levels,
       cityHallSourceVertices: CITY_HALL_HIGH_SITE.source.geometry.length + CITY_HALL_LOW_SITE.source.geometry.length + CITY_HALL_ANNEX_SITE.source.geometry.length,
       cityHallHighRingArea: CITY_HALL_HIGH_SITE.ringArea, cityHallLowRingArea: CITY_HALL_LOW_SITE.ringArea,

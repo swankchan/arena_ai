@@ -167,6 +167,9 @@ test('Node City Hall geometry is finite and has authored massing, entrances and 
     if (positions) for (const value of positions.array) if (!Number.isFinite(value)) nonFinite++;
   });
   assert.equal(nonFinite, 0); assert.ok(meshes >= 50); assert.equal(world.stats.cityHallNonFinite, 0);
+  assert.equal(world.stats.cityHallHighRefined, true); assert.equal(world.stats.cityHallHighInventoryId, 'HK-B0082');
+  assert.ok(world.stats.cityHallHighFacadeFins >= 20); assert.ok(world.stats.cityHallHighShadowJoints >= 20);
+  assert.equal(world.stats.cityHallHighRoofCopingEdges, 12);
   assert.equal(world.stats.cityHallBuildingRoadCrossings, 0); assert.equal(world.stats.cityHallCoveredWalkwayOpenSegments, 2);
   assert.equal(world.landmarks.length, 2); assert.ok(world.colliders.length >= 45);
   assert.ok(world.colliders.some((c) => c.minY >= 5 + 4.4));
