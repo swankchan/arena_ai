@@ -15,11 +15,13 @@
     "tramWireClearance": 0.35,
     "tramNetworkSha256": "ff877b3d0b546423b6233cd269cdb7ca69b4af2ea92e7afab5158df89649706a",
     "authoredLandmarkFootprints": [
-      "Times Square OSM way 26469269"
-    ]
+      "Times Square OSM way 26469269",
+      "Kowloon Shangri-La OSM way 29403978"
+    ],
+    "kowloonShangriLaFacadeMargin": 0.55
   },
   "counts": {
-    "relocated": 38514,
+    "relocated": 38516,
     "suppressed": 80,
     "rendered": 144915,
     "tramAdjusted": 54,

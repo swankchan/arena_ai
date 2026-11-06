@@ -3,6 +3,7 @@ import { SCB_MAP_SITE } from './standard-chartered-architecture.js';
 import { PENINSULA_TOWER_SITE, PENINSULA_TOWER_HEIGHT } from './peninsula-hotel-architecture.js';
 import { SHERATON_SITE, SHERATON_MODEL_HEIGHT } from './sheraton-hotel-architecture.js';
 import { SALISBURY_SITE, SALISBURY_TOWER_MODEL_HEIGHTS } from './salisbury-ymca-architecture.js';
+import { KOWLOON_SHANGRI_LA_SITE, KOWLOON_SHANGRI_LA_MODEL_HEIGHT } from './kowloon-shangri-la-architecture.js';
 import { STAR_FERRY_TERMINALS } from './star-ferry-data.js';
 import {
   FULL_BOUNDS,
@@ -76,6 +77,7 @@ const LANDMARKS = [
   ['香港半島酒店 The Peninsula Hong Kong', { x: PENINSULA_TOWER_SITE.x, z: PENINSULA_TOWER_SITE.z, h: PENINSULA_TOWER_HEIGHT, authored: true }],
   [SHERATON_SITE.name, { x: SHERATON_SITE.x, z: SHERATON_SITE.z, h: SHERATON_MODEL_HEIGHT, authored: true }],
   [SALISBURY_SITE.name, { x: SALISBURY_SITE.x, z: SALISBURY_SITE.z, h: Math.max(...SALISBURY_TOWER_MODEL_HEIGHTS), authored: true }],
+  [KOWLOON_SHANGRI_LA_SITE.name, { x: KOWLOON_SHANGRI_LA_SITE.x, z: KOWLOON_SHANGRI_LA_SITE.z, h: KOWLOON_SHANGRI_LA_MODEL_HEIGHT, authored: true }],
   ...STAR_FERRY_TERMINALS.map((site) => [site.name, site])
 ].map(([name, landmark]) => ({ name, ...landmark }));
 

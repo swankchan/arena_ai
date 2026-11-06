@@ -7,6 +7,9 @@ import { crossingSurfaceAt } from '../../../js/cities/hongkong/crossings.js';
 import { surfaceRoadHeight } from '../../../js/cities/hongkong/road-elevation.js';
 import { HK_TRAM_NETWORK } from '../../../js/hk-tram-network-data.js';
 import { TIMES_SQUARE_SITE, timesSquareWorldToLocal, timesSquareLocalToWorld } from '../../../js/cities/hongkong/times-square-architecture.js';
+import {
+  KOWLOON_SHANGRI_LA_SITE, kowloonShangriLaWorldToLocal, kowloonShangriLaLocalToWorld,
+} from '../../../js/cities/hongkong/kowloon-shangri-la-architecture.js';
 import { pointInFlatRing } from '../../../js/cities/hongkong/landmark-site.js';
 
 const MAX_RELOCATION = 24;
@@ -156,6 +159,39 @@ function clearTimesSquareFootprint(sourceX, sourceZ, dx, dz, baseY) {
   return null;
 }
 
+function distanceToFlatRing(ring, x, z) {
+  let minimum = Infinity;
+  for (let i = 2; i < ring.length; i += 2) {
+    const ax = ring[i - 2], az = ring[i - 1], dx = ring[i] - ax, dz = ring[i + 1] - az;
+    const lengthSq = dx * dx + dz * dz || 1;
+    const t = Math.max(0, Math.min(1, ((x - ax) * dx + (z - az) * dz) / lengthSq));
+    minimum = Math.min(minimum, Math.hypot(x - ax - dx * t, z - az - dz * t));
+  }
+  return minimum;
+}
+
+function clearKowloonShangriLaFootprint(sourceX, sourceZ, dx, dz, baseY) {
+  const finalX = sourceX + dx / 100, finalZ = sourceZ + dz / 100;
+  if (!pointInFlatRing(KOWLOON_SHANGRI_LA_SITE.ring, finalX, finalZ)) return { dx, dz, baseY };
+  const local = kowloonShangriLaWorldToLocal(KOWLOON_SHANGRI_LA_SITE, finalX, finalZ);
+  // The two affected source lamps are immediately inside the long northern facade. Move them onto the
+  // adjacent footway, never through the preserved arrival roads or back into the exact building ring.
+  for (let step = 1; step <= 80; step++) {
+    const candidate = kowloonShangriLaLocalToWorld(KOWLOON_SHANGRI_LA_SITE, local.x, local.z + step * .1);
+    const candidateDx = Math.round((candidate.x - sourceX) * 100), candidateDz = Math.round((candidate.z - sourceZ) * 100);
+    const x = sourceX + candidateDx / 100, z = sourceZ + candidateDz / 100;
+    if (pointInFlatRing(KOWLOON_SHANGRI_LA_SITE.ring, x, z) || distanceToFlatRing(KOWLOON_SHANGRI_LA_SITE.ring, x, z) < .55 || conflictAt(x, z)) continue;
+    return { dx: candidateDx, dz: candidateDz, baseY: Math.round(baseHeight(x, z) * 100) };
+  }
+  return null;
+}
+
+function clearAuthoredLandmarkFootprints(sourceX, sourceZ, dx, dz, baseY) {
+  const timesSquare = clearTimesSquareFootprint(sourceX, sourceZ, dx, dz, baseY);
+  if (!timesSquare) return null;
+  return clearKowloonShangriLaFootprint(sourceX, sourceZ, timesSquare.dx, timesSquare.dz, timesSquare.baseY);
+}
+
 export async function buildHongKongStreetLightClearance({
   outFile = fileURLToPath(new URL('../../../js/hk-street-light-clearance-data.js', import.meta.url)),
   manifestFile = fileURLToPath(new URL('../../../tools/data/hongkong/street-light-clearance-manifest.json', import.meta.url))
@@ -168,16 +204,16 @@ export async function buildHongKongStreetLightClearance({
     const result = relocate(x, z, heading);
     if (tramAdjustedSource) tramAdjusted++;
     if (!result) { suppressed.push(index); continue; }
-    if (!result.relocated) continue;
     let dx = Math.round((result.x - x) * 100), dz = Math.round((result.z - z) * 100);
     let baseY = Math.round(result.baseY * 100);
     if (Math.hypot(dx / 100, dz / 100) > MAX_RELOCATION) { suppressed.push(index); continue; }
     // Centimetre quantisation is part of the runtime table, so validate exactly what will be rendered.
     const conflict = conflictAt(x + dx / 100, z + dz / 100);
     if (conflict) { suppressed.push(index); continue; }
-    const landmarkClear = clearTimesSquareFootprint(x, z, dx, dz, baseY);
+    const landmarkClear = clearAuthoredLandmarkFootprints(x, z, dx, dz, baseY);
     if (!landmarkClear) { suppressed.push(index); continue; }
     dx = landmarkClear.dx; dz = landmarkClear.dz; baseY = landmarkClear.baseY;
+    if (!result.relocated && dx === 0 && dz === 0) continue;
     overrides.push([index, dx, dz, baseY]);
   }
   let remainingCarriagewayConflicts = 0, remainingTramConflicts = 0;
@@ -198,7 +234,8 @@ export async function buildHongKongStreetLightClearance({
       heightTolerance: HEIGHT_TOLERANCE, maxRelocation: MAX_RELOCATION, radialDirections: 16,
       tramTrackClearance: TRAM_TRACK_CLEARANCE, tramPoleClearance: TRAM_POLE_CLEARANCE, tramWireClearance: TRAM_WIRE_CLEARANCE,
       tramNetworkSha256: HK_TRAM_NETWORK.source.alignmentSha256,
-      authoredLandmarkFootprints: ['Times Square OSM way 26469269']
+      authoredLandmarkFootprints: ['Times Square OSM way 26469269', 'Kowloon Shangri-La OSM way 29403978'],
+      kowloonShangriLaFacadeMargin: .55
     },
     counts: {
       relocated: overrides.length, suppressed: suppressed.length,

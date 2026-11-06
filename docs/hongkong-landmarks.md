@@ -1007,6 +1007,16 @@
 - **地面與碰撞**：模型及地面查詢共用 **5 m** DTM採樣施工平台，這不是已核實工程標高；外部地形不變。主入口有真實開口，地面碰撞命中 **0**；兩塔、中央體、裙樓及雨篷柱的碰撞使用同一 base。
 - **驗證**：`tests/salisbury-ymca.test.cjs` 覆蓋來源、官方機構身份、雙塔／中央體 containment、入口方向、道路／街燈、DTM、紅色標誌／圓角橫帶及整合。Node geometry smoke 為 **29 meshes／94,765 triangles／124 colliders／0 non-finite vertices**；沒有打包外部照片。
 
+## 九龍香格里拉 Kowloon Shangri-La, Hong Kong `HK-TST-KSL`：三面凸窗塔樓（2026-11-06）
+
+- **身份與精確來源**：官方酒店資料確認 **64 Mody Road／麼地道64號** 及尖沙咀東海旁位置，沒有誤用金鐘 Island Shangri-La。建築採目前 OSM way **29403978 v7**（source timestamp **2022-12-06T13:39:55Z**）的完整 **10個獨立頂點**、節點及tags；ring 面積 **2891.6056955673266 m²**。來源只有 `building=yes／building:levels=16／layer=2`，沒有height或酒店名稱tag；用地 way **236062121** 不再被誤當主樓。
+- **樓層與高度口径**：項目建築師 Wong & Ouyang 記 **1981年、14層客房＋2層裙樓＋4層地庫、16層tower/podium**。模型以兩層深色裙樓上 **14道客房樓層**表達這一口径；主屋面 **62 m** 只屬照片導向場景體量，不是官方、OSM或測量高度。
+- **照片導向細節**：已目視核對正確九龍香格里拉外觀，排除搜圖中客房、其他酒店及港島大樓。深青銅反光玻璃、三面外凸bay windows、折角／鋸齒格網、深古銅窗框、深色裙樓、金色 Shangri-La 字牌、旗桿、暖色大堂及有蓋落客區均用實際幾何重建。上塔由精確裙樓內退 **1.35 m**，只在照片導向上層省略vertex 4的不足一米小折位；精確地面裙樓十頂點不簡化。每間可視客房bay有正面及兩塊斜側玻璃，非平面貼圖；共 **1,232個三面凸窗bay**。
+- **兩類入口**：照片導向主大堂位於凹入 arrival court 的 source edge **6**，有 **18 × 5.2 m** 雨篷及金色雙語字牌；真實 OSM `entrance=yes／exit=yes` node **2441357636** 另保存為vertex 3／edge 2終點的來源出入口，兩者不混為一點。主雨篷的全港道路中心線及 `width/2+0.35 m` 掃描均為 **0**。
+- **道路與淨空**：原始無名單向通道 records **44185／44186** 是實際有蓋到達動線，完整保留原點列、5.5 m寬、方向、標線及道路ground，沒有為遷就建築而刪路或搬歪。地面逐bay避車形成 **7個開放道路bay**，上層由 **5.6 m soffit** 開始；扣除0.42 m lintel後，兩路肩掃描共 **289個樣本**，最低場景淨空 **5.237071229440245 m**，高於4.7 m車輛包絡。
+- **街燈與地面**：source lamp indexes **118698／118699** 原本在立面內，現由可重算 clearance generator 分別向北移至附近行人路，位移約 **3.40／3.60 m**，不壓制燈、不落入車路；建築及主雨篷的clearance後街燈均為 **0**。全港重新生成後仍有 **0 carriageway／tram conflicts**。模型採 **5.322815587860802 m** DTM採樣施工平台，這不是工程標高；道路走廊及外部地形維持原查詢。
+- **驗證**：`tests/kowloon-shangri-la.test.cjs` 覆蓋精確來源、官方身份／建築師樓層、上層containment、兩類入口、原始道路／淨空、兩燈搬移、DTM、三面凸窗／標誌及整合。Node geometry smoke 為 **30 meshes／165,605 triangles／179 colliders／3,775玻璃panes／0 non-finite vertices**，主入口地面碰撞命中 **0**；沒有打包外部照片。最終完整suite為 **697／698**，唯一失敗仍是既有 `landmarks.json` **4697≠4696** 台帳差異；self-contained runtime已重建，runtime＋專屬focused tests **10／10**。
+
 ## 程式入口
 
 - `hsbc-headquarters-architecture.js`：滙豐純地理位置、OBB、樓層比例及 collider 座標換算，可在 Node 測試。
@@ -1094,9 +1104,11 @@
 - `sheraton-hotel-world.js`：喜來登混凝土客房格網、S徽章／字樣刀片牆、入口雨篷、Level 18泳池／三個Jacuzzis、日夜材質、碰撞及stats。
 - `salisbury-ymca-architecture.js`：港青酒店精確OSM裙樓、照片導向雙圓角塔樓／中央體、Salisbury Road入口及來源口径。
 - `salisbury-ymca-world.js`：港青深灰裙樓、紅色YMCA標誌、雙不等高白色圓角塔樓、連續橫帶、入口、日夜材質、碰撞及stats。
+- `kowloon-shangri-la-architecture.js`：九龍香格里拉精確OSM裙樓、照片導向內退塔樓、兩類入口、原始到達道路及來源口径。
+- `kowloon-shangri-la-world.js`：九龍香格里拉深色裙樓、金色字牌、三面凸窗格網、有蓋落客區、道路portals、日夜材質、碰撞及stats。
 - `gateway-tower-one-world.js`：港威大廈一座的來源口径、辦公courses、入口、日夜材質、碰撞及stats。
 - `gateway-tower-two-world.js`：港威大廈二座及T1／T2多層互連、道路portals、日夜材質、碰撞及stats。
 - `gateway-tower-three-world.js`：Prudential Tower／T3辦公與服務式住宅幕牆、石質podium、道路portals、日夜材質、碰撞及stats。
 - `gateway-tower-five-world.js`：Tower 5、Prudential雙塔四層互連及三層arch資料口径、浅色格框、道路portals、日夜材質、碰撞及stats。
 - `gateway-tower-six-world.js`：Tower 6獨立辦公塔、弧形幕牆、石質podium、格柵冠頂、日夜材質、碰撞及stats。
-- `simple-world.js`：整合施工清單內三十六個 authored landmarks、海運大廈／LCX／Gateway組件、太空館／文化中心／鐘樓公共文化組件、半島酒店、喜來登酒店及港青酒店；普通 `buildings` 仍為 0。
+- `simple-world.js`：整合施工清單內三十六個 authored landmarks、海運大廈／LCX／Gateway組件、太空館／文化中心／鐘樓公共文化組件、半島酒店、喜來登酒店、港青酒店及九龍香格里拉；普通 `buildings` 仍為 0。

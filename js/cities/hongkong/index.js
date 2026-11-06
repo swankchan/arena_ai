@@ -108,6 +108,7 @@ export const city = {
       peninsulaHotel: world.peninsulaHotel,
       sheratonHotel: world.sheratonHotel,
       salisburyYMCA: world.salisburyYMCA,
+      kowloonShangriLa: world.kowloonShangriLa,
       landmarks: world.landmarks,
       stats,
       teleports: TELEPORTS,
