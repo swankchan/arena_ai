@@ -106,6 +106,7 @@ export const city = {
       hkcec: world.hkcec,
       timesSquare: world.timesSquare,
       peninsulaHotel: world.peninsulaHotel,
+      sheratonHotel: world.sheratonHotel,
       landmarks: world.landmarks,
       stats,
       teleports: TELEPORTS,

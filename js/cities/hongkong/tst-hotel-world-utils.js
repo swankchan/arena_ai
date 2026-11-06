@@ -82,8 +82,8 @@ export function placeFacadeGeometry(parts, geometry, site, edge, t, offset = 0.0
   geometry.rotateY(Math.atan2(nx, nz)); geometry.translate(p[0], p[1], p[2]); parts.push(geometry); return geometry;
 }
 
-export function makeCanvasSign(width, height, draw, { transparent = true, emissive = false } = {}) {
-  const canvas = document.createElement('canvas'); canvas.width = 1536; canvas.height = 384;
+export function makeCanvasSign(width, height, draw, { transparent = true, emissive = false, canvasWidth = 1536, canvasHeight = 384 } = {}) {
+  const canvas = document.createElement('canvas'); canvas.width = canvasWidth; canvas.height = canvasHeight;
   const ctx = canvas.getContext('2d');
   if (!transparent) { ctx.fillStyle = '#ece8dc'; ctx.fillRect(0, 0, canvas.width, canvas.height); }
   draw(ctx, canvas);

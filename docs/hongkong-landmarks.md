@@ -987,6 +987,16 @@
 - **地面與碰撞**：兩幢建築及前庭共用由現有 DTM 採樣最高值形成的 **5 m** 施工平台；這是可重算場景 datum，不是已核實工程標高。`terrain.js`、`road-elevation.js`、`simple-world.js` 的 ground query、道路剖面及碰撞使用同一來源；道路被選取時仍優先使用道路 ground。Node geometry smoke 為 **43 meshes／119,361 triangles／90 colliders／0 non-finite vertices**，主入口及 Arcade 入口地面碰撞命中均為 **0**。
 - **驗證**：`tests/peninsula-hotel.test.cjs` 涵蓋兩個精確來源、面積、雙高度／樓層口径、兩類入口、前庭道路、噴泉淨空、街燈、DTM、建築細節及整合。程式只使用程序化材質及 canvas 字樣，沒有外部圖片資產。
 
+## 香港喜來登酒店 `HK-TST-SH`：客房長板、標誌刀片牆及 Level 18 泳池（2026-11-06）
+
+- **位置與精確來源**：彌敦道20號，採額外 TST ID，不改變100幢清單的36／64統計。目前 OSM building way **124697432 v9**（source timestamp **2026-04-06T06:18:34Z**）保存完整15個獨立頂點、節點、經緯度及tags；ring 面積 **2813.905410766136 m²**。原始 `building:levels=17`、`start_date=1974-02-18` 與地址保留，沒有把用地或其他酒店套過來。
+- **高度誠實口径**：OSM **沒有 height tag**，本輪也沒有找到可核實的官方／CTBUH建築高度；模型的 **72 m** 只為照片導向場景體量，絕不寫成官方高度。16道客房窗列、OSM 17層及官方 **Level 18** 泳池設施是三種不同資料／視覺口径，沒有互相取代。
+- **體量及立面**：精確不規則 ring 用作低層 podium；上層 **84 × 14 m** 長板是照片導向體量，邊界160個樣本全部留在精確 podium ring 內，不冒充第二個 OSM building way。外牆使用淺米色混凝土格框、突出窗台／線腳及深色客房玻璃，另建西端較高服務／標誌刀片牆、深色直向凹槽、圓形 S 徽章、直向及橫向 SHERATON 字樣；日間保留混凝土深度，夜間招牌及大堂只作暖光。
+- **入口與 MTR 區分**：Nathan Road 主入口採照片導向 source edge **3**，有玻璃門、門框／拉手、暖光雨篷、柱、downlights 及 bollards。OSM **node 8974745438 `railway=subway_entrance`、`ref=J4`** 只保留為來源脈絡，沒有誤當酒店大門；入口地面碰撞命中為 **0**。
+- **官方屋面設施**：Marriott 官方 experiences 頁確認 **Level 18** 戶外恆溫泳池、三個加熱 Jacuzzis 及 sundeck；模型加入泳池、剛好三個圓形 Jacuzzis、八張躺椅及安全欄杆。具體屋面位置及尺寸是視覺安排，不是實測泳池平面。
+- **道路、街燈及地面**：精確建築 ring 和 **14 × 5.2 m** 照片導向入口雨篷均以全港道路中心線及 `width/2+0.35 m` 重掃，center／corridor 均為 **0**；clearance 後街燈在兩個範圍亦為 **0**。因此不搬路、不改標線／信號、不搬燈，也不搬歪建築。DTM 採樣形成的施工平台為 **5.164158550106379 m**，是可重算場景 datum，不是工程標高；ground query、道路剖面、碰撞及模型 base 一致。
+- **驗證**：`tests/sheraton-hotel.test.cjs` 覆蓋精確來源、無高度tag的誠實處理、上層體量 containment、入口／J4、道路／街燈、DTM、立面／標誌／泳池及整合。Node geometry smoke 為 **32 meshes／54,059 triangles／114 colliders／0 non-finite vertices**，主入口地面碰撞命中 **0**；沒有打包外部照片。
+
 ## 程式入口
 
 - `hsbc-headquarters-architecture.js`：滙豐純地理位置、OBB、樓層比例及 collider 座標換算，可在 Node 測試。
@@ -1070,9 +1080,11 @@
 - `tst-hotel-world-utils.js`：精確ring薄殼、逐窗格立面、拱板及canvas sign幾何工具。
 - `peninsula-hotel-architecture.js`：半島雙建築ways、前庭／道路records、兩類入口、雙高度口径、噴泉位置及研究來源。
 - `peninsula-hotel-world.js`：半島歷史拱廊、客房立面、quoins／線腳、條紋遮篷、塔樓玻璃帶、helipad、噴泉前庭、日夜材質、碰撞及stats。
+- `sheraton-hotel-architecture.js`：喜來登精確OSM podium、照片導向上層長板、Nathan Road入口／J4區分、無高度tag口径及官方泳池資料。
+- `sheraton-hotel-world.js`：喜來登混凝土客房格網、S徽章／字樣刀片牆、入口雨篷、Level 18泳池／三個Jacuzzis、日夜材質、碰撞及stats。
 - `gateway-tower-one-world.js`：港威大廈一座的來源口径、辦公courses、入口、日夜材質、碰撞及stats。
 - `gateway-tower-two-world.js`：港威大廈二座及T1／T2多層互連、道路portals、日夜材質、碰撞及stats。
 - `gateway-tower-three-world.js`：Prudential Tower／T3辦公與服務式住宅幕牆、石質podium、道路portals、日夜材質、碰撞及stats。
 - `gateway-tower-five-world.js`：Tower 5、Prudential雙塔四層互連及三層arch資料口径、浅色格框、道路portals、日夜材質、碰撞及stats。
 - `gateway-tower-six-world.js`：Tower 6獨立辦公塔、弧形幕牆、石質podium、格柵冠頂、日夜材質、碰撞及stats。
-- `simple-world.js`：整合施工清單內三十六個 authored landmarks、海運大廈／LCX／Gateway組件、太空館／文化中心／鐘樓公共文化組件及半島酒店；普通 `buildings` 仍為 0。
+- `simple-world.js`：整合施工清單內三十六個 authored landmarks、海運大廈／LCX／Gateway組件、太空館／文化中心／鐘樓公共文化組件、半島酒店及喜來登酒店；普通 `buildings` 仍為 0。
