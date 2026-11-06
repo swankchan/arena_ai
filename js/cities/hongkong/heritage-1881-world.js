@@ -174,8 +174,13 @@ function buildRetailTerraces(root, base, materials) {
 }
 
 function buildGrandStair(root, base, materials) {
-  const stair = HERITAGE_1881_MAIN_STAIR, group = featureGroup(stair.site, stair.sourceEdge, '1881 Heritage — 36-step central ceremonial staircase');
-  group.position.y = base; root.add(group);
+  const stair = HERITAGE_1881_MAIN_STAIR, site = stair.site;
+  // featureGroup uses source-local coordinates. It must be parented to the Main Building's
+  // world transform; adding it directly to root stranded the whole staircase near Hong Kong Island.
+  const siteFrame = new THREE.Group(); siteFrame.name = '1881 Heritage — Main Building world frame for grand stair';
+  siteFrame.position.set(site.x, base, site.z); siteFrame.rotation.y = site.ry; root.add(siteFrame);
+  const group = featureGroup(site, stair.sourceEdge, '1881 Heritage — 36-step central ceremonial staircase');
+  siteFrame.add(group);
   const steps = [], rails = [], length = stair.bottomZ - stair.topZ, localStart = 25.62;
   // featureGroup originates on source edge 9; positive local z points down the photographed southern stair axis.
   for (let i = 0; i < stair.steps; i++) {

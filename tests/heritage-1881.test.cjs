@@ -151,6 +151,23 @@ test('Node geometry is finite and densely authored, with no occupied collider in
   assert.deepEqual(occupied(world.colliders, centre.x, centre.z, 6.133281901137451 + 14), []);
 });
 
+test('the grand stair uses the Main Building world transform and cannot reappear on Hong Kong Island', async () => {
+  globalThis.document = { createElement: () => ({ width: 0, height: 0, getContext: () => ({ fillRect() {}, fillText() {} }) }) };
+  const THREE = await import('three/webgpu');
+  const { buildHeritage1881 } = await import('../js/cities/hongkong/heritage-1881-world.js');
+  const base = 6.133281901137451, scene = new THREE.Scene(), world = buildHeritage1881(scene, { groundOffset: base });
+  scene.updateMatrixWorld(true);
+  const stair = heritage.HERITAGE_1881_MAIN_STAIR, site = stair.site, edge = stair.sourceEdge * 2;
+  const localX = (site.localRing[edge] + site.localRing[edge + 2]) * .5;
+  const localZ = (site.localRing[edge + 1] + site.localRing[edge + 3]) * .5;
+  const expected = authored.authoredLocalToWorld(site, localX, localZ);
+  const actual = world.groups.stair.getWorldPosition(new THREE.Vector3());
+  assert.ok(Math.hypot(actual.x - expected.x, actual.z - expected.z) < 1e-9);
+  assert.ok(Math.abs(actual.y - base) < 1e-9);
+  assert.ok(inside(heritage.HERITAGE_1881_COMPOUND.ring, actual.x, actual.z));
+  assert.equal(world.groups.stair.parent.name, '1881 Heritage — Main Building world frame for grand stair');
+});
+
 test('the grand-stair axis has an actual open retail portal and no occupied collider', async () => {
   globalThis.document = { createElement: () => ({ width: 0, height: 0, getContext: () => ({ fillRect() {}, fillText() {} }) }) };
   const THREE = await import('three/webgpu');
