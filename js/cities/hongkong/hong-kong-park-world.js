@@ -11,8 +11,9 @@ import {
   fitMajorParkLocalRect, majorParkLandmark
 } from './major-parks-world-utils.js';
 import { merged, box, beam, cylinder, sphere } from './harbour-city-world-utils.js';
-import { ringShellGeometry, meshFromGeometry, makeCanvasSign } from './tst-hotel-world-utils.js';
+import { ringShellGeometry, meshFromGeometry } from './tst-hotel-world-utils.js';
 import { hongKongTerrainHeight } from './terrain.js';
+import { buildFlagstaffHouse } from './flagstaff-house-world.js';
 
 function hipRoofGeometry(w, d, rise) {
   const hx = w * .5, hz = d * .5, ridge = Math.max(0, hx - hz * .8);
@@ -24,7 +25,7 @@ function hipRoofGeometry(w, d, rise) {
   ];
   const geometry = new THREE.BufferGeometry(); geometry.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3)); geometry.computeVertexNormals(); return geometry;
 }
-function buildHeritage(feature, group, materials, colliders, flagstaff = false) {
+function buildHeritage(feature, group, materials, colliders) {
   const levels = feature.site.levels || 2, wallHeight = levels * 3.15, pad = majorParkPadHeight(feature), bottom = majorParkMinimumTerrain(feature);
   meshFromGeometry(group, ringShellGeometry(feature.ring, bottom, pad + wallHeight), materials.white,
     `${feature.name} exact OSM heritage walls and DTM retaining foundation`);
@@ -53,14 +54,6 @@ function buildHeritage(feature, group, materials, colliders, flagstaff = false) 
   merged(local, rails, materials.paleStone, `${feature.name} balcony balustrades and louvre rails`);
   merged(local, shutters, materials.dark, `${feature.name} dark timber louvred windows and shutters`);
   merged(local, roofs, materials.darkStone, `${feature.name} dark hipped roof`);
-  if (flagstaff) {
-    const sign = makeCanvasSign(12, 1.25, (ctx, canvas) => {
-      ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillStyle = '#eee9d8';
-      ctx.font = '600 82px "Noto Sans CJK TC", "PingFang HK", sans-serif'; ctx.fillText('茶具文物館', canvas.width / 2, 125, 1100);
-      ctx.font = '500 40px Georgia, serif'; ctx.fillText('FLAGSTAFF HOUSE MUSEUM OF TEA WARE', canvas.width / 2, 260, 1380);
-    });
-    sign.position.set(0, 3.75, d * .50 + .12); local.add(sign);
-  }
   colliders.push(...majorParkRingColliders(feature.ring, pad, pad + wallHeight, .48));
   return { pad, wallHeight };
 }
@@ -254,8 +247,8 @@ export function buildHongKongPark(scene) {
   const materials = createMajorParkMaterials(), colliders = [];
   const base = buildMajorParkBase(park, root, materials), paths = buildMajorParkPaths(park, root, materials);
   buildLake(root, materials, colliders); buildFountainPlaza(root, materials, colliders);
-  const flagstaff = buildHeritage(majorParkFeature(park, 'heritage', 42255475), root, materials, colliders, true);
-  buildHeritage(majorParkFeature(park, 'heritage', 114282497), root, materials, colliders, false);
+  const flagstaff = buildFlagstaffHouse(root, materials, colliders);
+  buildHeritage(majorParkFeature(park, 'heritage', 114282497), root, materials, colliders);
   const conservatory = buildConservatory(majorParkFeature(park, 'conservatory'), root, materials, colliders);
   const vantage = buildVantage(majorParkFeature(park, 'vantage'), root, materials, colliders);
   const aviary = buildAviary(majorParkFeature(park, 'aviary'), root, materials, colliders);
@@ -275,7 +268,7 @@ export function buildHongKongPark(scene) {
       hongKongParkVantageHeight: vantage.height, hongKongParkVantageSteps: vantage.steps,
       hongKongParkOlympicOfficialCapacity: olympic.officialCapacity, hongKongParkOlympicVisibleSeatBlocks: olympic.visibleSeatBlocks,
       hongKongParkArtificialLakeArea: HONG_KONG_ARTIFICIAL_LAKE.area, hongKongParkArtificialLakeEvidence: 'photo-directed outline; LCSD official 2,200 m²',
-      hongKongParkFlagstaffPad: flagstaff.pad, hongKongParkEntranceSigns: entrances,
+      hongKongParkFlagstaffPad: flagstaff.pad, ...flagstaff.stats, hongKongParkEntranceSigns: entrances,
       hongKongParkLanterns: furniture.lamps, hongKongParkBenches: furniture.benches,
       hongKongParkTreeCandidates: treeSites.length, hongKongParkColliders: colliders.length,
       hongKongParkHeightEvidence: 'traceable DTM; terraced scene pads are not engineering elevations'
