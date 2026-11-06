@@ -241,6 +241,39 @@ function createNewWingFacade() {
   return { glass, bands, frames, panels, curvedPanels };
 }
 
+function createNewWingRefinement(materials) {
+  // HK-B0088: the photographed new wing is a dense curved glass wall below a
+  // three-dimensional flying-bird roof.  Add fine mullions and transverse roof ribs
+  // without replacing the source-ring shell or claiming these are surveyed shop drawings.
+  const group = new THREE.Group(); group.name = 'HKCECNewWingHK-B0088PhotoDirectedRefinement';
+  const fins = store(), ribs = [];
+  let finCount = 0;
+  const ring = HKCEC_NEW_WING_SITE.localRing;
+  for (let edge = 0; edge < ring.length / 2 - 1; edge++) {
+    const length = hkcecEdgeOutward(ring, edge).length, bays = Math.max(1, Math.ceil(length / 1.5));
+    for (let bay = 0; bay < bays; bay++) {
+      const t = (bay + .5) / bays, p = pointOnRing(ring, edge, t, 0);
+      const top = newWingRoofHeightAt(p[0], p[2]) - .28;
+      if (top <= 8.2) continue;
+      facadeQuad(fins, ring, edge, Math.max(0, t - .0012), Math.min(1, t + .0012), 8, top, .115, [.58, .69, .69], 0, top);
+      finCount++;
+    }
+  }
+  const bounds = HKCEC_NEW_WING_SITE.localBounds, stations = 9, segments = 20;
+  for (let station = 1; station <= stations; station++) {
+    const z = bounds.minZ + (bounds.maxZ - bounds.minZ) * station / (stations + 1);
+    const range = newWingShellRange(z, 'main');
+    for (let j = 0; j < segments; j++) {
+      const t0 = lerp(range[0], range[1], j / segments), t1 = lerp(range[0], range[1], (j + 1) / segments);
+      const a = newWingShellPoint(z, t0, 'main'), b = newWingShellPoint(z, t1, 'main');
+      a[1] += .12; b[1] += .12; beam(ribs, a, b, .16, .22);
+    }
+  }
+  meshStore(group, fins, materials.frames, 'NewWingHK-B0088DenseCurvedGlassWallFins', false);
+  merged(group, ribs, materials.white, 'NewWingHK-B0088TransverseWhiteBirdRoofRibs');
+  return { group, finCount, roofRibs: ribs.length };
+}
+
 function createAtrium(materials) {
   const group = new THREE.Group(); group.name = 'HKCECAtriumLinkRoofGardenAndWhiteArchTrusses'; const glass = store(), bands = store(), frames = store();
   const ring = HKCEC_ATRIUM_SITE.localRing; let panels = 0;
@@ -379,6 +412,7 @@ export function buildHkcec(root, { groundOffset = 0 } = {}) {
   const newFacade = createNewWingFacade(); meshStore(newGroup, newFacade.glass, glass, 'NewWingCurvedHarbourGlassWall'); meshStore(newGroup, newFacade.bands, whiteVertex, 'NewWingWhiteHorizontalWindowBands'); meshStore(newGroup, newFacade.frames, frames, 'NewWingCurvedWallMullions');
   shapeMesh(newGroup, HKCEC_NEW_WING_SITE.localRing, HKCEC_COVERED_ROAD_SOFFIT, soffit, 'NewWingRoadClearUpperPodiumSoffit');
   const newRoof = createNewWingRoof(materials); newGroup.add(newRoof.group);
+  const newRefinement = createNewWingRefinement(materials); newGroup.add(newRefinement.group);
   const newColumns = createColonnade(HKCEC_NEW_WING_SITE, HKCEC_COLUMN_POSITIONS.newWing, materials, 'NewWing'); newGroup.add(newColumns.group);
   const newGround = createGroundFacade(HKCEC_NEW_WING_SITE, HKCEC_GROUND_FACADE_SEGMENTS.newWing, 'NewWing');
   meshStore(newGroup, newGround.glass, glass, 'NewWingRoadSafeGroundGlass'); meshStore(newGroup, newGround.stone, whiteVertex, 'NewWingGroundStonePlinths'); meshStore(newGroup, newGround.frames, frames, 'NewWingGroundCurtainWallFrames'); newGroup.add(newGround.group);
@@ -412,6 +446,7 @@ export function buildHkcec(root, { groundOffset = 0 } = {}) {
     hkcecApartmentOfficialResidentialFloorRange: `${HKCEC_APARTMENT_OFFICIAL_FIRST_RESIDENTIAL_LEVEL}–${HKCEC_APARTMENT_OFFICIAL_LAST_RESIDENTIAL_LEVEL}`, hkcecApartmentOfficialApproxUnits: HKCEC_APARTMENT_OFFICIAL_APPROX_UNITS,
     hkcecApartmentVisualCourses: HKCEC_APARTMENT_VISUAL_COURSES, hkcecApartmentGlassPanels: apartment.glassPanels, hkcecApartmentHorizontalBands: apartment.horizontalBands, hkcecApartmentVerticalMullions: apartment.verticalMullions,
     hkcecNewWingRoofShells: newRoof.shells, hkcecNewWingCurvedGlassPanels: newFacade.curvedPanels, hkcecNewWingGlassPanels: newFacade.panels, hkcecNewWingRoofSeams: newRoof.standingSeams,
+    hkcecNewWingRefined: true, hkcecNewWingInventoryId: 'HK-B0088', hkcecNewWingFineFacadeFins: newRefinement.finCount, hkcecNewWingRoofRibs: newRefinement.roofRibs,
     hkcecOldWingGlassPanels: oldFacade.panels, hkcecOldWingRoofPlantUnits: oldRoof.units, hkcecOldWingRoofFans: oldRoof.fanCount,
     hkcecAtriumGlassPanels: atrium.panels, hkcecAtriumWhiteArchTrusses: atrium.arches, hkcecAtriumRoofGardenTrees: atrium.trees, hkcecAtriumRoofGardenBenches: atrium.benches,
     hkcecCoveredRoadSoffit: HKCEC_COVERED_ROAD_SOFFIT, hkcecVehicleEnvelope: HKCEC_VEHICLE_ENVELOPE, hkcecGroundColumns: oldColumns.count + newColumns.count + atriumColumns.count,
