@@ -1059,6 +1059,19 @@
 - **驗證**：`tests/the-arch.test.cjs` 共 **10項通過**；Node geometry為 **73 meshes／1,806,368 vertices／873,612 triangles／350 colliders／0 non-finite**。這是來源、道路、ground及Node幾何驗證，**不是瀏覽器畫面目測驗收**。
 - **資料**：四座來源分別見 https://www.openstreetmap.org/way/294457120 、https://www.openstreetmap.org/way/294457121 、https://www.openstreetmap.org/way/1047822851 、https://www.openstreetmap.org/way/1047822850 ；設計摘要 https://skyscraperpage.com/cities/?buildingID=7288 及 https://cementaid.com/project/the-arch-kowloon-station/ 。實看低角度基座及海港方向全樓照片；照片只作研究，沒有打包或作貼圖。
 
+
+## 擎天半島 `HK-KLN-SORRENTO`：五座曲翼住宅塔、白色豎 fins 及米色弧形冠頂（2026-11-06）
+
+- **位置與來源**：柯士甸道西1號，採額外 ID，不改寫或重用 `HK-B0001–B0100`。保存六層裙樓 **way 25608839（38點）**，以及 **T1 200726103（45點）／T2 200720178（60點）／T3 200720170（59點）／T5 200720177（60點）／T6 200720176（59點）** 五套不同曲翼來源環；沒有補造不存在的T4，也沒有把五塔改成矩形玻璃盒。裙樓面積約 **14,952.96 m²**，五塔約 **927.73／844.10／729.31／729.20／727.18 m²**。
+- **高度與層數**：裙樓保留 OSM **25 m／6層／min_height 20 m**；T1／T2／T3／T5／T6分別保留 **256.3／236／218／212／206 m**、**75／66／64／62／60層**及 `min_height=20`。上部住宅立面合共 **297道視覺 courses**，不把來源層數和視覺分格混為一談。T1有一個原始來源頂點略超出裙樓環，模型保留原點，沒有為了遷就測試而平移或縮放塔身。
+- **曲翼住宅立面**：每座沿自己的完整來源環逐層生成深青綠住宅玻璃、細窗框、白色樓層線、開放式細欄杆及連續白色豎向結構 fins；共 **47,697幅玻璃 panels**（包括裙樓）及 **437支主要豎 fins**。日間是反光住宅幕牆，夜間只有部分暖窗，不是通用辦公玻璃盒。
+- **米色弧形冠頂**：五座各用自己的來源環生成米色冠牆及弧形 sail roof，冠頂最高曲面保持在各塔來源高度以下約1 m，另有深色橫百頁及到達來源高度的白色側 blades。冠牆頂線與屋面邊插值一致，避免曲面與牆之間出現縫隙；冠頂不是另加一個超出曲翼 footprint 的中央方盒。
+- **裙樓與入口**：六層裙樓下五個上層 courses 使用青綠玻璃、淡色橫帶及白色頂檐。西南 Austin Road 前緣保留 **7個入口 bays**，設雙語字牌及手建弧形白色懸挑 canopy； canopy 有曲面、肋梁及前緣，不以落地柱侵入車路。入口是照片／地段導向，沒有冒充 OSM 門節點。
+- **道路與淨空**：保存裙樓道路 union records **40405／40408／40409／40414／41228／41229／41306／44531／44532／44533／45851／45891／47300／50731／50968–50971／51032／51053／51121／51129／51131–51133／51152–51154**，record index 不當 OSM ID。地面有 **76個開放道路 bays**，五塔由20 m開始；原道路、標線、profile及道路ground保持優先。**4,661個**路肩樣本對7.2 m soffit扣除0.42 m lintel的最低場景淨空為 **7.315100549803548 m**，大於4.7 m；另有 **2,376個**車輛高度樣本確認無 Sorrento occupied collider。
+- **地形與街燈**：共享施工 datum 為 **9.572404059845766 m**，可由精確裙樓中心及頂點的raw DTM重算，不是已核實工程標高。裙樓及五塔的 clearance 後街燈衝突均為 **0**，因此沒有搬燈或suppression。
+- **驗證**：`tests/sorrento.test.cjs` 共 **10項通過**，Sorrento／The Arch／Conrad／landmarks相關回歸 **39／39**；Node geometry為 **71 meshes／1,626,592 vertices／748,097 triangles／513 colliders／0 non-finite**。這是來源、道路、ground、碰撞及Node幾何驗證，**不是瀏覽器畫面目測驗收**。
+- **資料**：裙樓 https://www.openstreetmap.org/way/25608839 ；五塔 https://www.openstreetmap.org/way/200726103 、https://www.openstreetmap.org/way/200720178 、https://www.openstreetmap.org/way/200720170 、https://www.openstreetmap.org/way/200720177 、https://www.openstreetmap.org/way/200720176 ；二手屋苑摘要 https://www.28hse.com/estate/detail/sorrento-2581 。已實看海港方向全樓及裙樓外觀照片；旋轉照片先按正確方向理解，室內listing照片不採用。研究照片沒有打包或作貼圖。
+
 ## 程式入口
 
 - `hsbc-headquarters-architecture.js`：滙豐純地理位置、OBB、樓層比例及 collider 座標換算，可在 Node 測試。
@@ -1114,6 +1127,8 @@
 - `heritage-1881-world.js`：三層內外拱廊、拱石、欄杆、平台樓梯井、雙坡屋頂、Round House、時間球、颱風桅杆、噴泉及碰撞。
 - `the-arch-architecture.js`：凱旋門地段／四座來源、道路走廊、Sun–Moon連接體及高度／樓層口径。
 - `the-arch-world.js`：銅紅露台、綠藍玻璃、道路安全基座、真拱門、高架會所、圓孔冠頂、碰撞及stats。
+- `sorrento-architecture.js`：擎天半島裙樓／五座曲翼來源、高度／層數、入口frame、道路records及DTM wrapper。
+- `sorrento-world.js`：青綠住宅幕牆、白色樓層線／豎fins、米色弧形冠頂、懸挑弧形入口canopy、道路portals、碰撞及stats。
 - `conrad-architecture.js`：港麗31頂點弧形 OSM 來源、來源高度／層數、法院道入口 frame、三級台階、道路走廊及 collider 座標換算。
 - `conrad-world.js`：港麗藍綠弧形玻璃、白色 ribbons／主 fins、單一設備帶、紅色曲面冠頂字牌、法院道大理石 porte-cochere、日夜材質、碰撞及 stats。
 - `hysan-place-architecture.js`：希慎27頂點 OSM 來源、分列高度／層數／面積、五個錯位體量、三層花園、四個來源入口、道路走廊及 collider 座標換算。
@@ -1160,4 +1175,4 @@
 - `gateway-tower-three-world.js`：Prudential Tower／T3辦公與服務式住宅幕牆、石質podium、道路portals、日夜材質、碰撞及stats。
 - `gateway-tower-five-world.js`：Tower 5、Prudential雙塔四層互連及三層arch資料口径、浅色格框、道路portals、日夜材質、碰撞及stats。
 - `gateway-tower-six-world.js`：Tower 6獨立辦公塔、弧形幕牆、石質podium、格柵冠頂、日夜材質、碰撞及stats。
-- `simple-world.js`：整合施工清單內三十六個 authored landmarks、海運大廈／LCX／Gateway組件、太空館／文化中心／鐘樓公共文化組件、半島酒店、喜來登酒店、港青酒店、九龍香格里拉、添馬政府總部建築群、1881 Heritage及九龍站凱旋門；普通 `buildings` 仍為 0。
+- `simple-world.js`：整合施工清單內三十六個 authored landmarks、海運大廈／LCX／Gateway組件、太空館／文化中心／鐘樓公共文化組件、半島酒店、喜來登酒店、港青酒店、九龍香格里拉、添馬政府總部建築群、1881 Heritage、九龍站凱旋門及擎天半島；普通 `buildings` 仍為 0。

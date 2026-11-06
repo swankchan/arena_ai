@@ -99,6 +99,7 @@ export const city = {
       centralGovernment: world.centralGovernment,
       heritage1881: world.heritage1881,
       theArch: world.theArch,
+      sorrento: world.sorrento,
       conrad: world.conrad,
       hysan: world.hysan,
       twoTaikoo: world.twoTaikoo,

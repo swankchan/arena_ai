@@ -50,6 +50,7 @@ import { KOWLOON_SHANGRI_LA_GROUND_SITES, kowloonShangriLaTerrainHeightAt } from
 import { CGO_GROUND_SITES, centralGovernmentTerrainHeightAt } from './central-government-architecture.js';
 import { HERITAGE_1881_GROUND_SITES, heritage1881TerrainHeightAt } from './heritage-1881-architecture.js';
 import { THE_ARCH_GROUND_SITES, theArchTerrainHeightAt } from './the-arch-architecture.js';
+import { SORRENTO_GROUND_SITES, sorrentoTerrainHeightAt } from './sorrento-architecture.js';
 import { authoredHighestRawDatum } from './authored-landmark-site.js';
 
 function decodeBytes(base64) {
@@ -203,6 +204,9 @@ export function heritage1881PadHeight() { return HERITAGE_1881_PAD_HEIGHT; }
 // The Arch's exact estate ring supplies one DTM datum; its retained station roads keep their own profiles.
 const THE_ARCH_PAD_HEIGHT = authoredHighestRawDatum(THE_ARCH_GROUND_SITES, rawHongKongTerrainHeight);
 export function theArchPadHeight() { return THE_ARCH_PAD_HEIGHT; }
+// Sorrento's exact six-level podium supplies one DTM datum; retained Austin Road / station ways keep their profiles.
+const SORRENTO_PAD_HEIGHT = authoredHighestRawDatum(SORRENTO_GROUND_SITES, rawHongKongTerrainHeight);
+export function sorrentoPadHeight() { return SORRENTO_PAD_HEIGHT; }
 
 export function hongKongTerrainHeight(x, z) {
   if (pointInFlatRing(HSBC_SITE.ring, x, z)) return HSBC_PAD_HEIGHT;
@@ -255,7 +259,8 @@ export function hongKongTerrainHeight(x, z) {
   const kowloonShangriLaHeight = kowloonShangriLaTerrainHeightAt(x, z, salisburyHeight, KOWLOON_SHANGRI_LA_PAD_HEIGHT);
   const centralGovernmentHeight = centralGovernmentTerrainHeightAt(x, z, kowloonShangriLaHeight, CENTRAL_GOVERNMENT_PAD_HEIGHT);
   const heritage1881Height = heritage1881TerrainHeightAt(x, z, centralGovernmentHeight, HERITAGE_1881_PAD_HEIGHT);
-  return theArchTerrainHeightAt(x, z, heritage1881Height, THE_ARCH_PAD_HEIGHT);
+  const theArchHeight = theArchTerrainHeightAt(x, z, heritage1881Height, THE_ARCH_PAD_HEIGHT);
+  return sorrentoTerrainHeightAt(x, z, theArchHeight, SORRENTO_PAD_HEIGHT);
 }
 
 export const HONG_KONG_TERRAIN_META = Object.freeze({
@@ -312,6 +317,7 @@ export const HONG_KONG_TERRAIN_META = Object.freeze({
   centralGovernmentPadHeight: CENTRAL_GOVERNMENT_PAD_HEIGHT,
   heritage1881PadHeight: HERITAGE_1881_PAD_HEIGHT,
   theArchPadHeight: THE_ARCH_PAD_HEIGHT,
+  sorrentoPadHeight: SORRENTO_PAD_HEIGHT,
   tunnelStats: HK_TERRAIN.stats
 });
 
