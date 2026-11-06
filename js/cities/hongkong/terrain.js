@@ -47,6 +47,7 @@ import { tstHotelHighestRawDatum } from './tst-hotel-site.js';
 import { SHERATON_GROUND_SITES, sheratonTerrainHeightAt } from './sheraton-hotel-architecture.js';
 import { SALISBURY_GROUND_SITES, salisburyTerrainHeightAt } from './salisbury-ymca-architecture.js';
 import { MONG_KOK_STADIUM_SITE, mongKokStadiumTerrainHeightAt } from './mong-kok-stadium-architecture.js';
+import { HONG_KONG_STADIUM_SITE, hongKongStadiumTerrainHeightAt } from './hong-kong-stadium-architecture.js';
 import { KOWLOON_SHANGRI_LA_GROUND_SITES, kowloonShangriLaTerrainHeightAt } from './kowloon-shangri-la-architecture.js';
 import { CGO_GROUND_SITES, centralGovernmentTerrainHeightAt } from './central-government-architecture.js';
 import { HERITAGE_1881_GROUND_SITES, heritage1881TerrainHeightAt } from './heritage-1881-architecture.js';
@@ -202,6 +203,9 @@ export function salisburyPadHeight() { return SALISBURY_PAD_HEIGHT; }
 // Mong Kok Stadium's exact OSM block supplies one reproducible DTM datum for the pitch, bowl and plaza.
 const MONG_KOK_STADIUM_PAD_HEIGHT = authoredHighestRawDatum([MONG_KOK_STADIUM_SITE], rawHongKongTerrainHeight);
 export function mongKokStadiumPadHeight() { return MONG_KOK_STADIUM_PAD_HEIGHT; }
+// Hong Kong Stadium's So Kon Po bowl and its source block share one reproducible DTM datum.
+const HONG_KONG_STADIUM_PAD_HEIGHT = authoredHighestRawDatum([HONG_KONG_STADIUM_SITE], rawHongKongTerrainHeight);
+export function hongKongStadiumPadHeight() { return HONG_KONG_STADIUM_PAD_HEIGHT; }
 const CENTRAL_GOVERNMENT_PAD_HEIGHT = authoredHighestRawDatum(CGO_GROUND_SITES, rawHongKongTerrainHeight);
 export function centralGovernmentPadHeight() { return CENTRAL_GOVERNMENT_PAD_HEIGHT; }
 // 1881's source compound, retail podium and Main Building share one reproducible DTM construction datum.
@@ -282,7 +286,8 @@ export function hongKongTerrainHeight(x, z) {
   const cityHallHeight = cityHallTerrainHeightAt(x, z, sorrentoHeight, CITY_HALL_PAD_HEIGHT);
   const centralLibraryHeight = centralLibraryTerrainHeightAt(x, z, cityHallHeight, CENTRAL_LIBRARY_PAD_HEIGHT);
   const stadiumHeight = mongKokStadiumTerrainHeightAt(x, z, centralLibraryHeight, MONG_KOK_STADIUM_PAD_HEIGHT);
-  return airportTerrainHeightAt(AIRPORT_TERRAIN_SITES, AIRPORT_PAD_HEIGHTS, x, z, stadiumHeight);
+  const bigStadiumHeight = hongKongStadiumTerrainHeightAt(x, z, stadiumHeight, HONG_KONG_STADIUM_PAD_HEIGHT);
+  return airportTerrainHeightAt(AIRPORT_TERRAIN_SITES, AIRPORT_PAD_HEIGHTS, x, z, bigStadiumHeight);
 }
 
 export const HONG_KONG_TERRAIN_META = Object.freeze({
@@ -337,6 +342,7 @@ export const HONG_KONG_TERRAIN_META = Object.freeze({
   salisburyPadHeight: SALISBURY_PAD_HEIGHT,
   kowloonShangriLaPadHeight: KOWLOON_SHANGRI_LA_PAD_HEIGHT,
   mongKokStadiumPadHeight: MONG_KOK_STADIUM_PAD_HEIGHT,
+  hongKongStadiumPadHeight: HONG_KONG_STADIUM_PAD_HEIGHT,
   centralGovernmentPadHeight: CENTRAL_GOVERNMENT_PAD_HEIGHT,
   heritage1881PadHeight: HERITAGE_1881_PAD_HEIGHT,
   theArchPadHeight: THE_ARCH_PAD_HEIGHT,
