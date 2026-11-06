@@ -83,6 +83,7 @@ import { buildVictoriaPark } from './victoria-park-world.js';
 import { buildMajorParkTreeLayer } from './major-parks-world-utils.js';
 import { createHongKongTrafficAids } from './traffic-aids.js';
 import { buildHongKongAirport } from './airport-world.js';
+import { buildTstWaterfrontRailing } from './tst-waterfront-railing-world.js';
 
 const WATER_LEVEL = -2.2;
 
@@ -212,6 +213,8 @@ export function buildSimpleHongKongWorld(scene, { setStatus = () => {} } = {}) {
   const salisburyYMCA = buildSalisburyYMCA(scene, { groundOffset: HONG_KONG_TERRAIN_META.salisburyPadHeight });
   setStatus('Building Kowloon Shangri-La’s dark podium, porte-cochere and projecting bay-window grid...');
   const kowloonShangriLa = buildKowloonShangriLa(scene, { groundOffset: HONG_KONG_TERRAIN_META.kowloonShangriLaPadHeight });
+  setStatus('Building the Star Ferry to Tsim Sha Tsui East wave balustrade...');
+  const tstWaterfrontRailing = buildTstWaterfrontRailing(scene);
   setStatus('Building Hong Kong Park’s aviary, conservatory, heritage terraces and walking network...');
   const hongKongPark = buildHongKongPark(scene);
   setStatus('Building Kowloon Park’s Chinese Garden, Bird Lake, pool complex and sports grounds...');
@@ -396,6 +399,7 @@ export function buildSimpleHongKongWorld(scene, { setStatus = () => {} } = {}) {
     ...sheratonHotel.stats,
     ...salisburyYMCA.stats,
     ...kowloonShangriLa.stats,
+    ...tstWaterfrontRailing.stats,
     ...hongKongPark.stats,
     ...kowloonPark.stats,
     ...victoriaPark.stats,
@@ -416,7 +420,7 @@ export function buildSimpleHongKongWorld(scene, { setStatus = () => {} } = {}) {
 
   return {
     root: scene,
-    colliders: [...full.colliders, ...crossings.colliders, ...hsbc.colliders, ...standardChartered.colliders, ...twoIfc.colliders, ...icc.colliders, ...bankOfChina.colliders, ...centralPlaza.colliders, ...theCenter.colliders, ...ninaTower.colliders, ...cheungKong.colliders, ...k11Atelier.colliders, ...cullinanI.colliders, ...cullinanII.colliders, ...masterpiece.colliders, ...langhamPlace.colliders, ...summit.colliders, ...hopewell.colliders, ...sunHungKai.colliders, ...twoPacificPlace.colliders, ...airside.colliders, ...leeGardenOne.colliders, ...oneIfc.colliders, ...championTower.colliders, ...ckc2.colliders, ...qgo.colliders, ...centralGovernment.colliders, ...heritage1881.colliders, ...theArch.colliders, ...sorrento.colliders, ...conrad.colliders, ...hysan.colliders, ...twoTaikoo.colliders, ...theHenderson.colliders, ...oneExchange.colliders, ...twoExchange.colliders, ...courtOfFinalAppeal.colliders, ...hkcec.colliders, ...timesSquare.colliders, ...oceanTerminal.colliders, ...starHouse.colliders, ...marcoPolo.colliders, ...oceanCentre.colliders, ...princeHotel.colliders, ...gatewayTowerOne.colliders, ...gatewayTowerTwo.colliders, ...gatewayTowerThree.colliders, ...gatewayTowerFive.colliders, ...gatewayTowerSix.colliders, ...pacificClub.colliders, ...spaceMuseum.colliders, ...culturalCentre.colliders, ...clockTower.colliders, ...peninsulaHotel.colliders, ...sheratonHotel.colliders, ...salisburyYMCA.colliders, ...kowloonShangriLa.colliders, ...hongKongPark.colliders, ...kowloonPark.colliders, ...victoriaPark.colliders, ...airport.colliders],
+    colliders: [...full.colliders, ...crossings.colliders, ...hsbc.colliders, ...standardChartered.colliders, ...twoIfc.colliders, ...icc.colliders, ...bankOfChina.colliders, ...centralPlaza.colliders, ...theCenter.colliders, ...ninaTower.colliders, ...cheungKong.colliders, ...k11Atelier.colliders, ...cullinanI.colliders, ...cullinanII.colliders, ...masterpiece.colliders, ...langhamPlace.colliders, ...summit.colliders, ...hopewell.colliders, ...sunHungKai.colliders, ...twoPacificPlace.colliders, ...airside.colliders, ...leeGardenOne.colliders, ...oneIfc.colliders, ...championTower.colliders, ...ckc2.colliders, ...qgo.colliders, ...centralGovernment.colliders, ...heritage1881.colliders, ...theArch.colliders, ...sorrento.colliders, ...conrad.colliders, ...hysan.colliders, ...twoTaikoo.colliders, ...theHenderson.colliders, ...oneExchange.colliders, ...twoExchange.colliders, ...courtOfFinalAppeal.colliders, ...hkcec.colliders, ...timesSquare.colliders, ...oceanTerminal.colliders, ...starHouse.colliders, ...marcoPolo.colliders, ...oceanCentre.colliders, ...princeHotel.colliders, ...gatewayTowerOne.colliders, ...gatewayTowerTwo.colliders, ...gatewayTowerThree.colliders, ...gatewayTowerFive.colliders, ...gatewayTowerSix.colliders, ...pacificClub.colliders, ...spaceMuseum.colliders, ...culturalCentre.colliders, ...clockTower.colliders, ...peninsulaHotel.colliders, ...sheratonHotel.colliders, ...salisburyYMCA.colliders, ...kowloonShangriLa.colliders, ...tstWaterfrontRailing.colliders, ...hongKongPark.colliders, ...kowloonPark.colliders, ...victoriaPark.colliders, ...airport.colliders],
     bounds: full.bounds,
     stats,
     personSpawn: { ...SPAWN.person },
@@ -487,6 +491,7 @@ export function buildSimpleHongKongWorld(scene, { setStatus = () => {} } = {}) {
     sheratonHotel,
     salisburyYMCA,
     kowloonShangriLa,
+    tstWaterfrontRailing,
     hongKongPark,
     kowloonPark,
     victoriaPark,

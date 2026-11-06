@@ -113,6 +113,7 @@ export const city = {
       sheratonHotel: world.sheratonHotel,
       salisburyYMCA: world.salisburyYMCA,
       kowloonShangriLa: world.kowloonShangriLa,
+      tstWaterfrontRailing: world.tstWaterfrontRailing,
     hongKongPark: world.hongKongPark,
     kowloonPark: world.kowloonPark,
     victoriaPark: world.victoriaPark,
