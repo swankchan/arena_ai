@@ -19,7 +19,8 @@
       "Kowloon Shangri-La OSM way 29403978",
       "Hong Kong Park OSM way 42255430 authored facilities and paths",
       "Kowloon Park OSM way 4977404 authored facilities and paths",
-      "Victoria Park OSM way 4182605 authored facilities and paths"
+      "Victoria Park OSM way 4182605 authored facilities and paths",
+      "HKIA source terminal/tower footprints, runway/taxiway pavement and aircraft stand envelopes"
     ],
     "kowloonShangriLaFacadeMargin": 0.55
   },
@@ -30,6 +31,7 @@
     "tramAdjusted": 54,
     "remainingCarriagewayConflicts": 0,
     "remainingTramConflicts": 0,
-    "remainingMajorParkFeatureConflicts": 0
+    "remainingMajorParkFeatureConflicts": 0,
+    "remainingAirportFeatureConflicts": 0
   }
 }

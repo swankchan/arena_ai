@@ -92,4 +92,13 @@ Photo review also covered the T1 airside barrel-vault elevation, curved white fa
 - Every geometry position is finite; no photo / texture loader, downloaded model or generic grey-box substitute is introduced.
 - Runway and apron ground queries agree with their rendered DTM-following surfaces; existing roads keep their profiles and collision-free vehicle envelopes.
 - No final street lamp occupies a new terminal / tower footprint. Existing full-Hong-Kong roads, tram, crossings, parks, landmarks and street-light behaviour remain green in the complete suite.
-- Node tests and runtime construction are reported separately from browser visual inspection. If Chromium remains unavailable, no claim of browser visual verification is made.
+- Node tests and runtime construction are reported separately from browser visual inspection. If Chromium remains unavailable, no claim of browser visual inspection is made.
+
+## 5. Completion record — 2026-11-06
+
+- Implemented all Phase A–E items: three DTM-following runways, 14 principal visual taxiways, three aprons, T1 / T2 / Midfield / Satellite, both control towers, Sky Bridge, 23 procedural aircraft and jet bridges, map geometry, airport HUD naming and a road-valid airport teleport.
+- Each terminal / tower was committed independently before the unified-world integration commit.
+- `tests/hongkong-airport.test.cjs` covers source identity, exact runway dimensions, 129 vaults, DTM pads, road-clear colliders, cleared lamps, teleport, finite asset-free geometry and runtime / map wiring.
+- Final complete suite: **763 tests passed, 0 failed** (`node --test --test-reporter=dot tests/*.test.cjs`).
+- Runtime rebuilt successfully from **241 modules**. A separate full unified-world Node construction completed with airport stats present, 77 total landmarks and 38,912 colliders; browser-only canvas / Path2D calls were stubbed for that construction check.
+- No Chromium / Playwright browser session was available. The geometry, integration and runtime checks above are **not** represented as browser visual inspection.

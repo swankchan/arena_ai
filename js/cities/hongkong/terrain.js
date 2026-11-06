@@ -51,6 +51,7 @@ import { CGO_GROUND_SITES, centralGovernmentTerrainHeightAt } from './central-go
 import { HERITAGE_1881_GROUND_SITES, heritage1881TerrainHeightAt } from './heritage-1881-architecture.js';
 import { THE_ARCH_GROUND_SITES, theArchTerrainHeightAt } from './the-arch-architecture.js';
 import { SORRENTO_GROUND_SITES, sorrentoTerrainHeightAt } from './sorrento-architecture.js';
+import { AIRPORT_TERRAIN_SITES, airportTerrainHeightAt } from './airport-architecture.js';
 import { authoredHighestRawDatum } from './authored-landmark-site.js';
 
 function decodeBytes(base64) {
@@ -206,6 +207,11 @@ const THE_ARCH_PAD_HEIGHT = authoredHighestRawDatum(THE_ARCH_GROUND_SITES, rawHo
 export function theArchPadHeight() { return THE_ARCH_PAD_HEIGHT; }
 // Sorrento's exact six-level podium supplies one DTM datum; retained Austin Road / station ways keep their profiles.
 const SORRENTO_PAD_HEIGHT = authoredHighestRawDatum(SORRENTO_GROUND_SITES, rawHongKongTerrainHeight);
+// Airport construction pads use each source footprint's highest raw DTM sample. They are presentation datums only;
+// the northern runway itself remains on the unmodified DTM rather than receiving an invented engineering elevation.
+const AIRPORT_PAD_HEIGHTS = Object.freeze(Object.fromEntries(AIRPORT_TERRAIN_SITES.map((site) => [
+  site.key, authoredHighestRawDatum([site], rawHongKongTerrainHeight),
+])));
 export function sorrentoPadHeight() { return SORRENTO_PAD_HEIGHT; }
 
 export function hongKongTerrainHeight(x, z) {
@@ -260,7 +266,8 @@ export function hongKongTerrainHeight(x, z) {
   const centralGovernmentHeight = centralGovernmentTerrainHeightAt(x, z, kowloonShangriLaHeight, CENTRAL_GOVERNMENT_PAD_HEIGHT);
   const heritage1881Height = heritage1881TerrainHeightAt(x, z, centralGovernmentHeight, HERITAGE_1881_PAD_HEIGHT);
   const theArchHeight = theArchTerrainHeightAt(x, z, heritage1881Height, THE_ARCH_PAD_HEIGHT);
-  return sorrentoTerrainHeightAt(x, z, theArchHeight, SORRENTO_PAD_HEIGHT);
+  const sorrentoHeight = sorrentoTerrainHeightAt(x, z, theArchHeight, SORRENTO_PAD_HEIGHT);
+  return airportTerrainHeightAt(AIRPORT_TERRAIN_SITES, AIRPORT_PAD_HEIGHTS, x, z, sorrentoHeight);
 }
 
 export const HONG_KONG_TERRAIN_META = Object.freeze({
@@ -318,6 +325,7 @@ export const HONG_KONG_TERRAIN_META = Object.freeze({
   heritage1881PadHeight: HERITAGE_1881_PAD_HEIGHT,
   theArchPadHeight: THE_ARCH_PAD_HEIGHT,
   sorrentoPadHeight: SORRENTO_PAD_HEIGHT,
+  airportPadHeights: AIRPORT_PAD_HEIGHTS,
   tunnelStats: HK_TERRAIN.stats
 });
 

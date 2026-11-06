@@ -12,6 +12,9 @@ import {
 } from '../../../js/cities/hongkong/kowloon-shangri-la-architecture.js';
 import { majorParkLampConflictAt } from '../../../js/cities/hongkong/major-parks-architecture.js';
 import { pointInFlatRing } from '../../../js/cities/hongkong/landmark-site.js';
+import {
+  AIRPORT_BUILDING_SITES, AIRPORT_RUNWAYS, AIRPORT_TAXIWAYS, AIRPORT_GATES, airportWorldToLocal,
+} from '../../../js/cities/hongkong/airport-architecture.js';
 
 const MAX_RELOCATION = 24;
 const CARRIAGEWAY_MARGIN = 0.22;
@@ -171,6 +174,51 @@ function distanceToFlatRing(ring, x, z) {
   return minimum;
 }
 
+function distanceToSegment(x, z, a, b) {
+  const dx = b[0] - a[0], dz = b[1] - a[1], lengthSq = dx * dx + dz * dz || 1;
+  const t = Math.max(0, Math.min(1, ((x - a[0]) * dx + (z - a[1]) * dz) / lengthSq));
+  return Math.hypot(x - a[0] - dx * t, z - a[1] - dz * t);
+}
+
+export function airportLampConflictAt(x, z) {
+  // Cheap island rejection keeps the territory-wide generator fast.
+  if (x < -26000 || x > -21000 || z < -6500 || z > 2500) return false;
+  for (const site of AIRPORT_BUILDING_SITES) {
+    if (pointInFlatRing(site.ring, x, z) || distanceToFlatRing(site.ring, x, z) < .55) return true;
+  }
+  const local = airportWorldToLocal(x, z);
+  for (const runway of AIRPORT_RUNWAYS) {
+    if (distanceToSegment(local.x, local.z, runway.a, runway.b) < runway.width * .5 + 1.2) return true;
+  }
+  for (const taxiway of AIRPORT_TAXIWAYS) {
+    for (let index = 1; index < taxiway.points.length; index++) {
+      if (distanceToSegment(local.x, local.z, taxiway.points[index - 1], taxiway.points[index]) < taxiway.width * .5 + .65) return true;
+    }
+  }
+  for (const gate of AIRPORT_GATES) {
+    const dx = local.x - gate.x, dz = local.z - gate.z, c = Math.cos(gate.heading), s = Math.sin(gate.heading);
+    const standX = c * dx - s * dz, standZ = s * dx + c * dz;
+    if (Math.abs(standX) < 30.5 && Math.abs(standZ) < 33) return true;
+  }
+  return false;
+}
+
+function clearAirportFeatures(sourceX, sourceZ, dx, dz, baseY) {
+  const finalX = sourceX + dx / 100, finalZ = sourceZ + dz / 100;
+  if (!airportLampConflictAt(finalX, finalZ)) return { dx, dz, baseY };
+  for (const radius of [1.5, 3, 5, 8, 12, 16, 20, 24]) {
+    for (let step = 0; step < 16; step++) {
+      const angle = step * Math.PI / 8;
+      const candidateDx = Math.round((finalX + Math.sin(angle) * radius - sourceX) * 100);
+      const candidateDz = Math.round((finalZ + Math.cos(angle) * radius - sourceZ) * 100);
+      const x = sourceX + candidateDx / 100, z = sourceZ + candidateDz / 100;
+      if (airportLampConflictAt(x, z) || conflictAt(x, z)) continue;
+      return { dx: candidateDx, dz: candidateDz, baseY: Math.round(baseHeight(x, z) * 100) };
+    }
+  }
+  return null;
+}
+
 function clearKowloonShangriLaFootprint(sourceX, sourceZ, dx, dz, baseY) {
   const finalX = sourceX + dx / 100, finalZ = sourceZ + dz / 100;
   if (!pointInFlatRing(KOWLOON_SHANGRI_LA_SITE.ring, finalX, finalZ)) return { dx, dz, baseY };
@@ -210,7 +258,9 @@ function clearAuthoredLandmarkFootprints(sourceX, sourceZ, dx, dz, baseY) {
   if (!timesSquare) return null;
   const kowloonShangriLa = clearKowloonShangriLaFootprint(sourceX, sourceZ, timesSquare.dx, timesSquare.dz, timesSquare.baseY);
   if (!kowloonShangriLa) return null;
-  return clearMajorParkFeatures(sourceX, sourceZ, kowloonShangriLa.dx, kowloonShangriLa.dz, kowloonShangriLa.baseY);
+  const majorParks = clearMajorParkFeatures(sourceX, sourceZ, kowloonShangriLa.dx, kowloonShangriLa.dz, kowloonShangriLa.baseY);
+  if (!majorParks) return null;
+  return clearAirportFeatures(sourceX, sourceZ, majorParks.dx, majorParks.dz, majorParks.baseY);
 }
 
 export async function buildHongKongStreetLightClearance({
@@ -237,7 +287,7 @@ export async function buildHongKongStreetLightClearance({
     if (!result.relocated && dx === 0 && dz === 0) continue;
     overrides.push([index, dx, dz, baseY]);
   }
-  let remainingCarriagewayConflicts = 0, remainingTramConflicts = 0, remainingMajorParkFeatureConflicts = 0;
+  let remainingCarriagewayConflicts = 0, remainingTramConflicts = 0, remainingMajorParkFeatureConflicts = 0, remainingAirportFeatureConflicts = 0;
   const moved = new Map(overrides.map((row) => [row[0], row]));
   const hidden = new Set(suppressed);
   for (let index = 0; index < HK_STREET_LIGHTS.lamps.length; index++) {
@@ -247,6 +297,7 @@ export async function buildHongKongStreetLightClearance({
     if (roadConflictAt(finalX, finalZ)) remainingCarriagewayConflicts++;
     if (tramConflictAt(finalX, finalZ)) remainingTramConflicts++;
     if (majorParkLampConflictAt(finalX, finalZ)) remainingMajorParkFeatureConflicts++;
+    if (airportLampConflictAt(finalX, finalZ)) remainingAirportFeatureConflicts++;
   }
   const manifest = {
     version: 1,
@@ -256,13 +307,13 @@ export async function buildHongKongStreetLightClearance({
       heightTolerance: HEIGHT_TOLERANCE, maxRelocation: MAX_RELOCATION, radialDirections: 16,
       tramTrackClearance: TRAM_TRACK_CLEARANCE, tramPoleClearance: TRAM_POLE_CLEARANCE, tramWireClearance: TRAM_WIRE_CLEARANCE,
       tramNetworkSha256: HK_TRAM_NETWORK.source.alignmentSha256,
-      authoredLandmarkFootprints: ['Times Square OSM way 26469269', 'Kowloon Shangri-La OSM way 29403978', 'Hong Kong Park OSM way 42255430 authored facilities and paths', 'Kowloon Park OSM way 4977404 authored facilities and paths', 'Victoria Park OSM way 4182605 authored facilities and paths'],
+      authoredLandmarkFootprints: ['Times Square OSM way 26469269', 'Kowloon Shangri-La OSM way 29403978', 'Hong Kong Park OSM way 42255430 authored facilities and paths', 'Kowloon Park OSM way 4977404 authored facilities and paths', 'Victoria Park OSM way 4182605 authored facilities and paths', 'HKIA source terminal/tower footprints, runway/taxiway pavement and aircraft stand envelopes'],
       kowloonShangriLaFacadeMargin: .55
     },
     counts: {
       relocated: overrides.length, suppressed: suppressed.length,
       rendered: HK_STREET_LIGHTS.lamps.length - suppressed.length,
-      tramAdjusted, remainingCarriagewayConflicts, remainingTramConflicts, remainingMajorParkFeatureConflicts
+      tramAdjusted, remainingCarriagewayConflicts, remainingTramConflicts, remainingMajorParkFeatureConflicts, remainingAirportFeatureConflicts
     }
   };
   const javascript = `// Generated by tools/cities/hongkong/build-street-light-clearance.mjs.\n` +

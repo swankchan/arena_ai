@@ -6,6 +6,7 @@ import { SALISBURY_SITE, SALISBURY_TOWER_MODEL_HEIGHTS } from './salisbury-ymca-
 import { KOWLOON_SHANGRI_LA_SITE, KOWLOON_SHANGRI_LA_MODEL_HEIGHT } from './kowloon-shangri-la-architecture.js';
 import { HONG_KONG_PARK, KOWLOON_PARK, VICTORIA_PARK, majorParkArrivalPoints } from './major-parks-architecture.js';
 import { STAR_FERRY_TERMINALS } from './star-ferry-data.js';
+import { AIRPORT_BUILDING_SITES, AIRPORT_TERMINAL_TWO_SITE, airportWorldToLocal } from './airport-architecture.js';
 import {
   FULL_BOUNDS,
   FULL_ROAD_NAMES,
@@ -79,7 +80,8 @@ const LANDMARKS = [
   [SHERATON_SITE.name, { x: SHERATON_SITE.x, z: SHERATON_SITE.z, h: SHERATON_MODEL_HEIGHT, authored: true }],
   [SALISBURY_SITE.name, { x: SALISBURY_SITE.x, z: SALISBURY_SITE.z, h: Math.max(...SALISBURY_TOWER_MODEL_HEIGHTS), authored: true }],
   [KOWLOON_SHANGRI_LA_SITE.name, { x: KOWLOON_SHANGRI_LA_SITE.x, z: KOWLOON_SHANGRI_LA_SITE.z, h: KOWLOON_SHANGRI_LA_MODEL_HEIGHT, authored: true }],
-  ...STAR_FERRY_TERMINALS.map((site) => [site.name, site])
+  ...STAR_FERRY_TERMINALS.map((site) => [site.name, site]),
+  ...AIRPORT_BUILDING_SITES.map((site) => [site.name, { x: site.x, z: site.z, h: site.height, authored: true }])
 ].map(([name, landmark]) => ({ name, ...landmark }));
 
 export const PLACE_NAMES = new Set([
@@ -227,7 +229,11 @@ export function locationLabel(x, z) {
   const roads = nearestRoads(x, z, 42).filter((road) => road.name);
   if (roads.length >= 2) return `${roads[0].name} & ${roads[1].name}`;
   if (roads.length === 1) return roads[0].name;
-  if (!isDetailedCore(x, z)) return nearestTerritoryPlace(x, z, 9000)?.name || '香港';
+  if (!isDetailedCore(x, z)) {
+    const airport = airportWorldToLocal(x, z);
+    if (airport.x > -4900 && airport.x < 1400 && airport.z > -2900 && airport.z < 1400) return '香港國際機場';
+    return nearestTerritoryPlace(x, z, 9000)?.name || '香港';
+  }
   let best = '香港', bestDist = 650;
   for (const [name, ax, az] of AREA_LABELS) {
     const d = Math.hypot(ax - x, az - z);
@@ -382,6 +388,12 @@ for (const [id, placeName, label] of [
     x: spawn.x, z: spawn.z, heading: spawn.heading
   });
 }
+const airportSpawn = spawnOnFullRoad(AIRPORT_TERMINAL_TWO_SITE.x, AIRPORT_TERMINAL_TWO_SITE.z, { minWidth: 6 });
+if (!airportSpawn) throw new Error('No full-Hong-Kong road spawn for Hong Kong International Airport');
+TELEPORTS.push({
+  id: 'airport', name: '香港國際機場 客運區', sub: `赤鱲角 · ${airportSpawn.name || '機場道路'} · 靠左行駛`,
+  x: airportSpawn.x, z: airportSpawn.z, heading: airportSpawn.heading
+});
 
 // Spawns away from the busiest junction, each in its own lane/sidewalk.
 export const SPAWN = {

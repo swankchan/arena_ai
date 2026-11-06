@@ -13,6 +13,7 @@ import { CGO_SITE, CEO_SITE, LEGCO_SITE, CGO_OFFICE_HEIGHT, CEO_HEIGHT, LEGCO_HE
 import { HERITAGE_1881_COMPOUND, ROUND_HOUSE_1881 } from './heritage-1881-architecture.js';
 import { THE_ARCH_SITE, THE_ARCH_TOWER_SITES, THE_ARCH_HEIGHT } from './the-arch-architecture.js';
 import { SORRENTO_SITE, SORRENTO_TOWER_SITES } from './sorrento-architecture.js';
+import { AIRPORT_BUILDING_SITES, AIRPORT_RUNWAYS, AIRPORT_TERMINAL_ONE_SITE, airportLocalToWorld } from './airport-architecture.js';
 import { pointInFlatRing } from './landmark-site.js';
 import { HK_FULL_MAP } from '../../hk-full-map-data.js';
 import { HK_FULL_ROADS } from '../../hk-full-roads-data.js';
@@ -214,7 +215,7 @@ function mapLayers() {
   const theArchTowerMapSites = THE_ARCH_TOWER_SITES.map((site) => ({ x: site.x, z: site.z, h: THE_ARCH_HEIGHT, authored: true }));
   const sorrentoMapSite = { x: SORRENTO_SITE.x, z: SORRENTO_SITE.z, h: SORRENTO_SITE.height, authored: true };
   const sorrentoTowerMapSites = SORRENTO_TOWER_SITES.map((site) => ({ x: site.x, z: site.z, h: site.height, authored: true }));
-  const landmarks = [...stockLandmarks, [SCB_MAP_SITE.name, SCB_MAP_SITE], [TIMES_SQUARE_SITE.name, timesSquareMapSite], ['海運大廈 Ocean Terminal · LCX', oceanTerminalMapSite], ['星光行 Star House · Star Annex', starHouseMapSite], [MARCO_POLO_HONGKONG_SITE.name, marcoPoloMapSite], [OCEAN_CENTRE_SITE.name, oceanCentreMapSite], [PRINCE_HOTEL_SITE.name, princeHotelMapSite], [GATEWAY_TOWER_ONE_SITE.name, gatewayTowerOneMapSite], [GATEWAY_TOWER_TWO_SITE.name, gatewayTowerTwoMapSite], [GATEWAY_TOWER_THREE_SITE.name, gatewayTowerThreeMapSite], [GATEWAY_TOWER_FIVE_SITE.name, gatewayTowerFiveMapSite], [GATEWAY_TOWER_SIX_SITE.name, gatewayTowerSixMapSite], [PACIFIC_CLUB_SITE.name, pacificClubMapSite], ['香港太空館 Hong Kong Space Museum', spaceMuseumMapSite], [CULTURAL_CENTRE_SITE.name, culturalCentreMapSite], [CLOCK_TOWER_SITE.name, clockTowerMapSite], ['香港半島酒店 The Peninsula Hong Kong', peninsulaHotelMapSite], [SHERATON_SITE.name, sheratonHotelMapSite], [SALISBURY_SITE.name, salisburyYMCAMapSite], [KOWLOON_SHANGRI_LA_SITE.name, kowloonShangriLaMapSite], [CGO_SITE.name, centralGovernmentMapSite], [CEO_SITE.name, chiefExecutiveOfficeMapSite], [LEGCO_SITE.name, legislativeCouncilMapSite], [HERITAGE_1881_COMPOUND.name, heritage1881MapSite], [ROUND_HOUSE_1881.name, roundHouse1881MapSite], [THE_ARCH_SITE.name, theArchMapSite], ...THE_ARCH_TOWER_SITES.map((site, index) => [site.name, theArchTowerMapSites[index]]), [SORRENTO_SITE.name, sorrentoMapSite], ...SORRENTO_TOWER_SITES.map((site, index) => [site.name, sorrentoTowerMapSites[index]])]
+  const landmarks = [...stockLandmarks, [SCB_MAP_SITE.name, SCB_MAP_SITE], [TIMES_SQUARE_SITE.name, timesSquareMapSite], ['海運大廈 Ocean Terminal · LCX', oceanTerminalMapSite], ['星光行 Star House · Star Annex', starHouseMapSite], [MARCO_POLO_HONGKONG_SITE.name, marcoPoloMapSite], [OCEAN_CENTRE_SITE.name, oceanCentreMapSite], [PRINCE_HOTEL_SITE.name, princeHotelMapSite], [GATEWAY_TOWER_ONE_SITE.name, gatewayTowerOneMapSite], [GATEWAY_TOWER_TWO_SITE.name, gatewayTowerTwoMapSite], [GATEWAY_TOWER_THREE_SITE.name, gatewayTowerThreeMapSite], [GATEWAY_TOWER_FIVE_SITE.name, gatewayTowerFiveMapSite], [GATEWAY_TOWER_SIX_SITE.name, gatewayTowerSixMapSite], [PACIFIC_CLUB_SITE.name, pacificClubMapSite], ['香港太空館 Hong Kong Space Museum', spaceMuseumMapSite], [CULTURAL_CENTRE_SITE.name, culturalCentreMapSite], [CLOCK_TOWER_SITE.name, clockTowerMapSite], ['香港半島酒店 The Peninsula Hong Kong', peninsulaHotelMapSite], [SHERATON_SITE.name, sheratonHotelMapSite], [SALISBURY_SITE.name, salisburyYMCAMapSite], [KOWLOON_SHANGRI_LA_SITE.name, kowloonShangriLaMapSite], [CGO_SITE.name, centralGovernmentMapSite], [CEO_SITE.name, chiefExecutiveOfficeMapSite], [LEGCO_SITE.name, legislativeCouncilMapSite], [HERITAGE_1881_COMPOUND.name, heritage1881MapSite], [ROUND_HOUSE_1881.name, roundHouse1881MapSite], [THE_ARCH_SITE.name, theArchMapSite], ...THE_ARCH_TOWER_SITES.map((site, index) => [site.name, theArchTowerMapSites[index]]), [SORRENTO_SITE.name, sorrentoMapSite], ...SORRENTO_TOWER_SITES.map((site, index) => [site.name, sorrentoTowerMapSites[index]]), ...AIRPORT_BUILDING_SITES.map((site) => [site.name, { x: site.x, z: site.z, h: site.height, authored: true }])]
     .filter(([, landmark]) => Number.isFinite(landmark.h) && (landmark.h > 45 || landmark.authored))
     .map(([name, landmark]) => ({ name, ...landmark }))
     .sort((a, b) => b.h - a.h);
@@ -254,7 +255,17 @@ function fullMapLayers() {
   }
   const coreOutline = new Path2D();
   coreOutline.rect(GEO.bounds.minX, GEO.bounds.minZ, GEO.bounds.maxX - GEO.bounds.minX, GEO.bounds.maxZ - GEO.bounds.minZ);
-  overviewLayers = { land, parks, woods, roadCasing, roadFill, tram: makeTramLayer(), ferry: makeFerryLayer(), labelRoads, places: HK_FULL_MAP.places, coreOutline };
+  const airportRunways = new Path2D(), airportBuildings = new Path2D();
+  for (const runway of AIRPORT_RUNWAYS) {
+    const dx = runway.b.x - runway.a.x, dz = runway.b.z - runway.a.z, length = Math.hypot(dx, dz), nx = -dz / length * runway.width * .5, nz = dx / length * runway.width * .5;
+    const corners = [airportLocalToWorld(runway.a.x + nx, runway.a.z + nz), airportLocalToWorld(runway.b.x + nx, runway.b.z + nz),
+      airportLocalToWorld(runway.b.x - nx, runway.b.z - nz), airportLocalToWorld(runway.a.x - nx, runway.a.z - nz)];
+    addRing(airportRunways, corners.flatMap((point) => [point.x, point.z]));
+  }
+  for (const site of AIRPORT_BUILDING_SITES) addRing(airportBuildings, site.ring);
+  const airportPlace = ['香港國際機場', AIRPORT_TERMINAL_ONE_SITE.x, AIRPORT_TERMINAL_ONE_SITE.z, 0];
+  overviewLayers = { land, parks, woods, roadCasing, roadFill, tram: makeTramLayer(), ferry: makeFerryLayer(), labelRoads,
+    airportRunways, airportBuildings, places: [airportPlace, ...HK_FULL_MAP.places], coreOutline };
   return overviewLayers;
 }
 
@@ -411,7 +422,7 @@ export class HKGMapSystem {
   nearestPlace(x, z) {
     let best = null;
     let bestDistance = Infinity;
-    for (const [name, px, pz, rank] of HK_FULL_MAP.places) {
+    for (const [name, px, pz, rank] of fullMapLayers().places) {
       const distance = Math.hypot(px - x, pz - z);
       const limit = rank === 0 ? 4200 : rank === 1 ? 2200 : rank === 2 ? 1300 : 700;
       if (distance < limit && distance < bestDistance) {
@@ -600,7 +611,7 @@ export class HKGMapSystem {
       this.searchPath = path;
       this.searchBounds = b;
     }
-    const place = HK_FULL_MAP.places
+    const place = fullMapLayers().places
       .filter((entry) => entry[0].toLowerCase().includes(query))
       .sort((a, b) => {
         const exact = Number(a[0].toLowerCase() !== query) - Number(b[0].toLowerCase() !== query);
@@ -702,6 +713,10 @@ export class HKGMapSystem {
     ctx.fill(L.woods);
     ctx.fillStyle = MAP.park;
     ctx.fill(L.parks);
+    ctx.fillStyle = '#465158';
+    ctx.fill(L.airportRunways);
+    ctx.fillStyle = '#8b7b55';
+    ctx.fill(L.airportBuildings);
     ctx.lineCap = 'round';
     ctx.lineJoin = 'round';
     const widths = [20, 14, 10, 7, 4.5];
@@ -835,7 +850,7 @@ export class HKGMapSystem {
     view.screen(ctx);
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
-    for (const [name, x, z, rank] of HK_FULL_MAP.places) {
+    for (const [name, x, z, rank] of fullMapLayers().places) {
       if (view.zoom < 0.028 && rank > 0) continue;
       if (view.zoom < 0.055 && rank > 1) continue;
       if (view.zoom < 0.12 && rank > 2) continue;

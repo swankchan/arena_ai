@@ -116,6 +116,7 @@ export const city = {
     hongKongPark: world.hongKongPark,
     kowloonPark: world.kowloonPark,
     victoriaPark: world.victoriaPark,
+    airport: world.airport,
       landmarks: world.landmarks,
       stats,
       teleports: TELEPORTS,
