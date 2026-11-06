@@ -156,6 +156,41 @@ function createOldWingRoof(materials) {
   return { group, units, fanCount };
 }
 
+function createOldWingRefinement(materials) {
+  // HK-B0089: the old wing's harbour-facing elevation has broad, pale curved
+  // balcony ribbons in front of its ribbon glazing.  Model the two long north-facing
+  // source edges separately from the new wing's bird roof; these are photo-directed
+  // slabs and rails, not an invented OSM footprint or a generic box facade.
+  const group = new THREE.Group(); group.name = 'HKCECOldWingHK-B0089CurvedBalconyRefinement';
+  const slabs = store(), rails = [], posts = [], caps = [];
+  const ring = HKCEC_OLD_WING_SITE.localRing;
+  let slabCount = 0, railSegments = 0;
+  for (const edge of [24, 25]) {
+    const length = hkcecEdgeOutward(ring, edge).length, steps = Math.max(1, Math.ceil(length / 4));
+    for (const y of [13.55, 19.05, 24.55]) {
+      for (let j = 0; j < steps; j++) {
+        const t0 = j / steps, t1 = (j + 1) / steps;
+        const a = pointOnRing(ring, edge, t0, y, 0), b = pointOnRing(ring, edge, t1, y, 0);
+        const c = pointOnRing(ring, edge, t1, y, 1.35), d = pointOnRing(ring, edge, t0, y, 1.35);
+        quad(slabs, a, b, c, d, [.78, .80, .75]);
+        facadeQuad(slabs, ring, edge, t0, t1, y, y + .42, 1.35, [.78, .80, .75]);
+        beam(rails, pointOnRing(ring, edge, t0, y + 1.10, 1.35), pointOnRing(ring, edge, t1, y + 1.10, 1.35), .055, .07);
+        beam(posts, pointOnRing(ring, edge, t0, y + .42, 1.35), pointOnRing(ring, edge, t0, y + 1.10, 1.35), .045, .045);
+        slabCount++; railSegments++;
+      }
+      for (const t of [0, 1]) {
+        const p = pointOnRing(ring, edge, t, y + .21, .68);
+        cylinder(caps, p, .68, .42, 16);
+      }
+    }
+  }
+  meshStore(group, slabs, materials.whiteVertex, 'OldWingHK-B0089PaleCurvedBalconySlabs');
+  merged(group, rails, materials.dark, 'OldWingHK-B0089BalconyDarkHandrails', false);
+  merged(group, posts, materials.dark, 'OldWingHK-B0089BalconyRailPosts', false);
+  merged(group, caps, materials.white, 'OldWingHK-B0089RoundedBalconyEndCaps');
+  return { group, slabCount, railSegments };
+}
+
 function newWingSection(z) {
   const ring = HKCEC_NEW_WING_SITE.localRing, bounds = HKCEC_NEW_WING_SITE.localBounds, intersections = [];
   z = Math.max(bounds.minZ + 1e-6, Math.min(bounds.maxZ - 1e-6, z));
@@ -403,6 +438,7 @@ export function buildHkcec(root, { groundOffset = 0 } = {}) {
   const oldFacade = createOldWingFacade(); meshStore(oldGroup, oldFacade.glass, glass, 'OldWingRibbonGlazing'); meshStore(oldGroup, oldFacade.stone, whiteVertex, 'OldWingPaleHorizontalCladding'); meshStore(oldGroup, oldFacade.frames, frames, 'OldWingWindowFrames');
   shapeMesh(oldGroup, HKCEC_OLD_WING_SITE.localRing, HKCEC_COVERED_ROAD_SOFFIT, soffit, 'OldWingRoadClearUpperPodiumSoffit');
   const oldRoof = createOldWingRoof(materials); oldGroup.add(oldRoof.group);
+  const oldRefinement = createOldWingRefinement(materials); oldGroup.add(oldRefinement.group);
   const mainEntrance = createEntrance(HKCEC_OLD_WING_SITE, HKCEC_MAIN_ENTRANCE, materials, false); oldGroup.add(mainEntrance.group);
   const oldColumns = createColonnade(HKCEC_OLD_WING_SITE, HKCEC_COLUMN_POSITIONS.oldWing, materials, 'OldWing'); oldGroup.add(oldColumns.group);
   const oldGround = createGroundFacade(HKCEC_OLD_WING_SITE, HKCEC_GROUND_FACADE_SEGMENTS.oldWing, 'OldWing');
@@ -448,6 +484,7 @@ export function buildHkcec(root, { groundOffset = 0 } = {}) {
     hkcecNewWingRoofShells: newRoof.shells, hkcecNewWingCurvedGlassPanels: newFacade.curvedPanels, hkcecNewWingGlassPanels: newFacade.panels, hkcecNewWingRoofSeams: newRoof.standingSeams,
     hkcecNewWingRefined: true, hkcecNewWingInventoryId: 'HK-B0088', hkcecNewWingFineFacadeFins: newRefinement.finCount, hkcecNewWingRoofRibs: newRefinement.roofRibs,
     hkcecOldWingGlassPanels: oldFacade.panels, hkcecOldWingRoofPlantUnits: oldRoof.units, hkcecOldWingRoofFans: oldRoof.fanCount,
+    hkcecOldWingRefined: true, hkcecOldWingInventoryId: 'HK-B0089', hkcecOldWingBalconySlabs: oldRefinement.slabCount, hkcecOldWingBalconyRailSegments: oldRefinement.railSegments,
     hkcecAtriumGlassPanels: atrium.panels, hkcecAtriumWhiteArchTrusses: atrium.arches, hkcecAtriumRoofGardenTrees: atrium.trees, hkcecAtriumRoofGardenBenches: atrium.benches,
     hkcecCoveredRoadSoffit: HKCEC_COVERED_ROAD_SOFFIT, hkcecVehicleEnvelope: HKCEC_VEHICLE_ENVELOPE, hkcecGroundColumns: oldColumns.count + newColumns.count + atriumColumns.count,
     hkcecGroundFacadePanels: oldGround.panels + newGround.panels, hkcecGroundFacadeColliders: oldGround.colliders.length + newGround.colliders.length,

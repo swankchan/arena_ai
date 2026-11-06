@@ -35,3 +35,18 @@ test('HK-B0088 New Wing refinement keeps the curved glass wall and bird-roof str
   assert.equal(nonFinite, 0);
   assert.equal(h.HKCEC_NEW_WING_SITE.osmId, 26490011);
 });
+
+test('HK-B0089 Old Wing refinement adds separate pale balcony ribbons without changing clearance geometry', () => {
+  assert.equal(world.stats.hkcecOldWingRefined, true);
+  assert.equal(world.stats.hkcecOldWingInventoryId, 'HK-B0089');
+  assert.equal(world.stats.hkcecOldWingBalconySlabs, 93);
+  assert.equal(world.stats.hkcecOldWingBalconyRailSegments, 93);
+  const names = [];
+  world.group.traverse((object) => { if (object.name) names.push(object.name); });
+  assert.ok(names.some((name) => /OldWingHK-B0089PaleCurvedBalconySlabs/.test(name)));
+  assert.ok(names.some((name) => /OldWingHK-B0089RoundedBalconyEndCaps/.test(name)));
+  assert.equal(h.HKCEC_OLD_WING_SITE.osmId, 26490161);
+  assert.equal(world.stats.hkcecGroundFacadePanels, 366);
+  assert.equal(world.stats.hkcecGroundFacadeColliders, 84);
+  assert.equal(world.stats.hkcecColliders, 452);
+});
