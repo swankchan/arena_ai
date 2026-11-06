@@ -1,0 +1,220 @@
+const assert = require('node:assert/strict');
+const test = require('node:test');
+const fs = require('node:fs');
+const path = require('node:path');
+const root = path.join(__dirname, '..');
+let arch, siteUtils, terrain, THREE, worlds, lamps, clearance, treeField;
+const inside = (ring, x, z) => siteUtils.pointInFlatRing(ring, x, z);
+function pointInObb(c, x, z, y) {
+  if (!c.obb || y < c.minY || y > c.maxY) return false;
+  const dx = x - c.obb.cx, dz = z - c.obb.cz, lx = dx * c.obb.cs - dz * c.obb.sn, lz = dx * c.obb.sn + dz * c.obb.cs;
+  return Math.abs(lx) < c.obb.hx && Math.abs(lz) < c.obb.hz;
+}
+function* routeSamples(route, step = 1) {
+  for (let i = 2; i < route.points.length; i += 2) {
+    const ax = route.points[i - 2], az = route.points[i - 1], bx = route.points[i], bz = route.points[i + 1];
+    const count = Math.max(1, Math.ceil(Math.hypot(bx - ax, bz - az) / step));
+    for (let n = 0; n <= count; n++) yield [ax + (bx - ax) * n / count, az + (bz - az) * n / count];
+  }
+}
+
+test.before(async () => {
+  arch = await import('../js/cities/hongkong/major-parks-architecture.js');
+  siteUtils = await import('../js/cities/hongkong/landmark-site.js');
+  terrain = await import('../js/cities/hongkong/terrain.js');
+  lamps = (await import('../js/hk-street-light-data.js')).HK_STREET_LIGHTS.lamps;
+  clearance = (await import('../js/hk-street-light-clearance-data.js')).HK_STREET_LIGHT_CLEARANCE;
+  globalThis.document = { createElement: () => {
+    const canvas = { width: 0, height: 0 };
+    const context = new Proxy({ getImageData: (x, y, w, h) => ({ data: new Uint8ClampedArray(w * h * 4) }) }, { get: (target, key) => target[key] || (() => {}), set: (target, key, value) => { target[key] = value; return true; } });
+    canvas.getContext = () => context; return canvas;
+  } };
+  THREE = await import('three/webgpu');
+  const hk = await import('../js/cities/hongkong/hong-kong-park-world.js');
+  const kp = await import('../js/cities/hongkong/kowloon-park-world.js');
+  const vp = await import('../js/cities/hongkong/victoria-park-world.js');
+  const parkUtils = await import('../js/cities/hongkong/major-parks-world-utils.js');
+  worlds = new Map([
+    [arch.HONG_KONG_PARK, hk.buildHongKongPark(new THREE.Group())],
+    [arch.KOWLOON_PARK, kp.buildKowloonPark(new THREE.Group())],
+    [arch.VICTORIA_PARK, vp.buildVictoriaPark(new THREE.Group())]
+  ]);
+  treeField = parkUtils.buildMajorParkTreeLayer(new THREE.Group(), [...worlds.values()], [...worlds.values()].flatMap((world) => world.colliders));
+});
+
+test('three major parks retain exact OSM identities and separate official areas from projected site areas', () => {
+  assert.deepEqual(arch.MAJOR_PARKS.map((park) => park.id), [42255430, 4977404, 4182605]);
+  assert.deepEqual(arch.MAJOR_PARKS.map((park) => park.officialArea), [81600, 133000, 190000]);
+  for (const park of arch.MAJOR_PARKS) {
+    assert.ok(park.area > 70000); assert.ok(park.source.sourceTimestamp); assert.match(park.source.attribution, /OpenStreetMap/);
+    assert.notEqual(park.area, park.officialArea); assert.ok(arch.MAJOR_PARK_RESEARCH_SOURCES.length >= 6);
+    assert.ok(park.paths.length >= 4); assert.ok(park.entrances.length >= 3);
+  }
+  assert.equal(arch.VICTORIA_PARK.source.version, 36);
+});
+
+test('all authored facility rings are inside their park except the explicitly larger OSM woodland polygon', () => {
+  for (const park of arch.MAJOR_PARKS) for (const feature of park.features) {
+    if (feature.kind === 'woods') continue;
+    for (let i = 0; i < feature.ring.length; i += 2) assert.ok(inside(park.ring, feature.ring[i], feature.ring[i + 1]), `${feature.name} vertex outside ${park.name}`);
+  }
+  for (const feature of [arch.HONG_KONG_ARTIFICIAL_LAKE, arch.HONG_KONG_FOUNTAIN_PLAZA, arch.KOWLOON_FOUNTAIN, arch.KOWLOON_SCULPTURE_POOL, arch.KOWLOON_CHINESE_PAVILION, arch.VICTORIA_MODEL_BOAT_POOL, arch.VICTORIA_QUEEN_STATUE]) {
+    assert.ok(feature.evidence); assert.match(feature.evidence, /Photo-directed|photo-directed|Scene|scene|OSM/);
+  }
+  assert.ok(Math.abs(arch.VICTORIA_MODEL_BOAT_POOL.area - 954) < 1e-6); assert.equal(arch.VICTORIA_MODEL_BOAT_POOL.officialDepth, .5);
+});
+
+test('all ten authored entrances and arrival points are unique, on land and inside their exact sites', () => {
+  const ids = new Set();
+  for (const park of arch.MAJOR_PARKS) {
+    const arrivals = arch.majorParkArrivalPoints(park); assert.equal(arrivals.length, park.entrances.length);
+    for (const entry of arrivals) {
+      assert.ok(inside(park.ring, entry.x, entry.z), `${entry.id} outside site`); assert.ok(!ids.has(entry.id)); ids.add(entry.id);
+      assert.ok(Number.isFinite(entry.heading)); assert.match(entry.sub, /authored park entrance/);
+    }
+  }
+  assert.equal(ids.size, 10);
+});
+
+test('fourteen continuous paths stay inside their sites at one-metre sampling', () => {
+  assert.equal(arch.MAJOR_PARKS.reduce((sum, park) => sum + park.paths.length, 0), 14);
+  for (const park of arch.MAJOR_PARKS) for (const route of park.paths) {
+    assert.ok(route.intendedPoints.length >= 4); assert.ok(route.points.length >= 4);
+    for (const [x, z] of routeSamples(route)) assert.ok(inside(park.ring, x, z), `${route.id} leaves ${park.name} at ${x},${z}`);
+  }
+});
+
+test('walking routes cross no carriageway, including the Kowloon internal service road', () => {
+  const crossings = [];
+  for (const park of arch.MAJOR_PARKS) for (const route of park.paths) {
+    const roadIds = new Set();
+    for (const [x, z] of routeSamples(route)) {
+      const hit = arch.majorParkRoadAt(park, x, z, 0); if (hit) roadIds.add(hit.road.id);
+    }
+    if (roadIds.size) crossings.push([route.id, [...roadIds]]);
+  }
+  assert.deepEqual(crossings, []);
+  const kp = worlds.get(arch.KOWLOON_PARK); assert.equal(kp.stats.kowloonParkPathCrossings, 0); assert.equal(kp.stats.kowloonParkRouteCrossings, 0);
+  assert.match(kp.stats.kowloonParkCrossingEvidence, /avoid unnamed internal service-road segment 40570/); assert.match(kp.stats.kowloonParkCrossingEvidence, /no unverified crossing/);
+});
+
+test('path centres avoid buildings, water and active sports surfaces', () => {
+  const blocked = new Set(['heritage', 'conservatory', 'vantage', 'playground', 'soccer', 'tennis', 'basketball', 'bowls', 'roller', 'handball', 'tableTennis', 'centreCourt', 'poolBuilding', 'sportsCentre', 'poolComplex', 'olympic', 'bandstand', 'centralLawn', 'artificialLake', 'birdLake', 'modelBoatPool', 'fountain', 'sculpturePool', 'pavilion', 'monument', 'maze', 'garden']);
+  for (const park of arch.MAJOR_PARKS) for (const route of park.paths) for (const [x, z] of routeSamples(route, 2)) {
+    for (const feature of park.features) if (blocked.has(feature.kind)) assert.ok(!inside(feature.ring, x, z), `${route.id} enters ${feature.name}`);
+  }
+});
+
+test('ground queries preserve roads, use traceable DTM outside pads and match water / path datums', () => {
+  for (const park of arch.MAJOR_PARKS) {
+    let plain = null;
+    for (let x = park.bounds.minX + 3; x < park.bounds.maxX && !plain; x += 7) for (let z = park.bounds.minZ + 3; z < park.bounds.maxZ; z += 7) {
+      if (!inside(park.ring, x, z) || arch.majorParkRoadAt(park, x, z) || arch.majorParkPathAt(park, x, z)) continue;
+      if (park.features.some((feature) => inside(feature.ring, x, z))) continue;
+      plain = [x, z]; break;
+    }
+    assert.ok(plain, `no plain DTM sample in ${park.name}`);
+    assert.equal(arch.majorParkGroundHeightAt(park, ...plain, 0), terrain.hongKongTerrainHeight(...plain) + arch.MAJOR_PARK_BASE_OFFSET);
+    const road = park.roads[0], segment = road.segments[0], x = (segment[0] + segment[2]) * .5, z = (segment[1] + segment[3]) * .5;
+    if (inside(park.ring, x, z)) assert.equal(arch.majorParkGroundHeightAt(park, x, z, 123), 123);
+  }
+  const pool = arch.VICTORIA_MODEL_BOAT_POOL;
+  assert.equal(arch.majorParkGroundHeightAt(arch.VICTORIA_PARK, pool.site.x, pool.site.z, 0), arch.majorParkPadHeight(pool) - .5);
+  assert.equal(arch.MAJOR_PARK_BASE_OFFSET, .055); assert.equal(arch.MAJOR_PARK_PATH_OFFSET, .09);
+});
+
+test('tree candidates are deterministic and keep clear of roads and walking corridors', () => {
+  for (const park of arch.MAJOR_PARKS) {
+    const first = arch.createMajorParkTreeSites(park, 40), second = arch.createMajorParkTreeSites(park, 40);
+    assert.deepEqual(first, second); assert.ok(first.length > 10);
+    for (const tree of first) {
+      assert.ok(inside(park.ring, tree.x, tree.z)); assert.ok(!arch.majorParkRoadAt(park, tree.x, tree.z, 1.4));
+      assert.ok(!arch.majorParkPathAt(park, tree.x, tree.z, 2.2)); assert.ok(Number.isFinite(tree.y));
+    }
+  }
+});
+
+test('one shared instanced tree field accepts authored sites and updates camera LOD', () => {
+  assert.ok(treeField.stats.trees > 150, `accepted ${treeField.stats.trees} trees`); assert.equal(treeField.sites.size, treeField.stats.trees);
+  for (const park of arch.MAJOR_PARKS) assert.ok([...treeField.sites].filter((site) => inside(park.ring, site.x, site.z)).length > 20, `${park.name} has no authored tree field`);
+  const changed = treeField.update(new THREE.Vector3(arch.HONG_KONG_PARK.site.x, 12, arch.HONG_KONG_PARK.site.z));
+  assert.equal(typeof changed, 'boolean');
+  assert.ok(treeField.meshes.some((mesh) => mesh.visible && mesh.count > 0));
+  treeField.update(new THREE.Vector3(arch.VICTORIA_PARK.site.x, 12, arch.VICTORIA_PARK.site.z));
+  assert.ok(treeField.meshes.every((mesh) => mesh.count <= mesh.instanceMatrix.count));
+});
+
+test('all three authored world geometries are finite and neither base nor path meshes cover carriageways', () => {
+  for (const [park, world] of worlds) {
+    let meshes = 0;
+    world.root.traverse((object) => {
+      if (!object.isMesh) return; meshes++;
+      const position = object.geometry?.attributes?.position; assert.ok(position, object.name);
+      for (const value of position.array) assert.ok(Number.isFinite(value), `${object.name} has non-finite geometry`);
+      if (/walking ribbons|road-cleared DTM ground/.test(object.name)) for (let i = 0; i < position.count; i++) {
+        const x = position.getX(i), z = position.getZ(i);
+        assert.ok(!arch.majorParkRoadAt(park, x, z, 0), `${object.name} covers a carriageway`);
+        if (/walking ribbons/.test(object.name)) {
+          assert.ok(inside(park.ring, x, z), `${object.name} ribbon edge leaves exact site`);
+          const expected = arch.majorParkGroundHeightAt(park, x, z, terrain.hongKongTerrainHeight(x, z) + arch.MAJOR_PARK_BASE_OFFSET);
+          assert.ok(Math.abs(position.getY(i) - expected) < 1e-4, `${object.name} visual / query datum mismatch`);
+        }
+      }
+    });
+    for (const collider of world.colliders) if (collider.obb) {
+      assert.ok(!arch.majorParkRoadAt(park, collider.obb.cx, collider.obb.cz, 0), `${park.name} collider occupies a carriageway`);
+    }
+    assert.ok(meshes >= 50); assert.ok(world.colliders.length > 100); assert.ok(world.treeSites.length > 100);
+  }
+});
+
+test('every entrance is free of solid authored colliders at person height', () => {
+  for (const [park, world] of worlds) for (const entry of park.entrances) {
+    const y = arch.majorParkGroundHeightAt(park, entry.x, entry.z, 0) + 1.7;
+    assert.equal(world.colliders.filter((collider) => pointInObb(collider, entry.x, entry.z, y)).length, 0, entry.id);
+  }
+});
+
+test('recognisable facilities, courts and official dimensions are present in each authored world', () => {
+  const hk = worlds.get(arch.HONG_KONG_PARK).stats, kp = worlds.get(arch.KOWLOON_PARK).stats, vp = worlds.get(arch.VICTORIA_PARK).stats;
+  assert.equal(hk.hongKongParkAviaryArches, 4); assert.equal(hk.hongKongParkVantageSteps, 105); assert.equal(hk.hongKongParkVantageHeight, 30);
+  assert.equal(hk.hongKongParkConservatoryHouses, 3); assert.equal(hk.hongKongParkOlympicOfficialCapacity, 880); assert.ok(Math.abs(hk.hongKongParkArtificialLakeArea - 2200) < 1e-6);
+  assert.equal(kp.kowloonParkPavilionColumns, 8); assert.ok(kp.kowloonParkMazeHedgeColliders >= 20); assert.ok(kp.kowloonParkBirdLakeArea > 1500);
+  assert.equal(vp.victoriaParkSportsCourts, 30); assert.equal(vp.victoriaParkTennisCourts, 13); assert.ok(Math.abs(vp.victoriaParkModelBoatPoolArea - 954) < 1e-6); assert.equal(vp.victoriaParkModelBoatPoolDepth, .5);
+  for (const id of [1583, 1586, 1589, 20408, 8033, 2136, 7757, 13119]) assert.ok(arch.VICTORIA_PARK.roads.some((road) => road.id === id), `missing preserved road ${id}`);
+});
+
+test('final street-light table has no authored park feature or path conflicts', () => {
+  const overrides = new Map(clearance.overrides.map((row) => [row[0], row])), suppressed = new Set(clearance.suppressed), conflicts = [];
+  for (let index = 0; index < lamps.length; index++) {
+    if (suppressed.has(index)) continue;
+    const row = overrides.get(index), x = lamps[index][0] + (row?.[1] || 0) / 100, z = lamps[index][1] + (row?.[2] || 0) / 100;
+    if (arch.majorParkLampConflictAt(x, z)) conflicts.push(index);
+  }
+  assert.deepEqual(conflicts, []);
+});
+
+test('world, ground, colliders, teleports, map data and per-frame tree LOD are integrated', () => {
+  const simple = fs.readFileSync(path.join(root, 'js/cities/hongkong/simple-world.js'), 'utf8');
+  const meta = fs.readFileSync(path.join(root, 'js/cities/hongkong/meta.js'), 'utf8');
+  const index = fs.readFileSync(path.join(root, 'js/cities/hongkong/index.js'), 'utf8');
+  const map = fs.readFileSync(path.join(root, 'js/cities/hongkong/map.js'), 'utf8');
+  for (const name of ['buildHongKongPark', 'buildKowloonPark', 'buildVictoriaPark']) assert.match(simple, new RegExp(name));
+  for (const name of ['hongKongPark', 'kowloonPark', 'victoriaPark']) {
+    assert.match(simple, new RegExp(`${name}\\.groundHeightAt`)); assert.match(simple, new RegExp(`\\.\\.\\.${name}\\.colliders`)); assert.match(index, new RegExp(`${name}: world\\.${name}`));
+  }
+  assert.match(simple, /majorParkTrees\.update\(context\.cameraSystem\.currentPos\)/);
+  assert.match(map, /landmark\.labelHeight !== false/);
+  for (const name of ['HONG_KONG_PARK', 'KOWLOON_PARK', 'VICTORIA_PARK']) assert.match(meta, new RegExp(`majorParkArrivalPoints\\(${name}\\)`));
+});
+
+test('park rendering stays asset-free and labels photo direction / unverified facades honestly', () => {
+  for (const file of ['major-parks-world-utils.js', 'hong-kong-park-world.js', 'kowloon-park-world.js', 'victoria-park-world.js']) {
+    const source = fs.readFileSync(path.join(root, 'js/cities/hongkong', file), 'utf8');
+    assert.doesNotMatch(source, /TextureLoader|image-search|\.jpg|\.png/);
+  }
+  const vp = fs.readFileSync(path.join(root, 'js/cities/hongkong/victoria-park-world.js'), 'utf8');
+  assert.match(vp, /detailed current exterior not verified/); assert.match(vp, /photo-directed scene outline/);
+  const kp = fs.readFileSync(path.join(root, 'js/cities/hongkong/kowloon-park-world.js'), 'utf8');
+  assert.match(kp, /not a measured sculpture replica/); assert.match(kp, /no unverified crossing/);
+});

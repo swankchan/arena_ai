@@ -16,7 +16,10 @@
     "tramNetworkSha256": "ff877b3d0b546423b6233cd269cdb7ca69b4af2ea92e7afab5158df89649706a",
     "authoredLandmarkFootprints": [
       "Times Square OSM way 26469269",
-      "Kowloon Shangri-La OSM way 29403978"
+      "Kowloon Shangri-La OSM way 29403978",
+      "Hong Kong Park OSM way 42255430 authored facilities and paths",
+      "Kowloon Park OSM way 4977404 authored facilities and paths",
+      "Victoria Park OSM way 4182605 authored facilities and paths"
     ],
     "kowloonShangriLaFacadeMargin": 0.55
   },
@@ -26,6 +29,7 @@
     "rendered": 144915,
     "tramAdjusted": 54,
     "remainingCarriagewayConflicts": 0,
-    "remainingTramConflicts": 0
+    "remainingTramConflicts": 0,
+    "remainingMajorParkFeatureConflicts": 0
   }
 }

@@ -999,7 +999,7 @@ export class HKGMapSystem {
       if (!show) continue;
       if (placed.some(([x, y]) => Math.hypot(sx - x, sy - y) < 70)) continue;
       placed.push([sx, sy]);
-      const label = view.zoom > 1.1 ? `${landmark.name} ${Math.round(landmark.h)}m` : landmark.name;
+      const label = view.zoom > 1.1 && landmark.labelHeight !== false ? `${landmark.name} ${Math.round(landmark.h)}m` : landmark.name;
       ctx.lineWidth = 3;
       ctx.strokeStyle = 'rgba(4, 9, 12, 0.86)';
       ctx.strokeText(label, sx, sy - 4);

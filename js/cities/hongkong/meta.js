@@ -4,6 +4,7 @@ import { PENINSULA_TOWER_SITE, PENINSULA_TOWER_HEIGHT } from './peninsula-hotel-
 import { SHERATON_SITE, SHERATON_MODEL_HEIGHT } from './sheraton-hotel-architecture.js';
 import { SALISBURY_SITE, SALISBURY_TOWER_MODEL_HEIGHTS } from './salisbury-ymca-architecture.js';
 import { KOWLOON_SHANGRI_LA_SITE, KOWLOON_SHANGRI_LA_MODEL_HEIGHT } from './kowloon-shangri-la-architecture.js';
+import { HONG_KONG_PARK, KOWLOON_PARK, VICTORIA_PARK, majorParkArrivalPoints } from './major-parks-architecture.js';
 import { STAR_FERRY_TERMINALS } from './star-ferry-data.js';
 import {
   FULL_BOUNDS,
@@ -352,11 +353,14 @@ export const TELEPORTS = [
   { id: 'kennedytown', name: '堅尼地城 卑路乍街', sub: '皇后大道西 · 堅彌地城海旁', ...spawnOnRoad(-2700, -500, { minWidth: 10 }) },
   { id: 'shektongtsui', name: '石塘咀 德輔道西', sub: '西邊街 · 山道', ...spawnOnRoad(-1900, -650, { minWidth: 10 }) },
   { id: 'admiralty', name: '金鐘 添馬公園', sub: '金鐘道 · 政府總部', x: 343, z: 283, heading: 2.6 },
+  ...majorParkArrivalPoints(HONG_KONG_PARK),
   { id: 'wanchai', name: '灣仔 軒尼詩道', sub: '修頓球場 · 灣仔站', x: 1419, z: 467, heading: -1.57 },
   { id: 'causeway', name: '銅鑼灣 軒尼詩道', sub: '時代廣場 · 崇光百貨', x: 2446, z: 193, heading: -1.57 },
+  ...majorParkArrivalPoints(VICTORIA_PARK),
   { id: 'happyvalley', name: '跑馬地 黃泥涌道', sub: '雲地利道 · 跑馬地馬場', ...spawnOnRoad(2590, 1100, { minWidth: 8 }) },
   { id: 'quarrybay', name: '鰂魚涌 英皇道', sub: '柏架山道 · 糖廠街', ...spawnOnRoad(5000, -800, { minWidth: 10 }) },
   { id: 'tst', name: '尖沙咀 鐘樓', sub: '梳士巴利道 · 天星碼頭', x: 1316, z: -1517, heading: -2.4 },
+  ...majorParkArrivalPoints(KOWLOON_PARK),
   { id: 'jordan', name: '佐敦 佐敦道', sub: '廟街 · 玉器市場', x: 1187, z: -2580, heading: Math.PI },
   { id: 'mongkok', name: '旺角 彌敦道', sub: '亞皆老街 · 女人街', x: 1013, z: -4143, heading: Math.PI },
   { id: 'shamshuipo', name: '深水埗 汝州街', sub: '石硤尾街 · 鴨寮街', ...spawnOnRoad(451, -5103, { minWidth: 10 }) },
