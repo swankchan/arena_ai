@@ -73,11 +73,13 @@ export function harbourCityPalette(options = {}) {
   interior.colorNode = attribute('color').rgb; interior.emissiveNode = attribute('color').rgb.mul(attribute('aLit')).mul(nightAmount()).mul(.65);
   return {
     glazing, interior,
-    stone: new THREE.MeshStandardMaterial({ color: color(...(options.stone ?? [.66, .64, .58])), roughness: .79, metalness: .03 }),
-    paleStone: new THREE.MeshStandardMaterial({ color: color(...(options.paleStone ?? [.82, .81, .75])), roughness: .72, metalness: .04 }),
-    metal: new THREE.MeshStandardMaterial({ color: color(...(options.metal ?? [.34, .39, .40])), roughness: .35, metalness: .68 }),
+    // Material.color is a CPU-side THREE.Color, not a TSL ColorNode. Passing color(...) here
+    // silently left every stone/metal/roof material white in WebGPU; keep shader nodes in colorNode.
+    stone: new THREE.MeshStandardMaterial({ color: new THREE.Color(...(options.stone ?? [.66, .64, .58])), roughness: .79, metalness: .03 }),
+    paleStone: new THREE.MeshStandardMaterial({ color: new THREE.Color(...(options.paleStone ?? [.82, .81, .75])), roughness: .72, metalness: .04 }),
+    metal: new THREE.MeshStandardMaterial({ color: new THREE.Color(...(options.metal ?? [.34, .39, .40])), roughness: .35, metalness: .68 }),
     dark: new THREE.MeshStandardMaterial({ color: 0x172326, roughness: .48, metalness: .3 }),
-    roof: new THREE.MeshStandardMaterial({ color: color(...(options.roof ?? [.37, .39, .38])), roughness: .9, metalness: .04 }),
+    roof: new THREE.MeshStandardMaterial({ color: new THREE.Color(...(options.roof ?? [.37, .39, .38])), roughness: .9, metalness: .04 }),
     white: new THREE.MeshStandardMaterial({ color: 0xe8e8e2, roughness: .56, metalness: .12 }),
     lawn: new THREE.MeshStandardMaterial({ color: 0x496c42, roughness: .96, metalness: 0 }),
     warmLight: new THREE.MeshStandardMaterial({ color: 0xffe4ad, emissive: 0xffc66d, emissiveIntensity: .45, roughness: .5 })
