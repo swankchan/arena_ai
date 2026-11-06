@@ -103,10 +103,14 @@ test('The Salisbury has a traceable DTM pad and unchanged outside terrain', () =
   const x = s.x - 100, z = s.z + 95; assert.equal(terrain.hongKongTerrainHeight(x, z), terrain.rawHongKongTerrainHeight(x, z));
 });
 
-test('world authors dark podium, red YMCA identity, rounded window bands, unequal towers and entrance', () => {
+test('world authors the photo-reviewed pale precast podium, red YMCA identity, banded towers and entrance', () => {
   const world = fs.readFileSync(path.join(root, 'js/cities/hongkong/salisbury-ymca-world.js'), 'utf8');
-  for (const pattern of [/dark-grey Salisbury podium/, /Small square Salisbury podium windows/, /Red YMCA emblem/, /two unequal Salisbury towers/, /continuous rounded horizontal white window bands/, /curved-corner windows/, /Lower central connector/, /Warm Salisbury entrance downlights/, /SALISBURY_TOWER_MODEL_HEIGHTS/, /salisburyTerrainHeightAt/]) assert.match(world, pattern);
+  for (const pattern of [/light warm-grey precast Salisbury podium/, /Small square Salisbury podium windows/, /White podium window surrounds/, /dark blue-grey shopfront piers/, /dark shopfront fascia band/, /red painted wall panel/, /Red YMCA emblem/, /two unequal Salisbury towers/, /continuous rounded white horizontal window bands/, /curved-corner windows/, /Lower central connector/, /Warm Salisbury entrance downlights/, /SALISBURY_TOWER_MODEL_HEIGHTS/, /salisburyTerrainHeightAt/]) assert.match(world, pattern);
   assert.doesNotMatch(world, /image-search|\.jpg|\.png/);
+  // The reviewed daylight photograph rules out a uniformly white tower and a dark concrete podium.
+  assert.doesNotMatch(world, /Photo-derived white rounded Salisbury tower/);
+  assert.doesNotMatch(world, /dark-grey Salisbury podium/);
+  assert.match(world, /roughness: 0\.62/);
 });
 
 test('The Salisbury is integrated into world, ground, road profiles, map and runtime entry', () => {

@@ -58,10 +58,16 @@ function buildEntrance(group, base, materials) {
   return colliders;
 }
 
+// Reviewed exterior photography (The Salisbury, Salisbury Road corner) shows light warm-grey precast/concrete
+// cladding with white window surrounds, a dark blue-grey shopfront base at street level and a red painted wall
+// at the west end - not the uniformly dark podium this module previously assumed.
 function buildPodium(group, base, materials) {
-  const site = SALISBURY_SITE, cladding = new THREE.MeshStandardMaterial({ color: 0x5f6361, roughness: 0.84, metalness: 0.04 });
-  meshFromGeometry(group, ringShellGeometry(site.localRing, 4.8, SALISBURY_PODIUM_HEIGHT), cladding,
-    'Exact OSM four-level dark-grey Salisbury podium above the open ground floor');
+  const site = SALISBURY_SITE;
+  const precast = new THREE.MeshStandardMaterial({ color: 0x9b9a93, roughness: 0.9, metalness: 0.02 });
+  const shopfront = new THREE.MeshStandardMaterial({ color: 0x333d46, roughness: 0.66, metalness: 0.14 });
+  const redAccent = new THREE.MeshStandardMaterial({ color: 0x9d2b32, roughness: 0.8, metalness: 0.04 });
+  meshFromGeometry(group, ringShellGeometry(site.localRing, 4.8, SALISBURY_PODIUM_HEIGHT), precast,
+    'Exact OSM four-level light warm-grey precast Salisbury podium above the dark shopfront base');
   const ground = createRingWindowRows(site, {
     y0: 0, rowCount: 1, floorHeight: 4.8, sill: 0.35, windowHeight: 3.85, targetBayWidth: 3.8,
     windowRatio: 0.84, jambWidth: 0.10, frameDepth: 0.16, lintels: false,
@@ -75,7 +81,7 @@ function buildPodium(group, base, materials) {
     tintA: [0.025, 0.040, 0.042], tintB: [0.12, 0.16, 0.16], litThreshold: 0.77,
   });
   meshStore(group, windows.glass, materials.glazing, 'Small square Salisbury podium windows');
-  merged(group, windows.frames, cladding, 'Dark podium window surrounds'); merged(group, windows.sills, cladding, 'Dark podium window sills and lintels');
+  merged(group, windows.frames, materials.white, 'White podium window surrounds'); merged(group, windows.sills, materials.white, 'White podium window sills and lintels');
   const piers = [], bands = [], colliders = [];
   for (let edge = 0; edge < site.localRing.length / 2 - 1; edge++) {
     const length = harbourCityEdgeOutward(site.localRing, edge).length, bays = Math.max(1, Math.round(length / 3.8));
@@ -90,7 +96,24 @@ function buildPodium(group, base, materials) {
     colliders.push(harbourCitySegmentCollider(site, edge, 0, 1, base + 4.8, base + SALISBURY_PODIUM_HEIGHT, 0.46));
   }
   ringBand(bands, site, 4.82, 0.26, 0.18, 0.25); ringBand(bands, site, 14.65, 0.35, 0.30, 0.34);
-  merged(group, piers, cladding, 'The Salisbury ground-floor dark stone piers'); merged(group, bands, cladding, 'The Salisbury podium stone courses');
+  // Dark shopfront base: navy fascia over every street-level bay plus pilasters between bays, matching the
+  // reviewed corner photograph where the ground floor reads as a dark band under pale precast.
+  const fascia = [], red = [];
+  let fasciaSegments = 0;
+  for (let edge = 0; edge < site.localRing.length / 2 - 1; edge++) {
+    const length = harbourCityEdgeOutward(site.localRing, edge).length, bays = Math.max(1, Math.round(length / 3.8));
+    for (let bay = 0; bay < bays; bay++) {
+      const middle = (bay + 0.5) / bays;
+      if (edge === SALISBURY_MAIN_ENTRANCE.sourceEdge && Math.abs(middle - 0.5) < 0.20) continue;
+      edgeBox(fascia, site, edge, middle, 4.58, 0.17, length / bays * 0.94, 0.62, 0.34); fasciaSegments++;
+    }
+  }
+  // The red painted panel sits on the short west return of the podium in the reviewed photograph.
+  for (const [edge, t] of [[0, 0.18], [15, 0.82]]) edgeBox(red, site, edge, t, 2.35, 0.13, 3.4, 4.5, 0.22);
+  merged(group, piers, shopfront, 'The Salisbury dark blue-grey shopfront piers');
+  merged(group, fascia, shopfront, 'The Salisbury dark shopfront fascia band above the street-level glazing');
+  merged(group, red, redAccent, 'The Salisbury red painted wall panel on the west return');
+  merged(group, bands, precast, 'The Salisbury pale precast stone courses');
   colliders.push(...buildEntrance(group, base, materials));
 
   const branding = makeCanvasSign(15.5, 3.9, (ctx, canvas) => {
@@ -102,13 +125,13 @@ function buildPodium(group, base, materials) {
   branding.name = 'Red YMCA emblem and The Salisbury identity on the dark podium';
   const p = point(site, SALISBURY_MAIN_ENTRANCE.sourceEdge, 0.5, 11.25, 0.40);
   branding.position.set(...p); branding.rotation.y = frame().rotation; group.add(branding);
-  return { colliders, windows: ground.panels + windows.panels };
+  return { colliders, windows: ground.panels + windows.panels, fasciaSegments };
 }
 
 function buildTower(group, base, materials, site, rows, index) {
   const height = SALISBURY_TOWER_MODEL_HEIGHTS[index];
   meshFromGeometry(group, ringShellGeometry(site.localRing, SALISBURY_PODIUM_HEIGHT, height), materials.paleStone,
-    `Photo-derived white rounded Salisbury tower ${index + 1}`);
+    `Photo-derived light warm-grey rounded Salisbury tower ${index + 1}`);
   const windows = createRingWindowRows(site, {
     y0: 15.4, rowCount: rows, floorHeight: 3.15, sill: 0.63, windowHeight: 1.84,
     targetBayWidth: 2.65, windowRatio: 0.75, jambWidth: 0.11, frameDepth: 0.17,
@@ -119,7 +142,7 @@ function buildTower(group, base, materials, site, rows, index) {
   const bands = [];
   for (let row = 0; row <= rows; row++) ringBand(bands, site, 15.08 + row * 3.15, 0.20, 0.18, 0.20);
   ringBand(bands, site, height - 0.35, 0.55, 0.32, 0.34);
-  merged(group, bands, materials.white, `Tower ${index + 1} continuous rounded horizontal white window bands`);
+  merged(group, bands, materials.white, `Tower ${index + 1} continuous rounded white horizontal window bands`);
   return { windows: windows.panels, colliders: harbourCityRingColliders(site, base + SALISBURY_PODIUM_HEIGHT, base + height, 0.40) };
 }
 function buildConnector(group, base, materials) {
@@ -140,7 +163,9 @@ export function buildSalisburyYMCA(scene, { groundOffset = 0 } = {}) {
   const root = new THREE.Group(); root.name = 'The Salisbury – YMCA of Hong Kong — exact podium and photo-derived twin towers'; scene.add(root);
   const group = new THREE.Group(); group.name = 'The Salisbury dark podium, unequal rounded towers and central link';
   group.position.set(SALISBURY_SITE.x, groundOffset, SALISBURY_SITE.z); group.rotation.y = SALISBURY_SITE.ry; root.add(group);
-  const materials = harbourCityPalette({ stone: [0.68, 0.69, 0.65], paleStone: [0.84, 0.85, 0.80], metal: [0.27, 0.29, 0.28], roughness: 0.34 });
+  // Photo-reviewed tones: the two rounded towers are light warm-grey concrete with white banded surrounds,
+  // not the near-white massing used before. `white` stays reserved for the banded ribbons and surrounds.
+  const materials = harbourCityPalette({ stone: [0.46, 0.45, 0.42], paleStone: [0.57, 0.56, 0.51], metal: [0.27, 0.29, 0.28], roughness: 0.62 });
   const podium = buildPodium(group, groundOffset, materials), connector = buildConnector(group, groundOffset, materials);
   const towers = SALISBURY_TOWER_SITES.map((site, index) => buildTower(group, groundOffset, materials, site, SALISBURY_TOWER_VISIBLE_ROWS[index], index));
   const colliders = [...podium.colliders, ...connector.colliders, ...towers.flatMap((tower) => tower.colliders)];
@@ -153,5 +178,6 @@ export function buildSalisburyYMCA(scene, { groundOffset = 0 } = {}) {
       salisburyOsmHeight: SALISBURY_PODIUM_HEIGHT, salisburyOsmLevels: 4, salisburyPhotoDerivedTowers: 2,
       salisburyTowerOneModelHeight: SALISBURY_TOWER_MODEL_HEIGHTS[0], salisburyTowerTwoModelHeight: SALISBURY_TOWER_MODEL_HEIGHTS[1],
       salisburyWindows: podium.windows + connector.windows + towers.reduce((sum, tower) => sum + tower.windows, 0),
+      salisburyShopfrontFasciaSegments: podium.fasciaSegments, salisburyTowerTone: 'light warm-grey concrete',
       salisburyRoadCrossings: 0, salisburyColliders: colliders.length } };
 }
