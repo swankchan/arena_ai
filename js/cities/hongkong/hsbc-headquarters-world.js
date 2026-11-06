@@ -1,6 +1,6 @@
 import * as THREE from 'three/webgpu';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
-import { color, dot, float, fract, mix, sin, smoothstep, step, texture, uv, vec2 } from 'three/tsl';
+import { color, dot, float, fract, fwidth, mix, positionLocal, sin, smoothstep, step, texture, uv, vec2 } from 'three/tsl';
 import { cityUniforms, facadeCell, filteredPulse, createFacadeBoxes, WALL_KINDS } from '../../tsl-materials.js';
 import {
   HSBC_SITE,
@@ -50,6 +50,20 @@ function createHsbcCurtainWallMaterial({ entrance = false } = {}) {
   return material;
 }
 
+function createHsbcPlazaMaterial() {
+  // Large stone pavers continue across the complete OSM-shaped public plaza. Using local-position joints avoids
+  // rectangular line meshes spilling beyond the irregular site boundary.
+  const material = new THREE.MeshStandardNodeMaterial({ metalness: 0.025, roughness: 0.9, envMapIntensity: 0.2 });
+  const px = positionLocal.x.div(2.4), pz = positionLocal.z.div(2.4);
+  const panel = filteredPulse(fract(px), 0.014, 0.986, fwidth(px))
+    .mul(filteredPulse(fract(pz), 0.014, 0.986, fwidth(pz)));
+  const checker = fract(positionLocal.x.add(positionLocal.z).mul(0.117));
+  const stone = mix(color(0x99988f), color(0xa5a39a), checker.mul(0.32));
+  material.colorNode = mix(color(0x716f69), stone, panel);
+  material.roughnessNode = mix(float(0.96), float(0.86), panel);
+  return material;
+}
+
 function subtlyLitSteel() {
   const material = new THREE.MeshStandardNodeMaterial({ color: 0xa7b1b3, roughness: 0.38, metalness: 0.68 });
   material.emissiveNode = color(0xc5d6dc).mul(nightAmount().mul(0.055));
@@ -91,6 +105,40 @@ function roundedRectangle(path, width, height, radius) {
   path.lineTo(x, y + r);
   path.quadraticCurveTo(x, y, x + r, y);
   return path;
+}
+
+function createHsbcMastGeometry() {
+  // Each exposed mast is a four-chord built-up steel column, not a single oversized pole.
+  const parts = [];
+  for (const x of [-0.38, 0.38]) {
+    for (const z of [-0.38, 0.38]) {
+      parts.push(new THREE.CylinderGeometry(0.23, 0.23, 1, 12).translate(x, 0, z));
+    }
+  }
+  return mergeGeometries(parts, false);
+}
+
+function createHsbcMastCollarGeometry() {
+  const parts = [];
+  for (const z of [-0.38, 0.38]) parts.push(new THREE.BoxGeometry(1.08, 1, 0.14).translate(0, 0, z));
+  for (const x of [-0.38, 0.38]) parts.push(new THREE.BoxGeometry(0.14, 1, 1.08).translate(x, 0, 0));
+  return mergeGeometries(parts, false);
+}
+
+function createHsbcGussetGeometry() {
+  const shape = new THREE.Shape();
+  shape.moveTo(-0.82, -0.38);
+  shape.lineTo(-0.48, -0.68);
+  shape.lineTo(0.48, -0.68);
+  shape.lineTo(0.82, -0.38);
+  shape.lineTo(0.82, 0.38);
+  shape.lineTo(0.48, 0.68);
+  shape.lineTo(-0.48, 0.68);
+  shape.lineTo(-0.82, 0.38);
+  shape.closePath();
+  const geometry = new THREE.ExtrudeGeometry(shape, { depth: 0.12, bevelEnabled: false });
+  geometry.translate(0, 0, -0.06);
+  return geometry;
 }
 
 function createCrownGeometry() {
@@ -371,7 +419,7 @@ export function buildHsbcHeadquarters(root, { groundOffset = 0 } = {}) {
   const claddingSeam = new THREE.MeshStandardMaterial({ color: 0x879499, roughness: 0.6, metalness: 0.3 });
   const crownSteel = new THREE.MeshStandardNodeMaterial({ color: 0x4c5d64, roughness: 0.32, metalness: 0.68 });
   crownSteel.emissiveNode = color(0x8298a4).mul(nightAmount().mul(0.04));
-  const plazaMaterial = new THREE.MeshStandardMaterial({ color: 0x99988f, roughness: 0.94, metalness: 0.02 });
+  const plazaMaterial = createHsbcPlazaMaterial();
   const bronze = new THREE.MeshStandardNodeMaterial({ color: 0x624438, roughness: 0.57, metalness: 0.58 });
   bronze.emissiveNode = color(0x8b5a3c).mul(nightAmount().mul(0.12));
   const bronzeMane = new THREE.MeshStandardNodeMaterial({ color: 0x50362d, roughness: 0.62, metalness: 0.58 });
@@ -398,6 +446,7 @@ export function buildHsbcHeadquarters(root, { groundOffset = 0 } = {}) {
   const beams = [], darkBeams = [], masts = [], mastCollars = [], stairWindows = [], stairArchWindows = [], escalatorSteps = [];
   const ladderFrames = [], ladderLandings = [], stairBlueWindows = [], stairWindowMullions = [], stairArchCurves = [], stairSillArches = [], ladderBraces = [];
   const facadeSunshades = [], facadeFins = [], serviceGlassStrips = [], claddingSeams = [], crownMullions = [], crownFins = [], crownRimPanels = [];
+  const mastRungs = [], trussNodePlates = [], trussNodeBolts = [], trussCrossTies = [], crownSignBackplates = [], crownSignSupports = [];
   const up = new THREE.Vector3(0, 1, 0);
   function beam(list, a, b, thickness) {
     const start = new THREE.Vector3(...a), end = new THREE.Vector3(...b);
@@ -613,6 +662,18 @@ export function buildHsbcHeadquarters(root, { groundOffset = 0 } = {}) {
           steelBoxes.push({ x: innerX, y: level + 4.5, z: z + face * 0.08, sx: 1.15, sy: 0.85, sz: 0.45 });
         }
         steelBoxes.push({ x: 0, y: level, z: z + face * 0.08, sx: 1.1, sy: 0.72, sz: 0.45 });
+        // Bolted octagonal gussets sit proud of the two truss faces. Transverse ties make the coat-hanger a
+        // three-dimensional structural module when seen from the plaza or the drone, rather than a flat elevation.
+        for (const node of [
+          { x: innerLeft, y: level + 4.5 }, { x: 0, y: level }, { x: innerRight, y: level + 4.5 }
+        ]) {
+          const plateZ = z + face * 0.35;
+          trussNodePlates.push({ x: node.x, y: node.y, z: plateZ });
+          for (const [dx, dy] of [[-0.5, -0.25], [0, -0.42], [0.5, -0.25], [-0.5, 0.25], [0, 0.42], [0.5, 0.25]]) {
+            trussNodeBolts.push({ x: node.x + dx, y: node.y + dy, z: plateZ + face * 0.105 });
+          }
+          beam(trussCrossTies, [node.x, node.y, bay.z - bay.depth * 0.5], [node.x, node.y, bay.z + bay.depth * 0.5], 0.26);
+        }
         for (const x of [-8, 8]) beam(darkBeams, [x, level - 7.0, z], [x, level, z], 0.15);
       }
       for (const side of [-1, 1]) {
@@ -632,7 +693,12 @@ export function buildHsbcHeadquarters(root, { groundOffset = 0 } = {}) {
     const height = boundary.roofY + 4.2 - HSBC_PLAZA_TOP;
     for (const x of HSBC_MAST_X) {
       masts.push({ x, y: HSBC_PLAZA_TOP + height * 0.5, z: boundary.z, sy: height });
-      darkBoxes.push({ x: x + 0.66, y: HSBC_PLAZA_TOP + height * 0.5, z: boundary.z, sx: 0.13, sy: height, sz: 0.18 });
+      for (const railOffset of [-0.28, 0.28]) {
+        darkBoxes.push({ x: x + 0.66, y: HSBC_PLAZA_TOP + height * 0.5, z: boundary.z + railOffset, sx: 0.13, sy: height, sz: 0.09 });
+      }
+      for (let y = 1.2; y < boundary.roofY + 4.2; y += 1.8) {
+        mastRungs.push({ x: x + 0.66, y, z: boundary.z, sx: 0.12, sy: 0.055, sz: 0.68 });
+      }
       for (let y = 14.4; y < boundary.roofY + 4.2; y += 14.4) {
         mastCollars.push({ x, y, z: boundary.z, sy: 0.12 });
       }
@@ -732,6 +798,14 @@ export function buildHsbcHeadquarters(root, { groundOffset = 0 } = {}) {
   crownGlass.position.set(0, 171.8, HSBC_MAIN_BAY.z); crownGlass.scale.set(15.5, 1, 2.65);
   crownGlass.name = 'HSBCCrownGlass';
   group.add(crownGlass);
+  for (const face of [-1, 1]) {
+    const z = HSBC_MAIN_BAY.z + face * 4.91;
+    crownSignBackplates.push({ x: 0, y: 177, z, sx: 5.5, sy: 2.8, sz: 0.12 });
+    for (const x of [-2.45, 2.45]) {
+      beam(crownSignSupports, [x, 174.65, HSBC_MAIN_BAY.z + face * 4.25], [x, 178.15, z], 0.13);
+    }
+  }
+
   const signTexture = createHsbcSignTexture();
   const signMaterial = new THREE.MeshBasicNodeMaterial({ transparent: true, depthWrite: false, toneMapped: false });
   const signTex = texture(signTexture, uv());
@@ -772,6 +846,11 @@ export function buildHsbcHeadquarters(root, { groundOffset = 0 } = {}) {
   addInstances(group, new THREE.BoxGeometry(1, 1, 1), steel, crownMullions, 'HSBCCrownVerticalMullions');
   addInstances(group, new THREE.BoxGeometry(1, 1, 1), steel, crownFins, 'HSBCCrownCurvedEndFins');
   addInstances(group, new THREE.BoxGeometry(1, 1, 1), dark, crownRimPanels, 'HSBCCrownRimPanels');
+  addInstances(group, new THREE.BoxGeometry(1, 1, 1), dark, crownSignBackplates, 'HSBCCrownSignBackplates');
+  addInstances(group, new THREE.BoxGeometry(1, 1, 1), steel, crownSignSupports, 'HSBCCrownSignSupports');
+  addInstances(group, createHsbcGussetGeometry(), steel, trussNodePlates, 'HSBCTrussOctagonalGussetPlates');
+  addInstances(group, new THREE.CylinderGeometry(0.07, 0.07, 0.1, 8).rotateX(Math.PI / 2), dark, trussNodeBolts, 'HSBCTrussGussetBolts');
+  addInstances(group, new THREE.BoxGeometry(1, 1, 1), steel, trussCrossTies, 'HSBCTrussTransverseTies');
   addInstances(group, new THREE.BoxGeometry(1, 1, 1), dark, stairWindows, 'HSBCEscapeStairWindows', { castShadow: false });
   addInstances(group, createStairWindowGeometry(), stairGlass, stairArchWindows, 'HSBCRoundedStairLandingWindows', { castShadow: false });
   addInstances(group, new THREE.BoxGeometry(1, 1, 1), steel, beams, 'HSBCInvertedVSuspensionTrusses');
@@ -781,8 +860,9 @@ export function buildHsbcHeadquarters(root, { groundOffset = 0 } = {}) {
   addInstances(group, new THREE.BoxGeometry(1, 1, 1), plinthStone, stoneBoxes, 'HSBCLionStonePlinths');
   addInstances(group, new THREE.BoxGeometry(1, 1, 1), bronze, bronzeBoxes, 'HSBCBronzeLionBasePlates');
   addInstances(group, new THREE.BoxGeometry(1, 1, 1), greenery, greenBoxes, 'HSBCGardenTerraces', { castShadow: false });
-  addInstances(group, new THREE.CylinderGeometry(0.68, 0.68, 1, 16), steel, masts, 'HSBCExposedSteelMasts');
-  addInstances(group, new THREE.CylinderGeometry(0.72, 0.72, 1, 16), steel, mastCollars, 'HSBCMastCollarJoints');
+  addInstances(group, createHsbcMastGeometry(), steel, masts, 'HSBCExposedSteelMasts');
+  addInstances(group, createHsbcMastCollarGeometry(), steel, mastCollars, 'HSBCMastCollarJoints');
+  addInstances(group, new THREE.BoxGeometry(1, 1, 1), dark, mastRungs, 'HSBCMastAccessLadderRungs');
 
   const colliders = [];
   for (const bay of HSBC_BAYS) {
@@ -823,6 +903,10 @@ export function buildHsbcHeadquarters(root, { groundOffset = 0 } = {}) {
     hsbcSteppedBays: HSBC_BAYS.length,
     hsbcStoreys: HSBC_BAYS.reduce((sum, bay) => sum + bay.floors, 0),
     hsbcMasts: masts.length,
+    hsbcMastAccessRungs: mastRungs.length,
+    hsbcTrussGussetPlates: trussNodePlates.length,
+    hsbcTrussGussetBolts: trussNodeBolts.length,
+    hsbcTrussTransverseTies: trussCrossTies.length,
     hsbcSuspensionLevels: hsbcSuspensionLevelsForRoof(HSBC_MAIN_ROOF_Y).length,
     hsbcStairLadders: HSBC_BAYS.length * 4,
     hsbcStairLadderLandings: ladderLandings.length,
