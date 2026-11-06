@@ -22,7 +22,7 @@ function prismXZ(points, bottom, top) {
 
 function tailFinGeometry() {
   const shape=new THREE.Shape();shape.moveTo(18,5);shape.lineTo(25,15);shape.lineTo(30,15);shape.lineTo(28,5);shape.closePath();
-  const geometry=new THREE.ExtrudeGeometry(shape,{depth:.7,bevelEnabled:false,curveSegments:1});geometry.rotateY(-Math.PI/2);geometry.translate(-.35,0,0);return geometry;
+  const geometry=new THREE.ExtrudeGeometry(shape,{depth:.7,bevelEnabled:false,curveSegments:1});geometry.rotateY(-Math.PI/2);geometry.translate(.35,0,0);return geometry;
 }
 
 function addAircraft(globals,gate,baseY,index,materials) {
@@ -89,7 +89,9 @@ export function buildAirportAircraft(scene,{groundHeightAt=hongKongTerrainHeight
     if(index%3===0){
       const tugX=gate.x+Math.cos(gate.heading)*10,tugZ=gate.z-Math.sin(gate.heading)*10,tugWorld=airportLocalToWorld(tugX,tugZ),tugY=groundHeightAt(tugWorld.x,tugWorld.z)+.8;
       box(globals.tugs,[tugX,tugY,tugZ],[4.2,1.25,2.1],gate.heading);box(globals.tugs,[tugX,tugY+1,tugZ],[1.8,.9,1.8],gate.heading);
-      for(const side of [-1,1])for(const end of [-1,1])cylinder(globals.wheels,[tugX+end*1.35,tugY-.55,tugZ+side*.9],.42,.28,10);
+      for(const side of [-1,1])for(const end of [-1,1]){
+        const wheel=new THREE.CylinderGeometry(.42,.42,.28,10);wheel.rotateZ(Math.PI/2);wheel.translate(tugX+end*1.35,tugY-.55,tugZ+side*.9);globals.wheels.push(wheel);
+      }
       beam(globals.bridgeFrame,[tugX,tugY-.2,tugZ],[noseX,baseY+.7,noseZ],.12,.12);
     }
   }
