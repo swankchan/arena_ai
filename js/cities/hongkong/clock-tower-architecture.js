@@ -56,11 +56,20 @@ function makeFacade(index) {
     index, sourceEdges: Object.freeze(index === 0 ? [0, 1] : [index + 1]),
     a: Object.freeze([ax, az]), b: Object.freeze([bx, bz]), x: (ax + bx) * .5, z: (az + bz) * .5,
     length, nx, nz, worldNx: cs * nx + sn * nz, worldNz: -sn * nx + cs * nz, ry: Math.atan2(nx, nz),
-    windowed: index === 0 || index === 2, entrance: index === 0, fountain: index === 3,
+    windowed: index === 0 || index === 2, entrance: index === 0, fountain: index === 2,
   });
 }
 export const CLOCK_TOWER_FACADES = Object.freeze([0, 1, 2, 3].map(makeFacade));
-export const CLOCK_TOWER_FOUNTAIN_FACADE = CLOCK_TOWER_FACADES[3];
+// User-reviewed orientation: rotate the complete pool garden exactly +90° counterclockwise about local Y,
+// from waterfront facade 3 to the landward doorway side at facade 2. The OSM main-entrance node stays on facade 0.
+const waterfrontFacade = CLOCK_TOWER_FACADES[3], fountainNx = waterfrontFacade.nz, fountainNz = -waterfrontFacade.nx;
+const fountainCs = Math.cos(baseSite.ry), fountainSn = Math.sin(baseSite.ry);
+export const CLOCK_TOWER_FOUNTAIN_FACADE = Object.freeze({
+  index: 2, x: waterfrontFacade.z, z: -waterfrontFacade.x, nx: fountainNx, nz: fountainNz,
+  worldNx: fountainCs * fountainNx + fountainSn * fountainNz,
+  worldNz: -fountainSn * fountainNx + fountainCs * fountainNz,
+  ry: waterfrontFacade.ry + Math.PI / 2, fountain: true,
+});
 export const CLOCK_TOWER_MAIN_ENTRANCE = Object.freeze({
   ...harbourCityEdgeFrame(CLOCK_TOWER_SITE, 0, 'Clock Tower real OSM main entrance',
     'Exact entrance=main node 6980052362; source edge 0 ends at this node and collinear source edge 1 continues the same facade.', 1),
@@ -97,7 +106,7 @@ const gardenRing = toWorldRing(gardenLocalRing);
 export const CLOCK_TOWER_GARDEN_SITE = Object.freeze({
   key: 'clockTowerFountainGarden', name: '尖沙咀鐘樓噴水池一帶 Clock Tower Fountain Garden',
   photoDirected: true, osmType: null, osmId: null, source: null,
-  evidence: 'AMO photographs direct the southwest reflecting pool, central jet line, paving and palm rows. No precise OSM fountain footprint or surveyed pool dimensions are claimed.',
+  evidence: 'AMO photographs direct the long reflecting pool, central jet line, paving and palm rows. The user-reviewed garden orientation is southeast on facade 2, rotated +90° counterclockwise from facade 3. No precise OSM fountain footprint or surveyed pool dimensions are claimed.',
   x: CLOCK_TOWER_SITE.x, z: CLOCK_TOWER_SITE.z, ry: CLOCK_TOWER_SITE.ry,
   localRing: gardenLocalRing, ring: gardenRing, bounds: flatRingBounds(gardenRing), ringArea: Math.abs(flatRingArea(gardenRing)),
   roadIds: Object.freeze([]),
@@ -118,7 +127,7 @@ export const CLOCK_TOWER_JETS = Object.freeze(CLOCK_TOWER_JET_DISTANCES.map((dis
 export const CLOCK_TOWER_RESEARCH_SOURCES = Object.freeze([
   Object.freeze({ url: 'https://www.amo.gov.hk/en/historic-buildings/monuments/kowloon/monuments_43/index.html', publisher: 'Antiquities and Monuments Office', evidence: 'Official monument history and architecture: completed in 1915, declared a monument on 13 July 1990, Edwardian Classical Revival red brick and granite, 44 m high with a 7 m lightning rod, four clock faces, white scroll buttresses / columns / cornices and an octagonal domed belfry.' }),
   Object.freeze({ url: 'https://www.amo.gov.hk/filemanager/amo/common/download-area/pamphlet/clock_tower.pdf', publisher: 'Antiquities and Monuments Office — official Clock Tower pamphlet', evidence: 'Official pamphlet: six-storey square main building plus a two-storey octagonal domed turret; rectangular wooden-framed glazing with granite surrounds and pediment heads, diamond-pattern windows near the flat top, concrete dome and slender steel support for the 7 m rod. Electric clocks and the one-ton bell commenced operation in March 1921.' }),
-  Object.freeze({ url: 'https://www.amo.gov.hk/en/historic-buildings/monuments/kowloon/monuments_43/index.html#photographs', publisher: 'AMO monument photographs DM043_1–DM043_4', evidence: 'Visually checked official photographs show alternating granite quoins, the tall red-brick panels, three narrow windows above each clock, the long narrow southwest reflecting pool, a central line of water jets and flanking palm rows. Temporary festival displays and present repair hoarding / scaffolding are not permanent architecture.' }),
+  Object.freeze({ url: 'https://www.amo.gov.hk/en/historic-buildings/monuments/kowloon/monuments_43/index.html#photographs', publisher: 'AMO monument photographs DM043_1–DM043_4', evidence: 'Visually checked official photographs show alternating granite quoins, the tall red-brick panels, three narrow windows above each clock, the long narrow reflecting pool, a central line of water jets and flanking palm rows. Temporary festival displays and present repair hoarding / scaffolding are not permanent architecture.' }),
 ]);
 export const CLOCK_TOWER_MODEL_NOTES = 'Only the tower uses OSM way 37664321 v17. The 18 m × 4.4 m pool, 20 m × 6.8 m apron, five jets and ten palms are photo-directed visual modelling choices constrained to land; they are not surveyed dimensions or a claimed OSM fountain.';
 

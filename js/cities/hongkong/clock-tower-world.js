@@ -1,7 +1,7 @@
 import * as THREE from 'three/webgpu';
 import { color } from 'three/tsl';
 import {
-  CLOCK_TOWER_SITE, CLOCK_TOWER_FACADES, CLOCK_TOWER_GARDEN_SITE,
+  CLOCK_TOWER_SITE, CLOCK_TOWER_FACADES, CLOCK_TOWER_FOUNTAIN_FACADE, CLOCK_TOWER_GARDEN_SITE,
   CLOCK_TOWER_PALMS, CLOCK_TOWER_JETS, CLOCK_TOWER_HEIGHT, CLOCK_TOWER_LIGHTNING_ROD_HEIGHT,
   CLOCK_TOWER_TOTAL_HEIGHT, CLOCK_TOWER_MAIN_CORNICE_HEIGHT, CLOCK_TOWER_LOWER_TURRET_TOP,
   CLOCK_TOWER_BELFRY_TOP, CLOCK_TOWER_POOL_OFFSET, CLOCK_TOWER_POOL_LENGTH, CLOCK_TOWER_POOL_WIDTH,
@@ -244,7 +244,7 @@ function palmLeaves(crown, seed) {
 }
 
 function buildFountainGarden(root, materials, colliders, base) {
-  const f = CLOCK_TOWER_FACADES[3], garden = new THREE.Group(); garden.name = 'Clock Tower photo-directed southwest reflecting pool and palm garden';
+  const f = CLOCK_TOWER_FOUNTAIN_FACADE, garden = new THREE.Group(); garden.name = 'Clock Tower user-directed southeast reflecting pool and palm garden';
   garden.position.set(f.x, 0, f.z); garden.rotation.y = f.ry; root.add(garden);
   const apron = [], basin = [], coping = [], jets = [], nozzles = [];
   const sideWidth = (CLOCK_TOWER_APRON_WIDTH - CLOCK_TOWER_POOL_WIDTH) * .5;

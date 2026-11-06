@@ -44,8 +44,13 @@ test('four logical facades retain the real main-entrance node and correct geogra
   assert.equal(e.sourceNodeId, 6980052362); assert.equal(e.source.version, 5); assert.equal(e.source.tags.entrance, 'main'); assert.equal(e.sourceEdge, 0); assert.equal(e.t, 1);
   assert.ok(Math.abs(e.x - s.ring[2]) < 1e-8 && Math.abs(e.z - s.ring[3]) < 1e-8); assert.ok(Math.abs(e.localX - s.localRing[2]) < 1e-8 && Math.abs(e.localZ - s.localRing[3]) < 1e-8);
   assert.equal(ct.CLOCK_TOWER_FACADES.length, 4); assert.deepEqual(ct.CLOCK_TOWER_FACADES[0].sourceEdges, [0, 1]);
-  assert.deepEqual(ct.CLOCK_TOWER_FACADES.map((f) => f.windowed), [true, false, true, false]); assert.equal(ct.CLOCK_TOWER_FACADES[3].fountain, true);
-  assert.ok(ct.CLOCK_TOWER_FACADES[3].worldNx < -.6 && ct.CLOCK_TOWER_FACADES[3].worldNz > .7, 'pool facade faces southwest toward the photographed waterfront garden');
+  assert.deepEqual(ct.CLOCK_TOWER_FACADES.map((f) => f.windowed), [true, false, true, false]);
+  assert.deepEqual(ct.CLOCK_TOWER_FACADES.map((f) => f.fountain), [false, false, true, false]);
+  const previous = ct.CLOCK_TOWER_FACADES[3], fountain = ct.CLOCK_TOWER_FOUNTAIN_FACADE;
+  assert.equal(fountain.index, 2); assert.equal(ct.CLOCK_TOWER_MAIN_ENTRANCE.sourceNodeId, 6980052362);
+  assert.ok(Math.abs(fountain.nx - previous.nz) < 1e-8 && Math.abs(fountain.nz + previous.nx) < 1e-8,
+    'pool garden rotates +90° counterclockwise about local Y from waterfront facade 3 to landward facade 2');
+  assert.ok(fountain.worldNx > .7 && fountain.worldNz > .6, 'rotated pool facade faces the southeast doorway garden');
 });
 test('official monument facts stay separate from photo-directed stage proportions', () => {
   assert.equal(ct.CLOCK_TOWER_HEIGHT, 44); assert.equal(ct.CLOCK_TOWER_LIGHTNING_ROD_HEIGHT, 7); assert.equal(ct.CLOCK_TOWER_TOTAL_HEIGHT, 51);
@@ -77,7 +82,7 @@ test('fountain garden is honestly photo-directed, with no fictitious precise OSM
   assert.match(ct.CLOCK_TOWER_MODEL_NOTES, /not surveyed dimensions or a claimed OSM fountain/); assert.match(garden.evidence, /No precise OSM fountain footprint/);
 });
 test('Clock Tower and apron share a local DTM pad while outside terrain and palm datums stay traceable', () => {
-  const pad = terrain.clockTowerPadHeight(); assert.ok(Math.abs(pad - 4.5305935288) < .0001); assert.equal(terrain.HONG_KONG_TERRAIN_META.clockTowerPadHeight, pad);
+  const pad = terrain.clockTowerPadHeight(); assert.ok(Math.abs(pad - 4.9118362940) < .0001); assert.equal(terrain.HONG_KONG_TERRAIN_META.clockTowerPadHeight, pad);
   assert.equal(terrain.hongKongTerrainHeight(ct.CLOCK_TOWER_SITE.x, ct.CLOCK_TOWER_SITE.z), pad);
   const f = ct.CLOCK_TOWER_FOUNTAIN_FACADE, centre = ct.harbourCityLocalToWorld(ct.CLOCK_TOWER_SITE, f.x + f.nx * 11, f.z + f.nz * 11);
   assert.equal(terrain.hongKongTerrainHeight(centre.x, centre.z), pad); assert.equal(ct.clockTowerGroundHeightAt(centre.x, centre.z, 0, pad), pad);
