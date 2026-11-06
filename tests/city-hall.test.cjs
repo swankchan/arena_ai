@@ -134,7 +134,7 @@ test('Memorial Garden shrine, source-site reservation and cleared lamps do not c
 
 test('City Hall world authors the civic elevations, garden, links and source entrances without photo textures', () => {
   const world = fs.readFileSync(path.join(root, 'js/cities/hongkong/city-hall-world.js'), 'utf8');
-  for (const pattern of [/exact L-shaped OSM way 101959153/, /white concrete window-grid fins/, /west-facing diamond window/, /twelve-sided/, /covered high–low-block walkway roofs/, /second OSM entrance-node/, /granite/, /external stair/]) assert.match(world, pattern);
+  for (const pattern of [/exact L-shaped OSM way 101959153/, /white concrete window-grid fins/, /west-facing diamond window/, /HK-B0082/, /HK-B0100/, /granite diamond-window surround/, /deep horizontal sunshades/, /twelve-sided/, /covered high–low-block walkway roofs/, /second OSM entrance-node/, /granite/, /external stair/]) assert.match(world, pattern);
   assert.doesNotMatch(world, /image-search|\.jpg|\.png|TextureLoader|https?:\/\//i);
 });
 
@@ -170,6 +170,9 @@ test('Node City Hall geometry is finite and has authored massing, entrances and 
   assert.equal(world.stats.cityHallHighRefined, true); assert.equal(world.stats.cityHallHighInventoryId, 'HK-B0082');
   assert.ok(world.stats.cityHallHighFacadeFins >= 20); assert.ok(world.stats.cityHallHighShadowJoints >= 20);
   assert.equal(world.stats.cityHallHighRoofCopingEdges, 12);
+  assert.equal(world.stats.cityHallLowRefined, true); assert.equal(world.stats.cityHallLowInventoryId, 'HK-B0100');
+  assert.ok(world.stats.cityHallLowDiamondSurrounds > 0); assert.equal(world.stats.cityHallLowSunshades, 9);
+  assert.ok(world.stats.cityHallLowSkylightCurbs > 0);
   assert.equal(world.stats.cityHallBuildingRoadCrossings, 0); assert.equal(world.stats.cityHallCoveredWalkwayOpenSegments, 2);
   assert.equal(world.landmarks.length, 2); assert.ok(world.colliders.length >= 45);
   assert.ok(world.colliders.some((c) => c.minY >= 5 + 4.4));

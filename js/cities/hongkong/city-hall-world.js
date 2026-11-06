@@ -246,6 +246,43 @@ function addLowEntrance(group, site, base, mats, colliders) {
   merged(group, secondFrames, mats.frame, 'City Hall Low Block second entrance mullions');
   merged(group, secondCanopy, mats.white, 'City Hall Low Block Memorial Garden-side entrance canopy');
 }
+function addLowBlockRefinement(group, site, mats) {
+  // HK-B0100: retain the Low Block's different elevations.  The west return receives
+  // granite diamond surrounds, while the glazed elevations get deep horizontal sunshades;
+  // neither treatment is replaced by a generic solid facade panel.
+  const shades = [], curbs = [];
+  let diamondSurrounds = 0, skylightCurbs = 0;
+  const westFrame = civicChainFrame(site, [17]);
+  for (let row = 0; row < 3; row++) {
+    const y = 2.1 + row * 6.1 + 3.05;
+    for (let u = -westFrame.length * .5 + 2.1; u < westFrame.length * .5 - 1; u += 4.2) {
+      if ((row + Math.round(u)) % 2 === 0) {
+        group.add(diamondPanel(westFrame, u, y, .14, 1.58, 1.58, mats.granite, 'City Hall Low Block HK-B0100 granite diamond-window surround'));
+        diamondSurrounds++;
+      }
+    }
+  }
+  for (const edges of [[3, 4], [6], [16]]) {
+    const frame = civicChainFrame(site, edges);
+    for (let row = 0; row < 3; row++) {
+      const y = 2.1 + row * 6.1 + 5.55;
+      civicFrameBox(shades, frame, 0, y, .28, frame.length + .22, .18, .62);
+    }
+    for (let u = -frame.length * .35; u <= frame.length * .35; u += 5.5) {
+      // Raised white curbs make the narrow roof lights read as constructed skylights,
+      // not floating dark rectangles.  They use the same local roof datum as the old model.
+      civicFrameBox(curbs, frame, u - 1.30, CITY_HALL_LOW_HEIGHT + .62, -2.0, .12, .22, 1.28);
+      civicFrameBox(curbs, frame, u + 1.30, CITY_HALL_LOW_HEIGHT + .62, -2.0, .12, .22, 1.28);
+      civicFrameBox(curbs, frame, u, CITY_HALL_LOW_HEIGHT + .62, -2.62, 2.72, .22, .12);
+      civicFrameBox(curbs, frame, u, CITY_HALL_LOW_HEIGHT + .62, -1.38, 2.72, .22, .12);
+      skylightCurbs++;
+    }
+  }
+  merged(group, shades, mats.white, 'City Hall Low Block HK-B0100 deep horizontal sunshades');
+  merged(group, curbs, mats.frame, 'City Hall Low Block HK-B0100 raised skylight curbs');
+  return { diamondSurrounds, sunshades: 9, skylightCurbs };
+}
+
 function buildLowBlock(root, base, mats, colliders) {
   const site = CITY_HALL_LOW_SITE, group = new THREE.Group(); group.name = 'Hong Kong City Hall Low Block — exact L-shaped OSM way 101959153';
   group.position.set(site.x, base, site.z); group.rotation.y = site.ry; root.add(group);
@@ -290,13 +327,14 @@ function buildLowBlock(root, base, mats, colliders) {
   box(roofParts, [12, CITY_HALL_LOW_HEIGHT + .65, 5], [12, 1.1, 8]);
   merged(group, roofParts, mats.white, 'City Hall Low Block flat roof overhang parapets and plant');
   merged(group, skylights, mats.dark, 'City Hall Low Block narrow roof skylights', false);
+  const refinement = addLowBlockRefinement(group, site, mats);
   addRingCollidersWithEntrance(colliders, site, base, CITY_HALL_LOW_HEIGHT, 4, 0, .15, [
     { edge: 3, t: 1, width: .15 },
     { edge: 2, t: 0, width: 1.7 / harbourCityEdgeOutward(site.localRing, 2).length },
     { edge: 1, t: 1, width: 1.7 / harbourCityEdgeOutward(site.localRing, 1).length },
     { edge: 17, t: CITY_HALL_LOW_GARDEN_LINK.t, width: 2 / CITY_HALL_LOW_GARDEN_LINK.length }
   ]);
-  return { root: group, site, entrance: CITY_HALL_LOW_MAIN_ENTRANCE };
+  return { root: group, site, entrance: CITY_HALL_LOW_MAIN_ENTRANCE, refinement };
 }
 
 function worldBox(parts, x, y, z, w, h, d, ry = 0) { box(parts, [x, y, z], [w, h, d], ry); }
@@ -441,6 +479,9 @@ export function buildCityHall(scene, { groundOffset } = {}) {
       cityHallHighRefined: true, cityHallHighInventoryId: 'HK-B0082',
       cityHallHighFacadeFins: highBlock.refinement.finCount, cityHallHighShadowJoints: highBlock.refinement.jointCount,
       cityHallHighRoofCopingEdges: highBlock.refinement.copingEdges,
+      cityHallLowRefined: true, cityHallLowInventoryId: 'HK-B0100',
+      cityHallLowDiamondSurrounds: lowBlock.refinement.diamondSurrounds, cityHallLowSunshades: lowBlock.refinement.sunshades,
+      cityHallLowSkylightCurbs: lowBlock.refinement.skylightCurbs,
       cityHallHighLevels: CITY_HALL_HIGH_SITE.levels, cityHallLowLevels: CITY_HALL_LOW_SITE.levels,
       cityHallSourceVertices: CITY_HALL_HIGH_SITE.source.geometry.length + CITY_HALL_LOW_SITE.source.geometry.length + CITY_HALL_ANNEX_SITE.source.geometry.length,
       cityHallHighRingArea: CITY_HALL_HIGH_SITE.ringArea, cityHallLowRingArea: CITY_HALL_LOW_SITE.ringArea,
