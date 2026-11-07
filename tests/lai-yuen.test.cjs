@@ -81,6 +81,14 @@ test('the entrance, rides, 宋城 and zoo are real meshes with finite geometry',
     'LaiYuenSungCityWalls', 'LaiYuenSungCityCrenellations', 'LaiYuenSungCityTiledRoofsPagodaAndGateEaves',
     'LaiYuenSungCityRedTimberGateHallsAndPagodaStoreys', 'LaiYuenSungCitySign',
     'LaiYuenGameStallBooths', 'LaiYuenPromenades', 'LaiYuenParkPaving',
+    // Detail pass: 天奴 in his paddock, the gardens, the showground, the railway and the paving.
+    'LaiYuenTinoPaddock', 'LaiYuenTinoTheElephant', 'LaiYuenTinoHead', 'LaiYuenTinoTrunk', 'LaiYuenTinoTusks',
+    'LaiYuenTinoLegs', 'LaiYuenTinoSign', 'LaiYuenTinoPaddockSand',
+    'LaiYuenGardens', 'LaiYuenTreeTrunks', 'LaiYuenLawnIslands', 'LaiYuenHedges', 'LaiYuenFlowerBedReds',
+    'LaiYuenLampPosts', 'LaiYuenBenches', 'LaiYuenKiosks', 'LaiYuenBunting', 'LaiYuenCrowdA',
+    'LaiYuenShowground', 'LaiYuenCircusRedStripes', 'LaiYuenCircusCreamRoofPanels', 'LaiYuenBandstandSeating',
+    'LaiYuenMiniatureRailway', 'LaiYuenMiniatureRailRails', 'LaiYuenMiniatureRailTrain',
+    'LaiYuenPavingDetail', 'LaiYuenPlazaTilesA', 'LaiYuenParkRoad', 'LaiYuenForecourt',
   ];
   for (const name of expected) assert.ok(names.includes(name), name);
   let nonFinite = 0, meshes = 0;
@@ -90,6 +98,12 @@ test('the entrance, rides, 宋城 and zoo are real meshes with finite geometry',
     if (position) for (const value of position.array) if (!Number.isFinite(value)) nonFinite++;
   });
   assert.equal(nonFinite, 0); assert.ok(meshes > 30, `meshes ${meshes}`);
+  // The detail pass must actually be there, and 天奴 must be a full-size model rather than a token blob.
+  assert.ok(world.stats.laiYuenTinoHeight >= 3, `Tino height ${world.stats.laiYuenTinoHeight}`);
+  assert.ok(world.stats.laiYuenTrees >= 40, `trees ${world.stats.laiYuenTrees}`);
+  assert.ok(world.stats.laiYuenCrowd > 100, `crowd ${world.stats.laiYuenCrowd}`);
+  assert.ok(world.stats.laiYuenPlazaTiles > 200, `tiles ${world.stats.laiYuenPlazaTiles}`);
+  assert.ok(world.stats.laiYuenRailwayMetres > 80, `railway ${world.stats.laiYuenRailwayMetres}`);
 });
 
 test('the whole reconstructed park clears every retained modern carriageway', () => {

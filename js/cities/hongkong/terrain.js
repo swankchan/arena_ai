@@ -213,7 +213,22 @@ export function mongKokStadiumPadHeight() { return MONG_KOK_STADIUM_PAD_HEIGHT; 
 const HONG_KONG_STADIUM_PAD_HEIGHT = authoredHighestRawDatum([HONG_KONG_STADIUM_SITE], rawHongKongTerrainHeight);
 export function hongKongStadiumPadHeight() { return HONG_KONG_STADIUM_PAD_HEIGHT; }
 // HISTORICAL RECONSTRUCTION: 荔園 Lai Yuen (1949-1997) shares one reproducible DTM datum over its modelled outline.
-const LAI_YUEN_PAD_HEIGHT = authoredHighestRawDatum([LAI_YUEN_SITE], rawHongKongTerrainHeight);
+// 荔園 was levelled ground above the Lai Chi Kok shore, not a mound: hold the park at the median datum of the
+// ground inside its own footprint, so the plateau matches the streets round it and the DEM hillside behind it is
+// cut back to the park wall instead of lifting the whole park twelve metres into the air.
+function authoredMedianInteriorDatum(site, rawHeightAt, step = 4) {
+  const samples = [];
+  const bounds = site.bounds;
+  for (let x = bounds.minX; x <= bounds.maxX; x += step) {
+    for (let z = bounds.minZ; z <= bounds.maxZ; z += step) {
+      if (pointInFlatRing(site.ring, x, z)) samples.push(rawHeightAt(x, z));
+    }
+  }
+  if (!samples.length) return rawHeightAt(site.x, site.z);
+  samples.sort((a, b) => a - b);
+  return samples[samples.length >> 1];
+}
+const LAI_YUEN_PAD_HEIGHT = authoredMedianInteriorDatum(LAI_YUEN_SITE, rawHongKongTerrainHeight);
 export function laiYuenPadHeight() { return LAI_YUEN_PAD_HEIGHT; }
 // 伊利沙伯體育館 Queen Elizabeth Stadium sits on Morrison Hill; one reproducible datum over its OSM ring.
 const QUEEN_ELIZABETH_STADIUM_PAD_HEIGHT = authoredHighestRawDatum([QE_STADIUM_SITE], rawHongKongTerrainHeight);

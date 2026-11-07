@@ -14,7 +14,9 @@ import {
   merged, box, cylinder, beam, store, quad, meshStore, harbourCityPalette, nightAmount, hash,
 } from './harbour-city-world-utils.js';
 import { harbourCityLocalCollider } from './harbour-city-architecture.js';
+import { pointInFlatRing } from './landmark-site.js';
 import { makeCanvasSign } from './tst-hotel-world-utils.js';
+import { buildLaiYuenDetail, LAI_YUEN_DETAIL } from './lai-yuen-detail-world.js';
 
 function ringShapeGeometry(ring, y) {
   const shape = new THREE.Shape();
@@ -35,9 +37,17 @@ function buildGround(group, materials, stats) {
   quad(paths, [-16, 0.06, 60], [-4, 0.06, 60], [-4, 0.06, -66], [-16, 0.06, -66], [0.72, 0.68, 0.58]);
   quad(paths, [-78, 0.06, 10], [60, 0.06, 10], [60, 0.06, -2], [-78, 0.06, -2], [0.72, 0.68, 0.58]);
   meshStore(ground, paths, materials.path, 'LaiYuenPromenades');
-  // Grass borders, so the paving does not read as one grey plate.
+  // Grass verges against the boundary bank, laid as 4 m tiles and clipped to the park ring so no lawn can ever
+  // float outside the reconstructed wall.
   for (const [x0, z0, x1, z1] of [[-92, 44, -76, 64], [56, 12, 90, 64], [-92, -72, -76, -40], [24, -72, 90, -36]]) {
-    quad(lawns, [x0, 0.05, z0], [x1, 0.05, z0], [x1, 0.05, z1], [x0, 0.05, z1], [0.33, 0.47, 0.26]);
+    for (let x = x0; x < x1; x += 4) {
+      for (let z = z0; z < z1; z += 4) {
+        const cx = x + 2, cz = z + 2;
+        if (!pointInFlatRing(ring, cx, cz) || !pointInFlatRing(ring, x + 0.5, z + 0.5)
+          || !pointInFlatRing(ring, x + 3.5, z + 3.5)) continue;
+        quad(lawns, [x, 0.05, z], [x + 4, 0.05, z], [x + 4, 0.05, z + 4], [x, 0.05, z + 4], [0.33, 0.47, 0.26]);
+      }
+    }
   }
   meshStore(ground, lawns, materials.lawn, 'LaiYuenLawns');
   stats.parkArea = LAI_YUEN_SITE.ringArea;
@@ -378,17 +388,6 @@ function buildZoo(group, materials, stats) {
       box(bars, [bx, 1.1, cz + r.cageDepth / 2], [0.07, 2.2, 0.07]);
     }
   }
-  // 天奴 Tino's cage: deliberately modelled at its documented sub-500 sq ft size, with the elephant inside.
-  const t = LAI_YUEN_TINO_CAGE, tx = t.x - LAI_YUEN_SITE.x, tz = t.z - LAI_YUEN_SITE.z;
-  for (const [px, pz, w, d] of [[0, -t.depth / 2, t.width, 0.25], [0, t.depth / 2, t.width, 0.25], [-t.width / 2, 0, 0.25, t.depth], [t.width / 2, 0, 0.25, t.depth]]) {
-    box(bars, [tx + px, 1.3, tz + pz], [w, 2.6, d]);
-  }
-  box(huts, [tx, 3.0, tz - t.depth / 2 + 0.6], [t.width + 0.6, 0.3, 1.4]);
-  const elephant = [];
-  box(elephant, [tx, 1.55, tz], [2.6, 1.7, 1.3]);
-  box(elephant, [tx + 1.35, 2.0, tz], [0.9, 1.0, 0.9]);
-  beam(elephant, [tx + 1.8, 2.1, tz], [tx + 2.6, 1.2, tz], 0.3);
-  for (const dx of [-0.9, 0.9]) box(elephant, [tx + dx, 0.45, tz], [0.4, 0.9, 0.4]);
   // Rockwork grotto behind the zoo, part of the photographed hillside backdrop.
   for (let i = 0; i < 9; i++) {
     const gx = rx - 6 - i * 1.8, gz = -LAI_YUEN_SITE.z * 0 + (r.z0 - LAI_YUEN_SITE.z) - 6 - (i % 3) * 3.4;
@@ -398,11 +397,10 @@ function buildZoo(group, materials, stats) {
   merged(zoo, bars, materials.metal, 'LaiYuenZooCageBars');
   merged(zoo, huts, materials.gateCream, 'LaiYuenZooShedsAndTinoCageRoof');
   merged(zoo, rocks, materials.rock, 'LaiYuenZooRockGrotto');
-  merged(zoo, elephant, materials.elephant, 'LaiYuenTinoTheElephant');
   stats.zooCages = r.cages + 1;
-  stats.tinoCageSquareFeet = Math.round(t.width * t.depth * 10.7639);
-  stats.tinoCageSquareMetres = t.width * t.depth;
-  return { colliders: [harbourCityLocalCollider(LAI_YUEN_SITE, tx, tz, t.width, t.depth, 0, 3.0)] };
+  stats.tinoCageSquareFeet = Math.round(LAI_YUEN_TINO_CAGE.width * LAI_YUEN_TINO_CAGE.depth * 10.7639);
+  stats.tinoCageSquareMetres = LAI_YUEN_TINO_CAGE.width * LAI_YUEN_TINO_CAGE.depth;
+  return { colliders: [] };
 }
 
 function buildSungCity(group, materials, stats) {
@@ -558,12 +556,13 @@ export function buildLaiYuen(root, { groundOffset = 0 } = {}) {
   const rink = buildIceRink(complex, materials, stats);
   buildWater(complex, materials, stats);
   const zoo = buildZoo(complex, materials, stats);
+  const detail = buildLaiYuenDetail(complex, materials, stats, { groundOffset });
   const city = buildSungCity(complex, materials, stats);
   const stalls = buildStalls(complex, materials, stats);
 
   const colliders = [
     ...entrance.colliders, ...ferris.colliders, ...bumper.colliders, ...rink.colliders,
-    ...zoo.colliders, ...city.colliders, ...stalls.colliders,
+    ...zoo.colliders, ...city.colliders, ...stalls.colliders, ...detail.colliders,
   ].map((collider) => ({ ...collider, minY: collider.minY + groundOffset, maxY: collider.maxY + groundOffset }));
 
   Object.assign(stats, {

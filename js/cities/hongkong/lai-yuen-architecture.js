@@ -10,7 +10,8 @@
 // with the 中國歷代帝皇先賢蠟像院 wax museum), the rides (摩天輪 ferris wheel, 旋轉木馬 carousel, 咖啡杯 coffee cups,
 // 小飛象 Dumbo, 八爪魚 octopus, 碰碰車 bumper cars, 過山飛龍 roller coaster), the real-snow ice rink, the zoo with
 // 天奴 Tino the Burmese elephant (arrived 1958, died 1989-02-03), and the 1997 closure.
-import { makePhotoDirectedSite, authoredTerrainHeightAt } from './authored-landmark-site.js';
+import { makePhotoDirectedSite } from './authored-landmark-site.js';
+import { pointInFlatRing } from './landmark-site.js';
 
 // Historical park core, drawn to the two-estate block and clipped off the modern Lai King Hill Road corridor.
 const LAI_YUEN_HISTORICAL_RING = Object.freeze([
@@ -108,6 +109,34 @@ export const LAI_YUEN_RESEARCH_SOURCES = Object.freeze([
   },
 ]);
 
+// The park was levelled flat: inside the outline the ground is the pad itself rather than max(raw, pad), and the
+// last LAI_YUEN_EDGE_BLEND metres outside the boundary ramp from the pad back to the natural ground, so the park
+// meets the streets and the hillside on a graded bank instead of a step.
+export const LAI_YUEN_EDGE_BLEND = 12;
+
+function distanceToRing(ring, x, z) {
+  let best = Infinity;
+  for (let i = 0; i < ring.length; i += 2) {
+    const ax = ring[i], az = ring[i + 1];
+    const bx = ring[(i + 2) % ring.length], bz = ring[(i + 3) % ring.length];
+    const dx = bx - ax, dz = bz - az;
+    const lengthSquared = dx * dx + dz * dz;
+    if (lengthSquared < 1e-9) { best = Math.min(best, Math.hypot(x - ax, z - az)); continue; }
+    const t = Math.max(0, Math.min(1, ((x - ax) * dx + (z - az) * dz) / lengthSquared));
+    best = Math.min(best, Math.hypot(x - ax - t * dx, z - az - t * dz));
+  }
+  return best;
+}
+
 export function laiYuenTerrainHeightAt(x, z, rawHeight, padHeight) {
-  return authoredTerrainHeightAt([LAI_YUEN_SITE], x, z, rawHeight, padHeight);
+  const ring = LAI_YUEN_SITE.ring;
+  const bounds = LAI_YUEN_SITE.bounds;
+  const outside = x < bounds.minX - LAI_YUEN_EDGE_BLEND || x > bounds.maxX + LAI_YUEN_EDGE_BLEND
+    || z < bounds.minZ - LAI_YUEN_EDGE_BLEND || z > bounds.maxZ + LAI_YUEN_EDGE_BLEND;
+  if (outside) return rawHeight;
+  if (pointInFlatRing(ring, x, z)) return padHeight;
+  const distance = distanceToRing(ring, x, z);
+  if (distance >= LAI_YUEN_EDGE_BLEND) return rawHeight;
+  const t = distance / LAI_YUEN_EDGE_BLEND;
+  return padHeight * (1 - t) + rawHeight * t;
 }
