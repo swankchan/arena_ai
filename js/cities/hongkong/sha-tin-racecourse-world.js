@@ -239,7 +239,7 @@ function buildStand(group, materials, stand, stats, index) {
   holder.add(sign);
   stats[`${stand.key}Seats`] = Math.round(length * stand.tiers * 3.6);
   stats[`${stand.key}Height`] = stand.canopyHeight + 6;
-  return { colliders: [harbourCityLocalCollider(SHA_TIN_SITE, stand.x, stand.z, length, depth, -stand.rotation, 0, stand.canopyHeight)] };
+  return { colliders: [harbourCityLocalCollider(SHA_TIN_SITE, stand.x, stand.z, length, depth, 0, stand.canopyHeight, SHA_TIN_SITE.ry - stand.rotation * DEG)] };
 }
 
 // ---------------------------------------------------------------------------------------------------------------
@@ -264,7 +264,7 @@ function buildClubhouse(group, materials, stats) {
   merged(holder, canopy, materials.roof, 'ShaTinClubhouseRoof');
   merged(holder, canopy, materials.roof, 'ShaTinClubhouseRoof');
   stats.shaTinClubhouseFloors = club.floors;
-  return { colliders: [harbourCityLocalCollider(SHA_TIN_SITE, club.x, club.z, club.length, club.depth, -club.rotation, 0, club.height)] };
+  return { colliders: [harbourCityLocalCollider(SHA_TIN_SITE, club.x, club.z, club.length, club.depth, 0, club.height, SHA_TIN_SITE.ry - club.rotation * DEG)] };
 }
 
 function buildParadeRing(group, materials, stats) {
@@ -327,7 +327,7 @@ function buildBigScreen(group, materials, stats) {
   stats.shaTinScreenWidth = spec.width;
   return {
     colliders: [
-      harbourCityLocalCollider(SHA_TIN_SITE, spec.x, spec.z, spec.width, 6, -spec.facing, 0, spec.mastHeight),
+      harbourCityLocalCollider(SHA_TIN_SITE, spec.x, spec.z, spec.width, 6, 0, spec.mastHeight, SHA_TIN_SITE.ry - spec.facing),
     ],
   };
 }
@@ -403,7 +403,7 @@ function buildStation(group, materials, stats) {
   sign.position.set(0, spec.canopyHeight + 3.1, spec.width / 2 - 2);
   holder.add(sign);
   stats.shaTinStationPlatformMetres = spec.length;
-  return { colliders: [harbourCityLocalCollider(SHA_TIN_SITE, spec.x, spec.z, spec.length, spec.width, -spec.rotation, 0, 10)] };
+  return { colliders: [harbourCityLocalCollider(SHA_TIN_SITE, spec.x, spec.z, spec.length, spec.width, 0, 10, SHA_TIN_SITE.ry - spec.rotation * DEG)] };
 }
 
 // ---------------------------------------------------------------------------------------------------------------
@@ -495,6 +495,7 @@ export function buildShaTinRacecourse(scene, { groundOffset = 0 } = {}) {
   const root = new THREE.Group();
   root.name = 'ShaTinRacecourse';
   root.position.set(SHA_TIN_SITE.x, groundOffset, SHA_TIN_SITE.z);
+  root.rotation.y = SHA_TIN_SITE.ry;
   scene.add(root);
   const materials = makeMaterials();
   const stats = { shaTinRacecourse: true, shaTinOsmRelation: SHA_TIN_SITE.osmId };

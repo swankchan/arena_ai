@@ -152,3 +152,22 @@ test('the research record is carried with the model', () => {
 
 // Pending: resolve mapped road overlaps at the actual scene elevation before asserting clearance.
 test.todo('Sha Tin course avoids same-height retained roads and has verified track/entrance crossings');
+
+test('the mapped site rotation and stand colliders match the rendered world transforms', async () => {
+  const THREE = await import('three/webgpu');
+  const group = new THREE.Group(), offset = terrain.HONG_KONG_TERRAIN_META.shaTinPadHeight;
+  const built = world.buildShaTinRacecourse(group, { groundOffset: offset });
+  group.updateMatrixWorld(true);
+  assert.equal(built.group.rotation.y, architecture.SHA_TIN_SITE.ry);
+  for (const [index, spec] of architecture.SHA_TIN_GRANDSTANDS.entries()) {
+    const mesh = built.group.getObjectByName(index ? 'ShaTinGrandstandTwo' : 'ShaTinGrandstandOne');
+    const centre = mesh.getWorldPosition(new THREE.Vector3());
+    const collider = built.colliders.find(c => Math.hypot(c.x-centre.x, c.z-centre.z) < 1e-5 && c.w === spec.lengthMetres);
+    assert.ok(collider, `${spec.key} collider at rendered centre`);
+    assert.ok(Math.abs(collider.ry - (architecture.SHA_TIN_SITE.ry - spec.rotation * Math.PI / 180)) < 1e-10);
+    assert.equal(collider.minY, offset);
+    assert.equal(collider.maxY, offset + spec.canopyHeight);
+    assert.ok(collider.maxY > collider.minY);
+  }
+  for (const c of built.colliders) assert.ok(c.maxY > c.minY, 'collider must have positive vertical range');
+});
