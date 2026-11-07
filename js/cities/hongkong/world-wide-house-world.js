@@ -4,7 +4,7 @@ import { WORLD_WIDE_PODIUM as site, WORLD_WIDE_TOWER_RING, WORLD_WIDE_HIGH_RING,
   WORLD_WIDE_HEIGHT as height, WORLD_WIDE_LOWER_HEIGHT as lowerHeight,
   WORLD_WIDE_PODIUM_HEIGHT as podiumHeight, WORLD_WIDE_ENTRANCE_VERTICES } from './world-wide-house-architecture.js';
 import { hongKongTerrainHeight } from './terrain.js';
-import { harbourCityEdgeOutward, harbourCitySegmentCollider } from './harbour-city-architecture.js';
+import { harbourCityEdgeOutward, harbourCitySegmentCollider, harbourCityLocalToWorld } from './harbour-city-architecture.js';
 import { store, quad, point, edgeBox, meshStore, merged, roofGeometry } from './harbour-city-world-utils.js';
 import { makeCanvasSign } from './tst-hotel-world-utils.js';
 
@@ -25,9 +25,14 @@ export function buildWorldWideHouse(scene) {
     const wall=(store,a,b,y0,y1,c,o=0)=>quad(store,p(a,y0,o),p(b,y0,o),p(b,y1,o),p(a,y1,o),c);
     for(let b=0;b<n;b++) {
       const a=b/n,z=(b+1)/n, gap=(WORLD_WIDE_ENTRANCE_VERTICES.includes(e)&&a*length<2.1)||(WORLD_WIDE_ENTRANCE_VERTICES.includes(e+1)&&(1-z)*length<2.1);
-      if(!gap)wall(glazing,a+.004,z-.004,.15,4.4,[.065,.11,.13],.02);
+      // Follow the existing DTM at street level. A single centre-height sill left
+      // gaps at lower edges and sank into the slope at higher ones; do not flatten
+      // or alter the neighbouring tram/road profile to hide that mismatch.
+      const groundAt = t => { const q=p(t,0), w=harbourCityLocalToWorld(site,q[0],q[2]); return hongKongTerrainHeight(w.x,w.z)-base-.12; };
+      const ya=groundAt(a), yz=groundAt(z);
+      if(!gap)quad(glazing,p(a+.004,ya,.02),p(z-.004,yz,.02),p(z-.004,4.4,.02),p(a+.004,4.4,.02),[.065,.11,.13]);
       else wall(glazing,a+.004,z-.004,4.05,4.4,[.065,.11,.13],.02);
-      colliders.push(harbourCitySegmentCollider(site,e,a,z,base+(gap?4.05:0),base+podiumHeight,.35));
+      colliders.push(harbourCitySegmentCollider(site,e,a,z,base+(gap?4.05:Math.min(ya,yz)),base+podiumHeight,.35));
       for(let f=0;f<3;f++) {
         const y=4.4+f*3.8,v=.90+.08*Math.sin(e*3+b*.7+f*5);
         wall(glazing,a+.006,z-.006,y+.36,y+3.5,[.10*v,.21*v,.27*v],.025);

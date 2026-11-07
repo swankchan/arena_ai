@@ -26,3 +26,18 @@ test('World-Wide House is wired into world landmarks, collision and stats',()=>{
  const s=fs.readFileSync('js/cities/hongkong/simple-world.js','utf8');
  for(const v of ['buildWorldWideHouse(scene)','...worldWideHouse.colliders','...worldWideHouse.landmarks','...worldWideHouse.stats','worldWideHouse.landmarks.length'])assert.ok(s.includes(v),v);
 });
+
+test('World-Wide House street-level glazing follows terrain instead of leaving floating gaps',async()=>{
+  globalThis.document={createElement:()=>({getContext:()=>new Proxy({},{get:(t,k)=>t[k]||(()=>{}),set:(t,k,v)=>(t[k]=v,true)})})};
+  const THREE=await import('three/webgpu'); const {buildWorldWideHouse}=await import('../js/cities/hongkong/world-wide-house-world.js');
+  const {hongKongTerrainHeight}=await import('../js/cities/hongkong/terrain.js');
+  const world=buildWorldWideHouse(new THREE.Group()), mesh=world.group.getObjectByName('World-Wide House retail glazing');
+  world.group.updateMatrixWorld(true); const positions=mesh.geometry.attributes.position;
+  let count=0;
+  for(let i=0;i<positions.count;i++) {
+    if(positions.getY(i)>2)continue;
+    const p=new THREE.Vector3().fromBufferAttribute(positions,i).applyMatrix4(mesh.matrixWorld);
+    assert.ok(Math.abs(hongKongTerrainHeight(p.x,p.z)-p.y-.12)<.03,`street sill at ${p.x},${p.z}`);count++;
+  }
+  assert.ok(count>100);
+});
