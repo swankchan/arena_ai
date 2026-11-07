@@ -150,7 +150,7 @@ export const SHA_TIN_COLOURS = Object.freeze({
   allWeather: [0.56, 0.50, 0.40],
   sand: [0.62, 0.55, 0.42],
   infieldLawn: [0.29, 0.47, 0.19],
-  parkLawn: [0.33, 0.53, 0.22],
+  parkLawn: [0.29, 0.47, 0.19],   // the park reads as the infield lawn; no decorative patchwork
   rail: [0.94, 0.95, 0.94],
   apron: [0.33, 0.46, 0.22],
   standWhite: [0.93, 0.93, 0.90],

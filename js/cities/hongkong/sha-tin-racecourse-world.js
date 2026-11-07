@@ -70,9 +70,8 @@ function buildCourse(group, materials, stats) {
     const awtOut1 = shaTinTrackPoint(t1, TRACK.apronMetres + TRACK.allWeatherMetres);
     const turfOut0 = shaTinTrackPoint(t0, TRACK.turfOuterRadius - TRACK.innerRadius);
     const turfOut1 = shaTinTrackPoint(t1, TRACK.turfOuterRadius - TRACK.innerRadius);
-    // The discorectangle parameterisation jumps between the two straights at t = 1/4 and 3/4; skip those segments
-    // so nothing is drawn across the infield.
-    if (Math.hypot(inner1.x - inner0.x, inner1.z - inner0.z) > TRACK.straight * 0.4) continue;
+    // The discorectangle parameterisation traces the two end arcs and lets one long segment span each straight;
+    // those long segments are the straights, so they are drawn like any other band.
     // Sand apron between the infield hedge and the all-weather track.
     quad(apron, [inner0.x, 0.09, inner0.z], [inner1.x, 0.09, inner1.z],
       [awtIn1.x, 0.09, awtIn1.z], [awtIn0.x, 0.09, awtIn0.z], C.sand);
@@ -83,9 +82,7 @@ function buildCourse(group, materials, stats) {
     const stripe = Math.floor(i / 6) % 2 ? C.turfStripe : C.turf;
     quad(turf, [awtOut0.x, 0.1, awtOut0.z], [awtOut1.x, 0.1, awtOut1.z],
       [turfOut1.x, 0.1, turfOut1.z], [turfOut0.x, 0.1, turfOut0.z], stripe);
-    // Infield lawn, drawn as a fan from the infield centre.
-    quad(infield, [centre.x, 0.07, centre.z], [inner0.x, 0.07, inner0.z], [inner1.x, 0.07, inner1.z],
-      [centre.x, 0.07, centre.z], C.infieldLawn);
+
     // Running rails: inner rail against the infield, a rail between the two tracks, and the outer rail.
     for (const [a, b, colour] of [[inner0, inner1, C.rail], [awtOut0, awtOut1, C.rail], [turfOut0, turfOut1, C.rail]]) {
       for (const height of [TRACK.railHeight, 0.78, 0.46]) beam(rails, [a.x, height, a.z], [b.x, height, b.z], 0.12, 0.1);
@@ -131,7 +128,22 @@ function buildCourse(group, materials, stats) {
   meshStore(course, apron, materials.surface, 'ShaTinSandApron', false);
   meshStore(course, sand, materials.surface, 'ShaTinAllWeatherTrack', false);
   meshStore(course, turf, materials.surface, 'ShaTinTurfCourse', false);
-  meshStore(course, infield, materials.surface, 'ShaTinInfieldLawn', false);
+  // The infield lawn as one filled surface built from the inner rail, so it cannot leave fan artefacts.
+  const railPoints = [];
+  for (let i = 0; i < segments; i++) {
+    const point = shaTinTrackPoint(i / segments, 0);
+    railPoints.push([point.x, point.z]);
+  }
+  const shape = new THREE.Shape();
+  railPoints.forEach(([x, z], index) => { if (index === 0) shape.moveTo(x, -z); else shape.lineTo(x, -z); });
+  shape.closePath();
+  const infieldGeometry = new THREE.ShapeGeometry(shape);
+  infieldGeometry.rotateX(-Math.PI / 2);
+  infieldGeometry.translate(0, 0.07, 0);
+  const infieldMesh = new THREE.Mesh(infieldGeometry, new THREE.MeshStandardMaterial({ color: new THREE.Color(...C.infieldLawn), roughness: 0.95 }));
+  infieldMesh.name = 'ShaTinInfieldLawn';
+  infieldMesh.receiveShadow = true;
+  course.add(infieldMesh);
   meshStore(course, park, materials.surface, 'ShaTinPenfoldParkLawn', false);
   merged(course, rails, materials.rail, 'ShaTinRunningRails');
   merged(course, posts, materials.rail, 'ShaTinRunningRailPosts');
