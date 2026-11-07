@@ -5,3 +5,7 @@
 - 牆碰撞以兩條道路同一條帶高程建立，兩條車線分別以 3.6 m 闊車身包絡離散採樣無命中；並非實際連續駕駛、彎道掃掠或全遊戲視覺測試。燈池會跟隨鏡頭。照片、接入口、路面標線、消防設備及完整 WebGPU 行駛仍待核實；不可稱整個隧道精修完成。
 - 獨立 forceWebGL 管內視角已檢查牆面、車道及燈帶；斷面法線已平滑以減少長向稜紋。這不是完整遊戲或 WebGPU 驗證，圖中的路面是測試用簡化路面。
 - 依管內照片增加淺色牆身的板縫和深色牆腳；間距為視覺近似，不是實測。再次以孤立 forceWebGL 預覽核對，並重跑道路淨空測試。
+
+### Interior bends
+
+Adjacent covered sections previously offset their walls independently at road-polyline bends, leaving wedges up to about 0.56 m wide. The lining now bridges those shared-vertex wedges, including the vault, skirting and horizontal joints; wall-joint colliders are added where the gap is at least the `segmentWall` minimum of 0.3 m. This does not bridge uncovered portal intervals. The vehicle-envelope check remains a discrete sample, not an in-game drive-through or a guarantee of continuous collision clearance.

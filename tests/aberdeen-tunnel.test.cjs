@@ -21,10 +21,21 @@ test('road centre and 3.6 metre vehicle envelope remain clear of lining walls', 
   for (let i = 0; i < normals.count; i += 6) {
     assert.ok(Math.abs(Math.hypot(normals.getX(i), normals.getY(i), normals.getZ(i)) - 1) < 1e-5);
     if ((i / 6) % 12 !== 11) {
-      assert.ok(Math.hypot(normals.getX(i+2)-normals.getX(i+6), normals.getY(i+2)-normals.getY(i+6), normals.getZ(i+2)-normals.getZ(i+6)) < 1e-5);
+      assert.ok(Math.hypot(normals.getX(i+5)-normals.getX(i+6), normals.getY(i+5)-normals.getY(i+6), normals.getZ(i+5)-normals.getZ(i+6)) < 1e-5);
     }
   }
-  assert.equal(result.colliders.length, sections.length * 2);
+  const turns = sections.slice(1).filter((s, i) => {
+    const p = sections[i];
+    return p.id === s.id && Math.hypot(p.b.x-s.a.x, p.b.z-s.a.z, p.b.y-s.a.y) <= 1e-5 &&
+      Math.hypot(p.nx-s.nx, p.nz-s.nz) >= 1e-6;
+  });
+  assert.ok(turns.length > 0);
+  assert.equal(result.colliders.length, sections.length * 2 + turns.filter((s) => {
+    const i = sections.indexOf(s), p = sections[i-1];
+    return Math.hypot(p.nx-s.nx, p.nz-s.nz) * (p.width/2+.35) >= .3;
+  }).length * 2);
+  assert.equal(normals.count, (sections.length + turns.length) * 12 * 6);
+
   let samples = 0;
   for (const s of sections) for (const p0 of [s.a,s.b]) for (const lane of [-2, 0, 2]) {
     const p = { x: p0.x + lane * s.nx, y: p0.y, z: p0.z + lane * s.nz };

@@ -92,6 +92,39 @@ export function buildAberdeenTunnel(root) {
       sites.push({ x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 + 4.7, z: (a.z + b.z) / 2 });
     }
   }
+  // Consecutive source segments can change heading at the shared centreline vertex. Their
+  // independently offset walls and vaults otherwise leave visible wedges (up to half a metre).
+  // Join only genuinely adjacent covered sections: never bridge an uncovered portal interval.
+  for (let i = 1; i < sections.length; i++) {
+    const previous = sections[i - 1], next = sections[i];
+    const a = previous.b, b = next.a;
+    if (previous.id !== next.id || Math.hypot(a.x - b.x, a.z - b.z, a.y - b.y) > 1e-5) continue;
+    if (Math.hypot(previous.nx - next.nx, previous.nz - next.nz) < 1e-6) continue;
+    const half = previous.width * .5 + .35;
+    const point = (p, s, offset, height) => [p.x + s.nx * offset, p.y + height, p.z + s.nz * offset];
+    for (const side of [-1, 1]) {
+      const o = side * half, face = o - side * .018;
+      const pa = (offset, h) => point(a, previous, offset, h);
+      const pb = (offset, h) => point(b, next, offset, h);
+      const gap = Math.hypot(pa(o, 0)[0] - pb(o, 0)[0], pa(o, 0)[2] - pb(o, 0)[2]);
+      if (gap < 1e-5) continue;
+      quad(walls, pa(o, .05), pb(o, .05), pb(o, 3.55), pa(o, 3.55));
+      quad(skirting, pa(face, .05), pb(face, .05), pb(face, .42), pa(face, .42));
+      for (const h of [1.55, 3.0]) quad(wallJoints, pa(face, h), pb(face, h), pb(face, h + .015), pa(face, h + .015));
+      const wall = segmentWall(pa(o, 0)[0], pa(o, 0)[2], pb(o, 0)[0], pb(o, 0)[2],
+        { thickness: .12, base: a.y - .1, top: a.y + 3.55 });
+      if (wall) colliders.push(wall);
+    }
+    for (let k = 0; k < 12; k++) {
+      const t0 = k * Math.PI / 12, t1 = (k + 1) * Math.PI / 12;
+      const o0 = Math.cos(t0) * half, o1 = Math.cos(t1) * half;
+      const h0 = 3.55 + Math.sin(t0) * 2, h1 = 3.55 + Math.sin(t1) * 2;
+      quad(arch, point(a, previous, o0, h0), point(b, next, o0, h0), point(b, next, o1, h1), point(a, previous, o1, h1));
+      const normal = (section, t) => { const x = Math.cos(t) / half, y = Math.sin(t) / 2, m = Math.hypot(x, y); return [-section.nx*x/m, -y/m, -section.nz*x/m]; };
+      const a0 = normal(previous,t0), b0 = normal(next,t0), b1 = normal(next,t1), a1 = normal(previous,t1);
+      archNormals.push(...a0, ...b0, ...b1, ...a0, ...b1, ...a1);
+    }
+  }
   mesh(group, walls, new THREE.MeshStandardMaterial({ color: 0x9f9c8d, roughness: .8, side: THREE.DoubleSide }), 'Aberdeen Tunnel pale wall lining');
   mesh(group, skirting, new THREE.MeshStandardMaterial({ color: 0x454a47, roughness: .86, side: THREE.DoubleSide }), 'Aberdeen Tunnel dark lower wall skirting');
   mesh(group, wallJoints, new THREE.MeshStandardMaterial({ color: 0x88877c, roughness: .84, side: THREE.DoubleSide }), 'Aberdeen Tunnel wall panel joints');
