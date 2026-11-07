@@ -192,7 +192,7 @@ test('both venues are wired into the terrain chain and the unified world', () =>
   assert.match(simple, /\.\.\.kaiTakYouth\.landmarks,/);
   assert.match(simple, /\+ kaiTakArena\.landmarks\.length \+ kaiTakYouth\.landmarks\.length/);
   assert.match(simple, /!groundUsesRoad \? kaiTakArena\.groundHeightAt\(x, z, kaiTakStadiumGround\) : kaiTakStadiumGround/);
-  assert.match(simple, /!groundUsesRoad \? airport\.groundHeightAt\(x, z, kaiTakYouthGround\) : kaiTakYouthGround/);
+  assert.match(simple, /!groundUsesRoad \? airport\.groundHeightAt\(x, z, happyValleyGround\) : happyValleyGround/);
   assert.equal(arena.landmarks[0].id, 'kai-tak-arena');
   assert.equal(youth.landmarks[0].id, 'kai-tak-youth-sports-ground');
 });

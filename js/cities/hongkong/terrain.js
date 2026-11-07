@@ -53,6 +53,7 @@ import { QE_STADIUM_SITE, queenElizabethStadiumTerrainHeightAt } from './queen-e
 import { KAI_TAK_STADIUM_SITE, kaiTakStadiumTerrainHeightAt } from './kai-tak-stadium-architecture.js';
 import { KAI_TAK_ARENA_SITE, kaiTakArenaTerrainHeightAt } from './kai-tak-arena-architecture.js';
 import { KAI_TAK_YOUTH_SITE, kaiTakYouthTerrainHeightAt } from './kai-tak-youth-sports-ground-architecture.js';
+import { HAPPY_VALLEY_SITE, happyValleyTerrainHeightAt } from './happy-valley-racecourse-architecture.js';
 import { KOWLOON_SHANGRI_LA_GROUND_SITES, kowloonShangriLaTerrainHeightAt } from './kowloon-shangri-la-architecture.js';
 import { CGO_GROUND_SITES, centralGovernmentTerrainHeightAt } from './central-government-architecture.js';
 import { HERITAGE_1881_GROUND_SITES, heritage1881TerrainHeightAt } from './heritage-1881-architecture.js';
@@ -225,6 +226,20 @@ const KAI_TAK_ARENA_PAD_HEIGHT = authoredHighestRawDatum([KAI_TAK_ARENA_SITE], r
 const KAI_TAK_YOUTH_PAD_HEIGHT = authoredHighestRawDatum([KAI_TAK_YOUTH_SITE], rawHongKongTerrainHeight);
 export function kaiTakArenaPadHeight() { return KAI_TAK_ARENA_PAD_HEIGHT; }
 export function kaiTakYouthPadHeight() { return KAI_TAK_YOUTH_PAD_HEIGHT; }
+// 跑馬地馬場 Happy Valley Racecourse lies on the flat drained floor of the valley, so the course is held at the
+// lowest datum round its fence: the DEM rises up the slopes of 渣甸山 and 大坑 on the landward sides, and those
+// slopes are the hillsides behind the boundary wall rather than part of the course.
+function authoredMedianRawDatum(sites, rawHeightAt) {
+  const samples = [];
+  for (const site of sites) {
+    samples.push(rawHeightAt(site.x, site.z));
+    for (let i = 0; i < site.ring.length; i += 2) samples.push(rawHeightAt(site.ring[i], site.ring[i + 1]));
+  }
+  samples.sort((a, b) => a - b);
+  return samples[samples.length >> 1];
+}
+const HAPPY_VALLEY_PAD_HEIGHT = authoredMedianRawDatum([HAPPY_VALLEY_SITE], rawHongKongTerrainHeight);
+export function happyValleyPadHeight() { return HAPPY_VALLEY_PAD_HEIGHT; }
 const CENTRAL_GOVERNMENT_PAD_HEIGHT = authoredHighestRawDatum(CGO_GROUND_SITES, rawHongKongTerrainHeight);
 export function centralGovernmentPadHeight() { return CENTRAL_GOVERNMENT_PAD_HEIGHT; }
 // 1881's source compound, retail podium and Main Building share one reproducible DTM construction datum.
@@ -311,7 +326,8 @@ export function hongKongTerrainHeight(x, z) {
   const kaiTakStadiumHeight = kaiTakStadiumTerrainHeightAt(x, z, qeStadiumHeight, KAI_TAK_STADIUM_PAD_HEIGHT);
   const kaiTakArenaHeight = kaiTakArenaTerrainHeightAt(x, z, kaiTakStadiumHeight, KAI_TAK_ARENA_PAD_HEIGHT);
   const kaiTakYouthHeight = kaiTakYouthTerrainHeightAt(x, z, kaiTakArenaHeight, KAI_TAK_YOUTH_PAD_HEIGHT);
-  return airportTerrainHeightAt(AIRPORT_TERRAIN_SITES, AIRPORT_PAD_HEIGHTS, x, z, kaiTakYouthHeight);
+  const happyValleyHeight = happyValleyTerrainHeightAt(x, z, kaiTakYouthHeight, HAPPY_VALLEY_PAD_HEIGHT);
+  return airportTerrainHeightAt(AIRPORT_TERRAIN_SITES, AIRPORT_PAD_HEIGHTS, x, z, happyValleyHeight);
 }
 
 export const HONG_KONG_TERRAIN_META = Object.freeze({
@@ -372,6 +388,7 @@ export const HONG_KONG_TERRAIN_META = Object.freeze({
   kaiTakStadiumPadHeight: KAI_TAK_STADIUM_PAD_HEIGHT,
   kaiTakArenaPadHeight: KAI_TAK_ARENA_PAD_HEIGHT,
   kaiTakYouthPadHeight: KAI_TAK_YOUTH_PAD_HEIGHT,
+  happyValleyPadHeight: HAPPY_VALLEY_PAD_HEIGHT,
   centralGovernmentPadHeight: CENTRAL_GOVERNMENT_PAD_HEIGHT,
   heritage1881PadHeight: HERITAGE_1881_PAD_HEIGHT,
   theArchPadHeight: THE_ARCH_PAD_HEIGHT,
