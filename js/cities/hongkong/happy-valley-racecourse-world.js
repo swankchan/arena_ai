@@ -304,6 +304,7 @@ export function buildHappyValleyRacecourse(root, { groundOffset = 0 } = {}) {
   const venue = new THREE.Group();
   venue.name = 'HappyValleyRacecourse';
   venue.position.set(HAPPY_VALLEY_SITE.x, groundOffset, HAPPY_VALLEY_SITE.z);
+  venue.rotation.y = HAPPY_VALLEY_SITE.ry;
   root.add(venue);
   const materials = makeMaterials();
   const stats = {};
@@ -316,7 +317,7 @@ export function buildHappyValleyRacecourse(root, { groundOffset = 0 } = {}) {
   const stand = HAPPY_VALLEY_MAIN_STAND;
   const colliders = [];
   const push = (x, z, w, d, h, ry = 0) => colliders.push(harbourCityLocalCollider(
-    HAPPY_VALLEY_SITE, x, z, w, d, groundOffset, groundOffset + h, ry));
+    HAPPY_VALLEY_SITE, x, z, w, d, groundOffset, groundOffset + h, HAPPY_VALLEY_SITE.ry + ry));
   // Grandstand, clubhouse, club tower and the museum annex.
   push(stand.centreX, stand.centreZ, stand.length, stand.depth, stand.canopyHeight + 2.4, frame.ry);
   const place = (along, out) => ({

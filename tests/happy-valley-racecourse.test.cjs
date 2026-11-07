@@ -180,3 +180,16 @@ test('the racecourse is wired into the terrain chain and the unified world', () 
   assert.match(source, /!groundUsesRoad \? happyValley\.groundHeightAt\(x, z, kaiTakYouthGround\) : kaiTakYouthGround/);
   assert.equal(built.landmarks[0].id, 'happy-valley-racecourse');
 });
+
+test('the rendered site and grandstand collider use the same mapped world frame', () => {
+  built.group.updateMatrixWorld(true);
+  assert.equal(built.group.rotation.y, site().ry);
+  const stand = built.group.getObjectByName('HappyValleyGrandstand');
+  const worldPosition = stand.getWorldPosition(new THREE.Vector3());
+  const expected = toWorld(arch.HAPPY_VALLEY_MAIN_STAND.centreX, arch.HAPPY_VALLEY_MAIN_STAND.centreZ);
+  assert.ok(Math.hypot(worldPosition.x-expected.x, worldPosition.z-expected.z) < 1e-5);
+  const collider = built.colliders.find(c => Math.hypot(c.x-expected.x,c.z-expected.z) < 1e-5 && c.w === arch.HAPPY_VALLEY_MAIN_STAND.length);
+  assert.ok(collider, 'stand collider at rendered centre');
+  assert.ok(Math.abs(collider.ry - (site().ry + stand.rotation.y)) < 1e-10);
+  assert.ok(collider.maxY > collider.minY);
+});
