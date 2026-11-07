@@ -174,3 +174,13 @@ test('伊利沙伯體育館 is wired into the unified Hong Kong world', () => {
   assert.equal(world.landmarks[0].id, 'queen-elizabeth-stadium');
   assert.ok(Math.abs(world.landmarks[0].height - 33) < 0.5);
 });
+
+test('rendered hall local footprint is transformed into its OSM world frame', () => {
+  const site = architecture.QE_STADIUM_SITE;
+  world.group.updateMatrixWorld(true);
+  assert.equal(world.group.rotation.y, site.ry);
+  for (let i = 0; i < site.localRing.length; i += 2) {
+    const p = world.group.localToWorld(new THREE.Vector3(site.localRing[i], 0, site.localRing[i+1]));
+    assert.ok(Math.hypot(p.x-site.ring[i], p.z-site.ring[i+1]) < 1e-5);
+  }
+});

@@ -367,6 +367,7 @@ export function buildQueenElizabethStadium(root, { groundOffset = 0 } = {}) {
   stadium.name = 'QueenElizabethStadium';
   // The hall is authored in local metres; one placement puts it on the site inside the OSM ring.
   stadium.position.set(QE_STADIUM_SITE.x, groundOffset, QE_STADIUM_SITE.z);
+  stadium.rotation.y = QE_STADIUM_SITE.ry;
   root.add(stadium);
   const materials = makeMaterials();
   const stats = {};
