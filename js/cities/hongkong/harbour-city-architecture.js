@@ -2,7 +2,7 @@
 // Ocean Terminal / LCX, Star Annex, Marco Polo Hongkong Hotel, Ocean Centre, The Gateway and Pacific Club
 // remain separate sources and components; no generic mall box is substituted for the waterfront complex.
 import { minimumAreaObb, flatRingBounds, pointInFlatRing } from './landmark-site.js';
-import { HK_FULL_ROADS } from '../../hk-full-roads-data.js';
+import { HK_FULL_ROADS } from './building-priority-roads.js';
 
 const source = (value) => Object.freeze({ attribution: '© OpenStreetMap contributors', license: 'ODbL 1.0', retrieved: '2026-11-04',
   sourceUrl: `https://www.openstreetmap.org/api/0.6/way/${value.id}/full.json`, type: 'way', id: value.id,

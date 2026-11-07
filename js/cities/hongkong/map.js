@@ -18,7 +18,7 @@ import { SORRENTO_SITE, SORRENTO_TOWER_SITES } from './sorrento-architecture.js'
 import { AIRPORT_BUILDING_SITES, AIRPORT_RUNWAYS, AIRPORT_TERMINAL_ONE_SITE, airportLocalToWorld } from './airport-architecture.js';
 import { pointInFlatRing } from './landmark-site.js';
 import { HK_FULL_MAP } from '../../hk-full-map-data.js';
-import { HK_FULL_ROADS } from '../../hk-full-roads-data.js';
+import { HK_FULL_ROADS } from './building-priority-roads.js';
 import { HK_TRAM_NETWORK } from '../../hk-tram-network-data.js';
 import { getTramTermini } from './tram-termini.js';
 import { STAR_FERRY_ROUTES } from './star-ferry-routes.js';

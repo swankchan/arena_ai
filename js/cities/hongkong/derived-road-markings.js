@@ -1,5 +1,5 @@
 import { GEO } from '../../hk-geodata.js';
-import { HK_FULL_ROADS } from '../../hk-full-roads-data.js';
+import { HK_FULL_ROADS } from './building-priority-roads.js';
 import { ROAD_MARK_STYLES } from './traffic-aid-geometry.js';
 import { roadRibbonHeightAtSegment } from './road-elevation.js';
 

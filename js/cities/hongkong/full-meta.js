@@ -1,6 +1,6 @@
 import { GEO } from '../../hk-geodata.js';
 import { HK_FULL_MAP } from '../../hk-full-map-data.js';
-import { HK_FULL_ROADS } from '../../hk-full-roads-data.js';
+import { HK_FULL_ROADS } from './building-priority-roads.js';
 import { CROSSING_FLAT_EXCLUSION_IDS, crossingSurfaceAt } from './crossings.js';
 import { roadRibbonHeightAtSegment } from './road-elevation.js';
 

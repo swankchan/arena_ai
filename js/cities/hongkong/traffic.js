@@ -113,7 +113,7 @@ export function createHongKongTraffic(scene, { getFocus, taxiStyle, getGroundHei
   function laneSample(link, travelS, dir, isBus = false) {
     const pathS = dir > 0 ? travelS : total[link] - travelS;
     const p = samplePath(paths[link], lengths[link], pathS);
-    const laneOffset = Math.min(4.2, Math.max(1.7, graph[link][3] * 0.23)) * (isBus ? 1.12 : 1);
+    const laneOffset = Math.min(4.2, Math.max(1.7, (routes[link]?.laneWidth ?? graph[link][3]) * 0.23)) * (isBus ? 1.12 : 1);
     const dx = p.dx * dir, dz = p.dz * dir;
     return { x: p.x + p.dz * dir * laneOffset, z: p.z - p.dx * dir * laneOffset,
       dx, dz, heading: Math.atan2(dx, dz) };

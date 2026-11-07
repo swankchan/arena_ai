@@ -1,4 +1,4 @@
-import { HK_FULL_ROADS } from '../../hk-full-roads-data.js';
+import { HK_FULL_ROADS, buildingPriorityRoadWidth } from './building-priority-roads.js';
 import { fullRoadWaysNear } from './full-meta.js';
 
 // Reattach the renderer's original intermediate vertices to the topology graph. Shared endpoints handle whole ways;
@@ -88,7 +88,7 @@ export function buildTrafficRouteGeometry(graph, nodes) {
     }
     if (best) {
       paths.push(best.points);
-      routes.push({ wayId: best.wayId, flat: best.flat, flags: best.flags });
+      routes.push({ wayId: best.wayId, flat: best.flat, flags: best.flags, laneWidth: buildingPriorityRoadWidth(best.wayId) });
     } else {
       paths.push(original);
       routes.push(null);

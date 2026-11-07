@@ -3,7 +3,7 @@ import path from 'node:path';
 import crypto from 'node:crypto';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { makeFrame } from '../../geo/frame.mjs';
-import { HK_FULL_ROADS } from '../../../js/hk-full-roads-data.js';
+import { HK_FULL_ROADS } from '../../../js/cities/hongkong/building-priority-roads.js';
 import { roadRibbonHeightAtSegment, surfaceRoadHeight } from '../../../js/cities/hongkong/road-elevation.js';
 import { crossingSurfaceAt } from '../../../js/cities/hongkong/crossings.js';
 

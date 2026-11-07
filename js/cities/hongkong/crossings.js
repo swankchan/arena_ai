@@ -1,4 +1,4 @@
-import { HK_FULL_ROADS } from '../../hk-full-roads-data.js';
+import { HK_FULL_ROADS } from './building-priority-roads.js';
 import { roadRibbonHeightAtVertex } from './road-elevation.js';
 
 // First-stage, drivable crossing profiles. Heights are deliberately procedural presentation levels, not surveyed

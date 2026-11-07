@@ -1,4 +1,4 @@
-import { HK_FULL_ROADS } from '../../hk-full-roads-data.js';
+import { HK_FULL_ROADS } from './building-priority-roads.js';
 import { HK_VERIFIED_BRIDGES } from '../../hk-verified-bridge-data.js';
 import { HK_TERRAIN, hongKongTerrainHeight } from './terrain.js';
 import { HSBC_SITE } from './hsbc-headquarters-architecture.js';

@@ -37,7 +37,7 @@
     "derivedTerminusCrossovers": 3
   },
   "output": "js/hk-tram-network-data.js",
-  "bytes": 327676,
+  "bytes": 327674,
   "stats": {
     "trackCount": 7,
     "trackLengthM": 30764.92,

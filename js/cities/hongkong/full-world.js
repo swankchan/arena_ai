@@ -1,6 +1,6 @@
 import * as THREE from 'three/webgpu';
 import { HK_FULL_MAP } from '../../hk-full-map-data.js';
-import { HK_FULL_ROADS } from '../../hk-full-roads-data.js';
+import { HK_FULL_ROADS } from './building-priority-roads.js';
 import { HK_VERIFIED_BRIDGES } from '../../hk-verified-bridge-data.js';
 import { GEO } from '../../hk-geodata.js';
 import { createHongKongRoadSurfaceMaterial } from '../../tsl-materials.js';
