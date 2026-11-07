@@ -3,7 +3,7 @@ import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 import { RoundedBoxGeometry } from 'three/addons/geometries/RoundedBoxGeometry.js';
 import { HK_TRAM_NETWORK } from '../../hk-tram-network-data.js';
 import { advanceTramMotion, createTramMotion, createTramPath, sampleTramPath, sampleTramTrolleyContact } from './tram-motion.js';
-import { getTramTermini } from './tram-termini.js';
+import { getTramTermini, getTramStopPlatforms } from './tram-termini.js';
 
 // Hong Kong Tramways: 1,067 mm gauge, embedded running rails and a 550 V DC single-trolley-pole overhead.
 // Track geometry is generated separately from real route-relation geometry; this module only renders and animates it.
@@ -338,6 +338,41 @@ function createTerminusPlatforms(root, termini) {
   return { group, platforms, updateAt };
 }
 
+// Compact shared geometry: ordinary stops receive a small platform, tactile edge,
+// shallow rain canopy, rear posts, and a bilingual roof-mounted stop name.
+// Stop data provide chainage only; individual shelter sites are not surveyed.
+function createStopShelters(root, locations) {
+  const group = new THREE.Group(); group.name = 'HongKongTramStopShelters'; root.add(group);
+  const canvas = typeof document === 'undefined' ? null : document.createElement('canvas');
+  const columns=8, tileW=256, tileH=80, rows=Math.ceil(locations.length/columns);
+  if (canvas) {canvas.width=columns*tileW;canvas.height=rows*tileH;}
+  const ctx=canvas?.getContext('2d'), parts={platform:[],tactile:[],roof:[],frame:[],glass:[],sign:[]};
+  const colors={platform:0x989c95,tactile:0xd8b33f,roof:0xb9c1bd,frame:0x3e5550,glass:0x82aaa8};
+  locations.forEach((p,index)=>{
+    const cx=p.side*p.offset, outer=cx+p.side*.62;
+    const transform=new THREE.Matrix4().compose(new THREE.Vector3(p.x,p.y,p.z),new THREE.Quaternion().setFromEuler(new THREE.Euler(0,p.heading,0)),new THREE.Vector3(1,1,1));
+    const put=(kind,geo)=>{geo.applyMatrix4(transform);parts[kind].push(geo);};
+    put('platform',box(1.8,.22,p.length,cx,.11,0,.035));
+    put('tactile',box(.22,.025,p.length-.4,cx-p.side*.68,.235,0));
+    put('roof',box(1.95,.12,5.6,cx,2.95,0,.035));
+    for(const z of [-2.35,2.35])put('frame',cylinder(.055,.055,2.72,8,outer,1.58,z));
+    put('frame',box(.08,.12,5.6,outer,2.85,0));
+    put('glass',box(.035,1.35,3.7,outer,1.25,0));
+    const col=index%columns,row=Math.floor(index/columns), ox=col*tileW,oy=row*tileH;
+    if(ctx){ctx.fillStyle='#f4f4ec';ctx.fillRect(ox,oy,tileW,tileH);ctx.fillStyle='#275b43';ctx.fillRect(ox,oy,tileW,8);ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillStyle='#192b25';ctx.font='bold 25px "Noto Sans TC",sans-serif';ctx.fillText(`${p.code}  ${p.name}`,ox+tileW/2,oy+27,tileW-8);ctx.font='18px sans-serif';ctx.fillText(p.nameEn,ox+tileW/2,oy+56,tileW-8);}
+    const sign=new THREE.PlaneGeometry(2.4,.65);const uv=sign.getAttribute('uv');
+    for(let i=0;i<uv.count;i++)uv.setXY(i,(col+uv.getX(i))/columns,1-(row+1-uv.getY(i))/rows);
+    sign.rotateY(-p.side*Math.PI/2);sign.translate(cx-p.side*.98,2.56,0);put('sign',sign);
+  });
+  for(const [kind,list] of Object.entries(parts)){
+    if(!list.length)continue;
+    const mat=kind==='sign'?new THREE.MeshStandardMaterial({map:canvas?new THREE.CanvasTexture(canvas):null,color:0xffffff,side:THREE.DoubleSide,roughness:.7}):new THREE.MeshStandardMaterial({color:colors[kind],roughness:.72,metalness:kind==='frame'?.5:.08,transparent:kind==='glass',opacity:kind==='glass'?.4:1,depthWrite:kind!=='glass'});
+    if(kind==='sign'&&mat.map)mat.map.colorSpace=THREE.SRGBColorSpace;
+    const mesh=new THREE.Mesh(mergeParts(list),mat);mesh.name=`HongKongTramStop${kind[0].toUpperCase()}${kind.slice(1)}`;mesh.castShadow=kind!=='glass'&&kind!=='sign';mesh.receiveShadow=kind==='platform';group.add(mesh);
+  }
+  return {group,locations};
+}
+
 const tramTemplates = new Map();
 function tramTemplate(color, title, subtitle) {
   const key = `${color}:${title}`;
@@ -454,6 +489,7 @@ export function createHongKongTramway(scene) {
   const infrastructure = createInfrastructure(root, paths);
   const termini = getTramTermini();
   const terminusPlatforms = createTerminusPlatforms(root, termini);
+  const stopShelters = createStopShelters(root, getTramStopPlatforms());
   const fleet = new THREE.Group(); fleet.name = 'HongKongTramFleet'; root.add(fleet);
   const trams = [];
   const styles = [
@@ -505,6 +541,7 @@ export function createHongKongTramway(scene) {
   update(0, 0);
   const stats = {
     trams: trams.length, tramTracks: paths.length, tramStops: HK_TRAM_NETWORK.stats.stopAssignments,
+    tramStopShelters: stopShelters.locations.length, tramStopShelterRoadUnsafe: stopShelters.locations.filter(p => !p.roadSafe).length,
     tramTermini: termini.length, tramTerminusPlatforms: terminusPlatforms.platforms.length,
     tramTerminusMinRailClearanceM: Math.min(...termini.flatMap((terminus) => terminus.platforms.map((platform) => platform.clearance))),
     tramTrackLengthM: HK_TRAM_NETWORK.stats.trackLengthM, tramGaugeM: HK_TRAM_NETWORK.gauge,
@@ -513,6 +550,6 @@ export function createHongKongTramway(scene) {
     tramAsphaltInfillPoints: HK_TRAM_NETWORK.stats.asphaltInfillPoints
   };
   root.userData.stats = stats;
-  return { group: root, infrastructure, termini, terminusPlatforms, trams, paths, stats, update,
+  return { group: root, infrastructure, termini, terminusPlatforms, stopShelters, trams, paths, stats, update,
     updateAt: (position) => { infrastructure.updateAt(position); terminusPlatforms.updateAt(position); } };
 }

@@ -1,5 +1,7 @@
 import { HK_TRAM_NETWORK } from '../../hk-tram-network-data.js';
 import { createTramPath, sampleTramPath } from './tram-motion.js';
+import { fullRoadSurfaceAt } from './full-meta.js';
+import { hongKongTerrainHeight } from './terrain.js';
 
 // Official terminus-stop positions drive both the 3D platforms and their map markers. Platform dimensions are scene
 // values, not a surveyed claim about each stop; their envelope is checked against every generated running rail.
@@ -148,4 +150,64 @@ export function getTramTermini(network = HK_TRAM_NETWORK) {
   const termini = [...byCode.values()];
   if (network === HK_TRAM_NETWORK) cachedTermini = termini;
   return termini;
+}
+
+// All ordinary stops use the same official stop chainage as the moving trams.
+// Platforms are approximate (the source has no surveyed shelter footprints).
+// A local broad-phase keeps the exact envelope-versus-all-rail test affordable.
+let cachedStopPlatforms = null;
+export function getTramStopPlatforms(network = HK_TRAM_NETWORK) {
+  if (network === HK_TRAM_NETWORK && cachedStopPlatforms) return cachedStopPlatforms;
+  const segments = networkSegments(network), result = [], existing = new Map();
+  for (const terminus of getTramTermini(network)) existing.set(terminus.code, terminus.platforms.map(p => [p.anchorX, p.anchorZ]));
+  network.tracks.forEach((track, trackIndex) => {
+    const path = createTramPath(track);
+    for (const stop of track.stops) {
+      const code = stop[0].replace(/^hk-official-tram-/, '').toUpperCase();
+      const anchor = sampleTramPath(path, stop[3]);
+      const previous = existing.get(code) || [];
+      if (previous.some(([x,z]) => Math.hypot(x-anchor.x,z-anchor.z) < 5)) continue;
+      // No rail further than 70 m can intersect any of the candidate platforms.
+      const near = segments.filter(s => s.minX <= anchor.x+70 && s.maxX >= anchor.x-70 && s.minZ <= anchor.z+70 && s.maxZ >= anchor.z-70);
+      // Shelters cannot occupy a live traffic lane. Prefer the track-side edge, but
+      // fall back to a nearby pavement when the simplified roads contain no island.
+      let placement = null;
+      for (const shift of [0,-4,4,-8,8,-12,12]) {
+       const candidate=sampleTramPath(path,stop[3]+shift);
+       for (const offset of [2.3,3,3.8,4.6,5.5,7,9,12,16,20,25,30,35,40,45]) {
+        for (const side of [1,-1]) {
+          const length=8, nx=candidate.dz, nz=-candidate.dx;
+          const clearance=platformClearance(candidate,side,offset,length,near);
+          if(clearance<1.3) continue;
+          let road=false;
+          for(const along of [-4,0,4]) for(const across of [-1,0,1]) {
+            const x=candidate.x+candidate.dx*along+nx*side*(offset+across), z=candidate.z+candidate.dz*along+nz*side*(offset+across);
+            const hit=fullRoadSurfaceAt(x,z,.35,anchor.y);
+            if(hit && Math.abs(hit.height-anchor.y)<4.7) road=true;
+          }
+          if(road) continue;
+          // Check the full footprint, not just corners: a narrow road can cross
+          // between widely spaced probes at a junction.
+          for(let along=-4;along<=4 && !road;along+=1) for(let across=-1;across<=1;across+=.5) {
+            const x=candidate.x+candidate.dx*along+nx*side*(offset+across), z=candidate.z+candidate.dz*along+nz*side*(offset+across);
+            const hit=fullRoadSurfaceAt(x,z,.35,candidate.y);
+            if(hit && Math.abs(hit.height-candidate.y)<4.7) {road=true;break;}
+          }
+          if(road)continue;
+          const x=candidate.x+nx*side*offset,z=candidate.z+nz*side*offset;
+          placement={...candidate, y:hongKongTerrainHeight(x,z),s:stop[3]+shift,side,offset,length,clearance,roadSafe:true};break;
+        }
+        if(placement)break;
+       }
+       if(placement)break;
+      }
+      if(!placement) { placement=placePlatform(path,stop[3],near); placement.roadSafe=false; }
+      result.push({ id: `${code}-${result.length}`, code, name:stop[1], nameEn:stop[2], trackIndex, trackId:track.id,
+        anchorX:anchor.x, anchorY:anchor.y, anchorZ:anchor.z, ...placement,
+        width:TRAM_TERMINUS_PLATFORM.width, height:TRAM_TERMINUS_PLATFORM.height });
+      previous.push([anchor.x,anchor.z]);existing.set(code,previous);
+    }
+  });
+  if (network === HK_TRAM_NETWORK) cachedStopPlatforms = result;
+  return result;
 }
