@@ -190,7 +190,7 @@ class CameraSystem {
     // The follow cameras pull back with speed, eased so that they drift back as the entity speeds up (and in as it
     // slows down); speedLag is about how far their former world-space smoothing left them trailing at 60 FPS
     this.smoothedSpeed += (Math.abs(entity.speed) - this.smoothedSpeed) * (1 - Math.exp(-dt * 3.0));
-    const speedLag = this.smoothedSpeed * 0.1;
+    const speedLag = entity.type === 'helicopter' ? Math.min(0.35, this.smoothedSpeed * 0.015) : this.smoothedSpeed * 0.1;
 
     const totalYaw = entity.heading + this.orbitYawOffset;
 
@@ -202,33 +202,34 @@ class CameraSystem {
 
         desiredPos.set(
           entity.position.x - Math.sin(totalYaw) * horizDist,
-          entity.position.y + Math.max(0.65, height),
+          entity.position.y + Math.max(entity.type === 'helicopter' ? 0.30 : 0.65, height),
           entity.position.z - Math.cos(totalYaw) * horizDist
         );
 
-        const lookUpBias = entity.type === 'helicopter' ? 0.2 : (entity.type === 'car' ? 0.52 : 1.55);
+        const lookUpBias = entity.type === 'helicopter' ? 0 : (entity.type === 'car' ? 0.52 : 1.55);
+        const lookAhead = entity.type === 'helicopter' ? 0.55 : 5.2;
         desiredLook.set(
-          entity.position.x + Math.sin(entity.heading) * 5.2,
+          entity.position.x + Math.sin(entity.heading) * lookAhead,
           entity.position.y + entity.cameraTargetOffset.y + lookUpBias,
-          entity.position.z + Math.cos(entity.heading) * 5.2
+          entity.position.z + Math.cos(entity.heading) * lookAhead
         );
         break;
       }
 
       case 'action': {
-        const sideOffset = entity.type === 'car' ? 2.65 : (entity.type === 'helicopter' ? 4.2 : 0.95);
-        const backDist = (entity.type === 'car' ? 3.6 : (entity.type === 'helicopter' ? 8.5 : 2.8)) + speedLag;
-        const lowY = entity.type === 'helicopter' ? entity.position.y + 1.2 : entity.position.y + 0.92;
+        const sideOffset = entity.type === 'car' ? 2.65 : (entity.type === 'helicopter' ? 0.65 : 0.95);
+        const backDist = (entity.type === 'car' ? 3.6 : (entity.type === 'helicopter' ? 1.4 : 2.8)) + speedLag;
+        const lowY = entity.type === 'helicopter' ? entity.position.y + 0.38 : entity.position.y + 0.92;
 
         desiredPos.set(
           entity.position.x - Math.sin(entity.heading) * backDist + Math.cos(entity.heading) * sideOffset,
-          Math.max(entity.type === 'helicopter' ? 0.55 : entity.position.y + 0.55, lowY),
+          Math.max(entity.type === 'helicopter' ? 0.3 : entity.position.y + 0.55, lowY),
           entity.position.z - Math.cos(entity.heading) * backDist - Math.sin(entity.heading) * sideOffset
         );
         desiredLook.set(
-          entity.position.x + Math.sin(entity.heading) * 3.2,
-          entity.position.y + 1.05,
-          entity.position.z + Math.cos(entity.heading) * 3.2
+          entity.position.x + Math.sin(entity.heading) * (entity.type === 'helicopter' ? .55 : 3.2),
+          entity.position.y + (entity.type === 'helicopter' ? .06 : 1.05),
+          entity.position.z + Math.cos(entity.heading) * (entity.type === 'helicopter' ? .55 : 3.2)
         );
         break;
       }
@@ -243,8 +244,8 @@ class CameraSystem {
           fwdOffset = 0.35;
           eyeY = 1.55;
         } else if (entity.type === 'helicopter') {
-          fwdOffset = 1.65;
-          eyeY = 1.65;
+          fwdOffset = 0.13;
+          eyeY = 0.03;
         }
 
         desiredPos.set(

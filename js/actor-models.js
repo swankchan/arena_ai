@@ -24,6 +24,7 @@ import {
   instanceIndex
 } from 'three/tsl';
 import { mergeGeometries, mergeVertices } from 'three/addons/utils/BufferGeometryUtils.js';
+import { RoundedBoxGeometry } from 'three/addons/geometries/RoundedBoxGeometry.js';
 import { drawHKTaxiGlyphs } from './cities/hongkong/taxi-glyphs.js';
 
 // Vehicle geometry and materials adapted from Three.js LoftGeometry and CarGenerator.
@@ -2446,98 +2447,81 @@ function createHongKongBusMaterial() {
 // ============================================================================
 // 5. PLAYER CAMERA QUADCOPTER GEOMETRY & TSL MATERIAL
 // ============================================================================
+// DJI Mavic 3-inspired visual study. Metres; not a manufacturer asset or exact CAD.
+// DJI publishes 347.5 × 283 × 107.7 mm unfolded (without propellers),
+// diagonal motor spacing 380.1 mm, and 239 mm diameter propellers.
 const DRONE_PARTS = Object.freeze({
-  BODY: 0,
-  ARM: 1,
-  MOTOR: 2,
-  GEAR: 3,
-  ROTOR: 4,
-  CAMERA: 5,
-  LENS: 6,
-  ACCENT: 7
+  BODY: 0, ARM: 1, MOTOR: 2, GEAR: 3, ROTOR: 4, CAMERA: 5, LENS: 6, ACCENT: 7, TIP: 8
 });
-
+const DRONE_ROTOR_RADIUS = 0.1195;
+const DRONE_COLLISION_RADIUS = 0.32;
 const DRONE_ROTOR_SITES = Object.freeze([
-  Object.freeze([-1.95, 1.55, -1.95]),
-  Object.freeze([1.95, 1.55, -1.95]),
-  Object.freeze([-1.95, 1.55, 1.95]),
-  Object.freeze([1.95, 1.55, 1.95])
+  Object.freeze([-0.125, 0.094, -0.143]),
+  Object.freeze([0.125, 0.094, -0.143]),
+  Object.freeze([-0.125, 0.094, 0.143]),
+  Object.freeze([0.125, 0.094, 0.143])
 ]);
 
 function droneBeam(parts, a, b, radius, partId) {
   const start = new THREE.Vector3(...a), end = new THREE.Vector3(...b);
   const direction = end.clone().sub(start), length = direction.length();
-  const geometry = new THREE.CylinderGeometry(radius, radius, length, 8);
-  const transform = new THREE.Matrix4().compose(
+  const geometry = new THREE.CylinderGeometry(radius, radius * 1.18, length, 10);
+  geometry.applyMatrix4(new THREE.Matrix4().compose(
     start.clone().add(end).multiplyScalar(0.5),
     new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0, 1, 0), direction.normalize()),
     new THREE.Vector3(1, 1, 1)
-  );
-  geometry.applyMatrix4(transform);
+  ));
   parts.push(part(geometry, partId));
 }
 
 function buildDroneBodyGeometry() {
   const parts = [];
-
-  // A compact camera-drone hull, battery pack and four separate carbon arms. There is deliberately no cabin,
-  // tail boom, tail fin, main mast or skid assembly left over from the sightseeing helicopter.
-  parts.push(part(
-    new THREE.SphereGeometry(1, 24, 12).scale(1.0, 0.38, 1.28).translate(0, 1.12, 0),
-    DRONE_PARTS.BODY
-  ));
-  parts.push(part(
-    new THREE.BoxGeometry(1.12, 0.2, 1.18).translate(0, 1.47, -0.18),
-    DRONE_PARTS.ACCENT
-  ));
-  parts.push(part(
-    new THREE.BoxGeometry(0.58, 0.08, 0.8).translate(0, 1.59, -0.2),
-    DRONE_PARTS.BODY
-  ));
-
+  // Sculpted grey shell and lower battery, with the nose toward +Z.
+  parts.push(part(new RoundedBoxGeometry(.101, .054, .213, 4, .016).translate(0, .073, 0), DRONE_PARTS.BODY));
+  parts.push(part(new RoundedBoxGeometry(.076, .025, .122, 3, .006).translate(0, .044, -.025), DRONE_PARTS.ACCENT));
+  // Top battery lid, central seam and the small nose cooling grille.
+  parts.push(part(new RoundedBoxGeometry(.077, .006, .137, 3, .005).translate(0, .103, -.015), DRONE_PARTS.BODY));
+  for (let i = -4; i <= 4; i++) {
+    parts.push(part(new THREE.BoxGeometry(.003, .0018, .014).translate(i * .005, .102, .076), DRONE_PARTS.GEAR));
+  }
   for (const [x, , z] of DRONE_ROTOR_SITES) {
-    droneBeam(parts, [Math.sign(x) * 0.52, 1.17, Math.sign(z) * 0.52], [x, 1.27, z], 0.105, DRONE_PARTS.ARM);
-    parts.push(part(
-      new THREE.CylinderGeometry(0.21, 0.24, 0.34, 16).translate(x, 1.32, z),
-      DRONE_PARTS.MOTOR
-    ));
-    parts.push(part(
-      new THREE.CylinderGeometry(0.23, 0.23, 0.055, 16).translate(x, 1.51, z),
-      DRONE_PARTS.ACCENT
-    ));
+    // The rear and front arms fold from different points on the body.
+    droneBeam(parts, [Math.sign(x) * .042, .071, Math.sign(z) * .060], [x, .079, z], .009, DRONE_PARTS.ARM);
+    parts.push(part(new THREE.CylinderGeometry(.014, .016, .024, 16).translate(x, .081, z), DRONE_PARTS.MOTOR));
+    parts.push(part(new THREE.CylinderGeometry(.014, .014, .004, 16).translate(x, .094, z), DRONE_PARTS.GEAR));
   }
-
-  // Four short landing struts and low feet keep the gimbal above the ground without helicopter-style skids.
-  for (const x of [-0.72, 0.72]) {
-    for (const z of [-0.62, 0.62]) {
-      droneBeam(parts, [x * 0.78, 0.98, z * 0.78], [x, 0.19, z], 0.045, DRONE_PARTS.GEAR);
-      parts.push(part(new THREE.BoxGeometry(0.13, 0.08, 0.54).translate(x, 0.12, z), DRONE_PARTS.GEAR));
-    }
+  // Short integrated legs, not long helicopter-style struts.
+  for (const sx of [-1, 1]) {
+    droneBeam(parts, [sx*.046,.059,.073], [sx*.055,.006,.095], .0045, DRONE_PARTS.GEAR);
+    parts.push(part(new THREE.BoxGeometry(.012,.008,.028).translate(sx*.055,.006,.089), DRONE_PARTS.GEAR));
+    parts.push(part(new THREE.BoxGeometry(.015,.009,.022).translate(sx*.038,.006,-.078), DRONE_PARTS.GEAR));
   }
-
-  // Two-axis camera gimbal, body and forward-facing lens, plus a pair of obstacle sensors in the nose.
-  parts.push(part(new THREE.CylinderGeometry(0.11, 0.11, 0.3, 12).translate(0, 0.77, 0.8), DRONE_PARTS.MOTOR));
-  parts.push(part(new THREE.SphereGeometry(1, 16, 10).scale(0.3, 0.22, 0.27).translate(0, 0.57, 0.98), DRONE_PARTS.CAMERA));
-  parts.push(part(
-    new THREE.CylinderGeometry(0.115, 0.135, 0.15, 16).rotateX(Math.PI / 2).translate(0, 0.57, 1.24),
-    DRONE_PARTS.LENS
-  ));
-  for (const x of [-0.4, 0.4]) {
-    parts.push(part(new THREE.SphereGeometry(0.07, 10, 6).translate(x, 1.12, 1.17), DRONE_PARTS.LENS));
+  // Dark rectangular dual-camera gimbal and its two round front lenses.
+  parts.push(part(new THREE.CylinderGeometry(.012,.012,.036,16).rotateZ(Math.PI/2).translate(0,.038,.097), DRONE_PARTS.MOTOR));
+  parts.push(part(new RoundedBoxGeometry(.046,.039,.034,3,.006).translate(0,.031,.108), DRONE_PARTS.CAMERA));
+  for (const [lx, ly, radius] of [[0,.023,.009], [0,.042,.006]]) {
+    parts.push(part(new THREE.CylinderGeometry(radius,radius,.003,20).rotateX(Math.PI/2).translate(lx,ly,.126), DRONE_PARTS.LENS));
   }
-
+  // Forward obstacle cameras, separate from the gimbal lenses.
+  for (const sx of [-1,1]) {
+    parts.push(part(new THREE.SphereGeometry(.007,12,8).translate(sx*.042,.078,.100), DRONE_PARTS.LENS));
+  }
   return mergeGeometries(parts);
 }
 
 function buildDroneRotorGeometry() {
-  const parts = [part(new THREE.CylinderGeometry(0.09, 0.11, 0.1, 12), DRONE_PARTS.MOTOR)];
-  for (const side of [-1, 1]) {
-    const blade = new THREE.BoxGeometry(0.91, 0.018, 0.115)
-      .rotateZ(side * 0.035)
-      .translate(side * 0.55, 0, 0)
-      .rotateY(side * 0.09);
+  const parts = [part(new THREE.CylinderGeometry(.008,.009,.006,12), DRONE_PARTS.MOTOR)];
+  // Two tapered folding blades, with coloured tips; geometries share the existing
+  // partId shader and counter-rotating rotor pivots.
+  for (const side of [-1,1]) {
+    const shape = new THREE.Shape();
+    shape.moveTo(.008, -.004); shape.lineTo(.036, -.010); shape.lineTo(.102, -.011);
+    shape.lineTo(.1195, -.004); shape.lineTo(.116, .003); shape.lineTo(.050, .010); shape.lineTo(.008, .004); shape.closePath();
+    const blade = new THREE.ExtrudeGeometry(shape, { depth: .0018, bevelEnabled: false });
+    blade.rotateX(-Math.PI/2); if (side < 0) blade.rotateY(Math.PI);
     parts.push(part(blade, DRONE_PARTS.ROTOR));
-    parts.push(part(new THREE.BoxGeometry(0.12, 0.022, 0.13).translate(side * 0.95, 0, 0), DRONE_PARTS.ACCENT));
+    const tip = new THREE.BoxGeometry(.007,.0025,.013).translate(side*.113, .001, 0);
+    parts.push(part(tip, DRONE_PARTS.TIP));
   }
   return mergeGeometries(parts);
 }
@@ -2555,18 +2539,19 @@ function createDroneMaterial() {
   const isCamera = step(abs(partId.sub(DRONE_PARTS.CAMERA)), 0.25);
   const isLens = step(abs(partId.sub(DRONE_PARTS.LENS)), 0.25);
   const isAccent = step(abs(partId.sub(DRONE_PARTS.ACCENT)), 0.25);
-
-  let surface = mix(color(0xd9e0e3), color(0x1c242a), isArm);
-  surface = mix(surface, color(0x73818a), isMotor);
-  surface = mix(surface, color(0x252c31), isGear);
-  surface = mix(surface, color(0x151b20), isRotor);
-  surface = mix(surface, color(0x10161b), isCamera);
-  surface = mix(surface, color(0x17485f), isLens);
-  surface = mix(surface, color(0xaebcc3), isAccent);
+  const isTip = step(abs(partId.sub(DRONE_PARTS.TIP)), 0.25);
+  let surface = mix(color(0x74818a), color(0x59656c), isArm);
+  surface = mix(surface, color(0x404b50), isMotor);
+  surface = mix(surface, color(0x252e34), isGear);
+  surface = mix(surface, color(0x222a2f), isRotor);
+  surface = mix(surface, color(0x171d21), isCamera);
+  surface = mix(surface, color(0x16373e), isLens);
+  surface = mix(surface, color(0x59666c), isAccent);
+  surface = mix(surface, color(0xd99b39), isTip);
   material.colorNode = surface;
-  material.roughnessNode = mix(float(0.3), float(0.58), max(isArm, isRotor));
-  material.metalnessNode = mix(float(0.2), float(0.72), isMotor);
-  material.emissiveNode = color(0x236b88).mul(isLens).mul(0.16);
+  material.roughnessNode = mix(float(.52), float(.72), max(isArm, isRotor));
+  material.metalnessNode = mix(float(.06), float(.35), isMotor);
+  material.emissiveNode = color(0x236b88).mul(isLens).mul(.04);
   _droneMaterial = material;
   return material;
 }
@@ -2595,6 +2580,8 @@ export {
   createHongKongBusMaterial,
   DRONE_PARTS,
   DRONE_ROTOR_SITES,
+  DRONE_ROTOR_RADIUS,
+  DRONE_COLLISION_RADIUS,
   buildDroneBodyGeometry,
   buildDroneRotorGeometry,
   createDroneMaterial

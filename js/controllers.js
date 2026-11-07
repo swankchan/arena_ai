@@ -15,6 +15,8 @@ import {
   buildSteerableWheelGeo,
   createLoftedCarMaterial,
   DRONE_ROTOR_SITES,
+  DRONE_ROTOR_RADIUS,
+  DRONE_COLLISION_RADIUS,
   buildDroneBodyGeometry,
   buildDroneRotorGeometry,
   createDroneMaterial
@@ -79,8 +81,8 @@ function collisionBody(mode, radius, heading, margin = 0) {
     car, sin, cos, hx, hz, radius: radius + margin,
     extX: car ? Math.abs(cos) * hx + Math.abs(sin) * hz : radius + margin,
     extZ: car ? Math.abs(sin) * hx + Math.abs(cos) * hz : radius + margin,
-    bottom: mode === 'helicopter' ? -0.25 : 0,
-    top: mode === 'helicopter' ? 1.8 : car ? 1.8 : 1.9
+    bottom: mode === 'helicopter' ? -0.02 : 0,
+    top: mode === 'helicopter' ? 0.13 : car ? 1.8 : 1.9
   };
 }
 
@@ -411,7 +413,7 @@ class ThirdPersonControllerManager {
   findTeleportPosition(x, z, heading, altitude, referenceY = 0) {
     if (!Number.isFinite(x) || !Number.isFinite(z)) return null;
     const heli = this.activeMode === 'helicopter';
-    const radius = heli ? 4.3 : this.activeMode === 'person' ? 0.48 : 0.65;
+    const radius = heli ? DRONE_COLLISION_RADIUS : this.activeMode === 'person' ? 0.48 : 0.65;
     const sinH = Math.sin(heading), cosH = Math.cos(heading);
     const shape = collisionBody(this.activeMode, radius, heading, 0.1);
     const reach = Math.max(shape.extX, shape.extZ);
@@ -419,10 +421,10 @@ class ThirdPersonControllerManager {
     const bounds = this.world?.bounds ?? ISLAND_BOUNDS;
     const entity = this.getActiveEntity();
     // Conservative body cylinders, including the taxi's corners, bicycle wheels and quadcopter rotor discs.
-    const body = { person: [0.48, 1.9], car: [2.4, 1.9], cyclist: [1.0, 1.9], helicopter: [4.3, 1.8] };
+    const body = { person: [0.48, 1.9], car: [2.4, 1.9], cyclist: [1.0, 1.9], helicopter: [DRONE_COLLISION_RADIUS, 0.13] };
     const others = Object.values(this.entities).filter(e => e !== entity).map(e => ({
       x: e.position.x, z: e.position.z, radius: body[e.type][0],
-      bottom: e.position.y - (e.type === 'helicopter' ? 0.25 : 0), top: e.position.y + body[e.type][1]
+      bottom: e.position.y - (e.type === 'helicopter' ? 0.02 : 0), top: e.position.y + body[e.type][1]
     }));
     const cameraBack = Math.cos(0.09) * entity.chaseDistance;
     const cameraUp = entity.chaseHeight + Math.sin(0.09) * entity.chaseDistance * 0.85;
@@ -843,7 +845,7 @@ class ThirdPersonControllerManager {
       depthWrite: false
     });
     const rotorGeometry = buildDroneRotorGeometry();
-    const blurGeometry = new THREE.CylinderGeometry(1.06, 1.06, 0.008, 32);
+    const blurGeometry = new THREE.CylinderGeometry(DRONE_ROTOR_RADIUS, DRONE_ROTOR_RADIUS, 0.001, 32);
     const rotorPivots = [];
     for (const [x, y, z] of DRONE_ROTOR_SITES) {
       const pivot = new THREE.Group();
@@ -860,13 +862,13 @@ class ThirdPersonControllerManager {
     }
 
     // Port / starboard navigation lights and two rear white strobes are attached to the motor arms.
-    const navGeometry = new THREE.SphereGeometry(0.07, 8, 6);
+    const navGeometry = new THREE.SphereGeometry(0.003, 8, 6);
     for (const [x, z, tint] of [
-      [-1.95, 1.95, 0xff2b2b], [1.95, 1.95, 0x22ff66],
-      [-1.95, -1.95, 0xd8ecff], [1.95, -1.95, 0xd8ecff]
+      [-0.125, 0.143, 0xff2b2b], [0.125, 0.143, 0x22ff66],
+      [-0.125, -0.143, 0xd8ecff], [0.125, -0.143, 0xd8ecff]
     ]) {
       const light = new THREE.Mesh(navGeometry, new THREE.MeshBasicNodeMaterial({ color: tint }));
-      light.position.set(x, 1.3, z);
+      light.position.set(x, .078, z);
       light.name = 'DroneNavigationLight';
       tiltPivot.add(light);
     }
@@ -879,16 +881,16 @@ class ThirdPersonControllerManager {
       mesh: root,
       tiltPivot,
       rotorPivots,
-      collisionRadius: 4.3,
+      collisionRadius: DRONE_COLLISION_RADIUS,
       position: new THREE.Vector3(-110, 96, SPAWN_Z - 60),
       heading: 0.62,
       speed: 0,
       verticalSpeed: 0,
       pitchAngle: 0,
       rollAngle: 0,
-      cameraTargetOffset: new THREE.Vector3(0, 1.15, 0),
-      chaseDistance: 11.4,
-      chaseHeight: 3.3
+      cameraTargetOffset: new THREE.Vector3(0, .06, 0),
+      chaseDistance: 1.7,
+      chaseHeight: .45
     };
   }
 
@@ -1346,7 +1348,7 @@ class ThirdPersonControllerManager {
       this.reportCollision(h, groundCollider, 'ground', h.position.x, 0.25, h.position.z, 0, 1, 0, -h.verticalSpeed);
     }
     h.position.y = Math.max(0.25, Math.min(380, h.position.y));
-    this.resolveHorizontalCollision(h.position, h.collisionRadius ?? 4.3, null, h);
+    this.resolveHorizontalCollision(h.position, h.collisionRadius ?? DRONE_COLLISION_RADIUS, null, h);
 
     const targetPitch = (h.speed / maxHorizSpeed) * 0.32;
     const targetRoll = -yawInput * 0.22;
@@ -1355,7 +1357,7 @@ class ThirdPersonControllerManager {
 
     h.tiltPivot.rotation.x = h.pitchAngle;
     h.tiltPivot.rotation.z = h.rollAngle;
-    h.tiltPivot.position.y = Math.sin(elapsed * 3.4) * 0.08;
+    h.tiltPivot.position.y = Math.sin(elapsed * 3.4) * 0.008;
   }
 }
 
