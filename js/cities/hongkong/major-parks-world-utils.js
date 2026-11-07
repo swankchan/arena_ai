@@ -134,6 +134,7 @@ export function majorParkRingColliders(ring, minY, maxY, depth = .42) {
   return colliders;
 }
 export function majorParkRingSurface(feature, material, name, group, offset = MAJOR_PARK_SURFACE_OFFSET) {
+  if (!material?.isMaterial) throw new TypeError(`Missing material for ${name}`);
   const pad = majorParkPadHeight(feature, offset), bottom = majorParkMinimumTerrain(feature);
   const geometry = ringShellGeometry(feature.ring, bottom, pad);
   const mesh = meshFromGeometry(group, geometry, material, name); return { mesh, pad, bottom };

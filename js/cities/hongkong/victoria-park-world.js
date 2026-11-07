@@ -153,7 +153,7 @@ export function buildVictoriaPark(scene) {
   materials.soccer = texturedVictoriaMaterial(0x3e7352, .96);
   materials.tennis = texturedVictoriaMaterial(0x336fa0, .9);
   const base = buildMajorParkBase(park, root, materials), paths = buildMajorParkPaths(park, root, materials);
-  majorParkRingSurface(majorParkFeature(park, 'centralLawn'), materials.grass, 'Victoria Park Central Lawn exact OSM grass terrace', root);
+  majorParkRingSurface(majorParkFeature(park, 'centralLawn'), materials.centralLawn, 'Victoria Park Central Lawn exact OSM grass terrace', root);
   buildFountainPlaza(majorParkFeature(park, 'fountainPlaza'), root, materials, colliders);
   buildModelBoatPool(root, materials, colliders); buildQueen(VICTORIA_QUEEN_STATUE, root, materials, colliders);
   buildBandstand(majorParkFeature(park, 'bandstand'), root, materials, colliders);

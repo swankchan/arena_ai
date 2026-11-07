@@ -278,3 +278,16 @@ test('Kowloon Park Sports Centre has visible perimeter glazing rather than only 
   assert.notEqual(wall.material.color.getHex(), 0xffffff);
   assert.ok(glass.geometry.getAttribute('position').count > 0);
 });
+
+test('Victoria Park central lawn has an explicit green material, not the default white mesh', () => {
+  const lawn = worlds.get(arch.VICTORIA_PARK).root.getObjectByName('Victoria Park Central Lawn exact OSM grass terrace');
+  assert.ok(lawn?.material);
+  const color = lawn.material.color;
+  assert.ok(color.g > color.r && color.g > color.b, `lawn colour ${color.getHexString()}`);
+  assert.notEqual(color.getHex(), 0xffffff);
+});
+
+test('park ring surfaces reject missing materials instead of silently rendering white', async () => {
+  const { majorParkRingSurface } = await import('../js/cities/hongkong/major-parks-world-utils.js');
+  assert.throws(() => majorParkRingSurface(arch.VICTORIA_PARK.features[0], undefined, 'test surface', new THREE.Group()), /Missing material for test surface/);
+});
