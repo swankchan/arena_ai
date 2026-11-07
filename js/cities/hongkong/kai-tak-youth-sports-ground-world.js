@@ -193,6 +193,7 @@ export function buildKaiTakYouthSportsGround(root, { groundOffset = 0 } = {}) {
   const ground = new THREE.Group();
   ground.name = 'KaiTakYouthSportsGround';
   ground.position.set(KAI_TAK_YOUTH_SITE.x, groundOffset, KAI_TAK_YOUTH_SITE.z);
+  ground.rotation.y = KAI_TAK_YOUTH_SITE.ry;
   root.add(ground);
   const materials = makeMaterials();
   const stats = {

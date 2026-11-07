@@ -209,3 +209,13 @@ test('Kai Tak Arena rendered footprint follows its mapped world frame', () => {
     assert.ok(Math.hypot(p.x-site.ring[i], p.z-site.ring[i+1]) < 1e-5);
   }
 });
+
+test('Kai Tak Youth Sports Ground rendered footprint follows its mapped world frame', () => {
+  const site = youthArch.KAI_TAK_YOUTH_SITE;
+  youth.group.updateMatrixWorld(true);
+  assert.equal(youth.group.rotation.y, site.ry);
+  for (let i = 0; i < site.localRing.length; i += 2) {
+    const p = youth.group.localToWorld(new THREE.Vector3(site.localRing[i], 0, site.localRing[i+1]));
+    assert.ok(Math.hypot(p.x-site.ring[i], p.z-site.ring[i+1]) < 1e-5);
+  }
+});
