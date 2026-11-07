@@ -64,7 +64,8 @@ export function cladBox(stores, spec) {
     const at = (u, height, out = 0) => {
       const dx = face.along === 'x' ? u : face.normal[0] * (normalOffset + out);
       const dz = face.along === 'x' ? face.normal[1] * (normalOffset + out) : u;
-      return toWorld(dx, dz).concat([height]);
+      const [wx, wz] = toWorld(dx, dz);
+      return [wx, height, wz];
     };
     const wall = (target, u0, u1, y0, y1, colour, out = 0.02) => {
       quad(target, at(u0, y0, out), at(u1, y0, out), at(u1, y1, out), at(u0, y1, out), colour);

@@ -351,7 +351,12 @@ function buildStables(group, materials, stats) {
     for (let col = 0; col < spec.perRow; col++) {
       const x = spec.originX + col * spec.spacingX;
       const z = spec.originZ + row * spec.spacingZ;
-      if (!pointInFlatRing(SHA_TIN_SITE.localRing, x, z)) continue;
+      // Every corner of the block must be inside the surveyed fence, plus a yard's width of margin, so a stable
+      // can never hang over the property line.
+      const halfLength = spec.blockLength / 2 + 8, halfDepth = spec.blockDepth / 2 + 22;
+      const corners = [[x - halfLength, z - halfDepth], [x + halfLength, z - halfDepth],
+        [x + halfLength, z + halfDepth], [x - halfLength, z + halfDepth], [x, z]];
+      if (corners.some(([px, pz]) => !pointInFlatRing(SHA_TIN_SITE.localRing, px, pz))) continue;
       cladBox(stableCladding, {
         x, z, y: 0, w: spec.blockLength, d: spec.blockDepth, h: spec.height,
         floors: 1, bayWidth: 5.2, seed: row * 13 + col, plinthHeight: 0.6, glazingRatio: 0.3,
@@ -412,7 +417,7 @@ function buildStation(group, materials, stats) {
 // the stable yards and the station forecourt.
 function inPavedZone(x, z) {
   for (const [cx, cz, w, d] of [[-150, -230, 170, 80], [40, -250, 140, 70], [300, -250, 140, 80],
-    [120, -170, 320, 110], [-120, -196, 170, 70], [480, -170, 210, 250], [330, -258, 200, 60]]) {
+    [120, -170, 320, 110], [-120, -196, 170, 70], [330, -258, 200, 60]]) {
     if (Math.abs(x - cx) < w / 2 && Math.abs(z - cz) < d / 2) return true;
   }
   return false;
