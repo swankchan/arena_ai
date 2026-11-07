@@ -194,3 +194,62 @@ test('Node City Hall geometry is finite and has authored massing, entrances and 
   for (const link of [ch.CITY_HALL_HIGH_GARDEN_LINK, ch.CITY_HALL_LOW_GARDEN_LINK]) assert.equal(occupied(link.x, link.z), false);
   assert.ok(Math.hypot(ch.CITY_HALL_HIGH_GARDEN_LINK.x - ch.CITY_HALL_LOW_GARDEN_LINK.x, ch.CITY_HALL_HIGH_GARDEN_LINK.z - ch.CITY_HALL_LOW_GARDEN_LINK.z) > 40);
 });
+
+test('City Hall facade normals face outwards and visible windows are not buried in the shell', async () => {
+  const { cityHallFacadeFrame, buildCityHall } = await import('../js/cities/hongkong/city-hall-world.js');
+  const { civicFramePoint } = await import('../js/cities/hongkong/civic-world-utils.js');
+  const THREE = await import('three/webgpu');
+  for (const [site, chains] of [[ch.CITY_HALL_HIGH_SITE, [[1,2,3,4,5,6],[10,11],[0]]], [ch.CITY_HALL_LOW_SITE, [[3,4],[6],[16],[17]]]]) {
+    for (const edges of chains) {
+      const frame = cityHallFacadeFrame(site, edges);
+      assert.ok(Math.sin(frame.ry)*frame.nx + Math.cos(frame.ry)*frame.nz > .99, `${site.key} ${edges}`);
+    }
+  }
+  globalThis.document = { createElement: () => ({ width:0,height:0,getContext: () => ({fillRect(){},fillText(){},getImageData:(x,y,w,h)=>({data:new Uint8ClampedArray(w*h*4)})}) }) };
+  const scene = new THREE.Scene(), city = buildCityHall(scene, {groundOffset: 5}); scene.updateMatrixWorld(true);
+  for (const [site, object, edges, y] of [[ch.CITY_HALL_HIGH_SITE,city.highBlock.root,[10,11],8],[ch.CITY_HALL_LOW_SITE,city.lowBlock.root,[3,4],5.15]]) {
+    const frame = cityHallFacadeFrame(site, edges); const bays = Math.round(frame.length / (site === ch.CITY_HALL_HIGH_SITE ? 3.6 : 4));
+    const u = -frame.length/2 + frame.length/bays*.5;
+    const pt = civicFramePoint(frame,u,y,2), look = civicFramePoint(frame,u,y,-1);
+    const from = object.localToWorld(new THREE.Vector3(...pt)), target = object.localToWorld(new THREE.Vector3(...look));
+    const hit = new THREE.Raycaster(from,target.sub(from).normalize()).intersectObject(object,true)[0];
+    assert.ok(hit && /glass|panes/i.test(hit.object.name), `${site.key} first hit: ${hit?.object.name}`);
+  }
+  const ring=ch.CITY_HALL_SHRINE_SITE.ring; for(let i=0;i<ring.length;i+=2) assert.ok(Math.abs(Math.hypot(ring[i]-ch.CITY_HALL_SHRINE_WORLD.x,ring[i+1]-ch.CITY_HALL_SHRINE_WORLD.z)-3.048)<1e-6);
+  assert.ok(scene.getObjectByName('City Hall Memorial Shrine square reflecting pool'));
+});
+
+test('City Hall source wall geometry has real door gaps matching collider openings', async () => {
+  const THREE = await import('three/webgpu');
+  const { buildCityHall } = await import('../js/cities/hongkong/city-hall-world.js');
+  const { harbourCityEdgeOutward } = await import('../js/cities/hongkong/harbour-city-architecture.js');
+  globalThis.document = { createElement: () => ({ width:0,height:0,getContext: () => ({fillRect(){},fillText(){},getImageData:(x,y,w,h)=>({data:new Uint8ClampedArray(w*h*4)})}) }) };
+  const scene = new THREE.Scene(), city = buildCityHall(scene,{groundOffset:5}); scene.updateMatrixWorld(true);
+  for (const [site, block, entrance, edge, wall] of [
+    [ch.CITY_HALL_LOW_SITE,city.lowBlock.root,ch.CITY_HALL_LOW_MAIN_ENTRANCE,3,'City Hall Low Block exact source-ring walls'],
+    [ch.CITY_HALL_HIGH_SITE,city.highBlock.root,ch.CITY_HALL_HIGH_MAIN_ENTRANCE,10,'City Hall High Block exact source-ring walls'],
+  ]) {
+    const normal = harbourCityEdgeOutward(site.localRing,edge), mesh=block.getObjectByName(wall);
+    const from=block.localToWorld(new THREE.Vector3(entrance.localX+normal.nx*.6,1.5,entrance.localZ+normal.nz*.6));
+    const to=block.localToWorld(new THREE.Vector3(entrance.localX-normal.nx*.6,1.5,entrance.localZ-normal.nz*.6));
+    const ray = new THREE.Raycaster(from,to.clone().sub(from).normalize(),0,1.2);
+    assert.equal(ray.intersectObject(mesh).length,0,`${site.key} visible shell blocks entrance`);
+  }
+});
+
+test('photo-directed City Hall spiral stair and sheltered route are present without blocking roadway', async () => {
+  const THREE = await import('three/webgpu');
+  const {buildCityHall, cityHallFacadeFrame} = await import('../js/cities/hongkong/city-hall-world.js');
+  globalThis.document = { createElement: () => ({width:0,height:0,getContext:()=>({fillRect(){},fillText(){},getImageData:(x,y,w,h)=>({data:new Uint8ClampedArray(w*h*4)})})}) };
+  const scene = new THREE.Scene(), city = buildCityHall(scene,{groundOffset:5});
+  const stair = scene.getObjectByName('City Hall Low Block photo-directed spiral concrete steps');
+  assert.ok(stair); assert.ok(scene.getObjectByName('City Hall Low Block spiral staircase dark treads'));
+  assert.ok(scene.getObjectByName('City Hall Low Block spiral staircase metal handrails'));
+  assert.ok(scene.getObjectByName('City Hall Memorial Garden mature foliage'));
+  assert.equal(city.stats.cityHallCoveredWalkwayOpenSegments,2);
+  assert.equal(city.stats.cityHallCoveredPerimeterSegments,3);
+  const frame = cityHallFacadeFrame(ch.CITY_HALL_LOW_SITE,[3,4]), entry=ch.CITY_HALL_LOW_MAIN_ENTRANCE;
+  const u=(entry.localX-frame.x)*Math.cos(frame.ry)-(entry.localZ-frame.z)*Math.sin(frame.ry)+7.2;
+  const cx=frame.x+Math.cos(frame.ry)*u+Math.sin(frame.ry)*4, cz=frame.z-Math.sin(frame.ry)*u+Math.cos(frame.ry)*4;
+  for(let i=0;i<32;i++){const a=i*Math.PI/16,p=ch.cityHallLocalToWorld(ch.CITY_HALL_LOW_SITE,cx+2.1*Math.cos(a),cz+2.1*Math.sin(a));assert.equal(ch.cityHallPointInRoadCorridor(ch.CITY_HALL_SITE,p.x,p.z,.15),false);assert.equal(inside(ch.CITY_HALL_LOW_SITE.ring,p.x,p.z),false);}
+});

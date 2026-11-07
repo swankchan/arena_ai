@@ -183,11 +183,11 @@ export const CITY_HALL_SHRINE_WORLD = Object.freeze({ x: 160.75, z: -60.05 });
 const shrineRing = [];
 for (let i = 0; i <= CITY_HALL_MEMORIAL_SHRINE_SIDES; i += 1) {
   const angle = Math.PI / 12 + i / CITY_HALL_MEMORIAL_SHRINE_SIDES * Math.PI * 2;
-  shrineRing.push(CITY_HALL_SHRINE_WORLD.x + Math.cos(angle) * 5.4, CITY_HALL_SHRINE_WORLD.z + Math.sin(angle) * 5.4);
+  shrineRing.push(CITY_HALL_SHRINE_WORLD.x + Math.cos(angle) * 3.048, CITY_HALL_SHRINE_WORLD.z + Math.sin(angle) * 3.048);
 }
 export const CITY_HALL_SHRINE_SITE = makePhotoDirectedSite(
   'cityHallMemorialShrine', '大會堂紀念神龕 City Hall Memorial Shrine', shrineRing,
-  'Photo-directed twelve-sided Memorial Shrine within OSM Memorial Garden way 46870356; the garden source has no separate shrine footprint or surveyed centre.',
+  'Photo-directed twelve-sided Memorial Shrine within OSM Memorial Garden way 46870356; the garden source has no separate shrine footprint or surveyed centre. The 20-foot diameter is from the AMO heritage appraisal.',
   { height: CITY_HALL_MEMORIAL_SHRINE_HEIGHT, role: 'memorial' },
 );
 
