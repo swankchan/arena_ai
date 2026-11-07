@@ -52,7 +52,7 @@ function mesh(group, positions, material, name, normals = null) {
   result.name = name; group.add(result);
 }
 export function buildAberdeenTunnel(root) {
-  const group = new THREE.Group(); group.name = 'AberdeenTunnelInterior'; const walls = [], arch = [], archNormals = [], lights = [], colliders = [], sites = [];
+  const group = new THREE.Group(); group.name = 'AberdeenTunnelInterior'; const walls = [], wallJoints = [], skirting = [], arch = [], archNormals = [], lights = [], colliders = [], sites = [];
   const sections = aberdeenTunnelSections();
   for (const s of sections) {
     const { a, b, nx, nz, width } = s, half = width * .5 + .35;
@@ -60,6 +60,18 @@ export function buildAberdeenTunnel(root) {
     for (const side of [-1, 1]) {
       const o = side * half;
       quad(walls, point(a, o, .05), point(b, o, .05), point(b, o, 3.55), point(a, o, 3.55));
+      // Recessed-looking tile joints and the dark service kerb in the interior photo. These are deliberately
+      // shallow, not posts or colliders: they must not narrow either lane.
+      const face = o - side * .018;
+      quad(skirting, point(a, face, .05), point(b, face, .05), point(b, face, .42), point(a, face, .42));
+      for (const h of [1.55, 3.0]) quad(wallJoints, point(a, face, h), point(b, face, h), point(b, face, h + .015), point(a, face, h + .015));
+      const length = Math.hypot(b.x-a.x,b.z-a.z), count = Math.max(1, Math.ceil(length / 1.6));
+      for (let n = 0; n < count; n++) {
+        const t = n/count, u = Math.min(1, t + .015 / Math.max(length, .01));
+        const lerp = f => ({ x: a.x + (b.x-a.x)*f, y: a.y + (b.y-a.y)*f, z: a.z + (b.z-a.z)*f });
+        const p = lerp(t), q = lerp(u);
+        quad(wallJoints, point(p, face, .42), point(q, face, .42), point(q, face, 3.55), point(p, face, 3.55));
+      }
       const wall = segmentWall(a.x + nx * o, a.z + nz * o, b.x + nx * o, b.z + nz * o,
         { thickness: .12, base: Math.min(a.y, b.y) - .1, top: Math.max(a.y, b.y) + 3.55 });
       if (wall) colliders.push(wall);
@@ -81,6 +93,8 @@ export function buildAberdeenTunnel(root) {
     }
   }
   mesh(group, walls, new THREE.MeshStandardMaterial({ color: 0x9f9c8d, roughness: .8, side: THREE.DoubleSide }), 'Aberdeen Tunnel pale wall lining');
+  mesh(group, skirting, new THREE.MeshStandardMaterial({ color: 0x454a47, roughness: .86, side: THREE.DoubleSide }), 'Aberdeen Tunnel dark lower wall skirting');
+  mesh(group, wallJoints, new THREE.MeshStandardMaterial({ color: 0x88877c, roughness: .84, side: THREE.DoubleSide }), 'Aberdeen Tunnel wall panel joints');
   mesh(group, arch, new THREE.MeshStandardMaterial({ color: 0x4b4c48, roughness: .84, side: THREE.DoubleSide }), 'Aberdeen Tunnel dark vaulted ceiling', archNormals);
   mesh(group, lights, new THREE.MeshBasicMaterial({ color: 0xe4f0eb, side: THREE.DoubleSide, toneMapped: false }), 'Aberdeen Tunnel continuous central light strip');
   const pool = Array.from({ length: 12 }, () => { const light = new THREE.PointLight(0xe4f1eb, 0, 38, 1.4); group.add(light); return light; });
