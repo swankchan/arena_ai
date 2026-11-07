@@ -199,3 +199,13 @@ test('both venues are wired into the terrain chain and the unified world', () =>
   assert.equal(arena.landmarks[0].id, 'kai-tak-arena');
   assert.equal(youth.landmarks[0].id, 'kai-tak-youth-sports-ground');
 });
+
+test('Kai Tak Arena rendered footprint follows its mapped world frame', () => {
+  const site = arenaArch.KAI_TAK_ARENA_SITE;
+  arena.group.updateMatrixWorld(true);
+  assert.equal(arena.group.rotation.y, site.ry);
+  for (let i = 0; i < site.localRing.length; i += 2) {
+    const p = arena.group.localToWorld(new THREE.Vector3(site.localRing[i], 0, site.localRing[i+1]));
+    assert.ok(Math.hypot(p.x-site.ring[i], p.z-site.ring[i+1]) < 1e-5);
+  }
+});

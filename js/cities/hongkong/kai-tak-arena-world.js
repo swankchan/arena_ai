@@ -271,6 +271,7 @@ export function buildKaiTakArena(root, { groundOffset = 0 } = {}) {
   const arena = new THREE.Group();
   arena.name = 'KaiTakArena';
   arena.position.set(KAI_TAK_ARENA_SITE.x, groundOffset, KAI_TAK_ARENA_SITE.z);
+  arena.rotation.y = KAI_TAK_ARENA_SITE.ry;
   root.add(arena);
   const materials = makeMaterials();
   const stats = {};
