@@ -76,6 +76,19 @@ test('the fitted circuit is honest about the surveyed boundary', () => {
   assert.ok(minimum >= 8, `minimum apron ${minimum.toFixed(1)} m`);
 });
 
+// TODO: the current sign(cos) parameterisation teleports between the two ends of a straight.
+// Track geometry must be a continuous loop before its road and pitch clearances can be trusted.
+test('the outer rail is a continuous closed loop', { todo: 'Replace discontinuous track parameterisation with the validated realigned loop' }, () => {
+  const count = 720;
+  let maxStep = 0;
+  for (let i = 0; i < count; i++) {
+    const a = arch.happyValleyTrackPoint(i / count, 0);
+    const b = arch.happyValleyTrackPoint((i + 1) / count, 0);
+    maxStep = Math.max(maxStep, Math.hypot(b.x - a.x, b.z - a.z));
+  }
+  assert.ok(maxStep < 5, `adjacent 1/720-lap rail points are ${maxStep.toFixed(2)} m apart`);
+});
+
 test('the racing surface never runs over a carriageway', { todo: 'Existing racecourse must be realigned and conflicts resolved' }, () => {
   let inside = 0, conflicts = 0;
   for (let i = 0; i < 720; i += 1) {
