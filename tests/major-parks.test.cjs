@@ -218,3 +218,40 @@ test('park rendering stays asset-free and labels photo direction / unverified fa
   const kp = fs.readFileSync(path.join(root, 'js/cities/hongkong/kowloon-park-world.js'), 'utf8');
   assert.match(kp, /not a measured sculpture replica/); assert.match(kp, /no unverified crossing/);
 });
+
+test('Victoria football goals and tennis nets align with the short ends and short axis of each court', () => {
+  const world = worlds.get(arch.VICTORIA_PARK);
+  for (const feature of arch.VICTORIA_PARK.features.filter((f) => f.kind === 'soccer' || f.kind === 'tennis')) {
+    const court = world.root.getObjectByName(`${feature.name} aligned court markings and equipment`);
+    assert.ok(court, feature.name);
+    const alongZ = feature.site.d >= feature.site.w;
+    assert.equal(court.rotation.y, alongZ ? 0 : Math.PI / 2, feature.name);
+    const lines = court.getObjectByName(`${feature.name} painted lines`);
+    assert.ok(lines, feature.name); lines.geometry.computeBoundingBox();
+    const b = lines.geometry.boundingBox;
+    assert.ok(b.max.z - b.min.z > b.max.x - b.min.x, `${feature.name}: long axis must be z before rotation`);
+    if (feature.kind === 'soccer') {
+      const goals = court.getObjectByName(`${feature.name} goals and sports equipment`);
+      assert.ok(goals); goals.geometry.computeBoundingBox();
+      const gb = goals.geometry.boundingBox;
+      assert.ok(gb.max.z > (b.max.z - b.min.z) * .45 && gb.min.z < -(b.max.z - b.min.z) * .45);
+    } else {
+      const net = court.getObjectByName(`${feature.name} net`);
+      assert.ok(net); net.geometry.computeBoundingBox();
+      assert.ok(net.geometry.boundingBox.max.x - net.geometry.boundingBox.min.x > net.geometry.boundingBox.max.z - net.geometry.boundingBox.min.z);
+    }
+  }
+});
+
+test('Victoria pool and playing surfaces use dedicated non-white textured materials', () => {
+  const root = worlds.get(arch.VICTORIA_PARK).root;
+  const pool = root.getObjectByName('Victoria Park Swimming Pool exact OSM building mass and DTM foundation');
+  const roof = root.getObjectByName('Victoria Park Swimming Pool shaded flat roof and structural ribs');
+  assert.ok(pool.material.colorNode); assert.ok(roof.material.colorNode);
+  assert.notEqual(pool.material.color.getHex(), 0xffffff);
+  assert.ok(root.getObjectByName('Victoria Park Swimming Pool facade panel joints'));
+  for (const feature of arch.VICTORIA_PARK.features.filter(f => f.kind === 'soccer' || f.kind === 'tennis')) {
+    const surface = root.getObjectByName(`${feature.name} exact OSM ${feature.kind} surface`);
+    assert.ok(surface && surface.material.colorNode, feature.name);
+  }
+});

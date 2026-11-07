@@ -1,4 +1,5 @@
 import * as THREE from 'three/webgpu';
+import { color, positionWorld } from 'three/tsl';
 import {
   VICTORIA_PARK, VICTORIA_MODEL_BOAT_POOL, VICTORIA_QUEEN_STATUE,
   majorParkFeature, majorParkGroundHeightAt, majorParkMinimumTerrain, majorParkPadHeight,
@@ -108,9 +109,29 @@ function buildCentreCourt(feature, group, materials, colliders) {
     colliders.push(majorParkBoxCollider(world.x, world.z, 7, d * 1.18, pad, pad + 2.4, feature.site.ry));
   }
 }
+// Procedural, restrained colour variation: no external texture assets needed.
+function texturedVictoriaMaterial(hex, roughness = .9) {
+  const material = new THREE.MeshStandardMaterial({ color: hex, roughness, metalness: .02 });
+  const grain = positionWorld.x.mul(1.73).sin().mul(positionWorld.z.mul(1.31).sin()).mul(.025).add(.96);
+  material.colorNode = color(new THREE.Color(hex)).mul(grain);
+  return material;
+}
 function buildPoolBuilding(feature, group, materials, colliders) {
   const pad = majorParkPadHeight(feature), bottom = majorParkMinimumTerrain(feature), wall = 8.2;
-  meshFromGeometry(group, ringShellGeometry(feature.ring, bottom, pad + wall), materials.white, 'Victoria Park Swimming Pool exact OSM building mass and DTM foundation');
+  const concrete = texturedVictoriaMaterial(0xa7a79f);
+  const roofMaterial = texturedVictoriaMaterial(0x939c9c, .84);
+  meshFromGeometry(group, ringShellGeometry(feature.ring, bottom, pad + wall), concrete, 'Victoria Park Swimming Pool exact OSM building mass and DTM foundation');
+  // Panel joints follow the actual outline rather than an oversized bounding box.
+  const joints = [];
+  for (let i = 2; i < feature.ring.length; i += 2) {
+    const ax = feature.ring[i - 2], az = feature.ring[i - 1], bx = feature.ring[i], bz = feature.ring[i + 1];
+    const length = Math.hypot(bx - ax, bz - az), count = Math.max(1, Math.floor(length / 6));
+    for (let n = 1; n < count; n++) {
+      const t = n / count, x = ax + (bx - ax) * t, z = az + (bz - az) * t;
+      beam(joints, [x, pad + .35, z], [x, pad + wall - .2, z], .06, .06);
+    }
+  }
+  merged(group, joints, materials.darkStone, 'Victoria Park Swimming Pool facade panel joints', false);
   const local = majorParkLocalGroup(feature, group, pad, 'Victoria Park Swimming Pool modern glazing and shaded roof deck');
   const glass = [], frames = [], roof = [];
   for (const z of [-feature.site.d * .43, feature.site.d * .43]) {
@@ -121,13 +142,16 @@ function buildPoolBuilding(feature, group, materials, colliders) {
   for (let i = -3; i <= 3; i++) box(roof, [i * feature.site.w * .11, wall + .65, 0], [.25, .8, feature.site.d * .86]);
   merged(local, glass, materials.dark, 'Victoria Park Swimming Pool dark glazed facade bands');
   merged(local, frames, materials.white, 'Victoria Park Swimming Pool white facade mullions');
-  merged(local, roof, materials.paleStone, 'Victoria Park Swimming Pool shaded flat roof and structural ribs');
+  merged(local, roof, roofMaterial, 'Victoria Park Swimming Pool shaded flat roof and structural ribs');
   colliders.push(...majorParkRingColliders(feature.ring, pad, pad + wall, .9));
 }
 
 export function buildVictoriaPark(scene) {
   const park = VICTORIA_PARK, root = new THREE.Group(); root.name = 'Victoria Park — exact site, central lawn, tennis centre, model boat pool and connected sports grounds'; scene.add(root);
   const materials = createMajorParkMaterials(), colliders = [];
+  // Differentiate granular synthetic turf from the smoother painted tennis surface.
+  materials.soccer = texturedVictoriaMaterial(0x3e7352, .96);
+  materials.tennis = texturedVictoriaMaterial(0x336fa0, .9);
   const base = buildMajorParkBase(park, root, materials), paths = buildMajorParkPaths(park, root, materials);
   majorParkRingSurface(majorParkFeature(park, 'centralLawn'), materials.grass, 'Victoria Park Central Lawn exact OSM grass terrace', root);
   buildFountainPlaza(majorParkFeature(park, 'fountainPlaza'), root, materials, colliders);

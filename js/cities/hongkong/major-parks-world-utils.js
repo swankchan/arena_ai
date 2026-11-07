@@ -256,7 +256,16 @@ export function addMajorParkCourt(feature, group, materials, colliders, options 
   const material = options.centre ? materials.tennis : feature.kind === 'soccer' ? materials.soccer : feature.kind === 'basketball' || feature.kind === 'handball' ? materials.basketball : feature.kind === 'bowls' ? materials.bowls : feature.kind === 'roller' || feature.kind === 'tableTennis' ? materials.plaza : materials.tennis;
   const { pad } = majorParkRingSurface(feature, material, `${feature.name} exact OSM ${feature.kind} surface`, group);
   const local = majorParkLocalGroup(feature, group, pad + .025, `${feature.name} regulation-inspired markings and equipment`);
-  const lines = [], equipment = [], nets = [], w = feature.site.w * .82, d = feature.site.d * .82;
+  // The court's long dimension is the playing direction (local z). OSM OBBs
+  // can put that direction on x, so rotate the markings AND equipment together.
+  const rotateCourt = ['soccer', 'tennis', 'centreCourt'].includes(feature.kind) && feature.site.w > feature.site.d;
+  const markings = new THREE.Group();
+  markings.name = `${feature.name} aligned court markings and equipment`;
+  markings.rotation.y = rotateCourt ? Math.PI / 2 : 0;
+  local.add(markings);
+  const lines = [], equipment = [], nets = [];
+  const w = (rotateCourt ? feature.site.d : feature.site.w) * .82;
+  const d = (rotateCourt ? feature.site.w : feature.site.d) * .82;
   const lineBox = (x, z, lw, ld) => box(lines, [x, .02, z], [lw, .035, ld]);
   if (['tennis', 'centreCourt', 'soccer', 'basketball', 'handball'].includes(feature.kind)) {
     lineBox(0, -d * .5, w, .10); lineBox(0, d * .5, w, .10); lineBox(-w * .5, 0, .10, d); lineBox(w * .5, 0, .10, d);
@@ -290,9 +299,9 @@ export function addMajorParkCourt(feature, group, materials, colliders, options 
       for (const x of [-.55, .55]) for (const dz of [-.95, .95]) box(equipment, [x, .39, z + dz], [.07, .78, .07]);
     }
   }
-  merged(local, lines, materials.line, `${feature.name} painted lines`, false);
-  merged(local, equipment, materials.white, `${feature.name} goals and sports equipment`);
-  merged(local, nets, materials.dark, `${feature.name} net`);
+  merged(markings, lines, materials.line, `${feature.name} painted lines`, false);
+  merged(markings, equipment, materials.white, `${feature.name} goals and sports equipment`);
+  merged(markings, nets, materials.dark, `${feature.name} net`);
   return { pad, local, w, d };
 }
 export function buildMajorParkTreeLayer(scene, parks, colliders) {
