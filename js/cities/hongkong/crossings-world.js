@@ -10,6 +10,7 @@ import { isCableStayedMainSpan } from './cable-stayed-architecture.js';
 import { buildCrossBayArchitecture } from './cross-bay-world.js';
 import { CROSS_BAY_ID } from './cross-bay-architecture.js';
 import { segmentWall } from './colliders.js';
+import { buildAberdeenTunnel } from './aberdeen-tunnel-world.js';
 
 const WATER_LEVEL = -2.2;
 const LAND_TOP = -0.08;
@@ -182,10 +183,13 @@ export function buildHongKongCrossings(root) {
   const cableStayed = buildCableStayedArchitecture(root);
   const crossBay = buildCrossBayArchitecture(root);
   const tunnelLighting = buildHongKongTunnelLighting(root, CROSSING_ROUTES);
+  const aberdeenTunnel = buildAberdeenTunnel(root);
+  colliders.push(...aberdeenTunnel.colliders);
   function update({ cameraSystem } = {}) {
     tsingMa.update();
     cableStayed.update();
     tunnelLighting.update(cameraSystem);
+    aberdeenTunnel.update(cameraSystem);
   }
   return {
     colliders,
@@ -198,6 +202,7 @@ export function buildHongKongCrossings(root) {
       crossingPortals: portals,
       crossingColliders: colliders.length,
       ...tunnelLighting.stats,
+      ...aberdeenTunnel.stats,
       ...tsingMa.stats,
       ...cableStayed.stats,
       ...crossBay.stats
