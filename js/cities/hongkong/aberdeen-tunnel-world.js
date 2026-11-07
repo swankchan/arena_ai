@@ -44,13 +44,15 @@ export function aberdeenTunnelSections() {
   return sections;
 }
 function quad(out, a, b, c, d) { out.push(...a, ...b, ...c, ...a, ...c, ...d); }
-function mesh(group, positions, material, name) {
+function mesh(group, positions, material, name, normals = null) {
   const geometry = new THREE.BufferGeometry(); geometry.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
-  geometry.computeVertexNormals(); geometry.computeBoundingSphere(); const result = new THREE.Mesh(geometry, material);
+  if (normals) geometry.setAttribute('normal', new THREE.Float32BufferAttribute(normals, 3));
+  else geometry.computeVertexNormals();
+  geometry.computeBoundingSphere(); const result = new THREE.Mesh(geometry, material);
   result.name = name; group.add(result);
 }
 export function buildAberdeenTunnel(root) {
-  const group = new THREE.Group(); group.name = 'AberdeenTunnelInterior'; const walls = [], arch = [], lights = [], colliders = [], sites = [];
+  const group = new THREE.Group(); group.name = 'AberdeenTunnelInterior'; const walls = [], arch = [], archNormals = [], lights = [], colliders = [], sites = [];
   const sections = aberdeenTunnelSections();
   for (const s of sections) {
     const { a, b, nx, nz, width } = s, half = width * .5 + .35;
@@ -68,6 +70,10 @@ export function buildAberdeenTunnel(root) {
       const o0 = Math.cos(t0) * half, o1 = Math.cos(t1) * half;
       const h0 = 3.55 + Math.sin(t0) * 2.0, h1 = 3.55 + Math.sin(t1) * 2.0;
       quad(arch, point(a, o0, h0), point(b, o0, h0), point(b, o1, h1), point(a, o1, h1));
+      // Smooth elliptical crown normals; separate faces create conspicuous longitudinal bands under lights.
+      const normal = t => { const x = Math.cos(t) / half, y = Math.sin(t) / 2, m = Math.hypot(x, y); return [-nx*x/m, -y/m, -nz*x/m]; };
+      const n0 = normal(t0), n1 = normal(t1);
+      archNormals.push(...n0, ...n0, ...n1, ...n0, ...n1, ...n1);
     }
     quad(lights, point(a, -.12, 5.50), point(b, -.12, 5.50), point(b, .12, 5.50), point(a, .12, 5.50));
     if (Math.floor(s.distance / 24) !== Math.floor((s.distance - Math.hypot(b.x - a.x, b.z - a.z)) / 24)) {
@@ -75,7 +81,7 @@ export function buildAberdeenTunnel(root) {
     }
   }
   mesh(group, walls, new THREE.MeshStandardMaterial({ color: 0x9f9c8d, roughness: .8, side: THREE.DoubleSide }), 'Aberdeen Tunnel pale wall lining');
-  mesh(group, arch, new THREE.MeshStandardMaterial({ color: 0x4b4c48, roughness: .84, side: THREE.DoubleSide }), 'Aberdeen Tunnel dark vaulted ceiling');
+  mesh(group, arch, new THREE.MeshStandardMaterial({ color: 0x4b4c48, roughness: .84, side: THREE.DoubleSide }), 'Aberdeen Tunnel dark vaulted ceiling', archNormals);
   mesh(group, lights, new THREE.MeshBasicMaterial({ color: 0xe4f0eb, side: THREE.DoubleSide, toneMapped: false }), 'Aberdeen Tunnel continuous central light strip');
   const pool = Array.from({ length: 12 }, () => { const light = new THREE.PointLight(0xe4f1eb, 0, 38, 1.4); group.add(light); return light; });
   root.add(group);

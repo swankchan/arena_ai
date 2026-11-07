@@ -14,6 +14,13 @@ test('Aberdeen Tunnel lining follows both mapped road profiles below terrain', (
 test('road centre and 3.6 metre vehicle envelope remain clear of lining walls', () => {
   const result = aberdeen.buildAberdeenTunnel(new T.Group()), sections = aberdeen.aberdeenTunnelSections();
   assert.ok(result.group.getObjectByName('Aberdeen Tunnel continuous central light strip'));
+  const normals = result.group.getObjectByName('Aberdeen Tunnel dark vaulted ceiling').geometry.getAttribute('normal');
+  for (let i = 0; i < normals.count; i += 6) {
+    assert.ok(Math.abs(Math.hypot(normals.getX(i), normals.getY(i), normals.getZ(i)) - 1) < 1e-5);
+    if ((i / 6) % 12 !== 11) {
+      assert.ok(Math.hypot(normals.getX(i+2)-normals.getX(i+6), normals.getY(i+2)-normals.getY(i+6), normals.getZ(i+2)-normals.getZ(i+6)) < 1e-5);
+    }
+  }
   assert.equal(result.colliders.length, sections.length * 2);
   let samples = 0;
   for (const s of sections) for (const p0 of [s.a,s.b]) for (const lane of [-2, 0, 2]) {
