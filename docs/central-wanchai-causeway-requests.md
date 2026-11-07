@@ -15,3 +15,9 @@ The Causeway Bay store is at 555 Hennessy Road ([address and MTR connection](htt
 ## Pak Sha Road vicinity
 
 The request is for the area, not just a single address. It requires a bounded inventory and photo/source research, and must preserve the existing Lee Garden One and Hysan Place models and street network. [Hysan Development](https://www.hysan.com.hk/portfolio/lee-theatre-plaza/) identifies Lee Theatre Plaza at 99 Percival Street, with 26 retail floors; repository OSM cache has Lee Theatre way 1424342877. The exact extent and which other buildings should receive bespoke treatment remain to be determined; do not invent unnamed structures or treat this as finished.
+
+### 郵政總局與道路衝突診斷（仍未建成）
+
+建築現存前原址以 OSM [主樓 way 16281866 v17](https://api.openstreetmap.org/api/0.6/way/16281866/full.json)（五層，30.1 m）及[後翼 way 184767036 v5](https://api.openstreetmap.org/api/0.6/way/184767036/full.json)（三層、石灰石，未標高度）記錄；[整體輪廓 way 1047782723 v8](https://api.openstreetmap.org/api/0.6/way/1047782723/full.json)及[辦事處入口 node 7175416413](https://api.openstreetmap.org/api/0.6/node/7175416413)作交叉核對。外觀參考 [Docomomo 的建築及功能描述](https://docomomo.hk/demolition-threat-hong-kongs-general-post-office/)、[外牆及歷史照片](https://commons.wikimedia.org/wiki/Category:Exterior_of_General_Post_Office,_Hong_Kong)；主立面有細長深窗、水平實牆帶、入口弧形雨篷及中英文招牌，非純白方盒。
+
+`node tools/cities/hongkong/check-general-post-office.mjs` 以 1 m 網格檢查現有道路和 IFC ring：主樓內未採到道路點；後翼內採到 48538（標有 tunnel flag）248 點、48539 9 點及 44961 7 點，當前查詢高度約 5.21–5.32 m，與翼樓中心 DTM 約 5.22 m 接近；兩部分均未採到 IFC overlap。這不是連續碰撞檢驗，不能斷定所有道路或相鄰建築無衝突。路網及高度不是工程實測；應查清後翼與道路的真實上下關係並調整道路，不能為保路將整個翼樓底層大面積挖空。初步外觀原型因這個衝突未獲解決，沒有接入遊戲；亦未驗證完整 WebGPU 場景或室內。
