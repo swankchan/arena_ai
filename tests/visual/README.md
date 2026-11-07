@@ -1,0 +1,3 @@
+# Victoria Park render regression
+
+Serve the repository root over HTTP and open `tests/visual/victoria-courts.html` in a browser with WebGL 2. It renders the actual park with the vendored Three.js WebGPU renderer's WebGL backend, including the pool, then samples four interior pixels on each of the six football pitches, thirteen tennis courts and the centre court. The page exposes `window.results` and lists any failures; colour checks intentionally compare channels rather than fixed brightness. A previous version failed all 20 courts because its tint uniforms were reused across materials. This check is not a substitute for testing the full game, lighting or the WebGPU backend.

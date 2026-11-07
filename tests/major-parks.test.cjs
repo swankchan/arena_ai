@@ -246,13 +246,26 @@ test('Victoria football goals and tennis nets align with the short ends and shor
 test('Victoria pool and playing surfaces use dedicated non-white textured materials', () => {
   const root = worlds.get(arch.VICTORIA_PARK).root;
   const pool = root.getObjectByName('Victoria Park Swimming Pool exact OSM building mass and DTM foundation');
-  const roof = root.getObjectByName('Victoria Park Swimming Pool shaded flat roof and structural ribs');
+  const roof = root.getObjectByName('Victoria Park Swimming Pool shaded flat roof');
   assert.ok(pool.material.colorNode); assert.ok(roof.material.colorNode);
   assert.notEqual(pool.material.color.getHex(), 0xffffff);
   assert.ok(root.getObjectByName('Victoria Park Swimming Pool facade panel joints'));
   for (const feature of arch.VICTORIA_PARK.features.filter(f => f.kind === 'soccer' || f.kind === 'tennis')) {
     const surface = root.getObjectByName(`${feature.name} exact OSM ${feature.kind} surface`);
     assert.ok(surface && surface.material.colorNode, feature.name);
+  }
+});
+
+test('Victoria pool roof does not cover court sample points', () => {
+  const root = worlds.get(arch.VICTORIA_PARK).root;
+  root.updateMatrixWorld(true);
+  const roof = root.getObjectByName('Victoria Park Swimming Pool shaded flat roof');
+  for (const f of arch.VICTORIA_PARK.features.filter(f => f.kind === 'soccer' || f.kind === 'tennis' || f.kind === 'centreCourt')) {
+    for (const [x, z] of [[-2, 3], [2, 3], [-2, -3], [2, -3]]) {
+      const p = arch.majorParkLocalToWorld(f.site, x, z);
+      const ray = new THREE.Raycaster(new THREE.Vector3(p.x, 500, p.z), new THREE.Vector3(0, -1, 0));
+      assert.equal(ray.intersectObject(roof).length, 0, f.name);
+    }
   }
 });
 

@@ -1,5 +1,5 @@
 import * as THREE from 'three/webgpu';
-import { color, positionWorld } from 'three/tsl';
+import { materialColor, positionWorld } from 'three/tsl';
 import {
   VICTORIA_PARK, VICTORIA_MODEL_BOAT_POOL, VICTORIA_QUEEN_STATUE,
   majorParkFeature, majorParkGroundHeightAt, majorParkMinimumTerrain, majorParkPadHeight,
@@ -113,7 +113,8 @@ function buildCentreCourt(feature, group, materials, colliders) {
 function texturedVictoriaMaterial(hex, roughness = .9) {
   const material = new THREE.MeshStandardMaterial({ color: hex, roughness, metalness: .02 });
   const grain = positionWorld.x.mul(1.73).sin().mul(positionWorld.z.mul(1.31).sin()).mul(.025).add(.96);
-  material.colorNode = color(new THREE.Color(hex)).mul(grain);
+  // Bind the tint to the current material, not a shared constant-node uniform.
+  material.colorNode = materialColor.rgb.mul(grain);
   return material;
 }
 function buildPoolBuilding(feature, group, materials, colliders) {
@@ -133,16 +134,15 @@ function buildPoolBuilding(feature, group, materials, colliders) {
   }
   merged(group, joints, materials.darkStone, 'Victoria Park Swimming Pool facade panel joints', false);
   const local = majorParkLocalGroup(feature, group, pad, 'Victoria Park Swimming Pool modern glazing and shaded roof deck');
-  const glass = [], frames = [], roof = [];
+  const glass = [], frames = [];
   for (const z of [-feature.site.d * .43, feature.site.d * .43]) {
     box(glass, [0, 4.2, z], [feature.site.w * .82, 4.8, .14]);
     for (let i = 0; i <= 24; i++) box(frames, [-feature.site.w * .41 + i / 24 * feature.site.w * .82, 4.2, z], [.11, 4.9, .18]);
   }
-  box(roof, [0, wall + .25, 0], [feature.site.w * .91, .5, feature.site.d * .91]);
-  for (let i = -3; i <= 3; i++) box(roof, [i * feature.site.w * .11, wall + .65, 0], [.25, .8, feature.site.d * .86]);
   merged(local, glass, materials.dark, 'Victoria Park Swimming Pool dark glazed facade bands');
   merged(local, frames, materials.white, 'Victoria Park Swimming Pool white facade mullions');
-  merged(local, roof, roofMaterial, 'Victoria Park Swimming Pool shaded flat roof and structural ribs');
+  // The OSM pool outline is irregular: its bounding rectangle covers nearby courts.
+  meshFromGeometry(group, ringShellGeometry(feature.ring, pad + wall, pad + wall + .5), roofMaterial, 'Victoria Park Swimming Pool shaded flat roof');
   colliders.push(...majorParkRingColliders(feature.ring, pad, pad + wall, .9));
 }
 
