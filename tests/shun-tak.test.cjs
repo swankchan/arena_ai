@@ -1,0 +1,14 @@
+const test=require('node:test'),assert=require('node:assert/strict'),fs=require('node:fs');
+test('Shun Tak mapped office towers, ferry terminal, helipads, road clearance and entrance',async()=>{
+ globalThis.document={createElement:()=>({getContext:()=>new Proxy({},{get:(t,k)=>t[k]||(()=>{}),set:(t,k,v)=>{t[k]=v;return true}})})};
+ const THREE=await import('three/webgpu');const a=await import('../js/cities/hongkong/shun-tak-architecture.js');const {buildShunTakCentre}=await import('../js/cities/hongkong/shun-tak-world.js');const {fullRoadSurfaceAt}=await import('../js/cities/hongkong/full-meta.js');const {harbourCityLocalToWorld}=await import('../js/cities/hongkong/harbour-city-architecture.js');
+ assert.equal(a.SHUN_TAK_WEST_SOURCE.id,184706138);assert.equal(a.SHUN_TAK_EAST_SOURCE.id,184706139);assert.equal(a.SHUN_TAK_PODIUM.photoDirected,true);assert.match(a.SHUN_TAK_PODIUM.evidence,/not a surveyed/);assert.equal(a.SHUN_TAK_FERRY.photoDirected,true);
+ const b=buildShunTakCentre(new THREE.Group());assert.equal(b.stats.shunTakHeight,156);assert.ok(b.stats.shunTakWindowPanels>4000);assert.ok(b.stats.shunTakRoadOpenings>0);
+ for(const name of ['Shun Tak West Tower red structural trusses','Shun Tak China Merchants Tower curtain glazing','Shun Tak podium dark porthole glazing','Ferry terminal porthole glazing','Shun Tak Heliport twin green landing pads','Shun Tak Heliport white H markings','Ferry terminal glazed connecting bridge'])assert.ok(b.group.getObjectByName(name),name);
+ const s=a.SHUN_TAK_PODIUM;let checks=0;
+ const overlap=(p,y)=>b.colliders.some(c=>{if(y<c.minY||y>c.maxY)return false;let x=p.x-c.obb.cx,z=p.z-c.obb.cz;return Math.abs(x*c.obb.cs-z*c.obb.sn)<c.obb.hx&&Math.abs(x*c.obb.sn+z*c.obb.cs)<c.obb.hz;});
+ for(let edge=0;edge<s.localRing.length/2-1;edge++){let i=edge*2,dx=s.localRing[i+2]-s.localRing[i],dz=s.localRing[i+3]-s.localRing[i+1],steps=Math.ceil(Math.hypot(dx,dz));for(let j=0;j<=steps;j++){let p=harbourCityLocalToWorld(s,s.localRing[i]+dx*j/steps,s.localRing[i+1]+dz*j/steps),r=fullRoadSurfaceAt(p.x,p.z,.3,b.stats.shunTakGround);if(r){checks++;assert.equal(overlap(p,r.height+4.7),false,`road at edge ${edge} step ${j}`);}}}
+ assert.ok(checks>5);
+ for(const [edge,end] of [[0,1],[1,0]]){let i=edge*2,dx=s.localRing[i+2]-s.localRing[i],dz=s.localRing[i+3]-s.localRing[i+1],len=Math.hypot(dx,dz);for(const d of [0,.8,1.6]){let t=end?1-d/len:d/len,p=harbourCityLocalToWorld(s,s.localRing[i]+dx*t,s.localRing[i+1]+dz*t);assert.equal(overlap(p,b.stats.shunTakGround+2),false,`entry ${edge}/${d}`);}}
+});
+test('Shun Tak centre is integrated in world',()=>{let s=fs.readFileSync('js/cities/hongkong/simple-world.js','utf8');for(const n of ['buildShunTakCentre(scene)','...shunTak.colliders','...shunTak.landmarks','...shunTak.stats'])assert.ok(s.includes(n));});
