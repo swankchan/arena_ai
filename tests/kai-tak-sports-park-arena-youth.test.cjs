@@ -192,7 +192,10 @@ test('both venues are wired into the terrain chain and the unified world', () =>
   assert.match(simple, /\.\.\.kaiTakYouth\.landmarks,/);
   assert.match(simple, /\+ kaiTakArena\.landmarks\.length \+ kaiTakYouth\.landmarks\.length/);
   assert.match(simple, /!groundUsesRoad \? kaiTakArena\.groundHeightAt\(x, z, kaiTakStadiumGround\) : kaiTakStadiumGround/);
-  assert.match(simple, /!groundUsesRoad \? airport\.groundHeightAt\(x, z, happyValleyGround\) : happyValleyGround/);
+  // The racecourse sits between the Kai Tak venues and the airport in the chain: Sha Tin is sampled first, then
+  // the airport takes that height as its fallback.
+  assert.match(simple, /!groundUsesRoad \? shaTin\.groundHeightAt\(x, z, happyValleyGround\) : happyValleyGround/);
+  assert.match(simple, /!groundUsesRoad \? airport\.groundHeightAt\(x, z, shaTinGround\) : shaTinGround/);
   assert.equal(arena.landmarks[0].id, 'kai-tak-arena');
   assert.equal(youth.landmarks[0].id, 'kai-tak-youth-sports-ground');
 });

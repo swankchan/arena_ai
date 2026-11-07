@@ -54,6 +54,7 @@ import { KAI_TAK_STADIUM_SITE, kaiTakStadiumTerrainHeightAt } from './kai-tak-st
 import { KAI_TAK_ARENA_SITE, kaiTakArenaTerrainHeightAt } from './kai-tak-arena-architecture.js';
 import { KAI_TAK_YOUTH_SITE, kaiTakYouthTerrainHeightAt } from './kai-tak-youth-sports-ground-architecture.js';
 import { HAPPY_VALLEY_SITE, happyValleyTerrainHeightAt } from './happy-valley-racecourse-architecture.js';
+import { SHA_TIN_SITE, shaTinTerrainHeightAt } from './sha-tin-racecourse-architecture.js';
 import { KOWLOON_SHANGRI_LA_GROUND_SITES, kowloonShangriLaTerrainHeightAt } from './kowloon-shangri-la-architecture.js';
 import { CGO_GROUND_SITES, centralGovernmentTerrainHeightAt } from './central-government-architecture.js';
 import { HERITAGE_1881_GROUND_SITES, heritage1881TerrainHeightAt } from './heritage-1881-architecture.js';
@@ -254,6 +255,9 @@ function authoredMedianRawDatum(sites, rawHeightAt) {
   return samples[samples.length >> 1];
 }
 const HAPPY_VALLEY_PAD_HEIGHT = authoredMedianRawDatum([HAPPY_VALLEY_SITE], rawHongKongTerrainHeight);
+// 沙田馬場 sits on the Shing Mun River plain: the median of the ground inside the surveyed fence, sampled on a
+// 8 m grid, so the 71.7 hectare course is flat without being lifted onto the river terraces.
+const SHA_TIN_PAD_HEIGHT = authoredMedianInteriorDatum(SHA_TIN_SITE, rawHongKongTerrainHeight, 8);
 export function happyValleyPadHeight() { return HAPPY_VALLEY_PAD_HEIGHT; }
 const CENTRAL_GOVERNMENT_PAD_HEIGHT = authoredHighestRawDatum(CGO_GROUND_SITES, rawHongKongTerrainHeight);
 export function centralGovernmentPadHeight() { return CENTRAL_GOVERNMENT_PAD_HEIGHT; }
@@ -342,7 +346,8 @@ export function hongKongTerrainHeight(x, z) {
   const kaiTakArenaHeight = kaiTakArenaTerrainHeightAt(x, z, kaiTakStadiumHeight, KAI_TAK_ARENA_PAD_HEIGHT);
   const kaiTakYouthHeight = kaiTakYouthTerrainHeightAt(x, z, kaiTakArenaHeight, KAI_TAK_YOUTH_PAD_HEIGHT);
   const happyValleyHeight = happyValleyTerrainHeightAt(x, z, kaiTakYouthHeight, HAPPY_VALLEY_PAD_HEIGHT);
-  return airportTerrainHeightAt(AIRPORT_TERRAIN_SITES, AIRPORT_PAD_HEIGHTS, x, z, happyValleyHeight);
+  const shaTinHeight = shaTinTerrainHeightAt(x, z, happyValleyHeight, SHA_TIN_PAD_HEIGHT);
+  return airportTerrainHeightAt(AIRPORT_TERRAIN_SITES, AIRPORT_PAD_HEIGHTS, x, z, shaTinHeight);
 }
 
 export const HONG_KONG_TERRAIN_META = Object.freeze({
@@ -404,6 +409,7 @@ export const HONG_KONG_TERRAIN_META = Object.freeze({
   kaiTakArenaPadHeight: KAI_TAK_ARENA_PAD_HEIGHT,
   kaiTakYouthPadHeight: KAI_TAK_YOUTH_PAD_HEIGHT,
   happyValleyPadHeight: HAPPY_VALLEY_PAD_HEIGHT,
+  shaTinPadHeight: SHA_TIN_PAD_HEIGHT,
   centralGovernmentPadHeight: CENTRAL_GOVERNMENT_PAD_HEIGHT,
   heritage1881PadHeight: HERITAGE_1881_PAD_HEIGHT,
   theArchPadHeight: THE_ARCH_PAD_HEIGHT,
