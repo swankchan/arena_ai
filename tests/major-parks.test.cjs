@@ -255,3 +255,13 @@ test('Victoria pool and playing surfaces use dedicated non-white textured materi
     assert.ok(surface && surface.material.colorNode, feature.name);
   }
 });
+
+test('Kowloon Park Sports Centre has visible perimeter glazing rather than only an unbroken white shell', () => {
+  const root = worlds.get(arch.KOWLOON_PARK).root;
+  const wall = root.getObjectByName('Kowloon Park Sports Centre exact OSM hall walls and DTM foundation');
+  const glass = root.getObjectByName('Kowloon Park Sports Centre visible perimeter glazing');
+  const joints = root.getObjectByName('Kowloon Park Sports Centre perimeter window joints');
+  assert.ok(wall && glass && joints);
+  assert.notEqual(wall.material.color.getHex(), 0xffffff);
+  assert.ok(glass.geometry.getAttribute('position').count > 0);
+});

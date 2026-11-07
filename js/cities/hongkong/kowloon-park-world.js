@@ -55,7 +55,29 @@ function barrelRoof(rect, baseY, wall, rise, segments = 18) {
 }
 function buildSportsCentre(feature, group, materials, colliders) {
   const pad = majorParkPadHeight(feature), bottom = majorParkMinimumTerrain(feature), wall = 9.2;
-  meshFromGeometry(group, ringShellGeometry(feature.ring, bottom, pad + wall), materials.white, 'Kowloon Park Sports Centre exact OSM hall walls and DTM foundation');
+  // Avoid burying all of the window treatment inside the OSM shell: place
+  // modest glazing and vertical joints directly on its actual perimeter.
+  meshFromGeometry(group, ringShellGeometry(feature.ring, bottom, pad + wall), materials.paleStone, 'Kowloon Park Sports Centre exact OSM hall walls and DTM foundation');
+  const edgeGlass = [], edgeFrames = [], ring = feature.ring;
+  let signedArea = 0;
+  for (let i = 2; i < ring.length; i += 2) signedArea += ring[i-2] * ring[i+1] - ring[i] * ring[i-1];
+  for (let i = 2; i < ring.length; i += 2) {
+    const ax = ring[i-2], az = ring[i-1], dx = ring[i]-ax, dz = ring[i+1]-az, length = Math.hypot(dx,dz);
+    if (length < 8) continue;
+    const ux = dx/length, uz = dz/length, direction = signedArea >= 0 ? 1 : -1;
+    const nx = uz*direction, nz = -ux*direction, yaw = Math.atan2(-uz,ux);
+    const bays = Math.max(1, Math.floor(length / 5));
+    for (let j = 0; j < bays; j++) {
+      const t = (j + .5) / bays, px = ax + dx*t + nx*.08, pz = az + dz*t + nz*.08;
+      box(edgeGlass, [px, pad + 4.8, pz], [length/bays-.3, 2.7, .12], yaw);
+    }
+    for (let j = 0; j <= bays; j++) {
+      const t = j/bays, px = ax + dx*t + nx*.15, pz = az + dz*t + nz*.15;
+      box(edgeFrames, [px, pad + 4.8, pz], [.11, 2.9, .18], yaw);
+    }
+  }
+  merged(group, edgeGlass, materials.window, 'Kowloon Park Sports Centre visible perimeter glazing');
+  merged(group, edgeFrames, materials.metal, 'Kowloon Park Sports Centre perimeter window joints');
   const local = majorParkLocalGroup(feature, group, pad, 'Kowloon Park Sports Centre curved roof and dark window bands');
   const glass = [], frames = [], rect = { x: 0, z: 0, w: feature.site.w * .92, d: feature.site.d * .92 };
   for (const z of [-rect.d * .5, rect.d * .5]) {
