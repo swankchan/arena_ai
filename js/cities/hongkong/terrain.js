@@ -51,6 +51,8 @@ import { HONG_KONG_STADIUM_SITE, hongKongStadiumTerrainHeightAt } from './hong-k
 import { LAI_YUEN_SITE, laiYuenTerrainHeightAt } from './lai-yuen-architecture.js';
 import { QE_STADIUM_SITE, queenElizabethStadiumTerrainHeightAt } from './queen-elizabeth-stadium-architecture.js';
 import { KAI_TAK_STADIUM_SITE, kaiTakStadiumTerrainHeightAt } from './kai-tak-stadium-architecture.js';
+import { KAI_TAK_ARENA_SITE, kaiTakArenaTerrainHeightAt } from './kai-tak-arena-architecture.js';
+import { KAI_TAK_YOUTH_SITE, kaiTakYouthTerrainHeightAt } from './kai-tak-youth-sports-ground-architecture.js';
 import { KOWLOON_SHANGRI_LA_GROUND_SITES, kowloonShangriLaTerrainHeightAt } from './kowloon-shangri-la-architecture.js';
 import { CGO_GROUND_SITES, centralGovernmentTerrainHeightAt } from './central-government-architecture.js';
 import { HERITAGE_1881_GROUND_SITES, heritage1881TerrainHeightAt } from './heritage-1881-architecture.js';
@@ -218,6 +220,11 @@ export function queenElizabethStadiumPadHeight() { return QUEEN_ELIZABETH_STADIU
 // 啟德主場館 Kai Tak Stadium: one reproducible datum over the whole stadium oval on the former runway apron.
 const KAI_TAK_STADIUM_PAD_HEIGHT = authoredHighestRawDatum([KAI_TAK_STADIUM_SITE], rawHongKongTerrainHeight);
 export function kaiTakStadiumPadHeight() { return KAI_TAK_STADIUM_PAD_HEIGHT; }
+// 啟德體藝館 Kai Tak Arena and 啟德青年運動場 Kai Tak Youth Sports Ground: one datum each over their OSM blocks.
+const KAI_TAK_ARENA_PAD_HEIGHT = authoredHighestRawDatum([KAI_TAK_ARENA_SITE], rawHongKongTerrainHeight);
+const KAI_TAK_YOUTH_PAD_HEIGHT = authoredHighestRawDatum([KAI_TAK_YOUTH_SITE], rawHongKongTerrainHeight);
+export function kaiTakArenaPadHeight() { return KAI_TAK_ARENA_PAD_HEIGHT; }
+export function kaiTakYouthPadHeight() { return KAI_TAK_YOUTH_PAD_HEIGHT; }
 const CENTRAL_GOVERNMENT_PAD_HEIGHT = authoredHighestRawDatum(CGO_GROUND_SITES, rawHongKongTerrainHeight);
 export function centralGovernmentPadHeight() { return CENTRAL_GOVERNMENT_PAD_HEIGHT; }
 // 1881's source compound, retail podium and Main Building share one reproducible DTM construction datum.
@@ -302,7 +309,9 @@ export function hongKongTerrainHeight(x, z) {
   const laiYuenHeight = laiYuenTerrainHeightAt(x, z, bigStadiumHeight, LAI_YUEN_PAD_HEIGHT);
   const qeStadiumHeight = queenElizabethStadiumTerrainHeightAt(x, z, laiYuenHeight, QUEEN_ELIZABETH_STADIUM_PAD_HEIGHT);
   const kaiTakStadiumHeight = kaiTakStadiumTerrainHeightAt(x, z, qeStadiumHeight, KAI_TAK_STADIUM_PAD_HEIGHT);
-  return airportTerrainHeightAt(AIRPORT_TERRAIN_SITES, AIRPORT_PAD_HEIGHTS, x, z, kaiTakStadiumHeight);
+  const kaiTakArenaHeight = kaiTakArenaTerrainHeightAt(x, z, kaiTakStadiumHeight, KAI_TAK_ARENA_PAD_HEIGHT);
+  const kaiTakYouthHeight = kaiTakYouthTerrainHeightAt(x, z, kaiTakArenaHeight, KAI_TAK_YOUTH_PAD_HEIGHT);
+  return airportTerrainHeightAt(AIRPORT_TERRAIN_SITES, AIRPORT_PAD_HEIGHTS, x, z, kaiTakYouthHeight);
 }
 
 export const HONG_KONG_TERRAIN_META = Object.freeze({
@@ -361,6 +370,8 @@ export const HONG_KONG_TERRAIN_META = Object.freeze({
   laiYuenPadHeight: LAI_YUEN_PAD_HEIGHT,
   queenElizabethStadiumPadHeight: QUEEN_ELIZABETH_STADIUM_PAD_HEIGHT,
   kaiTakStadiumPadHeight: KAI_TAK_STADIUM_PAD_HEIGHT,
+  kaiTakArenaPadHeight: KAI_TAK_ARENA_PAD_HEIGHT,
+  kaiTakYouthPadHeight: KAI_TAK_YOUTH_PAD_HEIGHT,
   centralGovernmentPadHeight: CENTRAL_GOVERNMENT_PAD_HEIGHT,
   heritage1881PadHeight: HERITAGE_1881_PAD_HEIGHT,
   theArchPadHeight: THE_ARCH_PAD_HEIGHT,
