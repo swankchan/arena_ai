@@ -1,0 +1,5 @@
+# Victoria Park tennis-court markings
+
+The [ITF 2026 Rules of Tennis, rule 1](https://www.itftennis.com/media/7221/2026-rules-of-tennis-english.pdf) specifies a 23.77 m long court, 10.97 m doubles width and 8.23 m singles width, with service lines 6.40 m from the net between the singles sidelines. The markings now include those singles sidelines, service lines, centre service line and baseline centre marks; the net is equipment rather than a transverse painted line.
+
+The centre court has a larger surrounding playing surface, so its markings use the standard nominal dimensions instead of filling that surface. Other park tennis polygons use the same proportions scaled to 82% of each OSM-oriented bounding rectangle. This conservative inset is not a surveyed court measurement, nor a claim that every court's actual layout is confirmed. The net remains a simplified beam, not full netting. Existing CPU geometry tests are not a complete game or WebGPU visual verification; the reported white appearance still needs an in-game check.

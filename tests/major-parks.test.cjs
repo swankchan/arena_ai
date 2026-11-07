@@ -302,3 +302,21 @@ test('Victoria Park contains no uncoloured default-white solid surfaces', () => 
   });
   assert.deepEqual(found, []);
 });
+
+test('tennis markings include singles alleys and correctly bounded service boxes, without a false net line', async () => {
+  const { majorParkTennisLineRects } = await import('../js/cities/hongkong/major-parks-world-utils.js');
+  const lines = majorParkTennisLineRects(10.97, 23.77);
+  const close = (a, b) => Math.abs(a-b) < 1e-8;
+  assert.equal(lines.length, 11);
+  for (const side of [-1, 1]) {
+    assert.ok(lines.some(([x,z,w,d]) => close(x,side*8.23/2) && close(z,0) && close(d,23.77)));
+    assert.ok(lines.some(([x,z,w,d]) => close(x,0) && close(z,side*6.4) && close(w,8.23)));
+  }
+  assert.ok(lines.some(([x,z,w,d]) => x === 0 && z === 0 && close(w,.05) && close(d,12.8)));
+  assert.ok(!lines.some(([x,z,w,d]) => z === 0 && w > 8 && d < .2), 'net is not a painted transverse line');
+  const centre = worlds.get(arch.VICTORIA_PARK).root.getObjectByName('Victoria Park Centre Court painted tennis lines');
+  centre.geometry.computeBoundingBox();
+  const b = centre.geometry.boundingBox;
+  assert.ok(Math.abs((b.max.x-b.min.x)-11.02) < .01);
+  assert.ok(Math.abs((b.max.z-b.min.z)-23.82) < .01);
+});

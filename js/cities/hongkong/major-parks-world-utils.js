@@ -253,6 +253,21 @@ export function addMajorParkPlayground(feature, group, materials, colliders) {
   colliders.push(majorParkBoxCollider(feature.site.x, feature.site.z, Math.min(6, feature.site.w * .4), Math.min(6, feature.site.d * .4), pad, pad + 3.1, feature.site.ry));
   return pad;
 }
+// Doubles rectangle and singles/service markings, scaled to the available scene rectangle.
+// ITF rule 1: 23.77m long, 10.97m doubles / 8.23m singles, service lines 6.40m from net.
+// This does not assert that an OSM polygon supplies surveyed court dimensions.
+export function majorParkTennisLineRects(w, d) {
+  const singles = w * (8.23 / 10.97), service = d * (6.40 / 23.77), t = .05;
+  return [
+    [0, -d/2, w, t], [0, d/2, w, t],
+    [-w/2, 0, t, d], [w/2, 0, t, d],
+    [-singles/2, 0, t, d], [singles/2, 0, t, d],
+    [0, -service, singles, t], [0, service, singles, t],
+    [0, 0, t, service * 2],
+    [0, -d/2 + .05, t, .1], [0, d/2 - .05, t, .1],
+  ];
+}
+
 export function addMajorParkCourt(feature, group, materials, colliders, options = {}) {
   const material = options.centre ? materials.tennis : feature.kind === 'soccer' ? materials.soccer : feature.kind === 'basketball' || feature.kind === 'handball' ? materials.basketball : feature.kind === 'bowls' ? materials.bowls : feature.kind === 'roller' || feature.kind === 'tableTennis' ? materials.plaza : materials.tennis;
   const { pad } = majorParkRingSurface(feature, material, `${feature.name} exact OSM ${feature.kind} surface`, group);
@@ -268,11 +283,11 @@ export function addMajorParkCourt(feature, group, materials, colliders, options 
   const w = (rotateCourt ? feature.site.d : feature.site.w) * .82;
   const d = (rotateCourt ? feature.site.w : feature.site.d) * .82;
   const lineBox = (x, z, lw, ld) => box(lines, [x, .02, z], [lw, .035, ld]);
-  if (['tennis', 'centreCourt', 'soccer', 'basketball', 'handball'].includes(feature.kind)) {
+  if (['soccer', 'basketball', 'handball'].includes(feature.kind)) {
     lineBox(0, -d * .5, w, .10); lineBox(0, d * .5, w, .10); lineBox(-w * .5, 0, .10, d); lineBox(w * .5, 0, .10, d);
   }
   if (feature.kind === 'tennis' || feature.kind === 'centreCourt') {
-    lineBox(0, 0, w, .08); lineBox(0, -d * .25, w * .72, .08); lineBox(0, d * .25, w * .72, .08); lineBox(0, 0, .08, d * .5);
+    for (const rect of majorParkTennisLineRects(w, d)) lineBox(...rect);
     beam(nets, [-w * .52, .95, 0], [w * .52, .95, 0], .055, .055);
     for (const x of [-w * .52, w * .52]) cylinder(equipment, [x, .55, 0], .055, 1.1, 8);
   } else if (feature.kind === 'soccer') {

@@ -9,7 +9,7 @@ import {
   createMajorParkMaterials, buildMajorParkBase, buildMajorParkPaths, addMajorParkEntrances,
   addMajorParkFurniture, addMajorParkWater, addMajorParkCourt, addMajorParkPlayground,
   majorParkRingSurface, majorParkRingColliders, majorParkBoxCollider, majorParkLocalGroup,
-  majorParkLandmark
+  majorParkLandmark, majorParkTennisLineRects
 } from './major-parks-world-utils.js';
 import { merged, box, beam, cylinder, sphere } from './harbour-city-world-utils.js';
 import { ringShellGeometry, meshFromGeometry } from './tst-hotel-world-utils.js';
@@ -85,9 +85,9 @@ function buildCentreCourt(feature, group, materials, colliders) {
   const w = 23.8, d = 42;
   box(court, [0, 0, 0], [w, .05, d]);
   const line = (x, z, lw, ld) => box(lines, [x, .04, z], [lw, .025, ld]);
-  line(0, -d * .42, w * .88, .09); line(0, d * .42, w * .88, .09); line(-w * .44, 0, .09, d * .84); line(w * .44, 0, .09, d * .84);
-  line(0, 0, w * .88, .08); line(0, -d * .20, w * .88, .07); line(0, d * .20, w * .88, .07); line(0, 0, .07, d * .40);
-  beam(nets, [-w * .48, 1.0, 0], [w * .48, 1.0, 0], .06, .06);
+  // The arena playing floor is larger than the marked tennis court.
+  for (const rect of majorParkTennisLineRects(10.97, 23.77)) line(...rect);
+  beam(nets, [-6.4, .95, 0], [6.4, .95, 0], .06, .06);
   for (const side of [-1, 1]) for (let row = 0; row < 6; row++) {
     const x = side * (w * .62 + row * 1.15); box(stands, [x, row * .38 + .18, 0], [1.1, .36 + row * .04, d * 1.18]);
   }
