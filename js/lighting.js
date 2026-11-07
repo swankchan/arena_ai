@@ -29,7 +29,7 @@ const TIME_PRESETS = {
     id: 'golden',
     sunDir: new THREE.Vector3(-0.44, 0.58, -0.68).normalize(),
     sunColor: 0xffca92,
-    sunIntensity: 5.8,
+    sunIntensity: 4.5,
     hemiSky: 0x9abbe6,
     hemiGround: 0xc88a62, // Warm terracotta / limestone upward canyon bounce
     hemiIntensity: 1.48,
@@ -47,6 +47,7 @@ const TIME_PRESETS = {
     mieDirectionalG: 0.88,
     cloudCoverage: 0.46,
     cloudDensity: 0.52,
+    sunDiscStrength: 0.0015,
     skyExposure: 0.148,
     nightFactor: 0.0
   },
@@ -79,7 +80,7 @@ const TIME_PRESETS = {
     id: 'twilight',
     sunDir: new THREE.Vector3(-0.52, 0.36, -0.77).normalize(),
     sunColor: 0xff9466,
-    sunIntensity: 3.1,
+    sunIntensity: 2.4,
     hemiSky: 0x4c6ca8,
     hemiGround: 0x6e5048,
     hemiIntensity: 0.85,
@@ -97,6 +98,7 @@ const TIME_PRESETS = {
     mieDirectionalG: 0.90,
     cloudCoverage: 0.48,
     cloudDensity: 0.54,
+    sunDiscStrength: 0.0015,
     skyExposure: 0.115,
     nightFactor: 0.28
   },
@@ -277,6 +279,7 @@ class LightingSystem {
     if (!this.pmremGenerator) return;
     // Bake physical SkyMesh (without solar disc) into scene.environment for realistic canyon IBL.
     // Reuses a single RenderTarget so texture identity never changes.
+    const discStrength = this.sky.showSunDisc.value;
     this.sky.showSunDisc.value = 0;
     const lightningFlash = this.uLightningFlash.value;
     this.uLightningFlash.value = 0;
@@ -285,7 +288,7 @@ class LightingSystem {
       renderTarget: this.envRenderTarget
     });
     this.scene.environment = this.envRenderTarget.texture;
-    this.sky.showSunDisc.value = 1;
+    this.sky.showSunDisc.value = discStrength;
     this.uLightningFlash.value = lightningFlash;
     this.scene.add(this.sky);
   }
@@ -322,6 +325,8 @@ class LightingSystem {
     this.sky.cloudDensity.value = w.cloudDensity ?? p.cloudDensity;
     this.sky.cloudSpeed.value = BASE_CLOUD_SPEED * w.cloudSpeed;
     this.sky.sunPosition.value.copy(p.sunDir);
+    // SkyMesh’s solar disc is extremely HDR; dim only the disc, not the sky or lamps.
+    this.sky.showSunDisc.value = p.sunDiscStrength ?? 1;
     this.uSkyExposure.value = p.skyExposure * w.exposure;
     this.uNightFactor.value = p.nightFactor;
     this.uWeatherSkyTint.value.copy(w.skyTint);
