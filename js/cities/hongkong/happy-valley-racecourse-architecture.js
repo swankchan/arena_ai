@@ -56,8 +56,8 @@ export const HAPPY_VALLEY_OSM_SOURCE = authoredOsmSource({
   sourceTimestamp: '2022-04-26T10:08:45Z',
   evidence: `OSM relation 8049451 (${AUTHORED_OSM_RETRIEVED}): a multipolygon tagged leisure=stadium and `
     + 'sport=horse_racing. The outer ways 23766488, 563842038, 524353365 and 563648701 ring the whole course and '
-    + 'follow 黃泥涌道 Wong Nai Chung Road; the inner members are the barrier=wall/gate lines of the Members '
-    + 'Entrance, not a hole in the course.',
+    + 'follow 黃泥涌道 Wong Nai Chung Road. The inner-member ways form the mapped perimeter of the recreation '
+    + 'grounds and football club; they are not a measured horse-racing rail.',
 });
 
 export const HAPPY_VALLEY_SITE = makeAuthoredSite(
