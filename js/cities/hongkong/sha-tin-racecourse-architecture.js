@@ -6,21 +6,11 @@
 // The infield is OSM way 163970357, mapped as 彭福公園 Penfold Park (54 ring positions, 96,541 m²): the park named
 // after 彭福將軍 Sir Douglas Penfold, the club's first general manager.
 //
-// The course is derived from the surveyed infield instead of being invented. On the park frame that outline is a
-// stadium 588 m by 182 m — 406 m straights and 91 m end radii, a 1,384 m inner rail against the 1,367 m measured
-// round the digitised hedge. Laying the tracks outside that rail by 2πw makes the published dimensions fall out of
-// the survey:
-//   1,384 m  inner running rail (the surveyed infield edge)
-//   +27.6 m  sand apron and service strip
-//   +24 m   全天候跑道 All Weather Track; modelled centre line 1,633 m against the published 1,650 m
-//   +30.5 m 草地跑道 turf course; modelled outer rail 1,900 m against the published 1,900 m lap
-// Racing is clockwise in the English style, as at Sha Tin.
-//
-// Identity. The grandstands are on the north-west side of the survey, where the fence leaves the widest apron: a
-// long white multi-tier stand with a cantilevered roof and floodlights, the members' club block beside it, and the
-// 香港賽馬博物館 Hong Kong Racing Museum at the position OSM records for it (node 12552529862). In the infield, the
-// club's green branding boards and the big video screen face the stand, and the 馬匹亮相圈 parade ring sits behind
-// the public concourse, as it does at Sha Tin.
+// The model uses an idealised stadium fitted approximately to the OSM Penfold Park outline.
+// Its lap lengths are model calculations, not surveyed rails: agreement with published
+// figures alone does not validate its alignment or clearance. See docs/sha-tin-refinement.md.
+// Stands, parade ring, station and screen are approximations pending photographic and site checks.
+// The Hong Kong Racing Museum is at Happy Valley, not Sha Tin.
 import {
   makeAuthoredSite, authoredOsmSource, authoredTerrainHeightAt, AUTHORED_OSM_RETRIEVED,
   worldRingFromGeometry, localRingFromWorld, flatRingArea,
@@ -85,7 +75,7 @@ export const SHA_TIN_SITE = makeAuthoredSite(
   'shaTinRacecourse', '沙田馬場', 'Sha Tin Racecourse', SHA_TIN_OSM_SOURCE,
   {
     height: 42, levels: null, roadIds: [], role: 'apron',
-    evidence: 'The surveyed property fence: the course, the grandstands, the parade ring, the stabling and 馬場站 '
+    evidence: 'The OSM venue outline: the course, the grandstands, the parade ring, the stabling and 馬場站 '
       + 'all sit inside it.',
   },
 );
@@ -106,7 +96,7 @@ export const SHA_TIN_COURSE_PUBLISHED = Object.freeze({
   screen: "the world's widest outdoor screen",
 });
 
-// The course, measured outwards from the surveyed infield rail. See the module header for the arithmetic.
+// Approximate course measured outwards from an idealised inner rail, not a surveyed rail.
 export const SHA_TIN_TRACK = Object.freeze({
   centreX: 103.9, centreZ: 83.8, rotation: 0,
   straight: 406,
@@ -164,8 +154,7 @@ export const SHA_TIN_COLOURS = Object.freeze({
   roof: [0.58, 0.60, 0.61],
 });
 
-// The stands, placed on the widest arc of the surveyed fence. Each has a footprint verified to sit inside the
-// fence and clear of the outer running rail.
+// Approximate stands. Their centres are checked against the OSM venue; complete footprints and roads require verification.
 export const SHA_TIN_GRANDSTANDS = Object.freeze([
   Object.freeze({
     key: 'grandstandOne', name: '沙田馬場主看台', englishName: 'Sha Tin Racecourse Grandstand I',
@@ -180,7 +169,7 @@ export const SHA_TIN_GRANDSTANDS = Object.freeze([
     x: -37, z: -175, rotation: -6, lengthMetres: 120, depthMetres: 28, height: 34,
     tiers: 9, tierRise: 0.9, tierTread: 2.5, podiumHeight: 7, canopyHeight: 22, roofOverhang: 5,
     osmWay: 775258661,
-    note: 'The 1985 members\' stand, on its own surveyed centre, with the clubhouse floors above the members\' lawn.',
+    note: 'The 1985 members\' stand, at an approximate mapped centre, with the clubhouse floors above the members\' lawn.',
   }),
 ]);
 

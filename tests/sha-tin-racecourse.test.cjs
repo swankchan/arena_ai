@@ -29,7 +29,7 @@ test.before(async () => {
   terrain = await import(terrainUrl);
 });
 
-test('provenance: OSM relation 3726256 and the surveyed infield are preserved', () => {
+test('provenance: OSM relation 3726256 and the mapped infield are preserved', () => {
   const a = architecture;
   assert.equal(a.SHA_TIN_SITE.osmId, 3726256);
   assert.equal(a.SHA_TIN_SITE.osmType, 'relation');
@@ -40,16 +40,16 @@ test('provenance: OSM relation 3726256 and the surveyed infield are preserved', 
   // OSM outer way 1068023550 is closed: its 40 node references repeat the first node at the end.
   assert.equal(a.SHA_TIN_RING_GEOMETRY.length, 39);
   assert.equal(a.SHA_TIN_INFIELD_GEOMETRY.length, 54);
-  // 71.7 hectares of surveyed property, and a 96,541 m² infield park.
+  // 71.7 hectares of mapped property, and a 96,541 m² infield park.
   assert.ok(Math.abs(a.SHA_TIN_SITE.ringArea - 717000) < 3000, `area ${a.SHA_TIN_SITE.ringArea}`);
   assert.ok(Math.abs(a.SHA_TIN_INFIELD_AREA - 96541) < 400, `infield ${a.SHA_TIN_INFIELD_AREA}`);
   assert.equal(a.SHA_TIN_INFIELD_PARK.name, '彭福公園');
 });
 
-test('the published course falls out of the survey rather than being invented', () => {
+test('the idealised course lap lengths are near the published figures', () => {
   const laps = architecture.SHA_TIN_LAPS;
   const published = architecture.SHA_TIN_COURSE_PUBLISHED;
-  // The inner rail is the surveyed infield edge; the outer turf rail then lands on the published 1,900 m lap.
+  // Numerical agreement of the idealised lap is not proof of rail geometry.
   assert.ok(Math.abs(laps.turfOuterMetres - published.turf.lapMetres) <= 6, `turf ${laps.turfOuterMetres}`);
   // The all-weather track is 24 m wide and its centre line is within 2% of the published 1,650 m lap.
   assert.ok(Math.abs(laps.allWeatherCentreMetres - published.allWeather.lapMetres) < 40, `awt ${laps.allWeatherCentreMetres}`);
@@ -62,7 +62,7 @@ test('the published course falls out of the survey rather than being invented', 
   assert.equal(published.direction, 'clockwise');
 });
 
-test('the course sits inside the surveyed fence and never on a retained road', () => {
+test('sampled course points sit inside the mapped venue boundary', () => {
   const a = architecture;
   const ring = a.SHA_TIN_SITE.localRing;
   let outside = 0;
@@ -74,7 +74,7 @@ test('the course sits inside the surveyed fence and never on a retained road', (
     }
   }
   assert.equal(outside, 0, `track outside the fence at ${outside} samples`);
-  // The stands are on their surveyed centres and clear of the running rails.
+  // These centre-point checks do not establish complete stand-footprint clearance.
   for (const stand of a.SHA_TIN_GRANDSTANDS) {
     const dx = stand.x - a.SHA_TIN_TRACK.centreX, dz = stand.z - a.SHA_TIN_TRACK.centreZ;
     const inner = Math.abs(dx) - a.SHA_TIN_TRACK.straight / 2;
@@ -149,3 +149,6 @@ test('the research record is carried with the model', () => {
   assert.equal(architecture.SHA_TIN_COURSE_PUBLISHED.paradeRingRetractableRoof, 'the first in the world');
   assert.equal(architecture.SHA_TIN_INFIELD_PARK.olympicCrossCountry2008, true);
 });
+
+// Pending: resolve mapped road overlaps at the actual scene elevation before asserting clearance.
+test.todo('Sha Tin course avoids same-height retained roads and has verified track/entrance crossings');

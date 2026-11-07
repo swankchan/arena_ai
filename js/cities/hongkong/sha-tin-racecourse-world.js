@@ -1,11 +1,7 @@
 // HK-B0108: 沙田馬場 Sha Tin Racecourse — geometry.
 //
-// The course comes straight out of the survey: the infield ring is OSM way 163970357 (彭福公園 Penfold Park) and
-// the two tracks are the published 30.5 m grass course and 24 m all-weather track laid outside it, so the grass
-// outer rail measures 1,900 m and the all-weather centre line 1,633 m. The grandstands sit on the north-west side
-// where the surveyed fence leaves its widest apron: Grandstand I from 1978, the members' stand of 1985, the club
-// building, the parade ring and the saddling enclosure between them, and the big screen out in the infield facing
-// the stands. The stabling and 馬場站 Racecourse Station fill the freight-yard corner of the property.
+// The course and facilities are approximate, not surveyed. Runtime road overlaps remain unresolved;
+// see docs/sha-tin-refinement.md before treating the scene as finished.
 import * as THREE from 'three/webgpu';
 import { attribute } from 'three/tsl';
 import {
@@ -100,7 +96,7 @@ function buildCourse(group, materials, stats) {
   }
 
   const parkRing = SHA_TIN_INFIELD_LOCAL;
-  // Penfold Park: the surveyed infield outline is what the course was laid out from, so the infield lawn above is
+  // Penfold Park: the mapped infield outline is what the course was laid out from, so the infield lawn above is
   // already the park. A lighter mown band marks the walking ring the public uses on race days.
   for (let i = 0; i + 1 < parkRing.length; i += 2) {
     const ax = parkRing[i], az = parkRing[i + 1];
@@ -115,7 +111,7 @@ function buildCourse(group, materials, stats) {
   cylinder(markers, [post.x, 4.4, post.z], 0.14, 9, 8);
   quad(flags, [post.x, 8.4, post.z], [post.x + 1.8, 8.1, post.z], [post.x + 1.8, 7.2, post.z], [post.x, 7.5, post.z], C.clubRed);
 
-  // Perimeter fence round the property, following the surveyed ring, with the club's gates on the stand side.
+  // Perimeter fence round the property, following the OSM ring, with the club's gates on the stand side.
   const ring = SHA_TIN_SITE.localRing;
   for (let i = 0; i < ring.length; i += 2) {
     const ax = ring[i], az = ring[i + 1];
@@ -351,7 +347,7 @@ function buildStables(group, materials, stats) {
     for (let col = 0; col < spec.perRow; col++) {
       const x = spec.originX + col * spec.spacingX;
       const z = spec.originZ + row * spec.spacingZ;
-      // Every corner of the block must be inside the surveyed fence, plus a yard's width of margin, so a stable
+      // Every corner of the block must be inside the mapped venue boundary, plus a yard's width of margin, so a stable
       // can never hang over the property line.
       const halfLength = spec.blockLength / 2 + 8, halfDepth = spec.blockDepth / 2 + 22;
       const corners = [[x - halfLength, z - halfDepth], [x + halfLength, z - halfDepth],
@@ -430,7 +426,7 @@ function buildSiteGround(group, materials, stats) {
   const tarmac = store(), verge = store();
   const ring = SHA_TIN_SITE.localRing;
   let tiles = 0;
-  // 24 m tiles clipped to the surveyed fence: tarmac over the property, with a grass verge along the boundary.
+  // 24 m tiles clipped to the mapped venue boundary: tarmac over the property, with a grass verge along the boundary.
   for (let x = -680; x < 680; x += 24) {
     for (let z = -720; z < 720; z += 24) {
       const cx = x + 12, cz = z + 12;
