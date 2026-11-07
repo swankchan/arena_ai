@@ -429,7 +429,7 @@ export function buildQueenElizabethStadium(root, { groundOffset = 0 } = {}) {
     frontageGlassZ: frontage.z,
     groundHeightAt(x, z, fallback) {
       // The whole OSM block and its footway are flat at the hall's own construction datum; outside it the DTM wins.
-      return queenElizabethStadiumTerrainHeightAt(x, z, Math.max(fallback, ground), ground);
+      return queenElizabethStadiumTerrainHeightAt(x, z, fallback, ground);
     },
   };
 }

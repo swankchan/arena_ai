@@ -383,7 +383,7 @@ export function buildKaiTakStadium(root, { groundOffset = 0 } = {}) {
     height: H,
     shellPoint,
     groundHeightAt(x, z, fallback) {
-      return kaiTakStadiumTerrainHeightAt(x, z, Math.max(fallback, groundOffset), groundOffset);
+      return kaiTakStadiumTerrainHeightAt(x, z, fallback, groundOffset);
     },
   };
 }

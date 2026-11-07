@@ -540,7 +540,7 @@ export function buildShaTinRacecourse(scene, { groundOffset = 0 } = {}) {
   return {
     group: root, colliders, landmarks, stats, groundOffset,
     groundHeightAt(x, z, fallback) {
-      return shaTinTerrainHeightAt(x, z, Math.max(fallback ?? 0, groundOffset), groundOffset);
+      return shaTinTerrainHeightAt(x, z, fallback ?? 0, groundOffset);
     },
   };
 }

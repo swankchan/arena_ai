@@ -509,8 +509,12 @@ export function buildOceanPark(scene) {
 
   return {
     group: root, colliders, landmarks, stats,
-    // The park keeps the surveyed DTM: nothing is flattened, so the terrain chain simply passes through.
-    groundHeightAt(x, z, fallback) { return Math.max(fallback ?? 0, ground(x, z)); },
+    // Preserve raw DTM within the mapped park; never undo another site's terrain cuts elsewhere.
+    groundHeightAt(x, z, fallback) {
+      const inside = OCEAN_PARK_SITES.some(site => x >= site.bounds.minX && x <= site.bounds.maxX &&
+        z >= site.bounds.minZ && z <= site.bounds.maxZ && pointInFlatRing(site.ring, x, z));
+      return inside ? Math.max(fallback ?? 0, ground(x, z)) : fallback;
+    },
     cableCarProfile: cable.profile,
   };
 }

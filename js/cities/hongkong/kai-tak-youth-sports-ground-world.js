@@ -245,7 +245,7 @@ export function buildKaiTakYouthSportsGround(root, { groundOffset = 0 } = {}) {
   return {
     group: ground, colliders, landmarks, stats, groundOffset,
     groundHeightAt(x, z, fallback) {
-      return kaiTakYouthTerrainHeightAt(x, z, Math.max(fallback, groundOffset), groundOffset);
+      return kaiTakYouthTerrainHeightAt(x, z, fallback, groundOffset);
     },
   };
 }

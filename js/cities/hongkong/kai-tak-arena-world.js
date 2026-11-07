@@ -314,7 +314,7 @@ export function buildKaiTakArena(root, { groundOffset = 0 } = {}) {
     group: arena, colliders, landmarks, stats, groundOffset,
     hallHeight: M.hallHeight,
     groundHeightAt(x, z, fallback) {
-      return kaiTakArenaTerrainHeightAt(x, z, Math.max(fallback, groundOffset), groundOffset);
+      return kaiTakArenaTerrainHeightAt(x, z, fallback, groundOffset);
     },
   };
 }

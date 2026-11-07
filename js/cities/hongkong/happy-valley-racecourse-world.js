@@ -358,7 +358,7 @@ export function buildHappyValleyRacecourse(root, { groundOffset = 0 } = {}) {
   return {
     group: venue, colliders, landmarks, stats, groundOffset,
     groundHeightAt(x, z, fallback) {
-      return happyValleyTerrainHeightAt(x, z, Math.max(fallback, groundOffset), groundOffset);
+      return happyValleyTerrainHeightAt(x, z, fallback, groundOffset);
     },
   };
 }

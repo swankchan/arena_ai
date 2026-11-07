@@ -124,11 +124,12 @@ test('the assembled park has finite geometry and the named meshes', () => {
   assert.equal(park.landmarks.length, 2);
 });
 
-test('nothing is flattened: the park passes the surveyed DTM straight through', () => {
+test('Ocean Park preserves the input DTM and respects higher surfaces', () => {
   const park = build();
   for (const [x, z] of [[1280, 5300], [1560, 4600], [1720, 3900], [1500, 4200]]) {
     const raw = terrain.rawHongKongTerrainHeight(x, z);
-    assert.ok(Math.abs(park.groundHeightAt(x, z, 0) - raw) < 1e-6, `flattened at ${x},${z}`);
+    assert.ok(Math.abs(park.groundHeightAt(x, z, raw) - raw) < 1e-6, `flattened at ${x},${z}`);
+    assert.equal(park.groundHeightAt(x, z, raw + 10), raw + 10);
   }
   // No pad is registered for the park, because it is a hill park rather than a platform.
   assert.equal(terrain.HONG_KONG_TERRAIN_META.oceanParkPadHeight, undefined);
