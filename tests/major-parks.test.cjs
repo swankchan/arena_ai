@@ -291,3 +291,14 @@ test('park ring surfaces reject missing materials instead of silently rendering 
   const { majorParkRingSurface } = await import('../js/cities/hongkong/major-parks-world-utils.js');
   assert.throws(() => majorParkRingSurface(arch.VICTORIA_PARK.features[0], undefined, 'test surface', new THREE.Group()), /Missing material for test surface/);
 });
+
+test('Victoria Park contains no uncoloured default-white solid surfaces', () => {
+  const found = [];
+  worlds.get(arch.VICTORIA_PARK).root.traverse((object) => {
+    if (!object.isMesh) return;
+    for (const material of (Array.isArray(object.material) ? object.material : [object.material])) {
+      if (material?.color?.getHex() === 0xffffff && !material.vertexColors && !material.map && !material.colorNode) found.push(object.name);
+    }
+  });
+  assert.deepEqual(found, []);
+});
