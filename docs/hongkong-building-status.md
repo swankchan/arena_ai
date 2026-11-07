@@ -1,21 +1,23 @@
 # 原本 100 幢建築物：實際場景狀態核對
 
-整理日期：**2026-11-06**。這份是對原本 `HK-B0001–B0100` 清單的 **active scene code audit**，不是另造一份候選清單，也不把 OSM 候選資料當成已建成。
+整理日期：**2026-11-07**。這份是對原本 `HK-B0001–B0100` 清單的 **active scene code audit**，不是另造一份候選清單，也不把 OSM 候選資料當成已建成。
+
+**驗證限制**：標記「精修」只代表已有照片導向外觀，並非完整 WebGPU、室內或實際駕駛測試通過；大會堂亦仍須按用戶意見覆核。
 
 ## 結論
 
 | 口徑 | 數量 | 說明 |
 | --- | ---: | --- |
-| 原 inventory 正式「已加入」 | **36** | 全部同時標示精修及 Landmark；有專用 world module 並接入 active `buildSimpleHongKongWorld`。 |
+| 原 inventory 正式「已加入」 | **40** | 全部同時標示精修及 Landmark；有專用 world module 並接入 active `buildSimpleHongKongWorld`。 |
 | 原表待製作、但實際已由其他組件生成，現已補精修 | **5** | 大會堂高／低座、HKCEC 新／舊翼、茶具文物館；各自有原 ID 精修驗證，仍不是新增獨立 Landmark。 |
-| 有對應場景模型且已精修的清單行（上述兩類合計） | **41** | 36 個正式獨立 Landmark 加 5 個已精修公共／綜合組件。 |
-| 未見專用實作、仍應視為待製作 | **59** | 沒有可核實的專用建模及 active 整合；不以舊 generic landmark 盒體充當完成。 |
+| 有對應場景模型且已精修的清單行（上述兩類合計） | **45** | 40 個正式獨立 Landmark 加 5 個已精修公共／綜合組件。 |
+| 未見專用實作、仍應視為待製作 | **55** | 沒有可核實的專用建模及 active 整合；不以舊 generic landmark 盒體充當完成。 |
 
-**一句講晒：正式獨立 Landmark 36 幢；連同已補精修的 5 個公共／綜合組件，100 行入面有 41 行有模型且完成精修；仍有 59 行未做。**
+**一句講晒：正式獨立 Landmark 40 幢；連同已補精修的 5 個公共／綜合組件，100 行入面有 45 行有模型且完成精修；仍有 55 行未做。**
 
-inventory 已同步更新為「41 已加入／59 待製作」，並保留「36 個正式獨立 Landmark」口徑；這份 audit 將组件精修與獨立 Landmark 分開，避免把兩種完成混為一談。
+inventory 已同步更新為「45 已加入／55 待製作」，並保留「40 個正式獨立 Landmark」口徑；這份 audit 將组件精修與獨立 Landmark 分開，避免把兩種完成混為一談。
 
-## A. 正式已加入、精修及 Landmark（36）
+## A. 正式已加入、精修及 Landmark（40）
 
 | ID | 建築物 | 地區 | 主要實作 |
 | --- | --- | --- | --- |
@@ -49,6 +51,10 @@ inventory 已同步更新為「41 已加入／59 待製作」，並保留「36 �
 | `HK-B0028` | The Henderson | 中環 | `the-henderson-world.js` |
 | `HK-B0029` | 交易廣場第一座 One Exchange Square | 中環 | `one-exchange-square-world.js` |
 | `HK-B0030` | 交易廣場第二座 Two Exchange Square | 中環 | `two-exchange-square-world.js` |
+| `HK-B0036` | 稅務大樓 Revenue Tower | 灣仔 | `revenue-tower-world.js` |
+| `HK-B0037` | 怡和大廈 Jardine House | 中環 | `jardine-house-world.js` |
+| `HK-B0056` | 皇室大廈安達人壽大樓 Chubb Tower, Windsor House | 銅鑼灣 | `windsor-house-world.js` |
+| `HK-B0059` | 恒生銀行總行大廈 Hang Seng Bank Headquarters | 中環 | `hang-seng-world.js` |
 | `HK-B0043` | 會景閣 Convention Plaza Apartments | 灣仔 | `hkcec-world.js` |
 | `HK-B0084` | 星光行 Star House | 尖沙咀 | `star-house-world.js` |
 | `HK-B0085` | 馬哥孛羅香港酒店 Marco Polo Hongkong Hotel | 尖沙咀 | `marco-polo-hongkong-world.js` |
@@ -74,7 +80,7 @@ inventory 已同步更新為「41 已加入／59 待製作」，並保留「36 �
 - `HK-CENTRAL-CH` 同時生成大會堂 High Block、Low Block、附屬建築及 Memorial Garden；這裡只把原清單的 B0082／B0100 對應出來，不把附屬設施額外計數。
 - 茶具文物館仍屬香港公園組件，不新增一個獨立 Landmark；但現在由專用 Flagstaff House module 生成，已按 B0093 補上照片導向精修，不再呼叫通用 heritage builder。
 
-## C. 仍待製作／未見專用實作（59）
+## C. 仍待製作／未見專用實作（55）
 
 | ID | 建築物 | 地區 | 原表高度參考 | 位置／footprint 依據 |
 | --- | --- | --- | --- | --- |
@@ -83,8 +89,6 @@ inventory 已同步更新為「41 已加入／59 待製作」，並保留「36 �
 | `HK-B0033` | 太古廣場三座 Three Pacific Place | 金鐘 | 182 m | OSM way 88391081 |
 | `HK-B0034` | 會展廣場辦公大樓 Convention Plaza Office Tower | 灣仔 | 181 m | OSM way 107497689 |
 | `HK-B0035` | 入境事務大樓 Immigration Tower | 灣仔 | 180 m | OSM way 510722228 |
-| `HK-B0036` | 稅務大樓 Revenue Tower | 灣仔 | 180 m | OSM way 27087037 |
-| `HK-B0037` | 怡和大廈 Jardine House | 中環 | 178.54 m | OSM way 42293714 |
 | `HK-B0038` | 華潤大廈 China Resources Building | 灣仔 | 178 m | OSM way 107497701 |
 | `HK-B0039` | 遠東金融中心 Far East Finance Centre | 金鐘 | 176 m | OSM way 107336261 |
 | `HK-B0040` | 力寶中心第一座 Lippo Centre Tower 1 | 金鐘 | 172 m | OSM way 107336260 |
@@ -102,10 +106,8 @@ inventory 已同步更新為「41 已加入／59 待製作」，並保留「36 �
 | `HK-B0053` | 海港中心 Harbour Centre | 灣仔 | 146 m | OSM relation 18183384 |
 | `HK-B0054` | 鷹君中心 Great Eagle Centre | 灣仔 | 146 m | OSM relation 18183385 |
 | `HK-B0055` | 交易廣場第三座 Three Exchange Square | 中環 | 144 m | OSM way 148554950 |
-| `HK-B0056` | 皇室大廈安達人壽大樓 Chubb Tower, Windsor House | 銅鑼灣 | 140 m | OSM way 149401356 |
 | `HK-B0057` | 統一中心 United Centre | 金鐘 | 140 m | OSM way 107336258 |
 | `HK-B0058` | 灣仔政府大樓 Wanchai Tower | 灣仔 | 137 m | OSM way 27087041 |
-| `HK-B0059` | 恒生銀行總行大廈 Hang Seng Bank Headquarters | 中環 | 137 m | OSM way 28825127 |
 | `HK-B0060` | 中國建設銀行大廈 CCB Tower | 中環 | 135 m | OSM way 242113651 |
 | `HK-B0061` | iSQUARE | 尖沙咀 | 130 m | OSM relation 15829461 |
 | `HK-B0062` | 香港君悅酒店 Grand Hyatt Hong Kong | 灣仔 | 129 m | OSM way 107497699 |
@@ -146,12 +148,12 @@ inventory 已同步更新為「41 已加入／59 待製作」，並保留「36 �
 ## 不計入這 100 行的其他場景項目
 
 - 中央圖書館、海運大廈／LCX、太空館、文化中心、鐘樓、添馬政府總部、1881、酒店及其他額外公共／綜合組件，不因這份 100 行 audit 而改變分類。
-- 紅磡香港體育館不是原本 `HK-B0001–B0100` 的一行；目前工作樹的紅館實作仍是未提交工作，不能算作這 100 幢的新增完成量。
+- 紅磡香港體育館不是原本 `HK-B0001–B0100` 的一行；它已另行接入，不計入這 100 幢。
 - `HK-B0068` 中國人民解放軍駐香港部隊大廈仍在 C 類；之前只有 OSM／照片研究，沒有可稱為已建成的 PLA world module。
 
 ## 核對方法及限制
 
 - 以 `docs/hongkong-building-inventory.md` 的 100 行為母清單，檢查專用 module、active `buildHongKongWorld → buildSimpleHongKongWorld` 整合，以及組件實際 build function。
-- 36 個正式已加入項目的 module 檔案及 import 均存在；B 類另外逐項核對 City Hall、HKCEC、Hong Kong Park 的生成程式。
+- 40 個正式已加入項目的 module 檔案及 import 均存在；B 類另外逐項核對 City Hall、HKCEC、Hong Kong Park 的生成程式。
 - 這是程式／整合狀態整理，不是對 100 幢逐一重新做瀏覽器目測，也不表示每幢都沒有後續造型或道路修正需要。
 - 原有 `tools/data/hongkong/landmarks.json` 只作來源／候選資料；沒有用 JSON 中出現的待製作建築來冒充 active scene 完成。
