@@ -9,8 +9,10 @@ export function createTeleportTo({
   getMapSystem,
   locationLabel
 }) {
-  return function teleportTo(x, z, heading = Math.PI) {
-    const destination = controllerManager.teleportActiveTo(x, z, heading);
+  return function teleportTo(x, z, heading = Math.PI, height = null) {
+    const destination = height == null
+      ? controllerManager.teleportActiveTo(x, z, heading)
+      : controllerManager.teleportActiveTo(x, z, heading, height);
     touchControls.reset();
     gamepadControls.reset();
     cameraSystem.resetForTeleport();

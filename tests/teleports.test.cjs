@@ -75,3 +75,13 @@ test('preset and map teleports share arrival resets and mark the resolved landin
   teleportTo(100, 200);
   assert.deepEqual(calls[0], ['teleport', 100, 200, Math.PI], 'heading defaults to PI');
 });
+
+test('elevated teleport passes the requested height while ordinary teleports keep their existing signature', async () => {
+  const { createTeleportTo } = await import('../js/teleport.js');
+  const calls=[];
+  const teleportTo=createTeleportTo({controllerManager:{teleportActiveTo:(...args)=>(calls.push(args),{x:args[0],z:args[1]})},
+    touchControls:{reset(){}},gamepadControls:{reset(){}},cameraSystem:{resetForTeleport(){}},selectCamera(){},getMapSystem:()=>null});
+  teleportTo(1,2,3,34.5);assert.deepEqual(calls.pop(),[1,2,3,34.5]);
+  teleportTo(1,2,3);assert.deepEqual(calls.pop(),[1,2,3]);
+  const app=read('js/app.js');assert.match(app,/if \(point\.mode && controllerManager\.entities\[point\.mode\]\) selectMode\(point\.mode\)/);
+});

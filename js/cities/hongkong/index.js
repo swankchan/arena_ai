@@ -122,7 +122,7 @@ export const city = {
     airport: world.airport,
       landmarks: world.landmarks,
       stats,
-      teleports: TELEPORTS,
+      teleports: [...TELEPORTS, world.ifcMall.roofTeleport],
       cameraPresets: city.cameraPresets,
       roadNames: ROAD_NAMES,
       placeNames: PLACE_NAMES,

@@ -28,3 +28,9 @@ test('IFC facade collision samples leave roads and bridge underpasses clear to 4
  assert.ok(samples>5000);
 });
 test('IFC mall integrated into world and ground-height selection',()=>{const s=fs.readFileSync('js/cities/hongkong/simple-world.js','utf8');for(const text of ['buildIfcMall(scene)','...ifcMall.colliders','...ifcMall.landmarks','...ifcMall.stats','ifcMall.landmarks.length','ifcMall.groundHeightAt(x, z, finalGround, referenceY)'])assert.ok(s.includes(text),text)});
+test('IFC roof has a pedestrian-only elevated arrival away from walls',()=>{
+ const m=build(new THREE.Group()), p=m.roofTeleport;assert.equal(p.mode,'person');assert.equal(p.y,m.stats.ifcMallRoofHeight);
+ assert.equal(m.groundHeightAt(p.x,p.z,0,p.y),p.y);
+ for(const c of m.colliders){if(!c.obb||p.y+1.9<c.minY||p.y>=c.maxY)continue;const x=p.x-c.obb.cx,z=p.z-c.obb.cz;assert.ok(!(Math.abs(x*c.obb.cs-z*c.obb.sn)<c.obb.hx+.48&&Math.abs(x*c.obb.sn+z*c.obb.cs)<c.obb.hz+.48),'arrival overlaps mall collider');}
+ const index=fs.readFileSync('js/cities/hongkong/index.js','utf8');assert.ok(index.includes('world.ifcMall.roofTeleport'));
+});

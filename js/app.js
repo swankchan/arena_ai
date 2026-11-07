@@ -517,7 +517,8 @@ async function initApp(cityStub) {
       sub.textContent = point.sub;
       button.append(name, sub);
       button.addEventListener('click', () => {
-        teleportTo(point.x, point.z, point.heading);
+        if (point.mode && controllerManager.entities[point.mode]) selectMode(point.mode);
+        teleportTo(point.x, point.z, point.heading, point.y);
         closePopovers();
       });
       teleportPopover.appendChild(button);

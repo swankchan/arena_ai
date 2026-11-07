@@ -70,6 +70,8 @@ export function buildIfcMall(scene) {
     if(IFC_MALL_PARTS.some(({site})=>pointInFlatRing(site.ring,x,z)))return roofY;
     return current;
   }
+  const arrival=harbourCityLocalToWorld(retail,-25,0);
+  const roofTeleport={id:'ifc-roof-garden',name:'IFC 天台花園',sub:'天台傳送 · 步行',...arrival,y:roofY,heading:retail.ry,mode:'person'};
   const landmark={name:'國際金融中心商場',englishName:'IFC Mall',x:retail.x,z:retail.z,w:retail.w,d:retail.d,h:30,ring:retail.ring,bounds:retail.bounds,osmId:13849938,kind:'landmark',labelHeight:false};
-  return {group,colliders,landmarks:[landmark],stats,groundHeightAt};
+  return {group,colliders,landmarks:[landmark],stats,groundHeightAt,roofTeleport};
 }
