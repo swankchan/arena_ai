@@ -65,6 +65,15 @@ export function segmentColliderWorld(site, a, b, minY, maxY, depth = .5) {
   return harbourCityLocalCollider(site, x * cs - z * sn, x * sn + z * cs, length, depth, minY, maxY, Math.atan2(-dz, dx));
 }
 
+// Granite and precast: the same vertical gradient, plus a faint per-course banding so a large wall never renders as
+// one flat rectangle of grey.
+function stoneMaterial(base) {
+  const material = new THREE.MeshStandardMaterial({ color: base, roughness: .79, metalness: .03 });
+  const courses = positionWorld.y.mul(0.55).fract().mul(0.06).add(0.94);
+  material.colorNode = color(base.clone()).mul(tslMix(0.86, 1.02, smoothstep(-2, 40, positionWorld.y))).mul(courses);
+  return material;
+}
+
 function plasterMaterial(colour) {
   const base = colour && colour.isColor ? colour : new THREE.Color(colour);
   const material = new THREE.MeshStandardMaterial({ color: base, roughness: .68, metalness: .06 });
@@ -82,7 +91,7 @@ export function harbourCityPalette(options = {}) {
     glazing, interior,
     // Material.color is a CPU-side THREE.Color, not a TSL ColorNode. Passing color(...) here
     // silently left every stone/metal/roof material white in WebGPU; keep shader nodes in colorNode.
-    stone: new THREE.MeshStandardMaterial({ color: new THREE.Color(...(options.stone ?? [.66, .64, .58])), roughness: .79, metalness: .03 }),
+    stone: stoneMaterial(new THREE.Color(...(options.stone ?? [.66, .64, .58]))),
     paleStone: plasterMaterial(new THREE.Color(...(options.paleStone ?? [.74, .73, .68]))),
     metal: new THREE.MeshStandardMaterial({ color: new THREE.Color(...(options.metal ?? [.34, .39, .40])), roughness: .35, metalness: .68 }),
     dark: new THREE.MeshStandardMaterial({ color: 0x172326, roughness: .48, metalness: .3 }),
