@@ -153,15 +153,15 @@ export const SHA_TIN_COLOURS = Object.freeze({
   parkLawn: [0.29, 0.47, 0.19],   // the park reads as the infield lawn; no decorative patchwork
   rail: [0.94, 0.95, 0.94],
   apron: [0.33, 0.46, 0.22],
-  standWhite: [0.93, 0.93, 0.90],
-  standShade: [0.79, 0.80, 0.79],
+  standWhite: [0.74, 0.73, 0.69],
+  standShade: [0.62, 0.63, 0.62],
   seatBlue: [0.15, 0.33, 0.60],
-  seatGrey: [0.78, 0.80, 0.81],
+  seatGrey: [0.66, 0.68, 0.70],
   clubGreen: [0.07, 0.36, 0.24],
   clubRed: [0.68, 0.16, 0.16],
   glass: [0.18, 0.24, 0.27],
   screen: [0.10, 0.55, 0.62],
-  roof: [0.86, 0.87, 0.86],
+  roof: [0.58, 0.60, 0.61],
 });
 
 // The stands, placed on the widest arc of the surveyed fence. Each has a footprint verified to sit inside the
@@ -260,28 +260,49 @@ export function ringPerimeter(ring) {
   return total;
 }
 
-// A point on the course: t runs round the discorectangle from the south-west end of the home straight; offset is
-// measured outwards from the inner running rail.
-export function shaTinTrackPoint(t, offset = 0) {
+// A point on the course. `t` is arc length round the stadium as a fraction, walking the two straights and the two
+// end arcs in order, and `offset` is metres outwards from the inner running rail. Doing it by arc length instead of
+// by an angle keeps the parameterisation continuous — the old angle form jumped a whole straight at t = 1/4 and 3/4,
+// which is what tore holes in the track bands.
+export function shaTinTrackCurve(t, offset = 0) {
   const track = SHA_TIN_TRACK;
-  const angle = t * Math.PI * 2;
-  const cos = Math.cos(angle), sin = Math.sin(angle);
-  const radius = track.innerRadius + offset;
+  const inner = track.innerRadius;
+  const radius = inner + offset;
   const half = track.straight / 2;
-  const px = Math.sign(cos || 1) * half + cos * radius;
-  const pz = sin * radius;
+  const base = 2 * track.straight + 2 * Math.PI * inner;
+  let d = ((((t % 1) + 1) % 1) * base);
+  let px, pz, nx, nz;
+  if (d < track.straight) {
+    px = -half + d; pz = -radius; nx = 0; nz = -1;
+  } else if ((d -= track.straight) < Math.PI * inner) {
+    const angle = -Math.PI / 2 + d / inner;
+    px = half + Math.cos(angle) * radius; pz = Math.sin(angle) * radius;
+    nx = Math.cos(angle); nz = Math.sin(angle);
+  } else if ((d -= Math.PI * inner) < track.straight) {
+    px = half - d; pz = radius; nx = 0; nz = 1;
+  } else {
+    d -= track.straight;
+    const angle = Math.PI / 2 + d / inner;
+    px = -half + Math.cos(angle) * radius; pz = Math.sin(angle) * radius;
+    nx = Math.cos(angle); nz = Math.sin(angle);
+  }
   const theta = (track.rotation * Math.PI) / 180;
   const cs = Math.cos(theta), sn = Math.sin(theta);
-  return { x: track.centreX + px * cs - pz * sn, z: track.centreZ + px * sn + pz * cs };
+  return {
+    x: track.centreX + px * cs - pz * sn, z: track.centreZ + px * sn + pz * cs,
+    nx: nx * cs - nz * sn, nz: nx * sn + nz * cs,
+  };
+}
+
+export function shaTinTrackPoint(t, offset = 0) {
+  const point = shaTinTrackCurve(t, offset);
+  return { x: point.x, z: point.z };
 }
 
 export function shaTinTrackFrame(t, offset = 0) {
-  const point = shaTinTrackPoint(t, offset);
-  const next = shaTinTrackPoint(t + 0.0005, offset);
-  const dx = next.x - point.x, dz = next.z - point.z;
-  const length = Math.hypot(dx, dz) || 1;
-  const tanX = dx / length, tanZ = dz / length;
-  return { x: point.x, z: point.z, tanX, tanZ, normalX: tanZ, normalZ: -tanX, ry: Math.atan2(tanZ, tanX) };
+  const point = shaTinTrackCurve(t, offset);
+  const tanX = -point.nz, tanZ = point.nx;
+  return { x: point.x, z: point.z, tanX, tanZ, normalX: point.nx, normalZ: point.nz, ry: Math.atan2(tanZ, tanX) };
 }
 
 // Inside the inner running rail, i.e. on the infield.

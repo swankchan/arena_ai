@@ -1,6 +1,6 @@
 import * as THREE from 'three/webgpu';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
-import { attribute, color, mix as tslMix, smoothstep } from 'three/tsl';
+import { attribute, color, mix as tslMix, smoothstep, positionWorld } from 'three/tsl';
 import { cityUniforms } from '../../tsl-materials.js';
 import {
   harbourCityEdgeOutward, harbourCityPodiumBayConflict, harbourCityRoadConflictAtLocal,
@@ -65,6 +65,12 @@ export function segmentColliderWorld(site, a, b, minY, maxY, depth = .5) {
   return harbourCityLocalCollider(site, x * cs - z * sn, x * sn + z * cs, length, depth, minY, maxY, Math.atan2(-dz, dx));
 }
 
+function plasterMaterial(hex) {
+  const material = new THREE.MeshStandardMaterial({ color: hex, roughness: .68, metalness: .06 });
+  material.colorNode = color(new THREE.Color(hex)).mul(tslMix(0.84, 1.02, smoothstep(-2, 46, positionWorld.y)));
+  return material;
+}
+
 export function harbourCityPalette(options = {}) {
   const glazing = new THREE.MeshStandardMaterial({ vertexColors: true, roughness: options.roughness ?? .27, metalness: options.metalness ?? .25 });
   glazing.colorNode = attribute('color').rgb.mul(tslMix(.78, 1.5, nightAmount()));
@@ -80,7 +86,9 @@ export function harbourCityPalette(options = {}) {
     metal: new THREE.MeshStandardMaterial({ color: new THREE.Color(...(options.metal ?? [.34, .39, .40])), roughness: .35, metalness: .68 }),
     dark: new THREE.MeshStandardMaterial({ color: 0x172326, roughness: .48, metalness: .3 }),
     roof: new THREE.MeshStandardMaterial({ color: new THREE.Color(...(options.roof ?? [.37, .39, .38])), roughness: .9, metalness: .04 }),
-    white: new THREE.MeshStandardMaterial({ color: 0xe8e8e2, roughness: .56, metalness: .12 }),
+    // Pale plaster and precast never read as a flat film of white: the base darkens towards the pavement and
+    // lifts towards the sky, the way weathering and bounced daylight actually work on these buildings.
+    white: plasterMaterial(0xd8d4c9),
     lawn: new THREE.MeshStandardMaterial({ color: 0x496c42, roughness: .96, metalness: 0 }),
     warmLight: new THREE.MeshStandardMaterial({ color: 0xffe4ad, emissive: 0xffc66d, emissiveIntensity: .45, roughness: .5 })
   };

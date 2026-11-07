@@ -20,6 +20,7 @@ import {
 import { harbourCityLocalCollider } from './harbour-city-architecture.js';
 import { pointInFlatRing } from './landmark-site.js';
 import { makeCanvasSign } from './tst-hotel-world-utils.js';
+import { claddingStores, claddingMaterials, cladBox, claddingMeshes } from './authored-cladding.js';
 
 const C = SHA_TIN_COLOURS;
 const DEG = Math.PI / 180;
@@ -46,6 +47,7 @@ function makeMaterials() {
     screen: new THREE.MeshStandardMaterial({ color: new THREE.Color(...C.screen), roughness: 0.35, emissive: new THREE.Color(0.04, 0.3, 0.34) }),
     metal: palette.metal ?? new THREE.MeshStandardMaterial({ color: 0x8f9491, roughness: 0.42, metalness: 0.55 }),
     white2: palette.white,
+    cladding: claddingMaterials(),
   };
 }
 
@@ -70,18 +72,17 @@ function buildCourse(group, materials, stats) {
     const awtOut1 = shaTinTrackPoint(t1, TRACK.apronMetres + TRACK.allWeatherMetres);
     const turfOut0 = shaTinTrackPoint(t0, TRACK.turfOuterRadius - TRACK.innerRadius);
     const turfOut1 = shaTinTrackPoint(t1, TRACK.turfOuterRadius - TRACK.innerRadius);
-    // The discorectangle parameterisation traces the two end arcs and lets one long segment span each straight;
-    // those long segments are the straights, so they are drawn like any other band.
+    // The course is walked by arc length, so the straights and the end arcs are one continuous band with no jump.
     // Sand apron between the infield hedge and the all-weather track.
-    quad(apron, [inner0.x, 0.09, inner0.z], [inner1.x, 0.09, inner1.z],
-      [awtIn1.x, 0.09, awtIn1.z], [awtIn0.x, 0.09, awtIn0.z], C.sand);
+    quad(apron, [inner0.x, 0.42, inner0.z], [inner1.x, 0.42, inner1.z],
+      [awtIn1.x, 0.42, awtIn1.z], [awtIn0.x, 0.42, awtIn0.z], C.sand);
     // 全天候跑道: sand-coloured, with a darker harrowed edge.
-    quad(sand, [awtIn0.x, 0.1, awtIn0.z], [awtIn1.x, 0.1, awtIn1.z],
-      [awtOut1.x, 0.1, awtOut1.z], [awtOut0.x, 0.1, awtOut0.z], C.allWeather);
+    quad(sand, [awtIn0.x, 0.46, awtIn0.z], [awtIn1.x, 0.46, awtIn1.z],
+      [awtOut1.x, 0.46, awtOut1.z], [awtOut0.x, 0.46, awtOut0.z], C.allWeather);
     // 草地跑道: mowing stripes alternate every six segments.
     const stripe = Math.floor(i / 6) % 2 ? C.turfStripe : C.turf;
-    quad(turf, [awtOut0.x, 0.1, awtOut0.z], [awtOut1.x, 0.1, awtOut1.z],
-      [turfOut1.x, 0.1, turfOut1.z], [turfOut0.x, 0.1, turfOut0.z], stripe);
+    quad(turf, [awtOut0.x, 0.5, awtOut0.z], [awtOut1.x, 0.5, awtOut1.z],
+      [turfOut1.x, 0.5, turfOut1.z], [turfOut0.x, 0.5, turfOut0.z], stripe);
 
     // Running rails: inner rail against the infield, a rail between the two tracks, and the outer rail.
     for (const [a, b, colour] of [[inner0, inner1, C.rail], [awtOut0, awtOut1, C.rail], [turfOut0, turfOut1, C.rail]]) {
@@ -104,7 +105,7 @@ function buildCourse(group, materials, stats) {
   for (let i = 0; i + 1 < parkRing.length; i += 2) {
     const ax = parkRing[i], az = parkRing[i + 1];
     if (!shaTinOnInfield(ax, az, 6)) continue;
-    quad(park, [centre.x, 0.08, centre.z], [ax, 0.08, az], [parkRing[(i + 2) % parkRing.length], 0.08, parkRing[(i + 3) % parkRing.length]],
+    quad(park, [centre.x, 0.52, centre.z], [ax, 0.52, az], [parkRing[(i + 2) % parkRing.length], 0.08, parkRing[(i + 3) % parkRing.length]],
       [centre.x, 0.08, centre.z], C.parkLawn);
   }
 
@@ -139,7 +140,7 @@ function buildCourse(group, materials, stats) {
   shape.closePath();
   const infieldGeometry = new THREE.ShapeGeometry(shape);
   infieldGeometry.rotateX(-Math.PI / 2);
-  infieldGeometry.translate(0, 0.07, 0);
+  infieldGeometry.translate(0, 0.54, 0);
   const infieldMesh = new THREE.Mesh(infieldGeometry, new THREE.MeshStandardMaterial({ color: new THREE.Color(...C.infieldLawn), roughness: 0.95 }));
   infieldMesh.name = 'ShaTinInfieldLawn';
   infieldMesh.receiveShadow = true;
@@ -168,10 +169,17 @@ function buildStand(group, materials, stand, stats, index) {
   holder.position.set(stand.x, 0, stand.z);
   holder.rotation.y = -stand.rotation * DEG;
   const length = stand.lengthMetres, depth = stand.depthMetres;
-  const white = [], tiers = [], seatsA = [], seatsB = [], glass = [], roofs = [], masts = [], lights = [];
+  const tiers = [], seatsA = [], seatsB = [], glass = [], roofs = [], masts = [], lights = [];
   const front = depth / 2;   // the course side: the stands all sit north of the track here
-  // Podium: the concourse floor, betting hall and the rear service spine.
-  box(white, [0, stand.podiumHeight / 2, 0], [length, stand.podiumHeight, depth]);
+  // Podium: the concourse floor, betting hall and the rear service spine. The concrete base is clad rather than
+  // painted, because a flat pale box reads as snow from a distance.
+  const podiumCladding = claddingStores();
+  cladBox(podiumCladding, {
+    x: 0, z: 0, y: 0, w: length, d: depth, h: stand.podiumHeight,
+    floors: 2, bayWidth: 7.4, seed: index + 4, plinthHeight: 2.4,
+    tint: [0.79, 0.78, 0.74], glassTint: [0.14, 0.20, 0.23],
+  });
+  claddingMeshes(holder, podiumCladding, materials.cladding, `${name}PodiumFacade`);
   box(glass, [0, stand.podiumHeight + 2.6, -depth / 2 + 3.5], [length - 8, 5.2, 1.2]);
   // Terraces: each row steps back and up from the front of the podium.
   let z = front - 2, y = stand.podiumHeight;
@@ -183,14 +191,22 @@ function buildStand(group, materials, stand, stats, index) {
     z -= stand.tierTread;
   }
   // Rear enclosure: the tall glazed back wall of the stand with the members' floors above the terraces.
-  box(glass, [0, (y + stand.canopyHeight) / 2, -depth / 2 + 2], [length - 4, stand.canopyHeight - y, 2.4]);
-  box(white, [0, stand.canopyHeight + 1.2, -depth / 2 + 12], [length, 2.4, 24]);
+  const rearHeight = stand.canopyHeight - y;
+  const rearCladding = claddingStores();
+  cladBox(rearCladding, {
+    x: 0, z: -depth / 2 + 6, y, w: length - 3, d: 10, h: rearHeight,
+    floors: Math.max(2, Math.round(rearHeight / 4.2)), bayWidth: 6.8, seed: index + 11,
+    plinthHeight: 0.6, glazingRatio: 0.62,
+    tint: [0.82, 0.81, 0.77], glassTint: [0.16, 0.22, 0.25],
+  });
+  claddingMeshes(holder, rearCladding, materials.cladding, `${name}UpperFacade`);
+  box(roofs, [0, stand.canopyHeight + 1.2, -depth / 2 + 12], [length, 2.4, 24]);
   for (const side of [-1, 1]) {
-    box(white, [side * (length / 2 - 1.2), (y + stand.canopyHeight) / 2, 0], [2.4, stand.canopyHeight - y, depth - 4]);
+    box(tiers, [side * (length / 2 - 1.2), (y + stand.canopyHeight) / 2, 0], [2.4, stand.canopyHeight - y, depth - 4]);
   }
   // The long cantilevered roof, with its fascia and the floodlights along the leading edge.
   box(roofs, [0, stand.canopyHeight, 0], [length + 4, 1.6, depth + stand.roofOverhang * 2]);
-  box(white, [0, stand.canopyHeight - 1.4, front + stand.roofOverhang], [length + 4, 1.4, 1.2]);
+  box(roofs, [0, stand.canopyHeight - 1.4, front + stand.roofOverhang], [length + 4, 1.4, 1.2]);
   const lightCount = Math.round(length / 22);
   for (let i = 0; i < lightCount; i++) {
     const lx = -length / 2 + 8 + i * ((length - 16) / Math.max(1, lightCount - 1));
@@ -199,9 +215,8 @@ function buildStand(group, materials, stand, stats, index) {
   }
   // Stair and lift towers in front of the podium, as on the photographed elevation.
   for (const side of [-1, 1]) {
-    box(white, [side * (length / 2 - 6), stand.podiumHeight + 2.2, front + 1.2], [6, 4.4, 2.4]);
+    box(masts, [side * (length / 2 - 6), stand.podiumHeight + 2.2, front + 1.2], [6, 4.4, 2.4]);
   }
-  merged(holder, white, materials.white, `${name}ConcourseAndRearEnclosure`);
   merged(holder, glass, materials.glass, `${name}GlazedEnclosure`);
   merged(holder, tiers, materials.shade, `${name}TerraceSteps`);
   merged(holder, seatsA, materials.seats, `${name}SeatsBlue`);
@@ -241,16 +256,16 @@ function buildClubhouse(group, materials, stats) {
   group.add(holder);
   holder.position.set(club.x, 0, club.z);
   holder.rotation.y = -club.rotation * DEG;
-  const body = [], glassBands = [], canopy = [];
-  box(body, [0, club.height / 2, 0], [club.length, club.height, club.depth]);
-  for (let floor = 1; floor < club.floors; floor++) {
-    box(glassBands, [0, floor * club.floorHeight, club.depth / 2 + 0.15], [club.length - 2, 1.7, 0.3]);
-    box(glassBands, [-club.length / 2 - 0.15, floor * club.floorHeight, 0], [0.3, 1.7, club.depth - 2]);
-    box(glassBands, [club.length / 2 + 0.15, floor * club.floorHeight, 0], [0.3, 1.7, club.depth - 2]);
-  }
+  const canopy = [];
+  const bodyCladding = claddingStores();
+  cladBox(bodyCladding, {
+    x: 0, z: 0, y: 0, w: club.length, d: club.depth, h: club.height,
+    floors: club.floors, bayWidth: 5.8, seed: 29, plinthHeight: 1.8,
+    tint: [0.80, 0.78, 0.73], glassTint: [0.15, 0.21, 0.24], glazingRatio: 0.56,
+  });
+  claddingMeshes(holder, bodyCladding, materials.cladding, 'ShaTinClubhouseFacade');
   box(canopy, [0, club.height + 0.6, 1.5], [club.length + 3, 0.8, club.depth + 3]);
-  merged(holder, body, materials.white, 'ShaTinClubhouseFloors');
-  merged(holder, glassBands, materials.glass, 'ShaTinClubhouseGlazing');
+  merged(holder, canopy, materials.roof, 'ShaTinClubhouseRoof');
   merged(holder, canopy, materials.roof, 'ShaTinClubhouseRoof');
   stats.shaTinClubhouseFloors = club.floors;
   return { colliders: [harbourCityLocalCollider(SHA_TIN_SITE, club.x, club.z, club.length, club.depth, -club.rotation, 0, club.height)] };
@@ -330,20 +345,26 @@ function buildStables(group, materials, stats) {
   holder.name = 'ShaTinStables';
   group.add(holder);
   const blocks = [], roofs = [], yards = store();
+  const stableCladding = claddingStores();
   let built = 0;
   for (let row = 0; row < spec.rows; row++) {
     for (let col = 0; col < spec.perRow; col++) {
       const x = spec.originX + col * spec.spacingX;
       const z = spec.originZ + row * spec.spacingZ;
       if (!pointInFlatRing(SHA_TIN_SITE.localRing, x, z)) continue;
-      box(blocks, [x, spec.height / 2, z], [spec.blockLength, spec.height, spec.blockDepth]);
+      cladBox(stableCladding, {
+        x, z, y: 0, w: spec.blockLength, d: spec.blockDepth, h: spec.height,
+        floors: 1, bayWidth: 5.2, seed: row * 13 + col, plinthHeight: 0.6, glazingRatio: 0.3,
+        tint: [0.84, 0.79, 0.68], glassTint: [0.22, 0.24, 0.22], plinthTint: [0.5, 0.47, 0.42],
+        corniceTint: [0.36, 0.36, 0.34],
+      });
       box(roofs, [x, spec.height + 0.4, z], [spec.blockLength + 1.6, 0.8, spec.blockDepth + 1.6]);
       quad(yards, [x - 22, 0.06, z + 14], [x + 22, 0.06, z + 14], [x + 22, 0.06, z + 30], [x - 22, 0.06, z + 30], [0.55, 0.52, 0.44]);
       built++;
     }
   }
   meshStore(holder, yards, materials.surface, 'ShaTinStableYards', false);
-  merged(holder, blocks, materials.white, 'ShaTinStableBlocks');
+  claddingMeshes(holder, stableCladding, materials.cladding, 'ShaTinStableBlocks');
   merged(holder, roofs, materials.roof, 'ShaTinStableRoofs');
   stats.shaTinStableBlocks = built;
   return { colliders: [] };
@@ -365,7 +386,7 @@ function buildStation(group, materials, stats) {
   }
   box(canopy, [0, spec.canopyHeight + 1.4, 0], [spec.length, 0.4, spec.width + 3]);
   beam(rail, [-spec.length / 2, 1.4, -spec.width / 2 - 1.2], [spec.length / 2, 1.4, -spec.width / 2 - 1.2], 0.12, 0.1);
-  merged(holder, platform, materials.white, 'ShaTinRacecourseStationPlatform');
+  merged(holder, platform, materials.shade, 'ShaTinRacecourseStationPlatform');
   merged(holder, columns, materials.metal, 'ShaTinRacecourseStationColumns');
   merged(holder, canopy, materials.roof, 'ShaTinRacecourseStationCanopy');
   merged(holder, rail, materials.rail, 'ShaTinRacecourseStationTrackRail');

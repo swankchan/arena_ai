@@ -94,7 +94,7 @@ test('the built venue has the course, both stands, the screen, the stables and t
     'ShaTinGrandstandOne', 'ShaTinGrandstandOneSeatsBlue', 'ShaTinGrandstandOneCantileveredRoof',
     'ShaTinGrandstandTwo', 'ShaTinClubhouse', 'ShaTinParadeRing', 'ShaTinSaddlingEnclosure',
     'ShaTinBigScreen', 'ShaTinBigScreenFace', 'ShaTinInfieldBrandingBoards',
-    'ShaTinStables', 'ShaTinStableBlocks', 'ShaTinRacecourseStation', 'ShaTinRacecourseStationCanopy',
+    'ShaTinStables', 'ShaTinStableBlocksPanels', 'ShaTinRacecourseStation', 'ShaTinRacecourseStationCanopy',
     'ShaTinApron',
   ];
   for (const name of expected) assert.ok(names.includes(name), name);

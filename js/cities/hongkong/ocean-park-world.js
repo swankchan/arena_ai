@@ -18,6 +18,7 @@ import { merged, box, cylinder, beam, store, quad, meshStore, harbourCityPalette
 import { harbourCityLocalCollider, harbourCityWorldToLocal } from './harbour-city-architecture.js';
 import { rawHongKongTerrainHeight } from './terrain.js';
 import { makeCanvasSign } from './tst-hotel-world-utils.js';
+import { claddingStores, claddingMaterials, cladBox, claddingMeshes } from './authored-cladding.js';
 import { pointInFlatRing } from './landmark-site.js';
 
 const C = OCEAN_PARK_COLOURS;
@@ -51,6 +52,7 @@ function makeMaterials() {
     dark: new THREE.MeshStandardMaterial({ color: new THREE.Color(...C.tunnelDark), roughness: 0.95, side: THREE.DoubleSide }),
     metal: palette.metal ?? new THREE.MeshStandardMaterial({ color: 0x8f9491, roughness: 0.42, metalness: 0.55 }),
     white: palette.white,
+    cladding: claddingMaterials(),
     foliage: new THREE.MeshStandardMaterial({ color: 0x3f6b33, roughness: 0.9 }),
   };
 }
@@ -161,15 +163,16 @@ function buildCableCar(group, materials, stats) {
   const summit = poiWorld('summitCableStation');
   const waterfront = poiWorld('waterfrontCableStation');
   const decks = store(), walls = store(), buildings = [], roofs = [], towers = [], crossArms = [], ropes = [], cabinsRed = [], cabinsBlue = [], glass = [];
+  const stationCladding = claddingStores();
 
   // Station decks.
   terrace(decks, walls, summit, [72, 46], ground(summit.x, summit.z) + 0.25, 0.35, C.paving);
   terrace(decks, walls, waterfront, [66, 42], ground(waterfront.x, waterfront.z) + 0.25, -0.55, C.paving);
 
   // Station buildings: a long shed over the platform with an open side onto the ropeways.
-  for (const [station, size, level] of [
-    [{ point: summit, heading: 0.35 }, [54, 26], ground(summit.x, summit.z)],
-    [{ point: waterfront, heading: -0.55 }, [48, 24], ground(waterfront.x, waterfront.z)],
+  for (const [station, size, level, seed] of [
+    [{ point: summit, heading: 0.35 }, [54, 26], ground(summit.x, summit.z), 7],
+    [{ point: waterfront, heading: -0.55 }, [48, 24], ground(waterfront.x, waterfront.z), 12],
   ]) {
     const { point, heading } = station;
     const cs = Math.cos(heading), sn = Math.sin(heading);
@@ -177,7 +180,11 @@ function buildCableCar(group, materials, stats) {
     // Concourse and machine hall, then the platform canopy cantilevered over the ropeway.
     const yaw = -heading;
     const hall = at(0, 0);
-    box(buildings, [hall[0], level + 6, hall[1]], [size[0], 12, size[1]], yaw);
+    cladBox(stationCladding, {
+      x: hall[0], z: hall[1], y: level, w: size[0], d: size[1], h: 12, ry: yaw,
+      floors: 3, bayWidth: 6.4, seed, plinthHeight: 1.6,
+      tint: [0.72, 0.71, 0.67], glassTint: [0.14, 0.20, 0.23], glazingRatio: 0.58,
+    });
     const canopy = at(0, -size[1] * 0.75);
     box(buildings, [canopy[0], level + 10.4, canopy[1]], [size[0] + 6, 1.2, size[1] * 0.7], yaw);
     for (const side of [-1, 1]) {
@@ -244,6 +251,7 @@ function buildCableCar(group, materials, stats) {
   meshStore(holder, decks, materials.deck, 'OceanParkCableCarDecks', false);
   meshStore(holder, walls, materials.surface, 'OceanParkCableCarStationRetainingWalls', false);
   merged(holder, buildings, materials.white, 'OceanParkCableCarStationBuildings');
+  claddingMeshes(holder, stationCladding, materials.cladding, 'OceanParkCableCarStationFacade');
   merged(holder, roofs, materials.roof, 'OceanParkCableCarStationRoofs');
   merged(holder, glass, materials.roof, 'OceanParkCableCarStationGlazing');
   merged(holder, towers, materials.metal, 'OceanParkCableCarSupports');
@@ -298,6 +306,7 @@ function buildOceanExpress(group, materials, stats) {
   holder.name = 'OceanParkOceanExpress';
   group.add(holder);
   const walls = store(), buildings = [], roofs = [], portals = [], rails = [], decks = store();
+  const hallCladding = claddingStores();
 
   const stops = [
     { point: OCEAN_EXPRESS_ROUTE[0], heading: Math.atan2(-(OCEAN_EXPRESS_ROUTE[1].z - OCEAN_EXPRESS_ROUTE[0].z), (OCEAN_EXPRESS_ROUTE[1].x - OCEAN_EXPRESS_ROUTE[0].x)), name: 'Waterfront', label: '海洋列車海濱站 OCEAN EXPRESS', site: OCEAN_PARK_WATERFRONT_SITE },
@@ -311,7 +320,11 @@ function buildOceanExpress(group, materials, stats) {
     terrace(decks, walls, stop.point, [78, 52], level + 0.2, stop.heading, C.pavingDark);
     // Headhouse: ticket hall, plant and the roof that reads as the park's submarine-grey shed.
     const hall = at(6, 0);
-    box(buildings, [hall[0], level + 7.5, hall[1]], [52, 15, 34], yaw);
+    cladBox(hallCladding, {
+      x: hall[0], z: hall[1], y: level, w: 52, d: 34, h: 15, ry: yaw,
+      floors: 3, bayWidth: 7.2, seed: stop.name === 'Summit' ? 21 : 27, plinthHeight: 2.0,
+      tint: [0.66, 0.66, 0.63], glassTint: [0.12, 0.18, 0.21], glazingRatio: 0.5,
+    });
     box(roofs, [hall[0], level + 15.8, hall[1]], [56, 1.6, 38], yaw);
     // The tunnel mouth on the alignment side: a 9 m portal with a hood.
     const mouth = at(-34, 0);
@@ -347,6 +360,7 @@ function buildOceanExpress(group, materials, stats) {
   meshStore(holder, decks, materials.deck, 'OceanExpressStationDecks', false);
   meshStore(holder, walls, materials.surface, 'OceanExpressStationRetainingWalls', false);
   merged(holder, buildings, materials.concrete, 'OceanExpressStationWalls');
+  claddingMeshes(holder, hallCladding, materials.cladding, 'OceanExpressStationFacade');
   merged(holder, roofs, materials.roof, 'OceanExpressStationRoofs');
   merged(holder, portals, materials.dark, 'OceanExpressPortalHoods');
   merged(holder, rails, materials.steel, 'OceanExpressApproachRails');
