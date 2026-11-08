@@ -84,3 +84,27 @@ test('main entrance gap and neighbouring street lamps remain unobstructed', asyn
   const suppress=new Set(HK_STREET_LIGHT_CLEARANCE.suppressed), overrides=new Map(HK_STREET_LIGHT_CLEARANCE.overrides.map(r=>[r[0],r]));
   for(let i=0;i<HK_STREET_LIGHTS.lamps.length;i++){if(suppress.has(i))continue;const lamp=HK_STREET_LIGHTS.lamps[i],o=overrides.get(i),x=lamp[0]+(o?.[1]||0)/100,z=lamp[1]+(o?.[2]||0)/100;for(const site of [HKAPA_ACADEMIC,HKAPA_THEATRE,HKAPA_WEST])assert.equal(pointInFlatRing(site.ring,x,z),false,`lamp ${i} inside building`);}
 });
+
+test('all academic glazing panels are in front of the bent mapped wall, not hidden by it', async () => {
+  const THREE = await import('three/webgpu');
+  const { buildHkapa } = await import('../js/cities/hongkong/hkapa-world.js');
+  const scene = new THREE.Scene(), model = buildHkapa(scene); scene.updateMatrixWorld(true);
+  const panes = scene.getObjectByName('Academic individual lit and unlit glazing');
+  const positions = panes.geometry.getAttribute('position');
+  // Sample off-centre within each panel to avoid the intentional X-brace and limit
+  // the ray to the near face: this cannot accidentally hit the opposite facade.
+  assert.equal(positions.count, 24 * 6);
+  for (let j = 0; j < positions.count; j += 6) {
+    const point = i => new THREE.Vector3(positions.getX(j+i),positions.getY(j+i),positions.getZ(j+i));
+    const v = point(0).add(point(1).sub(point(0)).multiplyScalar(.25)).add(point(5).sub(point(0)).multiplyScalar(.6));
+    v.y += model.root.position.y;
+    const ray = new THREE.Raycaster(new THREE.Vector3(v.x,v.y,v.z+5),new THREE.Vector3(0,0,-1),0,5.1);
+    const hit = ray.intersectObject(model.root,true)[0];
+    assert.equal(hit?.object, panes, `front panel ${j/6} is occluded by ${hit?.object.name}`);
+  }
+  const atrium = scene.getObjectByName('Street-facing atrium glass above driveway');
+  assert.ok(atrium?.material.emissiveNode, 'street-facing atrium needs day/night material');
+  atrium.geometry.computeBoundingBox();
+  assert.ok(atrium.geometry.boundingBox.min.y >= 5, 'service access remains clear under the atrium');
+  assert.ok(scene.getObjectByName('Academic block ceramic walls with main entrance').material.emissiveNode);
+});

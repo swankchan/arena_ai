@@ -1,5 +1,5 @@
 import * as THREE from 'three/webgpu';
-import { color, attribute } from 'three/tsl';
+import { color, attribute, positionWorld, smoothstep, float } from 'three/tsl';
 import { HKAPA_SITE, HKAPA_ACADEMIC, HKAPA_THEATRE, HKAPA_WEST, hkapaTerrainHeightAt } from './hkapa-architecture.js';
 import { HKAPA_MASSING } from './hkapa-massing-data.js';
 import { hkapaPadHeight } from './terrain.js';
@@ -12,6 +12,14 @@ import { harbourCitySegmentCollider } from './harbour-city-architecture.js';
 export function buildHkapa(scene) {
   const base=hkapaPadHeight(), root=new THREE.Group(); root.name='香港演藝學院 Hong Kong Academy for Performing Arts'; root.position.y=base;
   const tile=new THREE.MeshStandardNodeMaterial({color:0xb0aea3,roughness:.88,side:THREE.DoubleSide});
+  // Approximate the warm architectural floodlighting visible in the night reference.
+  // Localized emission avoids washing the whole building in a uniform night glow.
+  const vertical=smoothstep(base+.3,base+4,positionWorld.y).mul(float(1).sub(smoothstep(base+19,base+27,positionWorld.y)));
+  const frontage=smoothstep(219,231,positionWorld.z);
+  const pool=x=>float(1).sub(smoothstep(2,13,positionWorld.x.sub(x).abs()));
+  const pools=pool(1002).add(pool(1061)).add(pool(1093)).min(1);
+  tile.emissiveNode=color(0xffb46d).mul(nightAmount()).mul(vertical).mul(frontage).mul(pools).mul(.18);
+
   const lightTile=new THREE.MeshStandardMaterial({color:0xc1beb0,roughness:.84,side:THREE.DoubleSide});
   const roof=new THREE.MeshStandardMaterial({color:0x8e938c,roughness:.82,side:THREE.DoubleSide});
   const seams=new THREE.MeshStandardMaterial({color:0x868a82,roughness:.86});
@@ -38,11 +46,14 @@ export function buildHkapa(scene) {
   p('Theatre lower stepped volume',HKAPA_MASSING.theatreFront,24);p('Theatre taller volume',HKAPA_MASSING.theatreRear,31);
   const structural=[],metal=[],panes=store(),stripes=[],roofParts=[],lights=[];
   // Gloucester Road academic frontage follows the long south face of the mapped building.
-  const A=[1000.23,234.27],B=[1072.82,236.08],dx=B[0]-A[0],dz=B[1]-A[1],len=Math.hypot(dx,dz),ux=dx/len,uz=dz/len;
-  // Outward from the southern face; use a small projection so the windows are visible above the cladding.
-  const fp=(u,y,o=0)=>[A[0]+ux*u-uz*o,y,A[1]+uz*u+ux*o];
-  const ry=-Math.atan2(dz,dx);
-  const ebox=(parts,u,y,o,w,h,d)=>box(parts,fp(u,y,o),[w,h,d],ry);
+  // The mapped south frontage bends at the entrance; use both real source edges.
+  // A single chord cuts behind the wall by almost a metre, hiding the glazing.
+  const A=academic.slice(14,16), C=academic.slice(16,18), B=academic.slice(18,20);
+  const l0=Math.hypot(C[0]-A[0],C[1]-A[1]),l1=Math.hypot(B[0]-C[0],B[1]-C[1]),len=l0+l1;
+  const facadeFrame=u=>{const first=u<=l0, p=first?A:C, q=first?C:B, L=first?l0:l1,t=(first?u:u-l0)/L, ux=(q[0]-p[0])/L,uz=(q[1]-p[1])/L;return {x:p[0]+(q[0]-p[0])*t,z:p[1]+(q[1]-p[1])*t,ux,uz,ry:-Math.atan2(uz,ux)};};
+  const fp=(u,y,o=0)=>{const f=facadeFrame(u);return [f.x-f.uz*o,y,f.z+f.ux*o];};
+  const ebox=(parts,u,y,o,w,h,d)=>box(parts,fp(u,y,o),[w,h,d],facadeFrame(u).ry);
+  const facadeBeam=(parts,start,end,y,o,w,d)=>{let cuts=[start,...(start<l0&&end>l0?[l0]:[]),end];for(let i=1;i<cuts.length;i++)beam(parts,fp(cuts[i-1],y,o),fp(cuts[i],y,o),w,d);};
   // The broad dark band is recessed-looking; structural X-members and mullions are real geometry.
   const left=8.3,right=59.5,bays=6,step=(right-left)/bays;
   for(let row=0;row<4;row++){
@@ -54,25 +65,34 @@ export function buildHkapa(scene) {
       beam(structural,fp(u0,y0,.43),fp(u1,y1,.43),.42,.48);
       beam(structural,fp(u0,y1,.43),fp(u1,y0,.43),.42,.48);
     }
-    ebox(structural,(left+right)/2,y0,.4,right-left,.37,.48);
+    facadeBeam(structural,left,right,y0,.4,.37,.48);
   }
-  ebox(structural,(left+right)/2,21.1,.4,right-left,.38,.48);
+  facadeBeam(structural,left,right,21.1,.4,.38,.48);
   for(let i=0;i<=bays;i++)ebox(structural,left+i*step,13.2,.4,.4,16.2,.5);
   // Real cladding seams on the large end piers and above and below the window lattice.
   for(let u=0;u<=len;u+=2.35){ if(u>left-.5&&u<right+.5)continue;ebox(stripes,u,14,.06,.035,27,.035); }
-  for(let y of [4.6,22.4,26.4])ebox(stripes,len/2,y,.08,len,.045,.04);
+  for(let y of [4.6,22.4,26.4])facadeBeam(stripes,0,len,y,.08,.045,.04);
   // Exposed rooftop colonnade and an overhanging horizontal roof beam, rather than a closed white parapet.
   ebox(roofParts,33.8,29.2,-1.1,64,.4,.95);
   for(let u=5;u<=63;u+=5.4)ebox(roofParts,u,28.2,-1.1,.28,2,.32);
   ebox(roofParts,33.8,27.2,-1.1,64,.35,1.2);
   // Multi-pane glazed atrium over the driveway, with a clear vehicle passage below.
   // Axis follows the OSM service way, so no ground-level wall crosses it.
-  const x0=1030,z0=181,x1=1056,z1=209, mx=(x0+x1)/2,mz=(z0+z1)/2;
+  const x0=1045,z0=197,x1=1072,z1=227, mx=(x0+x1)/2,mz=(z0+z1)/2;
   const atrium=new THREE.Group();atrium.name='Glazed atrium over open service drive';atrium.position.set(mx,0,mz);atrium.rotation.y=-Math.atan2(z1-z0,x1-x0);root.add(atrium);
   const ap=[],ag=[],af=[];box(ap,[0,8.8,0],[35,7.6,8.1]);
   for(let x=-17;x<=17;x+=3.4){box(af,[x,8.8,4.12],[.12,7.6,.15]);box(af,[x,8.8,-4.12],[.12,7.6,.15]);}
   for(let y of [5.1,8.8,12.5])for(let z of [-4.12,4.12])box(af,[0,y,z],[35,.12,.15]);
   box(ag,[0,12.7,0],[35,.24,8.5]);merged(atrium,ap,glass,'Atrium blue-grey glazing');merged(atrium,af,frame,'Atrium steel mullions');merged(atrium,ag,roof,'Atrium upper edge');
+  // Street-facing glazed end of the connecting atrium, above the service opening.
+  // The south elevation is an estimated setback, not a separate mapped footprint.
+  const streetGlass=[],streetFrames=[];
+  box(streetGlass,[1075.8,11.1,234.0],[9,12,.16]);
+  for(let x=1071.3;x<=1080.3;x+=1.5)box(streetFrames,[x,11.1,234.12],[.11,12,.14]);
+  for(let y of [5.1,8.1,11.1,14.1,17.1])box(streetFrames,[1075.8,y,234.12],[9,.11,.14]);
+  merged(root,streetGlass,glass,'Street-facing atrium glass above driveway');
+  merged(root,streetFrames,frame,'Street-facing atrium mullions');
+
   // Roof glazing and triangulation on the lower west wing evokes the now-covered amphitheatre.
   box(roofParts,[957,12.0,180],[27,.25,21]);
   for(let i=-3;i<=3;i++)box(metal,[957+i*3.8,12.22,180],[.16,.14,21]);
