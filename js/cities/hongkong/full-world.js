@@ -11,6 +11,7 @@ import { CROSSING_FLAT_EXCLUSION_IDS, CROSSING_ROUTES } from './crossings.js';
 import { buildTunnelOpeningRects, subtractTunnelOpenings } from './tunnel-openings.js';
 import {murrayLobbyTerrainCut} from './murray-lobby-site.js';
 import {peakUpperStationTerrainCut} from './peak-upper-station-site.js';
+import {kennedyApproachCuts} from './peak-tram-kennedy-approach-site.js';
 import { FULL_BOUNDS, isDetailedCore, isTerritoryLand, territoryParkAt } from './full-meta.js';
 import { HK_TERRAIN, HONG_KONG_TERRAIN_META, hongKongTerrainCellLand, hongKongTerrainHeight, rawHongKongTerrainHeight } from './terrain.js';
 import { roadRibbonHeightAtSegment, roadRibbonProfileAtSegment, verifiedBridgeProfileAtSegment, TERRAIN_TUNNEL_OPENING_RECTS } from './road-elevation.js';
@@ -387,7 +388,7 @@ function* createTerrainChunksSteps(root, includeCore) {
   }
   const chunkRects = new Map();
   // The Murray exists only in unified mode, not the legacy detailed builder.
-  for (const rect of includeCore ? [...TUNNEL_OPENING_RECTS, murrayLobbyTerrainCut(), peakUpperStationTerrainCut()] : TUNNEL_OPENING_RECTS) {
+  for (const rect of includeCore ? [...TUNNEL_OPENING_RECTS, murrayLobbyTerrainCut(), peakUpperStationTerrainCut(), ...kennedyApproachCuts()] : TUNNEL_OPENING_RECTS) {
     const minCol = Math.floor(rect.minX / TERRAIN_CHUNK), maxCol = Math.floor(rect.maxX / TERRAIN_CHUNK);
     const minRow = Math.floor(rect.minZ / TERRAIN_CHUNK), maxRow = Math.floor(rect.maxZ / TERRAIN_CHUNK);
     for (let row = minRow; row <= maxRow; row++) for (let col = minCol; col <= maxCol; col++) {
