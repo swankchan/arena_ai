@@ -81,9 +81,9 @@ export function buildMurray(scene){
  meshStore(root,arches,material(.87),'The Murray open arched arcade');meshStore(root,archSoffit,material(.91),'The Murray curved arch intrados');merged(root,piers,stone,'The Murray arcade piers');
  // The tree-facing east wall has a real opening, not a decorative door over a solid collider.
  for(const z of [-D/2+3,D/2-3]){
-  box(lobby,[0,1.6,z],[W-5,16.8,.18]);for(let x=-W/2+3;x<=W/2-3;x+=2.6)box(frames,[x,1.6,z+Math.sign(z)*.12],[.07,16.8,.08]);
-  box(frames,[0,5,z+Math.sign(z)*.12],[W-5,.09,.08]);
-  colliders.push(harbourCityLocalCollider(SITE,0,z,W-5,.2,datum-7,datum+12));
+  box(lobby,[0,1.6,z],[L.halfWidth*2,16.8,.18]);for(let x=-L.halfWidth;x<=L.halfWidth;x+=2.6)box(frames,[x,1.6,z+Math.sign(z)*.12],[.07,16.8,.08]);
+  box(frames,[0,5,z+Math.sign(z)*.12],[L.halfWidth*2,.09,.08]);
+  colliders.push(harbourCityLocalCollider(SITE,0,z,L.halfWidth*2,.2,datum-7,datum+12));
  }
  for(const x of [-W/2+3,W/2-3]){
   if(x<0){box(lobby,[x,1.6,0],[.18,16.8,D-6]);colliders.push(harbourCityLocalCollider(SITE,x,0,.2,D-6,datum-7,datum+12));}

@@ -69,3 +69,7 @@ test('lobby terrain cut stays within the building and off sampled roads',async()
  for(let x=-11.5;x<=11.5;x+=.5)for(let z=-22.4;z<=-7.6;z+=.5){const p=util.harbourCityLocalToWorld(A.MURRAY_SITE,x,z);assert.equal(road.fullRoadSurfaceAt(p.x,p.z,0,b.interior.floor),null);}
  const full=require('node:fs').readFileSync('js/cities/hongkong/full-world.js','utf8');assert.match(full,/includeCore \? \[\.\.\.TUNNEL_OPENING_RECTS, murrayLobbyTerrainCut\(\)/);
 });
+test('existing ramp centre is clear for a walking person end to end',async()=>{
+ const R=await import('../js/cities/hongkong/murray-ramp.js'),r=R.MURRAY_RAMP;
+ for(let z=r.z0;z<=r.z1;z+=.1){const x=(r.x0+r.x1)/2,p=util.harbourCityLocalToWorld(A.MURRAY_SITE,x,z),y=b.datum+R.murrayRampLocalHeight(z);for(const c of b.colliders)if(y+1.75>=c.minY&&y+.1<=c.maxY)assert.equal(collision.colliderContains(c,p.x,p.z,.48),false,`collision at ${x.toFixed(2)}, ${z.toFixed(2)}`);}
+});
