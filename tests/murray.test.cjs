@@ -79,7 +79,7 @@ test('lift carries a passenger and can be recalled at either landing',async()=>{
  for(let i=0;i<200;i++)E.advanceMurrayLiftMotion(s,.1,false,L.roof);assert.equal(s.y,L.roof);
  for(let i=0;i<21;i++)E.advanceMurrayLiftMotion(s,.1,false,L.lobby);for(let i=0;i<200;i++)E.advanceMurrayLiftMotion(s,.1,false,L.lobby);assert.equal(s.y,L.lobby);
  const pt=util.harbourCityLocalToWorld(A.MURRAY_SITE,0,(L.z0+L.z1)/2),person={position:new T.Vector3(pt.x,b.datum+L.lobby,pt.z),verticalVel:0,speed:0},manager={activeMode:'person',entities:{person}};
- for(let i=0;i<210;i++)b.lift.update(.1,manager);assert.equal(b.lift.state.y,L.roof);assert.equal(person.position.y,b.datum+L.roof);
+ for(let i=0;i<320;i++)b.lift.update(.1,manager);assert.equal(b.lift.state.y,L.roof);assert.equal(person.position.y,b.datum+L.roof);
  const cover=b.group.getObjectByName('The Murray lift roof safety cover');assert.equal(cover.visible,false);
  for(const gap of [.1,.5,2])assert.equal(E.murrayRoofHeight(pt.x,pt.z,0,b.datum+L.roof,b.datum,{y:L.roof-gap}),b.datum+L.roof);
 });
@@ -87,7 +87,7 @@ test('lift carries a person through the actual controller gravity integration',a
  const E=await import('../js/cities/hongkong/murray-lift.js'),{ThirdPersonControllerManager}=await import('../js/controllers.js'),lift=b.lift,L=E.MURRAY_LIFT;Object.assign(lift.state,E.createMurrayLiftMotion());
  const pt=util.harbourCityLocalToWorld(A.MURRAY_SITE,0,(L.z0+L.z1)/2),p={position:new T.Vector3(pt.x,b.datum+L.lobby,pt.z),verticalVel:0,speed:0,heading:0};
  const ctx={activeMode:'person',entities:{person:p},keys:{},resolveHorizontalCollision(){},getGroundHeight:(x,z,mode,ref)=>b.groundHeightAt(x,z,terrain.hongKongTerrainHeight(x,z),ref)};
- for(let i=0;i<450;i++){ThirdPersonControllerManager.prototype.updatePerson.call(ctx,.05);lift.update(.05,ctx);}assert.equal(lift.state.y,L.roof);assert.equal(p.position.y,b.datum+L.roof);
+ for(let i=0;i<650;i++){ThirdPersonControllerManager.prototype.updatePerson.call(ctx,.05);lift.update(.05,ctx);}assert.equal(lift.state.y,L.roof);assert.equal(p.position.y,b.datum+L.roof);
 });
 test('lift connects to lobby and roof without blocking walking clearance',async()=>{
  const E=await import('../js/cities/hongkong/murray-lift.js'),L=E.MURRAY_LIFT;
@@ -114,4 +114,13 @@ test('moving lift retains its rider against walking input and releases after tel
  for(let i=0;i<20;i++){const q=util.harbourCityLocalToWorld(A.MURRAY_SITE,0,L.z0-.25);a.p.position.x=q.x;a.p.position.z=q.z;a.instance.lift.update(.05,a.m);const local=util.harbourCityWorldToLocal(A.MURRAY_SITE,a.p.position.x,a.p.position.z);assert.ok(Math.abs(local.z-(L.z0+L.z1)/2)<1e-6);assert.deepEqual(a.p.mesh.position,a.p.position);}
  a.p.position.set(10000,10000,10000);a.instance.lift.update(.05,a.m);assert.equal(a.p.position.x,10000);
  const b=run(),y=b.p.position.y;b.m.activeMode='car';b.instance.lift.update(.05,b.m);assert.equal(b.p.position.y,y);
+});
+test('01 gallery is reached from lift and is continuous around the core',async()=>{
+ const E=await import('../js/cities/hongkong/murray-lift.js'),G=await import('../js/cities/hongkong/murray-gallery.js'),y=b.datum+G.MURRAY_GALLERY.floor;
+ const check=(x,z)=>{const p=util.harbourCityLocalToWorld(A.MURRAY_SITE,x,z);assert.ok(G.isMurrayGalleryLocal(x,z),`missing deck ${x},${z}`);assert.equal(b.groundHeightAt(p.x,p.z,0,y),y);for(const c of b.colliders)if(y+1.75>=c.minY&&y+.1<=c.maxY)assert.equal(collision.colliderContains(c,p.x,p.z,.48),false,`blocked ${x.toFixed(2)},${z.toFixed(2)} ${JSON.stringify(c)}`);};
+ for(let x=0;x<=8;x+=.1)check(x,-12.4);for(let z=-12.4;z>=-19.5;z-=.1)check(8,z);for(let x=8;x>=-8;x-=.1)check(x,-19.5);for(let z=-19.5;z<=19;z+=.1)check(-8,z);for(let z=-12.4;z<=19;z+=.1)check(8,z);
+ assert.ok(b.group.getObjectByName('The Murray 01 level circulation floor'));assert.ok(b.group.getObjectByName('The Murray lift gallery safety cover'));
+ const p=util.harbourCityLocalToWorld(A.MURRAY_SITE,0,(E.MURRAY_LIFT.z0+E.MURRAY_LIFT.z1)/2);
+ assert.equal(E.murrayRoofHeight(p.x,p.z,0,y,b.datum,{y:G.MURRAY_GALLERY.floor-1}),y);
+ assert.equal(G.murrayGalleryGroundHeight(p.x,p.z,1,y+10,b.datum),1);
 });
