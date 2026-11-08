@@ -1,7 +1,7 @@
 import * as THREE from 'three/webgpu';
 import {beam,box,merged,quad,store,meshStore} from './harbour-city-world-utils.js';
 import {hongKongTerrainHeight} from './terrain.js';
-import {BARKER_STATION_TRACK_POINTS,barkerStationTrackBranchOffset,barkerStationTrackPoint} from './peak-tram-barker-station-track-site.js';
+import {BARKER_STATION_TRACK_POINTS,barkerStationTrackBranchOffset} from './peak-tram-barker-station-track-site.js';
 
 // Estimated station track and road crossing; no piers inside the road envelope.
 export function buildPeakTramBarkerStationTrack(scene){
@@ -31,11 +31,6 @@ export function buildPeakTramBarkerStationTrack(scene){
    const x=b.x+nx*ob/2,z=b.z+nz*ob/2,ground=hongKongTerrainHeight(x,z),top=b.y-.32,h=top-ground;
    if(h>.6){box(piers,[x,ground+h/2,z],[.5,h,.5]);box(feet,[x,ground+.04,z],[.85,.16,.85]);colliders.push({minX:x-.425,maxX:x+.425,minZ:z-.425,maxZ:z+.425,minY:ground-.05,maxY:top});}
   }
- }
- // Supports are deliberately placed outside the sampled skew road footprint.
- for(const s of [1097,1116])for(const off of [-1.4,1.4]){
-  const p=barkerStationTrackPoint(s),x=p.x+p.nx*off,z=p.z+p.nz*off,ground=hongKongTerrainHeight(x,z),top=p.y-.65,h=top-ground;
-  if(h>0){box(piers,[x,ground+h/2,z],[.6,h,.6]);box(feet,[x,ground+.04,z],[.8,.14,.8]);colliders.push({minX:x-.4,maxX:x+.4,minZ:z-.4,maxZ:z+.4,minY:ground-.05,maxY:top});}
  }
  const steel=new THREE.MeshStandardMaterial({color:0x93958d,roughness:.36,metalness:.7}),wood=new THREE.MeshStandardMaterial({color:0x514b40,roughness:.88}),stone=new THREE.MeshStandardMaterial({vertexColors:true,roughness:.95,side:THREE.DoubleSide}),concrete=new THREE.MeshStandardMaterial({color:0x737871,roughness:.9});
  meshStore(group,bridge,stone,'Barker Road crossing deck');merged(group,rails,steel,'Peak Tram Barker station track rails');merged(group,ties,wood,'Peak Tram Barker station track sleepers');meshStore(group,bed,stone,'Peak Tram Barker station track bed');meshStore(group,walls,stone,'Peak Tram Barker station track retaining faces');merged(group,piers,concrete,'Peak Tram Barker station track piers');merged(group,feet,concrete,'Peak Tram Barker station track pier footings');
