@@ -11,6 +11,9 @@ export const KENNEDY_APPROACH_POINTS=Object.freeze(route.slice(begin,end+1));
 // The OSM stop node is its uphill end for this provisional design, not a survey.
 export const MACDONNELL_PLATFORM_START=KENNEDY_APPROACH_POINTS.find(p=>p.s>=247).s;
 export function isMacDonnellPlatformSegment(a,b){return a.s>=MACDONNELL_PLATFORM_START && b.s<=KENNEDY_APPROACH_POINTS.at(-1).s;}
+// Only the fully road-covered core is modelled as a stone vault. Portal edges
+// and dimensions are estimated from the scene, not an engineering survey.
+export function isMacDonnellBridgeSegment(a,b){return a.s>=220 && b.s<=226.1;}
 export function kennedyApproachCuts(){
  const rects=[];
  for(let i=1;i<KENNEDY_APPROACH_POINTS.length;i++){
@@ -24,7 +27,7 @@ export function kennedyApproachCuts(){
   }
   if(!intrudes)continue;
   const station=isMacDonnellPlatformSegment(a,b),shift=station?1.2:0;
-  const cx=(a.x+b.x)/2+nx*shift,cz=(a.z+b.z)/2+nz*shift,hx=l/2+.08,hz=station?2.8:1.6,ex=Math.abs(ux)*hx+Math.abs(uz)*hz,ez=Math.abs(uz)*hx+Math.abs(ux)*hz;
+  const cx=(a.x+b.x)/2+nx*shift,cz=(a.z+b.z)/2+nz*shift,hx=l/2+.08,hz=station?2.8:isMacDonnellBridgeSegment(a,b)?1.85:1.6,ex=Math.abs(ux)*hx+Math.abs(uz)*hz,ez=Math.abs(uz)*hx+Math.abs(ux)*hz;
   rects.push({cx,cz,ux,uz,hx,hz,minX:cx-ex,maxX:cx+ex,minZ:cz-ez,maxZ:cz+ez,routeId:'peak-tram-kennedy-approach'});
  }
  return rects;

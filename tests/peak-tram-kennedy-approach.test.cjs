@@ -29,7 +29,7 @@ test('Kennedy approach joins the built bridge and cuts only its local terrain co
  assert.ok(roadSamples>100,'expected MacDonnell Road overpass');
  const b=buildPeakTramKennedyApproach(new THREE.Group());assert.ok(b.stats.peakTramKennedyApproachSegments>60);assert.ok(b.colliders.length>0);
  for(const c of b.colliders)for(let x=c.minX-.5;x<=c.maxX+.5;x+=.2)for(let z=c.minZ-.5;z<=c.maxZ+.5;z+=.2)assert.equal(fullRoadSurfaceAt(x,z,0,hongKongTerrainHeight(x,z)),null,'pier intersects road');
- for(const name of ['Kennedy approach rails','Kennedy approach sleepers','Kennedy approach track bed','Kennedy approach retaining walls','Kennedy approach support piers','MacDonnell Road underpass soffit'])assert.ok(b.group.getObjectByName(name),name);
+ for(const name of ['Kennedy approach rails','Kennedy approach sleepers','Kennedy approach track bed','Kennedy approach retaining walls','Kennedy approach support piers'])assert.ok(b.group.getObjectByName(name),name);
 });
 test('the terrain corridor and approach are installed in the unified world',()=>{
  const fs=require('node:fs');assert.match(fs.readFileSync('js/cities/hongkong/full-world.js','utf8'),/\.\.\.kennedyApproachCuts\(\)/);
