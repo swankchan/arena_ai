@@ -1,7 +1,7 @@
 import * as THREE from 'three/webgpu';
 import {
   HERITAGE_1881_COMPOUND, HERITAGE_1881_MALL, FWD_HOUSE_1881, FWD_HOUSE_1881_INNER_RING,
-  ROUND_HOUSE_1881, HERITAGE_1881_HEIGHTS, HERITAGE_1881_MAIN_STAIR, ROUND_HOUSE_CURVED_STAIR,
+  ROUND_HOUSE_1881, HERITAGE_1881_HEIGHTS, HERITAGE_1881_MAIN_STAIR, HERITAGE_1881_PLANTER_STAIR,
   HERITAGE_1881_COURTYARD_RING, heritage1881TerrainHeightAt, heritage1881GroundHeightAt,
 } from './heritage-1881-architecture.js';
 import {
@@ -214,7 +214,7 @@ function buildGrandStair(root, base, materials) {
 }
 
 function buildRoundHouse(root, base, materials) {
-  const group = new THREE.Group(); group.name = '1881 Round House — time ball, oculi, curved stair and typhoon mast'; group.position.set(1040, base, -1450); root.add(group);
+  const group = new THREE.Group(); group.name = '1881 Round House — time ball, oculi and typhoon mast'; group.position.set(1040, base, -1450); root.add(group);
   const bastion = [], bands = [], arches = [], piers = [];
   cylinder(bastion, [0, 6, 0], 5.2, 12, 64);
   for (let y = 0.65; y < 11.8; y += 0.72) cylinder(bands, [0, y, 0], 5.225, 0.055, 64);
@@ -251,7 +251,37 @@ function buildRoundHouse(root, base, materials) {
     beam(balustrade, [Math.cos(a) * 4.96, 13.10, Math.sin(a) * 4.96], [Math.cos(b) * 4.96, 13.10, Math.sin(b) * 4.96], 0.12, 0.14);
   }
   merged(group, balustrade, materials.paleStone, 'Round House — circular platform balustrade');
-  const stairs = [], stairRails = [], curved = ROUND_HOUSE_CURVED_STAIR;
+  const mast = [], rigging = []; cylinder(mast, [4.55, 22.4, 0], 0.15, 20.8, 14);
+  beam(mast, [0.8, 28.6, 0], [8.0, 28.6, 0], 0.14, 0.14); beam(mast, [1.7, 25.7, 0], [7.1, 25.7, 0], 0.11, 0.11);
+  for (const [x,z] of [[-3,-3],[-3,3],[3,-3],[3,3]]) beam(rigging, [4.55,31.4,0], [x,12.2,z], 0.025, 0.025);
+  merged(group, mast, materials.metal, 'Round House — adjacent typhoon mast and yards'); merged(group, rigging, materials.metal, 'Round House — typhoon-mast standing rigging', false);
+  const colliders = [
+    ...harbourCityRingColliders(ROUND_HOUSE_1881, base, base + 11.4, 0.34),
+    harbourCityLocalCollider(ROUND_HOUSE_1881, 0, 0, 7.0, 7.0, base + 12, base + 22),
+  ];
+  return { group, colliders, oculi: 8 };
+}
+
+function buildPlanterStair(root, base, materials) {
+  const curved = HERITAGE_1881_PLANTER_STAIR, group = new THREE.Group();
+  group.name = '1881 Heritage — separate tree planter and curved staircase';
+  group.position.set(curved.x, base, curved.z); root.add(group);
+  const planter = [], courses = [], trunk = [], foliage = [];
+  cylinder(planter, [0, curved.rise / 2, 0], curved.innerRadius - 0.12, curved.rise, 64);
+  for (let y = 0.7; y < curved.rise; y += 0.72) cylinder(courses, [0, y, 0], curved.innerRadius - 0.09, 0.055, 64);
+  cylinder(courses, [0, curved.rise - 0.10, 0], curved.innerRadius + 0.05, 0.25, 64);
+  cylinder(trunk, [0, curved.rise + 3.5, 0], 0.48, 7, 12, 0.33);
+  for (let i = 0; i < 8; i++) {
+    const a = i * Math.PI / 4;
+    beam(trunk, [0, curved.rise + 5.2, 0], [Math.cos(a) * 3, curved.rise + 9, Math.sin(a) * 3], 0.20);
+    sphere(foliage, [Math.cos(a) * 3.4, curved.rise + 9.4 + (i % 3) * 0.5, Math.sin(a) * 3.4], 2.5, 12);
+  }
+  merged(group, planter, materials.stone, 'Separate circular tree-planter retaining wall');
+  merged(group, courses, materials.paleStone, 'Tree-planter stone courses and coping');
+  const wood = new THREE.MeshStandardMaterial({ color: 0x5f4a38, roughness: 0.95 });
+  merged(group, trunk, wood, 'Tree trunk and branches');
+  merged(group, foliage, materials.lawn, 'Tree canopy', false);
+  const stairs = [], stairRails = [];
   for (let i = 0; i < curved.steps; i++) {
     const a0 = curved.startAngle + curved.sweep * i / curved.steps, a1 = curved.startAngle + curved.sweep * (i + 1) / curved.steps;
     const top = curved.rise * (i + 1) / curved.steps, rise = curved.rise / curved.steps + 0.025;
@@ -262,16 +292,12 @@ function buildRoundHouse(root, base, materials) {
     for (const radius of [curved.innerRadius + 0.08, curved.outerRadius - 0.08]) beam(stairRails,
       [Math.cos(a0) * radius, top + 1.02, Math.sin(a0) * radius], [Math.cos(a1) * radius, top + 1.02, Math.sin(a1) * radius], 0.07, 0.08);
   }
-  merged(group, stairs, materials.stone, 'Round House — 72 individual curved stone stair treads'); merged(group, stairRails, materials.metal, 'Round House — curved-stair posts and continuous handrails');
-  const mast = [], rigging = []; cylinder(mast, [4.55, 22.4, 0], 0.15, 20.8, 14);
-  beam(mast, [0.8, 28.6, 0], [8.0, 28.6, 0], 0.14, 0.14); beam(mast, [1.7, 25.7, 0], [7.1, 25.7, 0], 0.11, 0.11);
-  for (const [x,z] of [[-3,-3],[-3,3],[3,-3],[3,3]]) beam(rigging, [4.55,31.4,0], [x,12.2,z], 0.025, 0.025);
-  merged(group, mast, materials.metal, 'Round House — adjacent typhoon mast and yards'); merged(group, rigging, materials.metal, 'Round House — typhoon-mast standing rigging', false);
-  const colliders = [
-    ...harbourCityRingColliders(ROUND_HOUSE_1881, base, base + 11.4, 0.34),
-    harbourCityLocalCollider(ROUND_HOUSE_1881, 0, 0, 7.0, 7.0, base + 12, base + 22),
-  ];
-  return { group, colliders, curvedSteps: curved.steps, oculi: 8 };
+  merged(group, stairs, materials.stone, 'Tree planter — 72 individual curved stair treads'); merged(group, stairRails, materials.metal, 'Tree planter — curved-stair posts and continuous handrails');
+  const landing = curved.landing, bridge = [];
+  box(bridge, [landing.x - curved.x, curved.rise - 0.12, landing.z - curved.z], [landing.width, 0.24, landing.depth]);
+  merged(group, bridge, materials.stone, 'Tree planter — upper landing to retail terrace');
+  const colliderSite = { x: curved.x, z: curved.z, ry: 0 };
+  return { group, steps: curved.steps, colliders: [harbourCityLocalCollider(colliderSite, 0, 0, (curved.innerRadius - 0.2) * 1.414, (curved.innerRadius - 0.2) * 1.414, base, base + curved.rise)] };
 }
 
 function buildCourtyardFountain(root, base, materials) {
@@ -297,22 +323,22 @@ export function buildHeritage1881(scene, { groundOffset = 0 } = {}) {
   materials.water = new THREE.MeshStandardMaterial({ color: 0x4f8f98, roughness: 0.16, metalness: 0.30, transparent: true, opacity: 0.82 });
   materials.waterJet = new THREE.MeshStandardMaterial({ color: 0xa9d7d7, roughness: 0.22, metalness: 0.05, transparent: true, opacity: 0.68 });
   const main = buildMainBuilding(root, groundOffset, materials), retail = buildRetailTerraces(root, groundOffset, materials);
-  const stair = buildGrandStair(root, groundOffset, materials), roundHouse = buildRoundHouse(root, groundOffset, materials), fountain = buildCourtyardFountain(root, groundOffset, materials);
-  const colliders = [...main.colliders, ...retail.colliders, ...roundHouse.colliders, ...fountain.colliders];
+  const stair = buildGrandStair(root, groundOffset, materials), roundHouse = buildRoundHouse(root, groundOffset, materials), planterStair = buildPlanterStair(root, groundOffset, materials), fountain = buildCourtyardFountain(root, groundOffset, materials);
+  const colliders = [...main.colliders, ...retail.colliders, ...roundHouse.colliders, ...planterStair.colliders, ...fountain.colliders];
   const landmarks = [HERITAGE_1881_COMPOUND, FWD_HOUSE_1881, ROUND_HOUSE_1881].map((site) => ({
     name: site.name, englishName: site.englishName, x: site.x, z: site.z, w: site.w, d: site.d,
     h: site === HERITAGE_1881_COMPOUND ? 26 : site.height, bounds: { ...site.bounds }, ring: site.ring, osmId: site.osmId,
     heightEvidence: site === FWD_HOUSE_1881 ? 'OSM height=26 retained as overall scene datum; AMO/photos confirm three current storeys' : site.photoDirected ? 'Photo-directed Round House and 1.83 m time ball' : 'Compound label; not a building height measurement',
   }));
   return {
-    root, groups: { main: main.group, retail: retail.group, stair: stair.group, roundHouse: roundHouse.group, fountain: fountain.group },
+    root, groups: { main: main.group, retail: retail.group, stair: stair.group, roundHouse: roundHouse.group, planterStair: planterStair.group, fountain: fountain.group },
     colliders, landmarks, groundOffset, sites: { compound: HERITAGE_1881_COMPOUND, mall: HERITAGE_1881_MALL, main: FWD_HOUSE_1881, roundHouse: ROUND_HOUSE_1881 },
     groundHeightAt: (x, z, ground) => heritage1881GroundHeightAt(x, z, heritage1881TerrainHeightAt(x, z, ground, groundOffset), groundOffset),
     stats: {
       heritage1881SourceCompound: true, heritage1881SourceMallLevels: 3, heritage1881SourceHotelLevelsTag: 2,
       heritage1881CurrentMainGalleries: 3, heritage1881Arches: main.arches + retail.arches + 16,
       heritage1881Balusters: main.balusters + 48, heritage1881MainStairSteps: stair.steps,
-      heritage1881RoundHouseCurvedSteps: roundHouse.curvedSteps, heritage1881RoundHouseOculi: roundHouse.oculi,
+      heritage1881PlanterCurvedSteps: planterStair.steps, heritage1881RoundHouseOculi: roundHouse.oculi,
       heritage1881TimeBallDiameter: HERITAGE_1881_HEIGHTS.timeBallDiameter, heritage1881FountainJets: fountain.jets,
       heritage1881Colliders: colliders.length,
     },

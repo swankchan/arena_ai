@@ -134,10 +134,11 @@ export const HERITAGE_1881_MAIN_STAIR = Object.freeze({
   site: FWD_HOUSE_1881, sourceEdge: 9, width: 14, topZ: 25.55, bottomZ: 44.6,
   rise: 12, steps: 36, evidence: 'Photo-directed central courtyard staircase on the Main Building south axis.',
 });
-export const ROUND_HOUSE_CURVED_STAIR = Object.freeze({
-  x: 1040, z: -1450, innerRadius: 5.35, outerRadius: 8, startAngle: Math.PI * 0.15,
-  sweep: Math.PI * 1.5, rise: 12, steps: 72,
-  evidence: 'Photo-directed curved exterior stair around the Round House bastion; entirely contained by the compound ring.',
+export const HERITAGE_1881_PLANTER_STAIR = Object.freeze({
+  x: 1052, z: -1460, innerRadius: 5.35, outerRadius: 8, startAngle: Math.PI * 0.2,
+  sweep: Math.PI, rise: 12, steps: 72,
+  landing: Object.freeze({ x: 1046.6, z: -1466.3, width: 2.5, depth: 5.8 }),
+  evidence: 'Photo-directed approximation on the separate tree planter east and north of the Round House; position, dimensions and steps are not surveyed.',
 });
 export const HERITAGE_1881_COURTYARD_RING = Object.freeze((() => {
   const ring = [];
@@ -160,7 +161,7 @@ export function heritage1881TerrainHeightAt(x, z, ground, padHeight) {
   return authoredTerrainHeightAt(HERITAGE_1881_GROUND_SITES, x, z, ground, padHeight);
 }
 
-// Walkable ground follows the actual central steps, upper retail terraces, Main Building courtyard and curved Round House stair.
+// Walkable ground follows the actual central steps, upper retail terraces, Main Building courtyard and curved tree-planter stair.
 // The simple-world caller keeps this entire query road-priority; there are no retained carriageway vertices inside these rings.
 export function heritage1881GroundHeightAt(x, z, ground, padHeight) {
   const local = authoredWorldToLocal(FWD_HOUSE_1881, x, z), stair = HERITAGE_1881_MAIN_STAIR;
@@ -169,17 +170,21 @@ export function heritage1881GroundHeightAt(x, z, ground, padHeight) {
     const step = Math.min(stair.steps - 1, Math.floor(t * stair.steps));
     return padHeight + stair.rise * (1 - step / stair.steps);
   }
-  const curved = ROUND_HOUSE_CURVED_STAIR, dx = x - curved.x, dz = z - curved.z, radius = Math.hypot(dx, dz);
-  if (radius < curved.innerRadius) return padHeight + curved.rise;
+  if (Math.hypot(x - ROUND_HOUSE_1881.x, z - ROUND_HOUSE_1881.z) <= 5.2) return padHeight + HERITAGE_1881_HEIGHTS.signalTowerBase;
+  const curved = HERITAGE_1881_PLANTER_STAIR, dx = x - curved.x, dz = z - curved.z, radius = Math.hypot(dx, dz);
+  // The planter is solid, not an elevated pedestrian surface.
   if (radius <= curved.outerRadius) {
-    let angle = Math.atan2(dz, dx); if (angle < 0) angle += Math.PI * 2;
-    const rawProgress = (angle - curved.startAngle) / curved.sweep;
+    const angle = Math.atan2(dz, dx);
+    const turn = Math.PI * 2;
+    const rawProgress = ((angle - curved.startAngle + turn) % turn) / curved.sweep;
     if (rawProgress >= -1e-9 && rawProgress <= 1 + 1e-9) {
       const progress = Math.max(0, Math.min(1, rawProgress));
       const step = Math.min(curved.steps - 1, Math.floor(progress * curved.steps));
       return padHeight + curved.rise * (step + 1) / curved.steps;
     }
   }
+  const landing = curved.landing;
+  if (Math.abs(x - landing.x) <= landing.width / 2 && Math.abs(z - landing.z) <= landing.depth / 2) return padHeight + curved.rise;
   if (pointInFlatRing(FWD_HOUSE_1881_INNER_RING, x, z)) return padHeight + HERITAGE_1881_HEIGHTS.terraceDatum;
   if (pointInFlatRing(HERITAGE_1881_MALL.ring, x, z)
     && !pointInFlatRing(FWD_HOUSE_1881.ring, x, z)

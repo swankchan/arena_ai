@@ -383,7 +383,7 @@ export function buildSimpleHongKongWorld(scene, { setStatus = () => {} } = {}) {
     const qgoGround = !groundUsesRoad ? qgo.groundHeightAt(x, z, ckc2Ground) : ckc2Ground;
     // Tamar keeps every original access road on its own profile below the civic buildings and Open Door.
     const centralGovernmentGround = !groundUsesRoad ? centralGovernment.groundHeightAt(x, z, qgoGround) : qgoGround;
-    // 1881's ceremonial steps, upper terraces and Round House curved stair remain walkable; roads keep priority.
+    // 1881's ceremonial steps, upper terraces and tree-planter curved stair remain walkable; roads keep priority.
     const heritage1881Ground = !groundUsesRoad ? heritage1881.groundHeightAt(x, z, centralGovernmentGround) : centralGovernmentGround;
     // The Arch's retained station roads keep their own profiles below the podium and 20 m tower bases.
     const theArchGround = !groundUsesRoad ? theArch.groundHeightAt(x, z, heritage1881Ground) : heritage1881Ground;

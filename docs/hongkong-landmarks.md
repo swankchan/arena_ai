@@ -1036,11 +1036,11 @@
 - **高度口径**：場景把主樓26 m來源值作為共享施工 datum 以上的整體主樓高度，**不再把12 m商場平台叠加成38 m**；這是明示的視覺整合口径，不冒稱實測工程標高。共享DTM施工 datum 為 **6.133281901137451 m**，可由來源中心及頂點重算。
 - **主樓手建細節**：按外環及內庭院環做廊道、12段弧形拱石，南面中央上兩層改為開放直楣廊道、柱頭、隅石、內外拱廊、露台欄杆及逐條扶手；中央地面入口和內庭院保持可進入。南端有深灰色雙坡屋頂、屋面縫、古典檐口及1881字牌，不是白色長方盒。
 - **商場與行走路線**：三層商場平台沿54點不規則來源環生成，中央樓梯井及南面五段 portal 實際留空。**36級**主樓大典禮樓梯連接上下平台；ground query 對每級、主樓內庭院及上層商場平台回傳相應高度，而非只有視覺樓梯。
-- **大包米訊號塔**：西南 Round House 沒有假稱取得獨立OSM footprint；其照片／地段導向圓平台及樓梯全部在主地段環內。手建石砌圓基座、16個拱形商舖、白色微錐塔身、**8個圓窗**、挑簷托座、淺圓頂、 **1.83 m時間球**、相鄰颱風桅杆及 **72級弧形外樓梯**。弧形樓梯ground同步逐級上升。
+- **大包米訊號塔**：西南 Round House 沒有假稱取得獨立OSM footprint；其照片／地段導向圓平台及樓梯全部在主地段環內。手建石砌圓基座、16個拱形商舖、白色微錐塔身、**8個圓窗**、挑簷托座、淺圓頂、 **1.83 m時間球**、相鄰颱風桅杆。照片顯示弧形樓梯位於訊號塔東北側的獨立樹池；現將 **72級示意樓梯**移到獨立樹池，ground 逐級同步，並加入連接上層平台的示意踏台。樹池位置和樓梯尺度非實測。
 - **庭院及日夜材質**：暖白石材、深色拱形玻璃、灰石板瓦、金屬時間球及少量夜間暖光分開；另有圓形花崗石噴泉、真水面及 **17支水柱**。全部為幾何／程序材質，研究照片已存入 references 資料夾，沒有成為遊戲貼圖。
 - **道路與街燈**：主樓及商場來源環沒有 retained road-centre 交點，無需搬路或降低建築；主樓、商場及訊號塔範圍的 clearance 後街燈衝突為 **0**。compound 外圍原有街燈不因地段邊界而盲目刪除。
 - **驗證**：`tests/heritage-1881.test.cjs` 驗證來源、平台、幾何有限性及碰撞抽樣。這是來源、ground、碰撞及Node幾何驗證，**不是瀏覽器畫面目測驗收**。
-- **仍未完成**：新查得的航拍顯示弧形樓梯繞鄰近樹池而非大包米訊號塔；現有位置及 ground query 必須重新定位，不能視為完成。馬廄及舊九龍消防局亦尚未獨立建立。參考圖片、來源、授權及缺口見 [1881 研究資料](../references/hongkong/1881-heritage/README.md)。
+- **仍未完成**：航拍顯示弧形樓梯繞鄰近樹池而非大包米訊號塔；現已按照片近似重定位，但上下平台接駁仍需遊戲內目視及行走驗證。馬廄及舊九龍消防局亦尚未獨立建立。參考圖片、來源、授權及缺口見 [1881 研究資料](../references/hongkong/1881-heritage/README.md)。
 - **資料**：古物古蹟辦事處 https://www.amo.gov.hk/en/historic-buildings/monuments/kowloon/monuments_51/index.html ；建築照片研究 https://fpf.ccidahk.gov.hk/en/location/detail.php?id=1546 ；時間球資料 https://www.cityintime.hk/en/article/tsim-sha-tsui-kowloon-park-drive-ca-1900/ ；OSM https://www.openstreetmap.org/way/184553178 及 https://www.openstreetmap.org/relation/2460795 。
 
 ## 九龍站凱旋門 `HK-KLN-ARCH`：四座住宅塔、真拱門中空及圓孔冠頂（2026-11-06）
@@ -1156,7 +1156,7 @@
 - `central-government-architecture.js`：添馬政府總部各獨立來源、西翼內空洞、高度口径、入口frames及道路records。
 - `central-government-world.js`：Open Door三層連接體、雙層幕牆、立法會disc／會議廳、行政長官辦公室、入口、道路portals、日夜材質、碰撞及stats。
 - `heritage-1881-architecture.js`：1881 compound／商場／主樓來源、現行三層證據、訊號塔及兩組步行樓梯ground。
-- `heritage-1881-world.js`：三層內外拱廊、拱石、欄杆、平台樓梯井、雙坡屋頂、Round House、時間球、颱風桅杆、噴泉及碰撞。
+- `heritage-1881-world.js`：三層內外拱廊、拱石、欄杆、平台樓梯井、雙坡屋頂、Round House、獨立樹池弧形樓梯、時間球、颱風桅杆、噴泉及碰撞。
 - `the-arch-architecture.js`：凱旋門地段／四座來源、道路走廊、Sun–Moon連接體及高度／樓層口径。
 - `the-arch-world.js`：銅紅露台、綠藍玻璃、道路安全基座、真拱門、高架會所、圓孔冠頂、碰撞及stats。
 - `sorrento-architecture.js`：擎天半島裙樓／五座曲翼來源、高度／層數、入口frame、道路records及DTM wrapper。

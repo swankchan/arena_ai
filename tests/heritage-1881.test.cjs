@@ -55,12 +55,12 @@ test('AMO current three-storey evidence is distinct from the stale OSM two-level
   assert.match(heritage.HERITAGE_1881_RESEARCH.monument, /amo\.gov\.hk/);
 });
 
-test('the photo-directed Round House and its complete curved stair remain inside the source compound', () => {
+test('the photo-directed Round House and the separately situated curved stair remain inside the source compound', () => {
   const tower = heritage.ROUND_HOUSE_1881;
   assert.equal(tower.photoDirected, true); assert.equal(tower.role, 'signal-tower');
   for (let i = 0; i < tower.ring.length; i += 2) assert.ok(inside(heritage.HERITAGE_1881_COMPOUND.ring, tower.ring[i], tower.ring[i + 1]));
   assert.ok(!inside(heritage.FWD_HOUSE_1881.ring, tower.x, tower.z));
-  const stair = heritage.ROUND_HOUSE_CURVED_STAIR;
+  const stair = heritage.HERITAGE_1881_PLANTER_STAIR;
   for (let i = 0; i <= 72; i++) for (const radius of [stair.innerRadius, stair.outerRadius]) {
     const angle = stair.startAngle + stair.sweep * i / 72;
     assert.ok(inside(heritage.HERITAGE_1881_COMPOUND.ring, stair.x + Math.cos(angle) * radius, stair.z + Math.sin(angle) * radius));
@@ -96,7 +96,7 @@ test('the shared 1881 DTM pad is reproducible and does not claim an engineering 
   assert.match(heritage.HERITAGE_1881_TERRAIN_RULE.padMethod, /no engineering survey claim/);
 });
 
-test('ground follows the 36 main steps, retail terraces, inner courtyard and 72 curved Round House steps', () => {
+test('ground follows the 36 main steps, retail terraces, inner courtyard and 72 curved planter steps', () => {
   const pad = 6.133281901137451, stair = heritage.HERITAGE_1881_MAIN_STAIR;
   const atHotel = (x, z) => authored.authoredLocalToWorld(heritage.FWD_HOUSE_1881, x, z);
   const top = atHotel(0, stair.topZ), bottom = atHotel(0, stair.bottomZ);
@@ -104,7 +104,7 @@ test('ground follows the 36 main steps, retail terraces, inner courtyard and 72 
   assert.ok(Math.abs(heritage.heritage1881GroundHeightAt(bottom.x, bottom.z, pad, pad) - (pad + 12 / 36)) < 1e-9);
   const terrace = atHotel(12, 30); assert.equal(heritage.heritage1881GroundHeightAt(terrace.x, terrace.z, pad, pad), pad + 12);
   const courtyard = atHotel(0, 0); assert.equal(heritage.heritage1881GroundHeightAt(courtyard.x, courtyard.z, pad, pad), pad + 12);
-  const curved = heritage.ROUND_HOUSE_CURVED_STAIR;
+  const curved = heritage.HERITAGE_1881_PLANTER_STAIR;
   let previous = -Infinity;
   for (let i = 0; i <= 72; i++) {
     const angle = curved.startAngle + curved.sweep * i / 72, radius = 6.6;
@@ -116,7 +116,7 @@ test('ground follows the 36 main steps, retail terraces, inner courtyard and 72 
 
 test('world source authors arches, verandahs, slate roof, stairs, Round House fittings and fountain without photo assets', () => {
   const world = fs.readFileSync(path.join(root, 'js/cities/hongkong/heritage-1881-world.js'), 'utf8');
-  for (const pattern of [/twelve-piece curved arch voussoirs/, /individual verandah balusters/, /hipped slate roof/, /36-step central ceremonial staircase/, /72 individual curved stone stair treads/, /eight oculi/, /1\.83 m hollow-copper time ball/, /typhoon-mast standing rigging/, /sixteen perimeter jets/, /source courtyard/]) assert.match(world, pattern);
+  for (const pattern of [/twelve-piece curved arch voussoirs/, /individual verandah balusters/, /hipped slate roof/, /36-step central ceremonial staircase/, /72 individual curved stair treads/, /eight oculi/, /1\.83 m hollow-copper time ball/, /typhoon-mast standing rigging/, /sixteen perimeter jets/, /source courtyard/]) assert.match(world, pattern);
   assert.doesNotMatch(world, /\.(?:jpg|jpeg|png|webp)|TextureLoader/);
 });
 
@@ -146,7 +146,7 @@ test('Node geometry is finite and densely authored, with no occupied collider in
   });
   assert.equal(nonFinite, 0); assert.ok(meshes >= 45); assert.ok(vertices > 350000);
   assert.ok(world.stats.heritage1881Arches > 600); assert.ok(world.stats.heritage1881Balusters > 900);
-  assert.equal(world.landmarks.length, 3); assert.equal(world.stats.heritage1881RoundHouseCurvedSteps, 72);
+  assert.equal(world.landmarks.length, 3); assert.equal(world.stats.heritage1881PlanterCurvedSteps, 72);
   const centre = authored.authoredLocalToWorld(heritage.FWD_HOUSE_1881, 0, 0);
   assert.deepEqual(occupied(world.colliders, centre.x, centre.z, 6.133281901137451 + 14), []);
 });
@@ -190,4 +190,40 @@ test('south main verandah uses open rectangular upper bays and night-aware glazi
   const source = fs.readFileSync(path.join(root, 'js/cities/hongkong/heritage-1881-world.js'), 'utf8');
   assert.match(source, /rectangular: \(edge, level\) => edge === 9 && level > 0/);
   assert.match(source, /openGallery: \(edge, level\) => edge === 9 && level > 0/);
+});
+
+test('relocated planter stair uses matching world-space tread and ground heights, away from tower and roads', async () => {
+  globalThis.document = { createElement: () => ({ width: 0, height: 0, getContext: () => ({ fillRect() {}, fillText() {} }) }) };
+  const THREE = await import('three/webgpu');
+  const { buildHeritage1881 } = await import('../js/cities/hongkong/heritage-1881-world.js');
+  const pad = terrain.heritage1881PadHeight(), scene = new THREE.Scene();
+  const world = buildHeritage1881(scene, { groundOffset: pad }); scene.updateMatrixWorld(true);
+  const stair = heritage.HERITAGE_1881_PLANTER_STAIR, tower = heritage.ROUND_HOUSE_1881;
+  assert.ok(stair.x > tower.x && stair.z < tower.z);
+  assert.ok(Math.hypot(stair.x - tower.x, stair.z - tower.z) > stair.outerRadius + 5.2);
+  assert.equal(world.groups.planterStair.position.x, stair.x); assert.equal(world.groups.planterStair.position.z, stair.z);
+  const mesh = world.groups.planterStair.getObjectByName('Tree planter — 72 individual curved stair treads'); assert.ok(mesh);
+  for (let i = 0; i < stair.steps; i++) {
+    const a = stair.startAngle + stair.sweep * (i + 0.5) / stair.steps;
+    const radius = (stair.innerRadius + stair.outerRadius) / 2;
+    const x = stair.x + Math.cos(a) * radius, z = stair.z + Math.sin(a) * radius;
+    const ray = new THREE.Raycaster(new THREE.Vector3(x, pad + 20, z), new THREE.Vector3(0, -1, 0));
+    const hit = ray.intersectObject(mesh)[0]; assert.ok(hit, `missing tread ${i}`);
+    const expected = heritage.heritage1881GroundHeightAt(x, z, pad, pad);
+    assert.ok(Math.abs(hit.point.y - expected) < 1e-5, `step ${i}: ${hit.point.y} != ${expected}`);
+    assert.deepEqual(occupied(world.colliders, x, z, expected + 0.8), [], `stair collider ${i}`);
+  }
+  const landing = stair.landing;
+  assert.equal(heritage.heritage1881GroundHeightAt(landing.x, landing.z, pad, pad), pad + stair.rise);
+  assert.deepEqual(occupied(world.colliders, landing.x, landing.z, pad + stair.rise + .8), []);
+  assert.ok(inside(heritage.HERITAGE_1881_MALL.ring, landing.x, landing.z - landing.depth / 2));
+  for (const [id, road] of roads.entries()) {
+    const points = road[5];
+    for (let i = 2; i < points.length; i += 2) {
+      const dx = points[i] - points[i-2], dz = points[i+1] - points[i-1];
+      const t = Math.max(0, Math.min(1, ((stair.x - points[i-2])*dx + (stair.z - points[i-1])*dz) / (dx*dx + dz*dz || 1)));
+      const d = Math.hypot(stair.x - points[i-2] - t*dx, stair.z - points[i-1] - t*dz);
+      assert.ok(d > stair.outerRadius + road[1]/2 + .35, `road ${id} reaches planter stair`);
+    }
+  }
 });
