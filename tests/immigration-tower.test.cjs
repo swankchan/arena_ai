@@ -18,3 +18,18 @@ test('road samples clear walls at vehicle height and mapped entrance is open',()
 test('scene integrates tower stats, colliders and landmark',()=>{
  const src=require('node:fs').readFileSync('js/cities/hongkong/simple-world.js','utf8');for(const p of [/buildImmigrationTower\(scene\)/,/\.\.\.immigrationTower\.stats/,/\.\.\.immigrationTower\.colliders/,/\.\.\.immigrationTower\.landmarks/])assert.match(src,p);
 });
+test('entrance and south projections follow the local terrain without blocking mapped road traffic',()=>{
+ const s=A.IMMIGRATION_TOWER_SITE,b=M.buildImmigrationTower(new T.Group());let min=Infinity,max=-Infinity,checked=0;
+ // A close grid covers the footprint and approach, not a claim about survey-level ground truth.
+ for(let x=-32;x<=25;x++)for(let z=-21;z<=21;z++){
+  const p=util.harbourCityLocalToWorld(s,x,z),y=terrain.hongKongTerrainHeight(p.x,p.z);min=Math.min(min,y);max=Math.max(max,y);
+  if(x>=-31&&x<=-25.5&&z>=-7&&z<=7 || x>=-8&&x<=22&&z>=21&&z<=23){
+   checked++;const r=road.fullRoadSurfaceAt(p.x,p.z,.2,y);
+   // The garden canopy underside is base+4.25; the street sloping panel starts at base+5.5.
+   if(r)assert.ok((x< -24?b.base+4.25:b.base+5.5)>=r.height+4.8);
+  }
+ }
+ assert.ok(checked>100);assert.ok(max-min<.05,`local DTM range ${min} to ${max}`);
+ const normal=util.harbourCityEdgeOutward(s.localRing,8),worldNorthZ=-Math.sin(s.ry)*normal.nx+Math.cos(s.ry)*normal.nz;
+ assert.ok(worldNorthZ<-.9,'roof sign faces north / harbour');
+});
