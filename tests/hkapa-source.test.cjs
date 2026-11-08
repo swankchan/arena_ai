@@ -49,3 +49,38 @@ test('existing inferred road ribbons do not intrude on the mapped outline', asyn
   });
   assert.deepEqual(conflicts, []);
 });
+
+test('constructed academy has separate driveway-clear volumes, facade bracing and TSL night windows', async () => {
+  const THREE = await import('three/webgpu');
+  const {buildHkapa} = await import('../js/cities/hongkong/hkapa-world.js');
+  const {hkapaPadHeight,rawHongKongTerrainHeight} = await import('../js/cities/hongkong/terrain.js');
+  const {HKAPA_ACADEMIC,HKAPA_THEATRE,HKAPA_WEST,hkapaTerrainHeightAt} = await import('../js/cities/hongkong/hkapa-architecture.js');
+  const {pointInFlatRing} = await import('../js/cities/hongkong/landmark-site.js');
+  const scene = new THREE.Scene(), model=buildHkapa(scene);
+  assert.equal(model.stats.hkapaSourceWay,117088641); assert.equal(model.stats.hkapaFacadeRows,4); assert.equal(model.stats.hkapaFacadeBays,6);
+  assert.ok(model.stats.hkapaVertices>3000); assert.equal(model.stats.hkapaNonFinite,0);
+  const find = name => { let found; model.root.traverse(o=>{if(o.name===name)found=o});return found; };
+  const windows=find('Academic individual lit and unlit glazing');
+  assert.ok(windows?.material.isMeshStandardNodeMaterial);assert.ok(windows.material.emissiveNode);assert.equal(windows.material.side,THREE.DoubleSide);
+  assert.ok(find('Academic facade triangular X-bracing')); assert.ok(find('Glazed atrium over open service drive'));
+  const path = [[114.1693111,22.2805117],[114.1695198,22.2803482],[114.1699742,22.2798758]].map(([lon,lat])=>xy({lon,lat}));
+  for(let seg=1;seg<path.length;seg++)for(let i=1;i<20;i++){
+    const t=i/20, x=path[seg-1][0]*(1-t)+path[seg][0]*t,z=path[seg-1][1]*(1-t)+path[seg][1]*t;
+    for(const site of [HKAPA_ACADEMIC,HKAPA_THEATRE,HKAPA_WEST]) assert.equal(pointInFlatRing(site.ring,x,z),false);
+    for(const c of model.colliders){const o=c.obb,dx=x-o.cx,dz=z-o.cz;assert.ok(Math.abs(dx*o.cs-dz*o.sn)>o.hx || Math.abs(dx*o.sn+dz*o.cs)>o.hz, `driveway collider at ${x},${z}`);}
+    const raw=rawHongKongTerrainHeight(x,z);assert.equal(hkapaTerrainHeightAt(x,z,raw,hkapaPadHeight()),raw);
+  }
+  assert.ok(Number.isFinite(hkapaPadHeight())); assert.ok(model.colliders.length>10);
+});
+
+test('main entrance gap and neighbouring street lamps remain unobstructed', async () => {
+  const THREE=await import('three/webgpu');const {buildHkapa}=await import('../js/cities/hongkong/hkapa-world.js');
+  const {hkapaPadHeight}=await import('../js/cities/hongkong/terrain.js');
+  const {HKAPA_ACADEMIC,HKAPA_THEATRE,HKAPA_WEST}=await import('../js/cities/hongkong/hkapa-architecture.js');
+  const {pointInFlatRing}=await import('../js/cities/hongkong/landmark-site.js');
+  const {HK_STREET_LIGHTS}=await import('../js/hk-street-light-data.js');const {HK_STREET_LIGHT_CLEARANCE}=await import('../js/hk-street-light-clearance-data.js');
+  const model=buildHkapa(new THREE.Scene()),entrance=xy(source.geometry.find(p=>p.id===6853998910)), y=hkapaPadHeight()+1.5;
+  for(const c of model.colliders) {if(y<c.minY||y>c.maxY)continue;const o=c.obb,dx=entrance[0]-o.cx,dz=entrance[1]-o.cz;assert.ok(Math.abs(dx*o.cs-dz*o.sn)>o.hx||Math.abs(dx*o.sn+dz*o.cs)>o.hz);}
+  const suppress=new Set(HK_STREET_LIGHT_CLEARANCE.suppressed), overrides=new Map(HK_STREET_LIGHT_CLEARANCE.overrides.map(r=>[r[0],r]));
+  for(let i=0;i<HK_STREET_LIGHTS.lamps.length;i++){if(suppress.has(i))continue;const lamp=HK_STREET_LIGHTS.lamps[i],o=overrides.get(i),x=lamp[0]+(o?.[1]||0)/100,z=lamp[1]+(o?.[2]||0)/100;for(const site of [HKAPA_ACADEMIC,HKAPA_THEATRE,HKAPA_WEST])assert.equal(pointInFlatRing(site.ring,x,z),false,`lamp ${i} inside building`);}
+});

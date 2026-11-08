@@ -1,3 +1,4 @@
+import { hkapaLotConflict } from './hkapa-architecture.js';
 import * as THREE from 'three/webgpu';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 import { GEO } from '../../hk-geodata.js';
@@ -455,7 +456,7 @@ export function buildDetailedHongKongWorld(scene, { setStatus = () => {} } = {})
     const w = Math.max(4, landmark.w || 0, Math.sqrt(landmark.area || 0));
     const d = Math.max(4, landmark.d || 0, Math.sqrt(landmark.area || 0));
     if (cityHallGenericLotConflict({ x: landmark.x, z: landmark.z, w, d, ry: 0 })) continue;
-    if (centralLibraryGenericLotConflict({ x: landmark.x, z: landmark.z, w, d, ry: 0 })) continue;
+    if (centralLibraryGenericLotConflict({ x: landmark.x, z: landmark.z, w, d, ry: 0 }) || hkapaLotConflict({ x: landmark.x, z: landmark.z, w, d, ry: 0 })) continue;
     landmarks.push({
       name, x: landmark.x, z: landmark.z, w, d, h: landmark.h,
       bounds: {
@@ -592,7 +593,7 @@ export function buildDetailedHongKongWorld(scene, { setStatus = () => {} } = {})
     if (area < 30) return;
     const x = lot.x, z = lot.z;
     if (cityHallGenericLotConflict(lot)) { skippedLots++; return; }
-    if (centralLibraryGenericLotConflict(lot)) { skippedLots++; return; }
+    if (hkapaLotConflict(lot) || centralLibraryGenericLotConflict(lot)) { skippedLots++; return; }
     if (landmarkAt(x, z)) { skippedLots++; return; }
     if (blockPark > 0.6) { skippedLots++; return; }
     lotCount++;
