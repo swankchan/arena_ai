@@ -25,3 +25,16 @@ test('active scene includes model, colliders, stats and landmark',()=>{
  const src=require('node:fs').readFileSync('js/cities/hongkong/simple-world.js','utf8');
  for(const re of [/buildMurray\(scene\)/,/\.\.\.murray\.stats/,/\.\.\.murray\.colliders/,/\.\.\.murray\.landmarks/,/murray\.landmarks\.length/])assert.match(src,re);
 });
+test('mapped Cassia tree and terrain-following courtyard',async()=>{
+ const C=await import('../js/cities/hongkong/murray-courtyard.js');
+ assert.equal(A.MURRAY_CASSIA.osmId,12718892293);assert.equal(A.MURRAY_CASSIA.height,17);
+ assert.ok(Math.abs(C.MURRAY_TREE_WORLD[0]-83.1565460692)<1e-6);assert.ok(Math.abs(C.MURRAY_TREE_WORLD[1]-431.9404893134)<1e-6);
+ assert.ok(b.courtyard.cells>100);assert.equal(b.stats.murrayCassiaTree,12718892293);
+ for(const name of ['The Murray Cassia forecourt paving','The Murray Cassia circular planter','The Murray Cassia planter soil','The Murray mapped Cassia tree trunk and branches','The Murray Cassia green canopy','The Murray Cassia illustrative blossoms'])assert.ok(b.group.getObjectByName(name),name);
+ const pos=b.group.getObjectByName('The Murray Cassia forecourt paving').geometry.getAttribute('position');
+ for(let i=0;i<pos.count;i+=6){
+  let x=0,z=0;for(const j of [0,2]){x+=pos.getX(i+j)/2;z+=pos.getZ(i+j)/2;}
+  const p=util.harbourCityLocalToWorld(A.MURRAY_SITE,x,z);assert.equal(road.fullRoadSurfaceAt(p.x,p.z,1.05,terrain.hongKongTerrainHeight(p.x,p.z)),null);
+  for(let j=0;j<6;j++){const p2=util.harbourCityLocalToWorld(A.MURRAY_SITE,pos.getX(i+j),pos.getZ(i+j));assert.ok(Math.abs(pos.getY(i+j)+b.datum-terrain.hongKongTerrainHeight(p2.x,p2.z)-.035)<.001);}
+ }
+});

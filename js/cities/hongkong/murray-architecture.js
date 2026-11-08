@@ -5,3 +5,6 @@ export const MURRAY_SOURCE=authoredOsmSource({id:85320844,version:14,sourceTimes
 ].map(([lat,lon])=>({lat,lon}))});
 // Foster + Partners project data: height 93.83m, 51.5 x 31.5m; floor count varies by source.
 export const MURRAY_SITE=makeAuthoredSite('murray','美利大廈','The Murray',MURRAY_SOURCE,{height:93.83,levels:25});
+// OSM node 12718892293 v3, © OpenStreetMap contributors, ODbL 1.0. The recorded height
+// is a map tag, not a current field measurement. Crown and planter dimensions are estimates.
+export const MURRAY_CASSIA = Object.freeze({osmId:12718892293,version:3,lat:22.2779993,lon:114.1604069,height:17,circumference:1.13,source:'https://www.openstreetmap.org/node/12718892293'});

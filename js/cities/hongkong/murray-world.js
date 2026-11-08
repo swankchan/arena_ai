@@ -1,3 +1,4 @@
+import {buildMurrayCourtyard} from './murray-courtyard.js';
 import * as THREE from 'three/webgpu';
 import {attribute} from 'three/tsl';
 import {MURRAY_SITE as SITE} from './murray-architecture.js';
@@ -105,6 +106,7 @@ export function buildMurray(scene){
  // Exterior sign: positioning is an estimate based on arrival photographs.
  const sign=makeCanvasSign(5.8,.8,(ctx,c)=>{ctx.clearRect(0,0,c.width,c.height);ctx.fillStyle='#e0c9a4';ctx.font=`${Math.floor(c.height*.62)}px sans-serif`;ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText('THE MURRAY',c.width/2,c.height/2);},{transparent:true,canvasWidth:768,canvasHeight:128});
  sign.position.set(0,7,D/2+.04);sign.name='The Murray exterior lettering';root.add(sign);
+ const courtyard=buildMurrayCourtyard(root,datum,colliders);
  const landmark={name:'美利大廈',englishName:'The Murray',x:SITE.x,z:SITE.z,w:SITE.w,d:SITE.d,h:93.83,ring:SITE.ring,bounds:SITE.bounds,osmId:SITE.osmId,kind:'landmark',labelHeight:false};
- return {group:root,colliders,landmarks:[landmark],datum,stats:{murrayOsm:SITE.osmId,murrayWindows:windows,murrayArches:arcades,murrayFloors:ROWS,murrayBase:datum}};
+ return {group:root,colliders,landmarks:[landmark],datum,courtyard,stats:{murrayOsm:SITE.osmId,murrayWindows:windows,murrayArches:arcades,murrayFloors:ROWS,murrayBase:datum,murrayCassiaTree:12718892293,murrayCourtyardCells:courtyard.cells}};
 }
