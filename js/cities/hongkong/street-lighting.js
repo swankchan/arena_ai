@@ -7,6 +7,7 @@ import { HK_STREET_LIGHT_CLEARANCE } from '../../hk-street-light-clearance-data.
 import { crossingSurfaceAt } from './crossings.js';
 import { surfaceRoadHeight } from './road-elevation.js';
 import { obrienLampConflicts } from './obrien-footbridge-architecture.js';
+import { peakTramAdjustedStreetLight } from './peak-tram-lamp-adjustments.js';
 
 export const HK_STREET_LIGHT_HEIGHT = 9.6;
 const ARM_REACH = 2.15;
@@ -107,7 +108,8 @@ export function createHongKongStreetLighting(root, { lamps = HK_STREET_LIGHTS.la
   for (let sourceIndex = 0; sourceIndex < lamps.length; sourceIndex++) {
     if (applyClearance && CLEARANCE_SUPPRESSED.has(sourceIndex)) continue;
     const lamp = lamps[sourceIndex], override = applyClearance ? CLEARANCE_OVERRIDES.get(sourceIndex) : null;
-    const x = lamp[0] + (override?.[1] || 0) / 100, z = lamp[1] + (override?.[2] || 0) / 100;
+    const railAdjustment = applyClearance ? peakTramAdjustedStreetLight(sourceIndex, lamp, override) : null;
+    const x = railAdjustment?.x ?? (lamp[0] + (override?.[1] || 0) / 100), z = railAdjustment?.z ?? (lamp[1] + (override?.[2] || 0) / 100);
     const heading = lamp[2], arms = lamp[3];
     if (![x, z, heading, arms].every(Number.isFinite) || ![1, 2].includes(arms)) throw new Error('Invalid street-light record');
     if (applyClearance && obrienLampConflicts(x,z,heading,arms)) { footbridgeSuppressed++; continue; }
