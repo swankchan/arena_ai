@@ -154,3 +154,13 @@ test('partition decorative joints do not cross the gallery openings',async()=>{
  const G=await import('../js/cities/hongkong/murray-gallery.js');const mesh=b.group.getObjectByName('The Murray lobby marble panel joints'),p=mesh.geometry.getAttribute('position');
  for(let i=0;i<p.count;i++)if((p.getX(i)>-9.9&&p.getX(i)<-6.1)||(p.getX(i)>6.1&&p.getX(i)<9.9))assert.ok(p.getY(i)<=G.MURRAY_GALLERY.floor+1e-5,'floating joint across gallery opening');
 });
+test('Garden Lounge entrance and central aisle remain walkable',async()=>{
+ const G=await import('../js/cities/hongkong/murray-gallery.js'),y=b.datum+G.MURRAY_GALLERY.floor;
+ for(const name of ['The Murray Garden Lounge glazing','The Murray Garden Lounge cream seating','The Murray Garden Lounge tables','The Murray Garden Lounge square pendant lights','The Murray Garden Lounge bronze framing'])assert.ok(b.group.getObjectByName(name),name);
+ function check(x,z){const p=util.harbourCityLocalToWorld(A.MURRAY_SITE,x,z);for(const c of b.colliders)if(y+1.75>=c.minY&&y+.1<=c.maxY)assert.equal(collision.colliderContains(c,p.x,p.z,.48),false,`blocked Garden Lounge ${x},${z}`);assert.ok(Math.abs(b.groundHeightAt(p.x,p.z,terrain.hongKongTerrainHeight(p.x,p.z),y)-y)<1e-6);}
+ for(let x=8;x>=0;x-=.05)check(x,4);
+ for(let z=-3.8;z<=17;z+=.05)check(0,z);
+ // A lower terrain reference must not snap upwards to the elevated garden floor.
+ const p=util.harbourCityLocalToWorld(A.MURRAY_SITE,0,10),ground=terrain.hongKongTerrainHeight(p.x,p.z);
+ assert.ok(y-ground>.4);assert.equal(b.groundHeightAt(p.x,p.z,ground,ground),ground);
+});

@@ -1,3 +1,4 @@
+import {buildMurrayGarden} from './murray-garden.js';
 import {buildMurrayStairs,murrayStairGroundHeight} from './murray-stairs.js';
 import {buildMurrayLift} from './murray-lift.js';
 import {MURRAY_GALLERY_LINK as LINK,MURRAY_GALLERY as G} from './murray-gallery.js';
@@ -122,6 +123,7 @@ export function buildMurray(scene){
  const interior=buildMurrayLobby(root,datum,colliders);
  const lift=buildMurrayLift(root,datum,colliders);
  const stairs=buildMurrayStairs(root,datum,colliders);
+ const garden=buildMurrayGarden(root,datum,colliders);
  for(const z of [-D/2,D/2])box(trims,[0,UPPER_TOP-.2,z],[W,.24,.18]);for(const x of [-W/2,W/2])box(trims,[x,UPPER_TOP-.2,0],[.18,.24,D]);
  merged(root,trims,black,'The Murray roof edge');
  // Exterior sign: positioning is an estimate based on arrival photographs.
@@ -129,5 +131,5 @@ export function buildMurray(scene){
  sign.position.set(0,7,D/2+.04);sign.name='The Murray exterior lettering';root.add(sign);
  const courtyard=buildMurrayCourtyard(root,datum,colliders);
  const landmark={name:'美利大廈',englishName:'The Murray',x:SITE.x,z:SITE.z,w:SITE.w,d:SITE.d,h:93.83,ring:SITE.ring,bounds:SITE.bounds,osmId:SITE.osmId,kind:'landmark',labelHeight:false};
- return {group:root,colliders,landmarks:[landmark],datum,courtyard,rampSection,interior,lift,stairs,groundHeightAt:(x,z,current,referenceY)=>murrayStairGroundHeight(x,z,lift.groundHeightAt(x,z,murrayLobbyGroundHeight(x,z,murrayRampGroundHeight(x,z,current,referenceY,datum),referenceY,datum),referenceY),referenceY,datum),stats:{murrayOsm:SITE.osmId,murrayWindows:windows,murrayArches:arcades,murrayFloors:ROWS,murrayBase:datum,murrayCassiaTree:12718892293,murrayCourtyardCells:courtyard.cells,murrayRampSegments:rampSection.segments,murrayLobbyRooms:1}};
+ return {group:root,colliders,landmarks:[landmark],datum,courtyard,rampSection,interior,lift,stairs,garden,groundHeightAt:(x,z,current,referenceY)=>murrayStairGroundHeight(x,z,lift.groundHeightAt(x,z,murrayLobbyGroundHeight(x,z,murrayRampGroundHeight(x,z,current,referenceY,datum),referenceY,datum),referenceY),referenceY,datum),stats:{murrayOsm:SITE.osmId,murrayWindows:windows,murrayArches:arcades,murrayFloors:ROWS,murrayBase:datum,murrayCassiaTree:12718892293,murrayCourtyardCells:courtyard.cells,murrayRampSegments:rampSection.segments,murrayLobbyRooms:1}};
 }

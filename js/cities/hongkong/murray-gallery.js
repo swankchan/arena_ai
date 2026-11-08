@@ -14,18 +14,21 @@ export const MURRAY_GALLERY=Object.freeze({floor:-.14,xInner:5.5,xOuter:10.5,zTu
 export const MURRAY_GALLERY_LINK=Object.freeze({x0:6.5,xFlat:10.5,x1:(R.x0+R.x1)/2,z0:20,z1:22.5});
 export function isMurrayGalleryLinkLocal(x,z){const l=MURRAY_GALLERY_LINK;return x>=l.x0&&x<=l.x1&&z>=l.z0&&z<=l.z1;}
 export function murrayGalleryLinkLocalHeight(x,z){const l=MURRAY_GALLERY_LINK,t=Math.max(0,Math.min(1,(x-l.xFlat)/(l.x1-l.xFlat)));return MURRAY_GALLERY.floor*(1-t)+murrayRampLocalHeight(z)*t;}
+// The Garden Lounge's placement is illustrative rather than an as-built survey.
+export const MURRAY_GARDEN=Object.freeze({x0:-5.5,x1:5.5,z0:-5,z1:18,door0:2,door1:6});
+export function isMurrayGardenLocal(x,z){const r=MURRAY_GARDEN;return x>=r.x0&&x<=r.x1&&z>=r.z0&&z<=r.z1;}
 export function isMurrayGalleryLocal(x,z){
  const g=MURRAY_GALLERY;
  if(x>=S.x0&&x<=S.x1&&z>=-18&&z<=S.z1)return false;
- return ((Math.abs(x)>=g.xInner&&Math.abs(x)<=g.xOuter&&z>=g.zTurn&&z<=g.zEnd)
+ return (isMurrayGardenLocal(x,z)||(Math.abs(x)>=g.xInner&&Math.abs(x)<=g.xOuter&&z>=g.zTurn&&z<=g.zEnd)
   ||(Math.abs(x)<=g.xOuter&&z>=g.zTurn-1.5&&z<=g.zTurn+2.5)
   ||(x>=-1.6&&x<=g.xInner&&z>=-13.5&&z<=-11.3));
 }
 export function murrayGalleryGroundHeight(x,z,current,ref,datum){
  const p=authoredWorldToLocal(SITE,x,z);
- if(isMurrayGalleryLinkLocal(p.x,p.z)){const y=datum+murrayGalleryLinkLocalHeight(p.x,p.z);return Math.abs(ref-y)<2.5?y:current;}
+ if(isMurrayGalleryLinkLocal(p.x,p.z)){const y=datum+murrayGalleryLinkLocalHeight(p.x,p.z);return ref>=y-.35&&ref<=y+2.5?y:current;}
  const y=datum+MURRAY_GALLERY.floor;
- return isMurrayGalleryLocal(p.x,p.z)&&Math.abs(ref-y)<2.5?y:current;
+ return isMurrayGalleryLocal(p.x,p.z)&&ref>=y-.35&&ref<=y+2.5?y:current;
 }
 export function buildMurrayGallery(root,datum,colliders){
  const g=MURRAY_GALLERY,y=g.floor,floors=[],joints=[],rails=[],posts=[];
@@ -45,12 +48,12 @@ export function buildMurrayGallery(root,datum,colliders){
  for(const x of [-10.5,10.5])wall(x,1,.1,38);
  wall(-5.5,1,.1,38);
  // Opening on the inner east rail leads to the lift bridge.
- wall(5.5,-15.75,.1,4.5);wall(5.5,4.25,.1,31.5);
+ wall(5.5,-15.75,.1,4.5);wall(5.5,-4.75,.1,13.5);wall(5.5,13,.1,14);
  wall(0,-21,21,.1);wall(0,-18,11,.1);
  wall(-8,20,5,.1);wall(6,20,1,.1);wall(10.25,20,.5,.1);
  // Bridge guardrails stop short of the lift opening and the adjoining gallery.
  wall(2.0,-13.5,7,.1);wall(3.6,-11.3,3.8,.1);
- for(const x of [-10.5,-5.5,5.5,10.5])for(let z=-17;z<20;z+=2){if(x===5.5&&z>-13.6&&z<-11.2)continue;box(posts,[x,y+.5,z],[.06,1,.06]);}
+ for(const x of [-10.5,-5.5,5.5,10.5])for(let z=-17;z<20;z+=2){if(x===5.5&&((z>-13.6&&z<-11.2)||(z>2&&z<6)))continue;box(posts,[x,y+.5,z],[.06,1,.06]);}
  for(let x=-10;x<=10;x+=2)box(posts,[x,y+.5,-21],[.06,1,.06]);
  const l=MURRAY_GALLERY_LINK,link=store();
  for(let z=l.z0;z<l.z1;z+=.5){const z1=Math.min(z+.5,l.z1);for(const [x0,x1] of [[l.x0,l.xFlat],[l.xFlat,l.x1]])quad(link,[x0,murrayGalleryLinkLocalHeight(x0,z),z],[x1,murrayGalleryLinkLocalHeight(x1,z),z],[x1,murrayGalleryLinkLocalHeight(x1,z1),z1],[x0,murrayGalleryLinkLocalHeight(x0,z1),z1],[.35,.36,.34]);}
