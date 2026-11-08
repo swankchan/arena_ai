@@ -18,3 +18,9 @@ Night observation: the [government film location listing](https://fpf.ccidahk.go
 ## Location and unresolved modelling checks
 
 Government location listing gives 22.280170930802736, 114.16940283782252. [OSM way 865670733](https://www.openstreetmap.org/way/865670733) identifies the university site; this is not yet verified as the actual building footprint. Neighbouring Arts Centre is OSM way 117088646 and must not be replaced. Site/building rings, height, road clearances, terrain, internal access road, canopy orientation, current rear elevations, night-light distribution and collisions need verification before integration. Existing runtime still needs an authored model, day/night integration, terrain/road coordination and tests; these notes do not claim a completed building.
+
+### Mapped outline and road audit
+
+OSM [way 117088641](https://www.openstreetmap.org/way/117088641), version 14, is the `building=university` outline, distinct from the larger university grounds way 865670733 and Arts Centre way 117088646. Its node coordinates and IDs are preserved in `tools/data/hongkong/hkapa-building-osm.json`; node 6853998910 is tagged as a main entrance. The outline is a mapped envelope, not an architectural survey; in particular it should not simply be extruded solid across the connected vehicle access or uniformly to one height.
+
+`tests/hkapa-source.test.cjs` checks the closed outline and calculates segment-to-polygon distances against the game's current inferred road ribbons with a 0.35 m margin. It finds no conflicts with the mapped overall envelope. This does **not** validate unbuilt photo-directed volumes, actual kerbs, lamps, ground heights, the internal driveway, the adjacent footbridge, or gameplay collision; those remain to be tested when the model exists.
