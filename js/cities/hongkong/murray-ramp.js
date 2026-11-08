@@ -1,4 +1,5 @@
 import * as THREE from 'three/webgpu';
+import {MURRAY_LOBBY as L} from './murray-lobby-site.js';
 import {MURRAY_SITE as SITE} from './murray-architecture.js';
 import {authoredWorldToLocal} from './authored-landmark-site.js';
 import {harbourCityLocalCollider} from './harbour-city-architecture.js';
@@ -25,6 +26,8 @@ export function buildMurrayRamp(root,datum,colliders){
   const z1=Math.min(z+1,r.z1),y=murrayRampLocalHeight(z),y1=murrayRampLocalHeight(z1);
   const shade=(z%4===0)?.34:.37;
   quad(tiles,[r.x0,y,z],[r.x1,y,z],[r.x1,y1,z1],[r.x0,y1,z1],[shade,shade*.99,shade*.94]);
+  // Leave a 3.6 m access opening to the tree-facing lobby.
+  if(z<L.doorMax && z1>L.doorMin)continue;
   // Panelled white parapet and thin bronze edge recall the converted ramp, not surveyed details.
   quad(panel,[r.x1,y-.16,z],[r.x1,y1-.16,z1],[r.x1,y1+.95,z1],[r.x1,y+.95,z],[.62,.63,.60]);
   beam(trim,[r.x1,y+.96,z],[r.x1,y1+.96,z1],.055,.055);

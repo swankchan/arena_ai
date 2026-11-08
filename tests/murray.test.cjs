@@ -49,3 +49,23 @@ test('ramp surface and height query agree and remain road-clear',async()=>{
  const p=util.harbourCityLocalToWorld(A.MURRAY_SITE,(x0+x1)/2,0);assert.equal(R.murrayRampGroundHeight(p.x,p.z,1,100,b.datum),1);
  const src=require('node:fs').readFileSync('js/cities/hongkong/simple-world.js','utf8');assert.match(src,/mode === 'person' && !groundUsesRoad \? murray\.groundHeightAt/);
 });
+test('tree-facing doorway has a continuous human-width approach and lobby floor',async()=>{
+ const S=await import('../js/cities/hongkong/murray-lobby-site.js');
+ const z=(S.MURRAY_LOBBY.doorMin+S.MURRAY_LOBBY.doorMax)/2;
+ for(let x=1;x<=16;x+=.1){
+  const p=util.harbourCityLocalToWorld(A.MURRAY_SITE,x,z),base=terrain.hongKongTerrainHeight(p.x,p.z),floor=b.groundHeightAt(p.x,p.z,base,b.interior.floor);
+  for(const c of b.colliders)if(floor+1.75>=c.minY&&floor+.1<=c.maxY)
+   assert.equal(collision.colliderContains(c,p.x,p.z,.48),false,`blocked at ${x.toFixed(1)} by ${JSON.stringify(c)}`);
+ }
+ for(const name of ['The Murray lobby polished dark stone floor','The Murray lobby marble joints and bronze inlay','The Murray lobby bronze slatted ceiling','The Murray lobby stone reception and partition','The Murray lobby lounge furniture'])assert.ok(b.group.getObjectByName(name),name);
+ const p=util.harbourCityLocalToWorld(A.MURRAY_SITE,0,-15);assert.equal(b.groundHeightAt(p.x,p.z,30,b.interior.floor),b.interior.floor);
+ assert.equal(S.murrayLobbyGroundHeight(p.x,p.z,30,b.interior.floor+10,b.datum),30);
+});
+test('lobby terrain cut stays within the building and off sampled roads',async()=>{
+ const S=await import('../js/cities/hongkong/murray-lobby-site.js'),cut=S.murrayLobbyTerrainCut();
+ const {subtractTunnelOpenings,polygonArea}=await import('../js/cities/hongkong/tunnel-openings.js');
+ const corners=[[-11,-22], [11,-22], [11,-8],[-11,-8]].map(([x,z])=>{const p=util.harbourCityLocalToWorld(A.MURRAY_SITE,x,z);return [p.x,p.z]});
+ assert.equal(subtractTunnelOpenings([corners[0],corners[1],corners[2]],[cut]).reduce((v,p)=>v+polygonArea(p),0),0);
+ for(let x=-11.5;x<=11.5;x+=.5)for(let z=-22.4;z<=-7.6;z+=.5){const p=util.harbourCityLocalToWorld(A.MURRAY_SITE,x,z);assert.equal(road.fullRoadSurfaceAt(p.x,p.z,0,b.interior.floor),null);}
+ const full=require('node:fs').readFileSync('js/cities/hongkong/full-world.js','utf8');assert.match(full,/includeCore \? \[\.\.\.TUNNEL_OPENING_RECTS, murrayLobbyTerrainCut\(\)\]/);
+});

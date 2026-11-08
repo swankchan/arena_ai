@@ -1,3 +1,5 @@
+import {MURRAY_LOBBY as L,isMurrayLobbyLocal,murrayLobbyGroundHeight} from './murray-lobby-site.js';
+import {buildMurrayLobby} from './murray-lobby-world.js';
 import {buildMurrayRamp,murrayRampGroundHeight} from './murray-ramp.js';
 import {buildMurrayCourtyard} from './murray-courtyard.js';
 import * as THREE from 'three/webgpu';
@@ -77,27 +79,36 @@ export function buildMurray(scene){
  }
  meshStore(root,concrete,material(.86),'The Murray precast facade grid');meshStore(root,reveals,material(.92),'The Murray deep skewed window reveals');meshStore(root,glass,material(.3,.3),'The Murray recessed angled glazing');
  meshStore(root,arches,material(.87),'The Murray open arched arcade');meshStore(root,archSoffit,material(.91),'The Murray curved arch intrados');merged(root,piers,stone,'The Murray arcade piers');
- // Inset lobby glazing keeps the arcade open but is not an explorable interior.
+ // The tree-facing east wall has a real opening, not a decorative door over a solid collider.
  for(const z of [-D/2+3,D/2-3]){
-  box(lobby,[0,5,z],[W-5,10,.18]);for(let x=-W/2+3;x<=W/2-3;x+=2.6)box(frames,[x,5,z+Math.sign(z)*.12],[.07,10,.08]);
+  box(lobby,[0,1.6,z],[W-5,16.8,.18]);for(let x=-W/2+3;x<=W/2-3;x+=2.6)box(frames,[x,1.6,z+Math.sign(z)*.12],[.07,16.8,.08]);
   box(frames,[0,5,z+Math.sign(z)*.12],[W-5,.09,.08]);
   colliders.push(harbourCityLocalCollider(SITE,0,z,W-5,.2,datum-7,datum+12));
  }
  for(const x of [-W/2+3,W/2-3]){
-  box(lobby,[x,5,0],[.18,10,D-6]);for(let z=-D/2+3;z<=D/2-3;z+=2.6)box(frames,[x+Math.sign(x)*.12,5,z],[.08,10,.07]);
+  if(x<0){box(lobby,[x,1.6,0],[.18,16.8,D-6]);colliders.push(harbourCityLocalCollider(SITE,x,0,.2,D-6,datum-7,datum+12));}
+  else {
+   const bounds=[[-(D-6)/2,L.doorMin],[L.doorMax,(D-6)/2]];
+   for(const [a,b] of bounds){box(lobby,[x,1.6,(a+b)/2],[.18,16.8,b-a]);colliders.push(harbourCityLocalCollider(SITE,x,(a+b)/2,.2,b-a,datum-7,datum+12));}
+   box(lobby,[x,3.9,(L.doorMin+L.doorMax)/2],[.18,12.2,L.doorMax-L.doorMin]);
+   colliders.push(harbourCityLocalCollider(SITE,x,(L.doorMin+L.doorMax)/2,.2,L.doorMax-L.doorMin,datum-2.2,datum+12));
+   for(const z of [L.doorMin,L.doorMax])box(frames,[x+.12,-3.6,z],[.12,3,.12]);
+   box(frames,[x+.12,-2.1,(L.doorMin+L.doorMax)/2],[.12,.12,L.doorMax-L.doorMin]);
+  }
+  for(let z=-D/2+3;z<=D/2-3;z+=2.6)if(x<0||z<L.doorMin-.1||z>L.doorMax+.1)box(frames,[x+Math.sign(x)*.12,1.6,z],[.08,16.8,.07]);
   box(frames,[x+Math.sign(x)*.12,5,0],[.08,.09,D-6]);
-  colliders.push(harbourCityLocalCollider(SITE,x,0,.2,D-6,datum-7,datum+12));
  }
  merged(root,lobby,dark,'The Murray recessed lobby glazing');merged(root,frames,bronze,'The Murray bronze lobby mullions');
  // Paving is sampled from the same terrain as the player, never raised over a roadway.
  for(let x=-W/2;x<W/2;x+=1)for(let z=-D/2;z<D/2;z+=1){
-  let x1=Math.min(x+1,W/2),z1=Math.min(z+1,D/2),w=authoredLocalToWorld(SITE,(x+x1)/2,(z+z1)/2),h=hongKongTerrainHeight(w.x,w.z);if(fullRoadSurfaceAt(w.x,w.z,.25,h))continue;
+  let x1=Math.min(x+1,W/2),z1=Math.min(z+1,D/2);if(isMurrayLobbyLocal((x+x1)/2,(z+z1)/2))continue;let w=authoredLocalToWorld(SITE,(x+x1)/2,(z+z1)/2),h=hongKongTerrainHeight(w.x,w.z);if(fullRoadSurfaceAt(w.x,w.z,.25,h))continue;
   const p=(xx,zz)=>{const pt=authoredLocalToWorld(SITE,xx,zz);return [xx,hongKongTerrainHeight(pt.x,pt.z)-datum+.025,zz];};
   const v=(Math.floor(x+W/2)+Math.floor(z+D/2))%4===0?.48:.50;quad(paving,p(x,z),p(x1,z),p(x1,z1),p(x,z1),[v,v,v*.95]);
  }
  meshStore(root,paving,material(.97),'The Murray terrain-following arcade paving',false);
  // One terrain-connected ramp section; the rest of the wrapped route remains to be built.
  const rampSection=buildMurrayRamp(root,datum,colliders);
+ const interior=buildMurrayLobby(root,datum,colliders);
  box(roof,[0,UPPER_TOP+.25,0],[W,.5,D]);box(roof,[0,UPPER_TOP+1.05,0],[W-3,1.1,D-3]);
  merged(root,roof,terrace,'The Murray roof terrace and parapet');
  for(const z of [-D/2,D/2])box(trims,[0,UPPER_TOP-.2,z],[W,.24,.18]);for(const x of [-W/2,W/2])box(trims,[x,UPPER_TOP-.2,0],[.18,.24,D]);
@@ -107,5 +118,5 @@ export function buildMurray(scene){
  sign.position.set(0,7,D/2+.04);sign.name='The Murray exterior lettering';root.add(sign);
  const courtyard=buildMurrayCourtyard(root,datum,colliders);
  const landmark={name:'美利大廈',englishName:'The Murray',x:SITE.x,z:SITE.z,w:SITE.w,d:SITE.d,h:93.83,ring:SITE.ring,bounds:SITE.bounds,osmId:SITE.osmId,kind:'landmark',labelHeight:false};
- return {group:root,colliders,landmarks:[landmark],datum,courtyard,rampSection,groundHeightAt:(x,z,current,referenceY)=>murrayRampGroundHeight(x,z,current,referenceY,datum),stats:{murrayOsm:SITE.osmId,murrayWindows:windows,murrayArches:arcades,murrayFloors:ROWS,murrayBase:datum,murrayCassiaTree:12718892293,murrayCourtyardCells:courtyard.cells,murrayRampSegments:rampSection.segments}};
+ return {group:root,colliders,landmarks:[landmark],datum,courtyard,rampSection,interior,groundHeightAt:(x,z,current,referenceY)=>murrayLobbyGroundHeight(x,z,murrayRampGroundHeight(x,z,current,referenceY,datum),referenceY,datum),stats:{murrayOsm:SITE.osmId,murrayWindows:windows,murrayArches:arcades,murrayFloors:ROWS,murrayBase:datum,murrayCassiaTree:12718892293,murrayCourtyardCells:courtyard.cells,murrayRampSegments:rampSection.segments,murrayLobbyRooms:1}};
 }
