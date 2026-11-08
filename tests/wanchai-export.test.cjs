@@ -47,3 +47,39 @@ test('isolated model geometry and transforms match the game tower', async () => 
     assert.deepEqual(b.geometry.index?.array, a.geometry.index?.array, `${a.name}: index`);
   }
 });
+
+test('experimental TSL JSON contains the node graph and a fixed night uniform', async () => {
+  const THREE = await import('three/webgpu');
+  const TSL = await import('three/tsl');
+  const { createWanchaiTslExport, createWanchaiExport } = await import('../js/exports/wanchai-export.runtime.js');
+  const json = JSON.parse(JSON.stringify(createWanchaiTslExport()));
+  assert.ok(json.materials.some(m => m.type === 'MeshStandardNodeMaterial' && m.inputNodes?.emissiveNode));
+  assert.ok(json.nodes.some(n => n.type === 'AttributeNode' && n._attributeName === 'aLit'));
+  assert.ok(json.nodes.some(n => n.type === 'UniformNode' && n.value === 1.4));
+  assert.ok(json.images[0].url.startsWith('data:image/png'));
+  // 187dev NodeObjectLoader assigns to the read-only Node.uuid. Wrap node types solely
+  // for this structural round-trip; this is not a test of the unmodified Editor.
+  const types = { ...THREE, ...TSL }, patchedNodes = {};
+  for (const { type } of json.nodes) {
+    assert.equal(typeof types[type], 'function', `missing node class ${type}`);
+    const Base = types[type];
+    patchedNodes[type] = class extends Base {
+      constructor() {
+        super();
+        Object.defineProperty(this, 'uuid', { value: this.uuid, writable: true, configurable: true });
+      }
+    };
+  }
+  const restored = new THREE.NodeObjectLoader().setNodes(patchedNodes).setNodeMaterials(THREE).parse(json);
+  const windows = restored.getObjectByName('Wanchai Tower ribbon windows and upper curtain wall');
+  const lamps = restored.getObjectByName('Wanchai Tower entrance night lights');
+  assert.equal(windows.material.type, 'MeshStandardNodeMaterial');
+  assert.equal(windows.material.colorNode.type, 'AttributeNode');
+  assert.equal(windows.material.emissiveNode.type, 'OperatorNode');
+  assert.equal(lamps.material.emissiveNode.type, 'OperatorNode');
+  assert.ok(restored.children.some(child => child.material.map));
+  assert.equal(restored.children.length, createWanchaiExport().object.children.length);
+  const html = readFileSync('index.html', 'utf8');
+  assert.match(html, /id="export-wanchai-tsl"/);
+  assert.match(html, /普通匯入器不支援 NodeMaterial/);
+});

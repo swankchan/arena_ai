@@ -73,8 +73,10 @@
       <p id="city-picker-status" class="city-picker-status" role="status" aria-live="polite" hidden></p>
       <section class="model-export" aria-labelledby="model-export-title">
         <h2 id="model-export-title">Three.js Editor 模型匯出（試驗）</h2>
-        <p>獨立下載灣仔政府大樓，不用進入香港。匯入 Editor 後可檢查模型；合併的窗戶未能逐個選取，動態夜燈不會保留。</p>
-        <button id="export-wanchai" type="button">下載灣仔政府大樓 JSON</button>
+        <p>獨立下載灣仔政府大樓，不用進入香港。合併的窗戶未能逐個選取。</p>
+        <button id="export-wanchai" type="button">下載普通材質 JSON（Editor 可匯入）</button>
+        <button id="export-wanchai-tsl" type="button">下載 TSL JSON（實驗）</button>
+        <p>TSL 版保留材質節點及固定夜景值，但 Three.js Editor r187 的普通匯入器不支援 NodeMaterial；不能直接在 Editor 還原夜燈，需相容的節點載入器。遊戲日夜控制亦不會跟隨。</p>
         <p id="model-export-status" role="status" aria-live="polite"></p>
       </section>
     </div>
