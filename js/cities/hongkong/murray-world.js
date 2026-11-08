@@ -1,5 +1,6 @@
 import {buildMurrayStairs,murrayStairGroundHeight} from './murray-stairs.js';
 import {buildMurrayLift} from './murray-lift.js';
+import {MURRAY_GALLERY_LINK as LINK,MURRAY_GALLERY as G} from './murray-gallery.js';
 import {MURRAY_LOBBY as L,isMurrayLobbyLocal,murrayLobbyGroundHeight} from './murray-lobby-site.js';
 import {buildMurrayLobby} from './murray-lobby-world.js';
 import {buildMurrayRamp,murrayRampGroundHeight} from './murray-ramp.js';
@@ -90,14 +91,22 @@ export function buildMurray(scene){
  for(const x of [-W/2+3,W/2-3]){
   if(x<0){box(lobby,[x,1.6,0],[.18,16.8,D-6]);colliders.push(harbourCityLocalCollider(SITE,x,0,.2,D-6,datum-7,datum+12));}
   else {
-   const bounds=[[-(D-6)/2,L.doorMin],[L.doorMax,(D-6)/2]];
+   const bounds=[[-(D-6)/2,L.doorMin],[L.doorMax,LINK.z0]];
    for(const [a,b] of bounds){box(lobby,[x,1.6,(a+b)/2],[.18,16.8,b-a]);colliders.push(harbourCityLocalCollider(SITE,x,(a+b)/2,.2,b-a,datum-7,datum+12));}
+   // Upper opening for the provisional gallery-to-ramp connection.
+   const openingBottom=G.floor-.55,openingTop=G.floor+2.8,zc=(LINK.z0+LINK.z1)/2,zd=LINK.z1-LINK.z0;
+   box(lobby,[x,(-6.8+openingBottom)/2,zc],[.18,openingBottom+6.8,zd]);
+   box(lobby,[x,(10+openingTop)/2,zc],[.18,10-openingTop,zd]);
+   colliders.push(harbourCityLocalCollider(SITE,x,zc,.2,zd,datum-7,datum+openingBottom));
+   colliders.push(harbourCityLocalCollider(SITE,x,zc,.2,zd,datum+openingTop,datum+12));
+   for(const z of [LINK.z0,LINK.z1])box(frames,[x+.12,(openingBottom+openingTop)/2,z],[.12,openingTop-openingBottom,.12]);
+   box(frames,[x+.12,openingTop,zc],[.12,.12,zd]);
    box(lobby,[x,3.9,(L.doorMin+L.doorMax)/2],[.18,12.2,L.doorMax-L.doorMin]);
    colliders.push(harbourCityLocalCollider(SITE,x,(L.doorMin+L.doorMax)/2,.2,L.doorMax-L.doorMin,datum-2.2,datum+12));
    for(const z of [L.doorMin,L.doorMax])box(frames,[x+.12,-3.6,z],[.12,3,.12]);
    box(frames,[x+.12,-2.1,(L.doorMin+L.doorMax)/2],[.12,.12,L.doorMax-L.doorMin]);
   }
-  for(let z=-D/2+3;z<=D/2-3;z+=2.6)if(x<0||z<L.doorMin-.1||z>L.doorMax+.1)box(frames,[x+Math.sign(x)*.12,1.6,z],[.08,16.8,.07]);
+  for(let z=-D/2+3;z<=D/2-3;z+=2.6)if(x<0||((z<L.doorMin-.1||z>L.doorMax+.1)&&(z<LINK.z0-.1||z>LINK.z1+.1)))box(frames,[x+Math.sign(x)*.12,1.6,z],[.08,16.8,.07]);
   box(frames,[x+Math.sign(x)*.12,5,0],[.08,.09,D-6]);
  }
  merged(root,lobby,dark,'The Murray recessed lobby glazing');merged(root,frames,bronze,'The Murray bronze lobby mullions');

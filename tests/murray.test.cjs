@@ -141,3 +141,12 @@ test('27 stair treads connect the lobby to the gallery at human-width clearance'
  for(let z=s.z1+.1;z<=-10;z+=.1)check(x,z,b.datum+G.MURRAY_GALLERY.floor);
  for(const name of ['The Murray garden stair marble treads','The Murray garden stair bronze nosings','The Murray garden stair handrails'])assert.ok(b.group.getObjectByName(name),name);
 });
+test('provisional gallery link meets ramp and preserves pedestrian clearance',async()=>{
+ const G=await import('../js/cities/hongkong/murray-gallery.js'),R=await import('../js/cities/hongkong/murray-ramp.js'),l=G.MURRAY_GALLERY_LINK,z=(l.z0+l.z1)/2;
+ assert.ok(b.group.getObjectByName('The Murray provisional gallery ramp link'));
+ function check(x,z,y){const p=util.harbourCityLocalToWorld(A.MURRAY_SITE,x,z);for(const c of b.colliders)if(y+1.75>=c.minY&&y+.1<=c.maxY)assert.equal(collision.colliderContains(c,p.x,p.z,.48),false,`blocked link ${x.toFixed(2)},${z.toFixed(2)} ${JSON.stringify(c)}`);const surface=b.groundHeightAt(p.x,p.z,terrain.hongKongTerrainHeight(p.x,p.z),y);assert.ok(Math.abs(surface-y)<1e-5,`link surface ${x},${z}: ${surface} vs ${y}`);}
+ for(let zz=19;zz<z;zz+=.05)check(8,zz,b.datum+G.MURRAY_GALLERY.floor);
+ for(let x=8;x<=l.x1;x+=.05)check(x,z,b.datum+G.murrayGalleryLinkLocalHeight(x,z));
+ assert.ok(Math.abs(G.murrayGalleryLinkLocalHeight(l.x1,z)-R.murrayRampLocalHeight(z))<1e-9);
+ for(let zz=l.z0+.1;zz<l.z1-.1;zz+=.1){const p=util.harbourCityLocalToWorld(A.MURRAY_SITE,l.x1,zz),y=b.datum+R.murrayRampLocalHeight(zz);assert.ok(Math.abs(b.groundHeightAt(p.x,p.z,terrain.hongKongTerrainHeight(p.x,p.z),y)-y)<1e-6);}
+});
