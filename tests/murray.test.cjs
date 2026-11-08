@@ -150,3 +150,7 @@ test('provisional gallery link meets ramp and preserves pedestrian clearance',as
  assert.ok(Math.abs(G.murrayGalleryLinkLocalHeight(l.x1,z)-R.murrayRampLocalHeight(z))<1e-9);
  for(let zz=l.z0+.1;zz<l.z1-.1;zz+=.1){const p=util.harbourCityLocalToWorld(A.MURRAY_SITE,l.x1,zz),y=b.datum+R.murrayRampLocalHeight(zz);assert.ok(Math.abs(b.groundHeightAt(p.x,p.z,terrain.hongKongTerrainHeight(p.x,p.z),y)-y)<1e-6);}
 });
+test('partition decorative joints do not cross the gallery openings',async()=>{
+ const G=await import('../js/cities/hongkong/murray-gallery.js');const mesh=b.group.getObjectByName('The Murray lobby marble panel joints'),p=mesh.geometry.getAttribute('position');
+ for(let i=0;i<p.count;i++)if((p.getX(i)>-9.9&&p.getX(i)<-6.1)||(p.getX(i)>6.1&&p.getX(i)<9.9))assert.ok(p.getY(i)<=G.MURRAY_GALLERY.floor+1e-5,'floating joint across gallery opening');
+});

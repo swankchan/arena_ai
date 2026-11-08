@@ -51,7 +51,11 @@ export function buildMurrayLobby(root,datum,colliders){
   box(walls,[(a+b)/2,(lowTop+highTop)/2,L.z1],[b-a,highTop-lowTop,.2]);
   colliders.push(harbourCityLocalCollider(SITE,(a+b)/2,L.z1,b-a,.2,datum+lowTop,datum+highTop));
  }
- for(let x=-10;x<=10;x+=2.5)box(wallJoints,[x,-.9,L.z1-.11],[.025,8.1,.018]);
+ for(let x=-10;x<=10;x+=2.5){
+  // Do not draw a decorative joint across either gallery doorway.
+  if((x>-10&&x<-6)||(x>6&&x<10))box(wallJoints,[x,(y+lowTop)/2,L.z1-.11],[.025,lowTop-y,.018]);
+  else box(wallJoints,[x,(y+highTop)/2,L.z1-.11],[.025,highTop-y,.018]);
+ }
  for(const z of [-19.5,-9.8]){box(counter,[4,y+.53,z],[1.2,1.06,2.1]);box(countertops,[4,y+1.09,z],[1.6,.12,2.3]);box(lines,[4,y+1.02,z],[1.65,.06,2.35]);}
  for(const z of [cz-4,cz+4]){box(furniture,[-3,y+.47,z],[2,.42,.85]);box(furniture,[-3,y+.83,z-.37],[2,.75,.12]);for(const x of [-3.9,-2.1]){box(furniture,[x,y+.70,z],[.16,.50,.85]);for(const zz of [-.3,.3])box(legs,[x,y+.19,z+zz],[.06,.38,.06]);}}
  // Decorative beaded form, not a literal reconstruction of the commissioned artwork.
