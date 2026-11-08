@@ -82,3 +82,18 @@ test('A5 upper approach stays continuous and guarded before the unbuilt station'
  assert.ok(b.colliders.some(c=>c.minY<h+1.6&&c.maxY>h+.2&&coll.colliderContains(c,end.x,end.z)));
  for(let i=0;i<=100;i++)for(let o=-3.6;o<=3.61;o+=.6){const t=i/100,x=a.x+dx*t-dz/L*o,z=a.z+dz*t+dx/L*o,r=road.fullRoadSurfaceAt(x,z,.2,5);if(r)assert.ok(h-A.OBRIEN_SLAB-r.height>=4.8);}
 });
+test('A5 street stair connects local terrain to bridge without mapped traffic collisions',()=>{
+ const b=W.buildObrienFootbridge(new T.Group()),s=A.WANCHAI_A5_STAIR,top=s.top,bottom=s.bottom,h=A.OBRIEN_DECK_HEIGHT,g=terrain.hongKongTerrainHeight(bottom.x,bottom.z),dx=top.x-bottom.x,dz=top.z-bottom.z,L=Math.hypot(dx,dz);let previous=g, roadSamples=0;
+ for(const n of ['Wan Chai A5 street stairs','Wan Chai A5 stair canopy','Wan Chai A5 stair rails','Wan Chai A5 stair night lights'])assert.ok(b.group.getObjectByName(n),n);
+ assert.equal(s.way,963983633);assert.ok(b.group.getObjectByName('Wan Chai A5 stair night lights').material.emissiveNode);
+ for(let i=0;i<=200;i++){
+  let t=i/200,x=bottom.x+dx*t,z=bottom.z+dz*t,y=b.groundHeightAt(x,z,g,previous);
+  assert.ok(y>=previous-1e-7&&y-previous<.06);previous=y;
+  assert.ok(!b.colliders.some(c=>c.minY<y+1.6&&c.maxY>y+.2&&coll.colliderContains(c,x,z,.25)),`blocked on step ${i}`);
+  for(let o=-1.35;o<=1.36;o+=.15){let px=x-dz/L*o,pz=z+dx/L*o,r=road.fullRoadSurfaceAt(px,pz,.2,g);if(r){roadSamples++;assert.ok(g+(h-g)*t-.35-r.height>=4.8,`road conflict ${t} ${o}`);}}
+ }
+ assert.equal(previous,h);
+ for(let i=0;i<=100;i++){let t=i/100,x=top.x+(A.WANCHAI_A5_APPROACH.start.x-top.x)*t,z=top.z+(A.WANCHAI_A5_APPROACH.start.z-top.z)*t;assert.equal(b.groundHeightAt(x,z,g,h),h);assert.ok(!b.colliders.some(c=>c.minY<h+1.6&&c.maxY>h+.2&&coll.colliderContains(c,x,z,.25)),`bridge junction blocked ${t}`);}
+ // No road ribbon intersects the stair footprint in this source dataset.
+ assert.equal(roadSamples,0);
+});

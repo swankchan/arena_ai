@@ -5,7 +5,7 @@ import { segmentWall } from './colliders.js';
 import { hongKongTerrainHeight } from './terrain.js';
 import { fullRoadSurfaceAt } from './full-meta.js';
 import { makeCanvasSign } from './tst-hotel-world-utils.js';
-import { OBRIEN_ROUTE as route, OBRIEN_STAIR as stair, OBRIEN_WIDTH as width, OBRIEN_DECK_HEIGHT as deck, OBRIEN_SLAB as slab, OBRIEN_STAIR_WIDTH as stairWidth, obrienFootbridgeGroundHeight, CENTRAL_PLAZA_LINK as plazaLink, WANCHAI_A5_APPROACH as a5 } from './obrien-footbridge-architecture.js';
+import { OBRIEN_ROUTE as route, OBRIEN_STAIR as stair, OBRIEN_WIDTH as width, OBRIEN_DECK_HEIGHT as deck, OBRIEN_SLAB as slab, OBRIEN_STAIR_WIDTH as stairWidth, obrienFootbridgeGroundHeight, CENTRAL_PLAZA_LINK as plazaLink, WANCHAI_A5_APPROACH as a5, WANCHAI_A5_STAIR as a5Stair, WANCHAI_A5_DECK as a5Deck } from './obrien-footbridge-architecture.js';
 
 export function buildObrienFootbridge(scene){
  const group=new THREE.Group();group.name="O'Brien Road Footbridge HF95";scene.add(group);
@@ -33,14 +33,14 @@ export function buildObrienFootbridge(scene){
   for(const side of [-1,1]){
    for(let i=0;i<n;i++){
     let t=(i+.5)/n,x=a.x+dx*t+nx*side*w/2,z=a.z+dz*t+nz*side*w/2;
-    const junction=Math.hypot(x-stair.junction.x,z-stair.junction.z)<4.8;
+    const junction=Math.hypot(x-stair.junction.x,z-stair.junction.z)<4.8 || Math.hypot(x-a5Stair.top.x,z-a5Stair.top.z)<2.1;
     if(junction)continue;
     beam(rails,[x,deck,z],[x,deck+1.15,z],.05);
    }
    // Short beam pieces likewise leave the branch opening, not just the vertical bars.
    for(let i=0;i<n;i++){
     let t=(i+.5)/n,x=a.x+dx*t+nx*side*w/2,z=a.z+dz*t+nz*side*w/2;
-    if(Math.hypot(x-stair.junction.x,z-stair.junction.z)<4.8)continue;
+    if(Math.hypot(x-stair.junction.x,z-stair.junction.z)<4.8 || Math.hypot(x-a5Stair.top.x,z-a5Stair.top.z)<2.1)continue;
     const t0=i/n,t1=(i+1)/n;for(const y of [deck+.16,deck+1.15])beam(rails,[a.x+dx*t0+nx*side*w/2,y,a.z+dz*t0+nz*side*w/2],[a.x+dx*t1+nx*side*w/2,y,a.z+dz*t1+nz*side*w/2],.065);
     const c=segmentWall(a.x+dx*t0+nx*side*w/2,a.z+dz*t0+nz*side*w/2,a.x+dx*t1+nx*side*w/2,a.z+dz*t1+nz*side*w/2,{thickness:.07,base:deck,maxY:deck+1.2,top:deck+1.2});if(c)colliders.push(c);
    }
@@ -62,12 +62,14 @@ export function buildObrienFootbridge(scene){
  for(let i=0;i<route.length-1;i++)line(route[i],route[i+1]);
  // A5 upper approach. The unmapped underground concourse and escalator are
  // intentionally blocked off; do not let the player fall through the deck.
- line(a5.start,a5.end,width,true,false);
  const adx=a5.end.x-a5.start.x,adz=a5.end.z-a5.start.z,al=Math.hypot(adx,adz),anx=-adz/al,anz=adx/al;
+ // A narrower station-side deck leaves room for the separate street stairs.
+ line(a5.start,a5Deck.split,width,true,false);
+ line(a5Deck.shiftedSplit,a5Deck.shiftedEnd,a5Deck.width,true,false);
  const terminal=[];
- for(let i=0;i<=12;i++){const o=(i/12-.5)*width,x=a5.end.x+anx*o,z=a5.end.z+anz*o;beam(terminal,[x,deck,z],[x,deck+1.15,z],.05);}
- for(const y of [deck+.16,deck+1.15])beam(terminal,[a5.end.x-anx*width/2,y,a5.end.z-anz*width/2],[a5.end.x+anx*width/2,y,a5.end.z+anz*width/2],.07);
- const endGuard=segmentWall(a5.end.x-anx*width/2,a5.end.z-anz*width/2,a5.end.x+anx*width/2,a5.end.z+anz*width/2,{thickness:.07,base:deck,top:deck+1.2});if(endGuard)colliders.push(endGuard);
+ for(let i=0;i<=12;i++){const o=(i/12-.5)*a5Deck.width,x=a5Deck.shiftedEnd.x+anx*o,z=a5Deck.shiftedEnd.z+anz*o;beam(terminal,[x,deck,z],[x,deck+1.15,z],.05);}
+ for(const y of [deck+.16,deck+1.15])beam(terminal,[a5Deck.shiftedEnd.x-anx*a5Deck.width/2,y,a5Deck.shiftedEnd.z-anz*a5Deck.width/2],[a5Deck.shiftedEnd.x+anx*a5Deck.width/2,y,a5Deck.shiftedEnd.z+anz*a5Deck.width/2],.07);
+ const endGuard=segmentWall(a5Deck.shiftedEnd.x-anx*a5Deck.width/2,a5Deck.shiftedEnd.z-anz*a5Deck.width/2,a5Deck.shiftedEnd.x+anx*a5Deck.width/2,a5Deck.shiftedEnd.z+anz*a5Deck.width/2,{thickness:.07,base:deck,top:deck+1.2});if(endGuard)colliders.push(endGuard);
  merged(group,terminal,steel,'Wan Chai A5 provisional end barrier');
  const a5Sign=makeCanvasSign(5.2,.8,(ctx,c)=>{ctx.fillStyle='#222728';ctx.fillRect(0,0,c.width,c.height);ctx.fillStyle='#e1e3db';ctx.textAlign='center';ctx.textBaseline='middle';ctx.font='bold 105px sans-serif';ctx.fillText('灣仔站  Wan Chai Station   A5',c.width/2,c.height/2,c.width*.94);});
  a5Sign.position.set(a5.end.x,deck+2.85,a5.end.z);a5Sign.rotation.y=Math.atan2(-adx,-adz);a5Sign.name='Wan Chai A5 upper landing sign';group.add(a5Sign);
@@ -76,6 +78,25 @@ export function buildObrienFootbridge(scene){
  line(plazaLink.start,plazaLink.end,plazaLink.width,true,false);
  // Narrow uncovered connector between main bridge and the surveyed stair way.
  line(stair.top,stair.junction,stairWidth,false);
+ // Covered side stairs to O'Brien Road near the station (OSM 963983633).
+ // There is no measured elevation; bottom matches terrain, top the bridge.
+ const aground=hongKongTerrainHeight(a5Stair.bottom.x,a5Stair.bottom.z),sdx=a5Stair.top.x-a5Stair.bottom.x,sdz=a5Stair.top.z-a5Stair.bottom.z,slen=Math.hypot(sdx,sdz),srot=Math.atan2(-sdz,sdx),snx=-sdz/slen,snz=sdx/slen;
+ const a5Steps=[],a5Roof=[],a5Rails=[],a5Nosings=[],a5Lights=[],scount=Math.ceil((deck-aground)/.17);
+ for(let i=0;i<scount;i++){
+  const t=(i+.5)/scount,y=aground+(deck-aground)*(i+1)/scount;
+  box(a5Steps,[a5Stair.bottom.x+sdx*t,y-.08,a5Stair.bottom.z+sdz*t],[slen/scount+.02,.16,a5Stair.width],srot);
+  const u=(i+1)/scount,x=a5Stair.bottom.x+sdx*u,z=a5Stair.bottom.z+sdz*u;
+  beam(a5Nosings,[x-snx*(a5Stair.width/2-.03),y+.008,z-snz*(a5Stair.width/2-.03)],[x+snx*(a5Stair.width/2-.03),y+.008,z+snz*(a5Stair.width/2-.03)],.025,.035);
+ }
+ const srise=deck-aground,sgeo=new THREE.BoxGeometry(Math.hypot(slen,srise)+.05,.18,a5Stair.width+.25);
+ sgeo.rotateZ(Math.atan2(srise,slen));sgeo.rotateY(srot);sgeo.translate((a5Stair.top.x+a5Stair.bottom.x)/2,(aground+deck)/2+3.45,(a5Stair.top.z+a5Stair.bottom.z)/2);a5Roof.push(sgeo);
+ for(const side of [-1,1]){
+  const a=[a5Stair.bottom.x+snx*side*a5Stair.width/2,aground+1,a5Stair.bottom.z+snz*side*a5Stair.width/2],b=[a5Stair.top.x+snx*side*a5Stair.width/2,deck+1,a5Stair.top.z+snz*side*a5Stair.width/2];beam(a5Rails,a,b,.07);
+  const n=Math.ceil(slen/1.2);for(let i=0;i<n;i++){const t=i/n,u=(i+1)/n,c=segmentWall(a[0]+(b[0]-a[0])*t,a[2]+(b[2]-a[2])*t,a[0]+(b[0]-a[0])*u,a[2]+(b[2]-a[2])*u,{thickness:.045,base:aground+srise*t,top:aground+srise*u+1.1});if(c)colliders.push(c);}
+  for(let t=.1;t<1;t+=.2){let x=a[0]+(b[0]-a[0])*t,z=a[2]+(b[2]-a[2])*t,y=aground+srise*t;beam(a5Rails,[x,y,z],[x,y+3.35,z],.08);}
+ }
+ for(let t=.1;t<1;t+=.2)box(a5Lights,[a5Stair.bottom.x+sdx*t,aground+srise*t+3.32,a5Stair.bottom.z+sdz*t],[.6,.035,.24],srot);
+ merged(group,a5Steps,stone,'Wan Chai A5 street stairs');merged(group,a5Roof,roofMat,'Wan Chai A5 stair canopy');merged(group,a5Rails,steel,'Wan Chai A5 stair rails');merged(group,a5Nosings,seam,'Wan Chai A5 stair nosings',false);merged(group,a5Lights,lamp,'Wan Chai A5 stair night lights',false);
  const ground=hongKongTerrainHeight(stair.bottom.x,stair.bottom.z),dx=stair.top.x-stair.bottom.x,dz=stair.top.z-stair.bottom.z,L=Math.hypot(dx,dz),rot=Math.atan2(-dz,dx),nx=-dz/L,nz=dx/L;
  const count=Math.ceil((deck-ground)/.17),stepRun=L/count;
  for(let i=0;i<count;i++){
@@ -106,5 +127,5 @@ export function buildObrienFootbridge(scene){
  }
  merged(group,decks,stone,'HF95 concrete deck');merged(group,roofs,roofMat,'HF95 covered canopy');merged(group,stairRoof,roofMat,'HF95 stair canopy');merged(group,rails,steel,'HF95 balustrades');merged(group,posts,steel,'HF95 canopy supports');
  merged(group,joints,seam,'HF95 paving joints',false);merged(group,stairNosing,seam,'HF95 stair nosings',false);merged(group,stairLights,lamp,'HF95 stair night lights',false);merged(group,lights,lamp,'HF95 night ceiling luminaires',false);merged(group,tactile,yellow,'HF95 tactile guidance strips',false);merged(group,piers,stone,'HF95 road-safe piers');merged(group,steps,stone,'HF95 OSM access stairs');
- return {group,colliders,landmarks:[],groundHeightAt:(x,z,current,ref)=>obrienFootbridgeGroundHeight(x,z,current,ref,ground),stats:{obrienFootbridgeSegments:route.length-1,obrienFootbridgeStairSteps:count}};
+ return {group,colliders,landmarks:[],groundHeightAt:(x,z,current,ref)=>obrienFootbridgeGroundHeight(x,z,current,ref,ground,aground),stats:{obrienFootbridgeSegments:route.length-1,obrienFootbridgeStairSteps:count}};
 }
