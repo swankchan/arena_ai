@@ -328,6 +328,7 @@ export function buildKaiTakStadium(root, { groundOffset = 0 } = {}) {
   const stadium = new THREE.Group();
   stadium.name = 'KaiTakStadium';
   stadium.position.set(KAI_TAK_STADIUM_SITE.x, groundOffset, KAI_TAK_STADIUM_SITE.z);
+  stadium.rotation.y = KAI_TAK_STADIUM_SITE.ry;
   root.add(stadium);
   const materials = makeMaterials();
   const stats = {};

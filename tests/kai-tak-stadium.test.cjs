@@ -160,3 +160,21 @@ test('啟德主場館 is wired into the unified Hong Kong world', () => {
   assert.match(world.landmarks[0].name, /東方之珠/);
   assert.equal(world.landmarks[0].height, 55);
 });
+
+test('stadium gate signs align with their mapped world positions after the site transform', async () => {
+  const { projectHongKongLonLat } = await import('../js/cities/hongkong/authored-landmark-site.js');
+  world.group.updateMatrixWorld(true);
+  assert.equal(world.group.rotation.y, architecture.KAI_TAK_STADIUM_SITE.ry);
+  for (const gate of architecture.KAI_TAK_STADIUM_GATES) {
+    const sign = world.group.getObjectByName(`KaiTakStadiumGateSign${gate.ref}`);
+    assert.ok(sign, gate.ref);
+    const p = sign.getWorldPosition(new THREE.Vector3());
+    const [x,z] = projectHongKongLonLat(gate.lon,gate.lat);
+    assert.ok(Math.abs(Math.hypot(p.x-x,p.z-z)-3.2) < 1e-5, gate.ref);
+  }
+  const site = architecture.KAI_TAK_STADIUM_SITE;
+  for (let i = 0; i < site.localRing.length; i += 2) {
+    const p = world.group.localToWorld(new THREE.Vector3(site.localRing[i], 0, site.localRing[i+1]));
+    assert.ok(Math.hypot(p.x-site.ring[i], p.z-site.ring[i+1]) < 1e-5);
+  }
+});
