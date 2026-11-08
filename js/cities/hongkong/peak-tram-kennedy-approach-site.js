@@ -1,10 +1,10 @@
 import {PEAK_TRAM_PROFILE} from './peak-tram-profile-data.js';
 import {KENNEDY_BRIDGE_POINTS} from './peak-tram-kennedy-bridge.js';
 import {hongKongTerrainHeight} from './terrain.js';
-// Experimental vertical alignment, not surveyed. Approach ends before MacDonnell Road.
+// Experimental vertical alignment, not surveyed. Extends from Kennedy bridge to the mapped MacDonnell Road stop.
 const route=PEAK_TRAM_PROFILE.routes.A;
 const begin=route.findIndex(p=>p.id===KENNEDY_BRIDGE_POINTS.at(-1).id);
-const end=route.findIndex(p=>p.id==='n6534947838');
+const end=route.findIndex(p=>p.id==='n988059698');
 if(begin<0||end<=begin)throw Error('Kennedy approach endpoints missing');
 export const KENNEDY_APPROACH_POINTS=Object.freeze(route.slice(begin,end+1));
 export function kennedyApproachCuts(){
