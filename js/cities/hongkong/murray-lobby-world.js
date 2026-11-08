@@ -1,4 +1,5 @@
 import * as THREE from 'three/webgpu';
+import {MURRAY_GALLERY as G} from './murray-gallery.js';
 import {MURRAY_LIFT as E} from './murray-lift.js';
 import {MURRAY_LOBBY as L} from './murray-lobby-site.js';
 import {MURRAY_SITE as SITE} from './murray-architecture.js';
@@ -41,19 +42,26 @@ export function buildMurrayLobby(root,datum,colliders){
  const ceilingY=z=>2.12+(z-L.z0)*.10;
  for(const [x0,x1,z0,z1] of [[-L.halfWidth+.15,L.halfWidth-.15,L.z0,E.z0],[-L.halfWidth+.15,E.x0,E.z0,E.z1],[E.x1,L.halfWidth-.15,E.z0,E.z1],[-L.halfWidth+.15,L.halfWidth-.15,E.z1,L.z1]])quad(ceiling,[x0,ceilingY(z0),z0],[x1,ceilingY(z0),z0],[x1,ceilingY(z1),z1],[x0,ceilingY(z1),z1],[.18,.17,.15]);
  // A light stone screen separates this first lobby room from the unmodelled interior beyond.
- box(walls,[0,-.9,L.z1],[w,8.2,.2]);
- colliders.push(harbourCityLocalCollider(SITE,0,L.z1,w,.2,datum+y-.2,datum+4));
+ // The gallery crosses this partition above the lobby: retain its lower section
+ // and leave two genuine upper-level openings rather than walking through a wall.
+ const lowTop=G.floor,highTop=3.2;
+ box(walls,[0,(y+lowTop)/2,L.z1],[w,lowTop-y,.2]);
+ colliders.push(harbourCityLocalCollider(SITE,0,L.z1,w,.2,datum+y-.2,datum+lowTop));
+ for(const [a,b] of [[-L.halfWidth,-10],[-6,6],[10,L.halfWidth]]){
+  box(walls,[(a+b)/2,(lowTop+highTop)/2,L.z1],[b-a,highTop-lowTop,.2]);
+  colliders.push(harbourCityLocalCollider(SITE,(a+b)/2,L.z1,b-a,.2,datum+lowTop,datum+highTop));
+ }
  for(let x=-10;x<=10;x+=2.5)box(wallJoints,[x,-.9,L.z1-.11],[.025,8.1,.018]);
- for(const z of [cz-1.3,cz+1.3]){box(counter,[-8,y+.53,z],[1.2,1.06,2.1]);box(countertops,[-8,y+1.09,z],[1.6,.12,2.3]);box(lines,[-8,y+1.02,z],[1.65,.06,2.35]);}
- for(const z of [cz-4,cz+4]){box(furniture,[-5.8,y+.47,z],[2,.42,.85]);box(furniture,[-5.8,y+.83,z-.37],[2,.75,.12]);for(const x of [-6.7,-4.9]){box(furniture,[x,y+.70,z],[.16,.50,.85]);for(const zz of [-.3,.3])box(legs,[x,y+.19,z+zz],[.06,.38,.06]);}}
+ for(const z of [-19.5,-9.8]){box(counter,[4,y+.53,z],[1.2,1.06,2.1]);box(countertops,[4,y+1.09,z],[1.6,.12,2.3]);box(lines,[4,y+1.02,z],[1.65,.06,2.35]);}
+ for(const z of [cz-4,cz+4]){box(furniture,[-3,y+.47,z],[2,.42,.85]);box(furniture,[-3,y+.83,z-.37],[2,.75,.12]);for(const x of [-3.9,-2.1]){box(furniture,[x,y+.70,z],[.16,.50,.85]);for(const zz of [-.3,.3])box(legs,[x,y+.19,z+zz],[.06,.38,.06]);}}
  // Decorative beaded form, not a literal reconstruction of the commissioned artwork.
  for(let i=0;i<9;i++){const x=-9.8+(i%3)*.22,z=L.z0+1.4+Math.floor(i/3)*.23;box(legs,[x,-.2,z],[.012,3.7,.012]);for(let j=0;j<7;j++)sphere(sculpture,[x,-1.9+j*.40,z],.045+(j%2)*.018,8);}
 
  for(const z of [cz-4,cz+4]){
-  box(furniture,[-3.8,y+.36,z],[.9,.72,.9]);
-  box(legs,[-3.8,y+.16,z],[.5,.32,.5]);
+  box(furniture,[-4.8,y+.36,z],[.9,.72,.9]);
+  box(legs,[-4.8,y+.16,z],[.5,.32,.5]);
  }
- for(const [x,z,sx,sz] of [[-8,cz,2.8,5.5],[-5.8,cz-4,2,1],[-5.8,cz+4,2,1],[-3.8,cz-4,.9,.9],[-3.8,cz+4,.9,.9]])
+ for(const [x,z,sx,sz] of [[4,-19.5,1.6,2.3],[4,-9.8,1.6,2.3],[-3,cz-4,2,1],[-3,cz+4,2,1],[-4.8,cz-4,.9,.9],[-4.8,cz+4,.9,.9]])
   colliders.push(harbourCityLocalCollider(SITE,x,z,sx,sz,datum+y,datum+y+2.6));
  merged(root,floor,marbleFloor,'The Murray lobby polished dark stone floor');merged(root,lines,bronze,'The Murray lobby marble joints and bronze inlay',false);merged(root,wallJoints,bronze,'The Murray lobby marble panel joints',false);merged(root,screens,bronze,'The Murray lobby vertical bronze window screens',false);
  const ceilingMaterial=new THREE.MeshStandardMaterial({color:0x514a3d,roughness:.9,side:THREE.DoubleSide});

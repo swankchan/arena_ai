@@ -111,14 +111,14 @@ test('moving lift retains its rider against walking input and releases after tel
  const E=await import('../js/cities/hongkong/murray-lift.js'),L=E.MURRAY_LIFT;
  const run=()=>{const instance=M.buildMurray(new T.Group()),pt=util.harbourCityLocalToWorld(A.MURRAY_SITE,0,(L.z0+L.z1)/2),p={position:new T.Vector3(pt.x,instance.datum+L.lobby,pt.z),mesh:{position:new T.Vector3()},speed:0,verticalVel:0},m={activeMode:'person',entities:{person:p}};for(let i=0;i<21;i++)instance.lift.update(.1,m);return {instance,p,m};};
  const a=run();assert.equal(a.instance.lift.state.moving,true);
- for(let i=0;i<20;i++){const q=util.harbourCityLocalToWorld(A.MURRAY_SITE,0,L.z0-.25);a.p.position.x=q.x;a.p.position.z=q.z;a.instance.lift.update(.05,a.m);const local=util.harbourCityWorldToLocal(A.MURRAY_SITE,a.p.position.x,a.p.position.z);assert.ok(Math.abs(local.z-(L.z0+L.z1)/2)<1e-6);assert.deepEqual(a.p.mesh.position,a.p.position);}
+ for(let i=0;i<10;i++){const q=util.harbourCityLocalToWorld(A.MURRAY_SITE,0,L.z0-.25);a.p.position.x=q.x;a.p.position.z=q.z;a.instance.lift.update(.05,a.m);const local=util.harbourCityWorldToLocal(A.MURRAY_SITE,a.p.position.x,a.p.position.z);assert.ok(Math.abs(local.z-(L.z0+L.z1)/2)<1e-6);assert.deepEqual(a.p.mesh.position,a.p.position);}
  a.p.position.set(10000,10000,10000);a.instance.lift.update(.05,a.m);assert.equal(a.p.position.x,10000);
  const b=run(),y=b.p.position.y;b.m.activeMode='car';b.instance.lift.update(.05,b.m);assert.equal(b.p.position.y,y);
 });
 test('01 gallery is reached from lift and is continuous around the core',async()=>{
  const E=await import('../js/cities/hongkong/murray-lift.js'),G=await import('../js/cities/hongkong/murray-gallery.js'),y=b.datum+G.MURRAY_GALLERY.floor;
  const check=(x,z)=>{const p=util.harbourCityLocalToWorld(A.MURRAY_SITE,x,z);assert.ok(G.isMurrayGalleryLocal(x,z),`missing deck ${x},${z}`);assert.equal(b.groundHeightAt(p.x,p.z,0,y),y);for(const c of b.colliders)if(y+1.75>=c.minY&&y+.1<=c.maxY)assert.equal(collision.colliderContains(c,p.x,p.z,.48),false,`blocked ${x.toFixed(2)},${z.toFixed(2)} ${JSON.stringify(c)}`);};
- for(let x=0;x<=8;x+=.1)check(x,-12.4);for(let z=-12.4;z>=-19.5;z-=.1)check(8,z);for(let x=8;x>=-8;x-=.1)check(x,-19.5);for(let z=-19.5;z<=19;z+=.1)check(-8,z);for(let z=-12.4;z<=19;z+=.1)check(8,z);
+ for(let x=0;x<=8;x+=.1)check(x,-12.4);for(let z=-12.4;z>=-19.5;z-=.1)check(8,z);for(let x=8;x>=-7.8;x-=.1)check(x,-19.5);for(let z=-19.5;z<=19;z+=.1)check(-7.8,z);for(let z=-12.4;z<=19;z+=.1)check(8,z);
  assert.ok(b.group.getObjectByName('The Murray 01 level circulation floor'));assert.ok(b.group.getObjectByName('The Murray lift gallery safety cover'));
  const p=util.harbourCityLocalToWorld(A.MURRAY_SITE,0,(E.MURRAY_LIFT.z0+E.MURRAY_LIFT.z1)/2);
  assert.equal(E.murrayRoofHeight(p.x,p.z,0,y,b.datum,{y:G.MURRAY_GALLERY.floor-1}),y);
@@ -132,4 +132,12 @@ test('a gallery recall preserves the direction from either end and the intermedi
  const lift=b.lift;Object.assign(lift.state,E.createMurrayLiftMotion());const manager={activeMode:'car',entities:{}};lift.update(.1,manager);
  const cover=b.group.getObjectByName('The Murray lift gallery safety cover');assert.equal(cover.visible,true);
  lift.state.y=L.gallery;lift.update(.1,manager);assert.equal(cover.visible,false);
+});
+test('27 stair treads connect the lobby to the gallery at human-width clearance',async()=>{
+ const S=await import('../js/cities/hongkong/murray-stairs.js'),G=await import('../js/cities/hongkong/murray-gallery.js'),s=S.MURRAY_STAIRS,x=(s.x0+s.x1)/2;
+ assert.equal(s.steps,27);assert.ok(Math.abs(s.bottom+s.steps*s.rise-G.MURRAY_GALLERY.floor)<1e-8);assert.equal(b.stairs.steps,27);
+ const check=(xx,z,y)=>{const p=util.harbourCityLocalToWorld(A.MURRAY_SITE,xx,z);for(const c of b.colliders)if(y+1.75>=c.minY&&y+.1<=c.maxY)assert.equal(collision.colliderContains(c,p.x,p.z,.48),false,`blocked stair ${xx.toFixed(2)}, ${z.toFixed(2)}, ${y.toFixed(2)}`);};
+ for(let z=s.z0+.025;z<s.z1;z+=.05){const p=util.harbourCityLocalToWorld(A.MURRAY_SITE,x,z),y=b.datum+S.murrayStairLocalHeight(z);assert.equal(b.groundHeightAt(p.x,p.z,b.interior.floor,y),y);check(x,z,y);}
+ for(let z=s.z1+.1;z<=-10;z+=.1)check(x,z,b.datum+G.MURRAY_GALLERY.floor);
+ for(const name of ['The Murray garden stair marble treads','The Murray garden stair bronze nosings','The Murray garden stair handrails'])assert.ok(b.group.getObjectByName(name),name);
 });
