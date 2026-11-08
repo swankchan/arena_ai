@@ -122,7 +122,7 @@ test('Peninsula shares a reproducible DTM-derived pad without relabelling it as 
 
 test('world authors arches, room panes, classical details, striped awnings, tower crown, helipad and fountain', () => {
   const world = fs.readFileSync(path.join(root, 'js/cities/hongkong/peninsula-hotel-world.js'), 'utf8');
-  for (const pattern of [/createRingWindowRows/, /Projecting heritage window jambs/, /Rounded ground-floor arcade and portico openings/, /Alternating Peninsula-green and ivory striped awnings/, /THE PENINSULA/, /curved central balcony/, /Alternating dressed-stone corner quoins/, /Dark vertical tower atrium glazing channel/, /stepped crown/, /PENINSULA_TOWER_HEIGHT/, /helipad/, /jets: 13/, /Photo-directed lobby stone walkway clear of preserved access roads/]) assert.match(world, pattern);
+  for (const pattern of [/createRingWindowRows/, /Projecting heritage window jambs/, /Rounded ground-floor arcade and portico openings/, /Alternating blue and ivory courtyard striped awnings/, /THE PENINSULA/, /curved central balcony/, /Alternating dressed-stone corner quoins/, /Dark vertical tower atrium glazing channel/, /stepped crown/, /PENINSULA_TOWER_HEIGHT/, /helipad/, /jets: 13/, /Photo-directed lobby stone walkway clear of preserved access roads/]) assert.match(world, pattern);
   assert.match(world, /harbourCityRingColliders/); assert.match(world, /peninsulaRoadRecords/); assert.match(world, /peninsulaTerrainHeightAt/);
   assert.doesNotMatch(world, /image-search|\.jpg|\.png|Business Insider|Lartisien/);
 });

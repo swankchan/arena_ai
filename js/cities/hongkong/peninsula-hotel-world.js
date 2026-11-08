@@ -27,15 +27,15 @@ function siteGroup(root, site, base, name) {
 
 function stripedAwnings(site) {
   const awnings = store(); let strips = 0;
-  for (let edge = 0; edge < site.localRing.length / 2 - 1; edge++) {
+  for (const edge of [3, 4, 5]) {
     const length = harbourCityEdgeOutward(site.localRing, edge).length, count = Math.max(1, Math.ceil(length / 0.68));
     for (let strip = 0; strip < count; strip++) {
       const t0 = strip / count + 0.0005, t1 = (strip + 1) / count - 0.0005;
-      const tint = strip % 2 ? [0.82, 0.83, 0.73] : [0.12, 0.30, 0.24];
-      quad(awnings, point(site, edge, t0, 7.18, 0.30), point(site, edge, t1, 7.18, 0.30),
-        point(site, edge, t1, 6.78, 1.32), point(site, edge, t0, 6.78, 1.32), tint);
-      quad(awnings, point(site, edge, t0, 6.78, 1.32), point(site, edge, t1, 6.78, 1.32),
-        point(site, edge, t1, 6.48, 1.32), point(site, edge, t0, 6.48, 1.32), tint);
+      const tint = strip % 2 ? [0.82, 0.86, 0.86] : [0.06, 0.24, 0.42];
+      quad(awnings, point(site, edge, t0, 11.65, 0.30), point(site, edge, t1, 11.65, 0.30),
+        point(site, edge, t1, 11.25, 1.32), point(site, edge, t0, 11.25, 1.32), tint);
+      quad(awnings, point(site, edge, t0, 11.25, 1.32), point(site, edge, t1, 11.25, 1.32),
+        point(site, edge, t1, 10.95, 1.32), point(site, edge, t0, 10.95, 1.32), tint);
       strips++;
     }
   }
@@ -78,7 +78,7 @@ function entranceGroup(site, entrance, materials, title, width = 10) {
   for (const x of [-width * 0.46, width * 0.46]) box(frames, [x, 2.65, 2.12], [0.18, 5.3, 0.18]);
   merged(group, glass, materials.dark, `${title} recessed glazing`);
   merged(group, frames, materials.metal, `${title} bronze frames and door pulls`);
-  merged(group, canopy, materials.paleStone, `${title} stone canopy`);
+  merged(group, canopy, materials.dark, `${title} dark metal canopy`);
   return group;
 }
 
@@ -90,12 +90,13 @@ function buildHeritage(root, base, materials) {
     y0: 8.35, rowCount: 6, floorHeight: 4.62, sill: 0.72, windowHeight: 2.28,
     targetBayWidth: 3.05, windowRatio: 0.49, jambWidth: 0.15, frameDepth: 0.23,
     tintA: [0.035, 0.047, 0.044], tintB: [0.20, 0.22, 0.18], litThreshold: 0.74,
+    skip: (edge, row) => row === 0 && [3, 4, 5].includes(edge),
   });
   meshStore(group, windows.glass, materials.glazing, 'Individual dark heritage hotel windows');
   merged(group, windows.frames, materials.paleStone, 'Projecting heritage window jambs');
   merged(group, windows.sills, materials.paleStone, 'Heritage window sills and lintels');
 
-  const arches = [], piers = [], archBacks = [], colliders = [], archMaterial = new THREE.MeshStandardMaterial({
+  const arches = [], piers = [], archBacks = [], colliders = [], archMaterial = new THREE.MeshStandardNodeMaterial({
     color: 0x26302c, roughness: 0.32, metalness: 0.18, side: THREE.DoubleSide,
   });
   archMaterial.emissiveNode = color(0.64, 0.43, 0.20).mul(nightAmount()).mul(0.20);
@@ -129,7 +130,37 @@ function buildHeritage(root, base, materials) {
   group.add(entranceGroup(site, PENINSULA_ARCADE_ENTRANCE, materials, 'The Peninsula Arcade exact OSM entrance', 5.5));
 
   const awnings = stripedAwnings(site);
-  meshStore(group, awnings.awnings, materials.interior, 'Alternating Peninsula-green and ivory striped awnings', false);
+  meshStore(group, awnings.awnings, materials.interior, 'Alternating blue and ivory courtyard striped awnings', false);
+  // The striped canopy shelters a glazed first-floor gallery, not the ground arcade.
+  const gallery = store(), galleryMullions = [], galleryRails = [], brackets = [];
+  for (const edge of [3, 4, 5]) {
+    const length = harbourCityEdgeOutward(site.localRing, edge).length;
+    quad(gallery, point(site, edge, 0.01, 7.6, 0.38), point(site, edge, 0.99, 7.6, 0.38),
+      point(site, edge, 0.99, 10.95, 0.38), point(site, edge, 0.01, 10.95, 0.38), [0.08, 0.12, 0.13], 0.12);
+    const count = Math.max(1, Math.round(length / 2.8));
+    for (let i = 0; i <= count; i++) edgeBox(galleryMullions, site, edge, i / count, 9.25, 0.48, 0.12, 3.3, 0.12);
+    edgeBox(galleryRails, site, edge, 0.5, 7.55, 0.55, length, 0.22, 0.25);
+  }
+  meshStore(group, gallery, materials.glazing, 'Courtyard first-floor dark glazed gallery');
+  merged(group, galleryMullions, materials.paleStone, 'Gallery stone mullions');
+  merged(group, galleryRails, materials.paleStone, 'Gallery balustrade and sill');
+  for (let edge = 0; edge < site.localRing.length / 2 - 1; edge++) {
+    const length = harbourCityEdgeOutward(site.localRing, edge).length;
+    const count = Math.max(1, Math.round(length / 2.9));
+    for (let i = 0; i < count; i++) {
+      const t = (i + 0.5) / count;
+      edgeBox(brackets, site, edge, t, 38.35, 0.30, 0.34, 1.25, 0.55);
+    }
+  }
+  merged(group, brackets, materials.paleStone, 'Closely spaced heritage roof cornice brackets');
+  const corniceLight = new THREE.MeshStandardNodeMaterial({ color: 0xb4a78d, roughness: 0.72 });
+  corniceLight.emissiveNode = color(1, 0.65, 0.30).mul(nightAmount()).mul(0.55);
+  const nightTrim = [];
+  for (const edge of [3, 4, 5]) {
+    const length = harbourCityEdgeOutward(site.localRing, edge).length;
+    edgeBox(nightTrim, site, edge, 0.5, 37.45, 0.32, length, 0.10, 0.10);
+  }
+  merged(group, nightTrim, corniceLight, 'Warm illuminated courtyard cornice trim', false);
   const cornices = [];
   ringBand(cornices, site, 7.22, 0.36, 0.26, 0.36);
   ringBand(cornices, site, 36.85, 0.30, 0.30, 0.38);
@@ -184,13 +215,22 @@ function buildTower(root, base, materials) {
   merged(group, bands, materials.paleStone, 'Tower transfer band and stepped crown cornices');
 
   const crown = [], dark = [];
-  box(crown, [0, 112.35, -0.4], [25.5, 5.3, 15.5]);
-  box(crown, [0, 116.25, -0.4], [13.5, 2.5, 13.5]);
-  box(crown, [-18.7, 111.15, -0.2], [10.5, 2.9, 15.8]);
-  box(crown, [18.7, 111.15, -0.2], [10.5, 2.9, 15.8]);
+  // Twin projecting cornice caps, separated by the lower central notch.
+  for (const x of [-12, 12]) {
+    box(crown, [x, 115.5, -0.4], [20.8, 1.0, 18.2]);
+    box(crown, [x, 114.65, -0.4], [19.5, 0.55, 17.2]);
+    box(crown, [x, 113.9, -0.4], [18.1, 0.45, 16.4]);
+  }
   box(dark, [0, 112.1, 7.48], [7.0, 5.0, 0.20]);
   merged(group, crown, materials.paleStone, 'Stepped pale tower crown and raised central pavilion');
   merged(group, dark, materials.dark, 'Crown atrium shadow slot');
+  const crownArches = [], crownPiers = [];
+  for (const t of [0.27, 0.73]) {
+    placeFacadeGeometry(crownArches, archPanelGeometry(11.0, 4.5, 1.8), site, 5, t, 0.45).translate(0, 109.2, 0);
+    for (const dt of [-0.09, 0.09]) edgeBox(crownPiers, site, 5, t + dt, 111.5, 0.55, 0.5, 4.6, 0.5);
+  }
+  merged(group, crownArches, materials.dark, 'Twin arched tower crown glazing');
+  merged(group, crownPiers, materials.paleStone, 'Twin crown framing piers');
 
   const helipad = new THREE.Group(); helipad.name = 'CTBUH 117.7 m rooftop helipad with H marking'; group.add(helipad);
   const pad = new THREE.Mesh(new THREE.CylinderGeometry(7.9, 7.9, 0.30, 64), materials.paleStone);
@@ -218,14 +258,14 @@ function buildForecourt(root, base, materials) {
   const basin = new THREE.Group(); basin.name = 'Peninsula forecourt oval fountain basin and central spray'; basin.position.set(centre.x, 0, centre.z); group.add(basin);
   const outer = new THREE.Mesh(new THREE.CylinderGeometry(1, 1, 0.42, 64), materials.stone);
   outer.scale.set(PENINSULA_FOUNTAIN_RADII.x, 1, PENINSULA_FOUNTAIN_RADII.z); outer.position.y = 0.23; outer.castShadow = true; basin.add(outer);
-  const waterMaterial = new THREE.MeshStandardMaterial({ color: 0x5c8b91, roughness: 0.18, metalness: 0.20, transparent: true, opacity: 0.82 });
+  const waterMaterial = new THREE.MeshStandardNodeMaterial({ color: 0x5c8b91, roughness: 0.18, metalness: 0.20, transparent: true, opacity: 0.82 });
   waterMaterial.emissiveNode = color(0.15, 0.30, 0.36).mul(nightAmount()).mul(0.18);
   const water = new THREE.Mesh(new THREE.CylinderGeometry(1, 1, 0.08, 64), waterMaterial);
   water.scale.set(5.82, 1, 3.73); water.position.y = 0.47; basin.add(water);
   const rim = new THREE.Mesh(new THREE.TorusGeometry(1, 0.065, 8, 64), materials.paleStone);
   rim.rotation.x = Math.PI / 2; rim.scale.set(6.08, 3.98, 1); rim.position.y = 0.50; basin.add(rim);
 
-  const jetMaterial = new THREE.MeshStandardMaterial({ color: 0xd9f1ee, roughness: 0.16, metalness: 0.02, transparent: true, opacity: 0.48, depthWrite: false });
+  const jetMaterial = new THREE.MeshStandardNodeMaterial({ color: 0xd9f1ee, roughness: 0.16, metalness: 0.02, transparent: true, opacity: 0.48, depthWrite: false });
   jetMaterial.emissiveNode = color(0.52, 0.78, 0.84).mul(nightAmount()).mul(0.32);
   const jets = [], foam = [];
   cylinder(jets, [0, 2.55, 0], 0.20, 4.15, 12, 0.10);
@@ -262,7 +302,7 @@ function buildForecourt(root, base, materials) {
   merged(group, bollards, materials.metal, 'Forecourt arrival bollards outside the central pedestrian path');
   merged(group, rails, materials.metal, 'Accessible lobby approach handrails');
   merged(group, shrubs, materials.lawn, 'Clipped forecourt topiary planters');
-  const uplight = new THREE.MeshStandardMaterial({ color: 0xc5bda6, roughness: 0.45, metalness: 0.35 });
+  const uplight = new THREE.MeshStandardNodeMaterial({ color: 0xc5bda6, roughness: 0.45, metalness: 0.35 });
   uplight.emissiveNode = color(1, 0.73, 0.40).mul(nightAmount()).mul(0.75);
   merged(group, lights, uplight, 'Restrained warm facade uplight fixtures', false);
   const collider = harbourCityLocalCollider(heritage, centre.x, centre.z, 12.5, 8.3, base, base + 0.55);

@@ -977,16 +977,16 @@
 - **道路、ground、海岸及鄰近建築**：塔身、apron及水池以全港道路中心線、車道半寬加0.35 m餘量重掃均無相交，clearance後街燈及棕櫚0.75 m檢查亦無衝突，因此不搬路、不刪路、不改標線、信號或交通設施。塔身與apron共用約 **4.9118 m** DTM施工平台，這不是已核實工程標高；selected roads在world ground query仍然優先。apron **112**個及水池 **96**個邊界樣本全部在真實陸地，10棵棕櫚亦在陸地。轉向後塔身／apron／水池與文化中心邊界距離約 **27.45／30.79／32.77 m**，與尖沙咀碼頭約 **47.75／51.58／53.72 m**，沒有把其他建築吞入鐘樓footprint。
 - **驗證**：`tests/clock-tower.test.cjs` 覆蓋來源、官方資料、真實入口、道路與街燈、ground、海岸、文化中心／碼頭分隔、照片導向水池、建築細節、夜景及整合。隔離WebGL Chromium日／夜／入口／鳥瞰四組畫面已檢查完整51 m塔頂及全池；最終audit為 **89 meshes／40,114 triangles／30 colliders／1 landmark／0 line batches**，non-finite、console errors及page errors均為 **0**。鐘樓11項專項測試及尖沙咀／海港城／runtime相關回歸合共 **115／115** 通過，self-contained runtime build成功。本輪90°轉向後同一 **11／11** 專項測試再次通過，並重新建立runtime。
 
-## 香港半島酒店 `HK-TST-PH`：歷史主樓、1994 塔樓及前庭（2026-11-06）
+## 香港半島酒店 `HK-TST-PH`：歷史主樓、1994 塔樓及前庭（更新：2026-10-24）
 
 - **位置與來源**：梳士巴利道22號，採額外 TST ID，不佔用或改變 `HK-B0001–B0100` 的36／64統計。酒店 identity way **709674355 v6**、歷史主樓 **120833435 v12** 及塔樓 **152073879 v4** 分開保存；兩幢建築使用目前 OSM API 的原始節點、經緯度、tags、ODbL署名及檢索日期，不用酒店用地取代建築 footprint。歷史主樓13個獨立頂點、面積 **4186.3198759482475 m²**；塔樓12個獨立頂點、面積 **1105.1867126348661 m²**。
 - **高度口径**：歷史主樓沿用 OSM **40 m／7層**。塔樓保留 OSM **115 m／28層／layer=1**，CTBUH 的 **1994／33層／117.7 m architectural＝117.7 m helipad** 另列；模型冠頂及直升機坪採 CTBUH **117.7 m**，沒有平均或暗中改寫 OSM。24道客房窗列是視覺分層，不冒稱實際樓層數。
-- **照片研究與材料**：官方酒店頁／fact sheet 確認 **1928-12-11** 開幕、heritage／tower 分區、前庭噴泉及 rooftop helipad；CTBUH 提供塔樓高度。另查看官方及補充 exterior-photo search 的正面／庭院參考圖，剔除無法核實酒店身份的航拍圖；參考圖只作視覺方向，沒有打包或當成立面測量圖。程式來源表保留官方、CTBUH、Wikipedia歷史交叉核對及補充照片頁 URL。
-- **歷史主樓細節**：沿真實 U 形 ring 建立米白石材外牆、六列逐窗格深色客房窗、突出窗框／窗台／線腳、轉角交替 quoins、地面圓拱及 rusticated piers、弧形中央露台與獨立 balusters、綠白條紋遮篷及直接幾何「THE PENINSULA」字樣。主入口是照片導向的 source edge **4** 中點；The Peninsula Arcade 則保留真實 **node 11264962679**，兩個入口均有實際地面碰撞開口。
-- **塔樓細節**：真實塔樓 ring 上設深色客房窗格、中央藍黑豎向玻璃帶、金屬 mullions／transoms、轉移層線腳及階梯冠頂。冠頂有實體中央支承，117.7 m 直升機坪包括圓盤、H 字及圓環標記；沒有用無支承薄板假裝屋頂。
+- **照片研究與材料**：官方酒店頁／fact sheet 確認 **1928-12-11** 開幕、heritage／tower 分區、前庭噴泉及 rooftop helipad；CTBUH 提供塔樓高度。另查看官方及補充 exterior-photo search 的正面／庭院參考圖，剔除無法核實酒店身份的航拍圖；[已保存參考圖及來源／權利備註](../references/hongkong/peninsula-hotel/README.md)，只作視覺方向，不當成立面測量圖。程式來源表保留官方、CTBUH、Wikipedia歷史交叉核對及補充照片頁 URL。
+- **歷史主樓細節**：沿真實 U 形 ring 建立米白石材外牆、六列逐窗格深色客房窗、突出窗框／窗台／線腳、轉角交替 quoins、地面圓拱及 rusticated piers、弧形中央露台與獨立 balusters、庭院藍白條紋遮篷與一樓玻璃廊及直接幾何「THE PENINSULA」字樣。主入口是照片導向的 source edge **4** 中點；The Peninsula Arcade 則保留真實 **node 11264962679**，兩個入口均有實際地面碰撞開口。
+- **塔樓細節**：真實塔樓 ring 上設深色客房窗格、中央藍黑豎向玻璃帶、金屬 mullions／transoms、轉移層線腳及階梯冠頂。冠頂以雙翼伸出的層疊線腳與拱形玻璃示意；117.7 m 直升機坪包括圓盤、H 字及圓環標記；沒有用無支承薄板假裝屋頂。
 - **前庭與道路**：前庭只是由 heritage vertices **3／6／5／4** 界定的照片導向 ground ring，面積 **1218.0318373786286 m²**，不是虛構的精確 OSM 噴泉／車路 footprint。兩個建築 rings 的全港道路中心線及 `width/2+0.35 m` 掃描均為 **0**；前庭則確實包含現有 unnamed access-road records **44092／44093／44094／44096／44097**（record indices，不是 OSM way IDs）。五條道路全部保留，terrain pad 避開其車路走廊，鋪裝只放在酒店入口側，不覆蓋瀝青或標線。
 - **噴泉及設施**：橢圓石盆、13股水柱／弧形噴水、泡沫、暖色立面燈、bollards、扶手及修剪植物均為幾何。噴泉由入口向外 **6.7 m** 的照片導向位置落位，256點邊界掃描確認石盆與五條車路的實際路面邊有淨空；沒有在前庭道路中央加燈柱。現有 clearance 後街燈在三個 rings 內均為 **0**，所以本幢不需要搬燈、刪路或改信號。
-- **地面與碰撞**：兩幢建築及前庭共用由現有 DTM 採樣最高值形成的 **5 m** 施工平台；這是可重算場景 datum，不是已核實工程標高。`terrain.js`、`road-elevation.js`、`simple-world.js` 的 ground query、道路剖面及碰撞使用同一來源；道路被選取時仍優先使用道路 ground。Node geometry smoke 為 **43 meshes／119,361 triangles／90 colliders／0 non-finite vertices**，主入口及 Arcade 入口地面碰撞命中均為 **0**。
+- **地面與碰撞**：兩幢建築及前庭共用由現有 DTM 採樣最高值形成的 **5 m** 施工平台；這是可重算場景 datum，不是已核實工程標高。`terrain.js`、`road-elevation.js`、`simple-world.js` 的 ground query、道路剖面及碰撞使用同一來源；道路被選取時仍優先使用道路 ground。歷史入口及 Arcade 入口保留地面碰撞開口；實際駕駛尚未驗證。
 - **驗證**：`tests/peninsula-hotel.test.cjs` 涵蓋兩個精確來源、面積、雙高度／樓層口径、兩類入口、前庭道路、噴泉淨空、街燈、DTM、建築細節及整合。程式只使用程序化材質及 canvas 字樣，沒有外部圖片資產。
 
 ## 香港喜來登酒店 `HK-TST-SH`：海港長翼、北翼及 Level 18 泳池

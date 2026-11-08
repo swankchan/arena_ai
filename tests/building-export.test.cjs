@@ -102,3 +102,15 @@ test('Salisbury export serializes real node materials for illuminated windows an
   assert.ok(json.nodes.some(n => n.type === 'UniformNode' && n.value === 1.4));
   assert.ok(json.geometries.some(g => g.data?.attributes?.aLit?.array?.some(v => v > 0)));
 });
+
+test('Peninsula night fountain and facade lighting serialize as node materials', async () => {
+  const { createBuildingExport } = await import('../js/exports/building-export.js');
+  const json = await createBuildingExport('peninsula-hotel', {tsl: true});
+  const mats = new Map(json.materials.map(m => [m.uuid, m]));
+  const objects = []; const visit = o => { objects.push(o); for (const c of o.children || []) visit(c); }; visit(json.object);
+  for (const name of ['Rounded ground-floor arcade and portico openings', 'Warm illuminated courtyard cornice trim', 'Twelve arcing fountain jets and central water column', 'Restrained warm facade uplight fixtures']) {
+    const object = objects.find(o => o.name === name); assert.ok(object, name);
+    const material = mats.get(object.material); assert.equal(material.type, 'MeshStandardNodeMaterial', name);
+    assert.ok(material.inputNodes?.emissiveNode, name);
+  }
+});
