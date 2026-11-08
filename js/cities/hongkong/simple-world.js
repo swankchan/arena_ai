@@ -16,6 +16,8 @@ import { buildPeakTramSummitApproach } from './peak-tram-summit-approach.js';
 import { buildPeakTramBarkerStationTrack } from './peak-tram-barker-station-track.js';
 import { buildBarkerRoadStation } from './peak-tram-barker-station.js';
 import { buildBarkerRoadEarthworks } from './peak-tram-barker-earthworks.js';
+import { buildPeakTramLoopGrading } from './peak-tram-loop-grading.js';
+import { peakTramLoopGrade } from './peak-tram-loop-grading-site.js';
 import { buildGovernmentHouse } from './government-house-world.js';
 import { buildSogoCausewayBay } from './sogo-world.js';
 import { buildJardineHouse } from './jardine-house-world.js';
@@ -197,6 +199,7 @@ function* buildSimpleHongKongWorldSteps(scene) {
   const peakTramBarkerStationTrack = buildPeakTramBarkerStationTrack(scene);
   const peakTramBarkerStation = buildBarkerRoadStation(scene);
   const peakTramBarkerEarthworks = buildBarkerRoadEarthworks(scene);
+  const peakTramLoopGrading = buildPeakTramLoopGrading(scene);
   const murray = buildMurray(scene);
   const blueHouse = buildBlueHouse(scene);
   yield 'Building 香港演藝學院 Hong Kong Academy for Performing Arts...';
@@ -367,8 +370,8 @@ function* buildSimpleHongKongWorldSteps(scene) {
   function getGroundHeight(x, z, mode, referenceY = 0) {
     if (mode === 'helicopter') return 0;
     let base = WATER_LEVEL;
-    if (isTerritoryLand(x, z)) base = hongKongTerrainHeight(x, z) + FULL_WORLD_HEIGHT.land;
-    if (territoryParkAt(x, z)) base = hongKongTerrainHeight(x, z) + FULL_WORLD_HEIGHT.park;
+    if (isTerritoryLand(x, z)) base = peakTramLoopGrade(x, z, hongKongTerrainHeight(x, z)) + FULL_WORLD_HEIGHT.land;
+    if (territoryParkAt(x, z)) base = peakTramLoopGrade(x, z, hongKongTerrainHeight(x, z)) + FULL_WORLD_HEIGHT.park;
     const road = fullRoadSurfaceAt(x, z, 0.35, referenceY);
     let groundUsesRoad = false;
     if (road) {
@@ -507,7 +510,7 @@ function* buildSimpleHongKongWorldSteps(scene) {
     ...obrienFootbridge.stats,
     ...windsorHouse.stats,
     ...sogo.stats,
-    ...governmentHouse.stats, ...peakTower.stats, ...peakTramKennedyBridge.stats, ...peakTramKennedyApproach.stats, ...peakTramMacDonnell.stats, ...peakTramMacDonnellBridge.stats, ...peakTramMagazineGapBridge.stats, ...peakTramMayRoadBridge.stats, ...peakTramMayRoadStation.stats, ...peakTramPassingLoop.stats, ...peakTramUpperLine.stats, ...peakTramBarkerApproach.stats, ...peakTramSummitApproach.stats, ...peakTramBarkerStationTrack.stats, ...peakTramBarkerStation.stats, ...peakTramBarkerEarthworks.stats, ...murray.stats,
+    ...governmentHouse.stats, ...peakTower.stats, ...peakTramKennedyBridge.stats, ...peakTramKennedyApproach.stats, ...peakTramMacDonnell.stats, ...peakTramMacDonnellBridge.stats, ...peakTramMagazineGapBridge.stats, ...peakTramMayRoadBridge.stats, ...peakTramMayRoadStation.stats, ...peakTramPassingLoop.stats, ...peakTramUpperLine.stats, ...peakTramBarkerApproach.stats, ...peakTramSummitApproach.stats, ...peakTramBarkerStationTrack.stats, ...peakTramBarkerStation.stats, ...peakTramBarkerEarthworks.stats, ...peakTramLoopGrading.stats, ...murray.stats,
     ...blueHouse.stats,
     ...hkapa.stats,
     ...jardineHouse.stats,

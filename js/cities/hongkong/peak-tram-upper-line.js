@@ -1,6 +1,7 @@
 import * as THREE from 'three/webgpu';
 import {beam,box,merged,quad,store,meshStore} from './harbour-city-world-utils.js';
 import {hongKongTerrainHeight} from './terrain.js';
+import {peakTramLoopGrade} from './peak-tram-loop-grading-site.js';
 import {UPPER_LINE_POINTS,upperBranchOffset,UPPER_LINE_START} from './peak-tram-upper-line-site.js';
 
 // Scene-fit approximation: transition from four rails to a shared middle rail,
@@ -20,7 +21,7 @@ export function buildPeakTramUpperLine(scene){
   const leftA=at(a,-1.65,-.27),leftB=at(b,-1.65,-.27),rightA=at(a,oa+1.65,-.27),rightB=at(b,ob+1.65,-.27);
   quad(bed,leftA,leftB,rightB,rightA,[.31,.30,.27]);
   for(const [p,q] of [[leftA,leftB],[rightA,rightB]]){
-   const ga=Math.max(p[1],hongKongTerrainHeight(p[0],p[2])-.08),gb=Math.max(q[1],hongKongTerrainHeight(q[0],q[2])-.08);
+   const ga=Math.max(p[1],peakTramLoopGrade(p[0],p[2])-.08),gb=Math.max(q[1],peakTramLoopGrade(q[0],q[2])-.08);
    if(ga>p[1]||gb>q[1])quad(walls,p,q,[q[0],gb,q[2]],[p[0],ga,p[2]],[.42,.42,.38]);
   }
   if(i%4===0){

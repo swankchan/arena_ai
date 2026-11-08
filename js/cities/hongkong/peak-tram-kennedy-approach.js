@@ -1,6 +1,7 @@
 import * as THREE from 'three/webgpu';
 import {beam,box,merged,quad,store,meshStore} from './harbour-city-world-utils.js';
 import {hongKongTerrainHeight} from './terrain.js';
+import {peakTramLoopGrade} from './peak-tram-loop-grading-site.js';
 import {fullRoadSurfaceAt} from './full-meta.js';
 import {KENNEDY_APPROACH_POINTS,isIntermediatePlatformSegment,isMacDonnellBridgeSegment,isMagazineGapBridgeSegment,isMayRoadBridgeSegment} from './peak-tram-kennedy-approach-site.js';
 
@@ -21,7 +22,7 @@ export function buildPeakTramKennedyApproach(scene){
   for(const side of [-1,1]){
    if(isMacDonnellBridgeSegment(a,b)||isMagazineGapBridgeSegment(a,b)||isMayRoadBridgeSegment(a,b))continue; // the vault supplies its own jambs
    const off=side>0&&isIntermediatePlatformSegment(a,b)?4:side*1.6,ax=a.x+nx*off,az=a.z+nz*off,bx=b.x+nx*off,bz=b.z+nz*off;
-   const terrainA=hongKongTerrainHeight(ax,az),terrainB=hongKongTerrainHeight(bx,bz);
+   const terrainA=peakTramLoopGrade(ax,az),terrainB=peakTramLoopGrade(bx,bz);
    const roadA=fullRoadSurfaceAt(ax,az,.35,terrainA),roadB=fullRoadSurfaceAt(bx,bz,.35,terrainB);
    // Overpasses keep their existing road surface. Trench walls stop below its
    // underside so they do not protrude into the drivable carriageway.

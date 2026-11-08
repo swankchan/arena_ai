@@ -1,6 +1,7 @@
 import * as THREE from 'three/webgpu';
 import {beam,merged,quad,store,meshStore} from './harbour-city-world-utils.js';
 import {hongKongTerrainHeight} from './terrain.js';
+import {peakTramLoopGrade} from './peak-tram-loop-grading-site.js';
 import {loopBranch,loopPoint} from './peak-tram-passing-loop-site.js';
 
 // Preliminary lower portion of the two-branch OSM trace. No moving switches,
@@ -26,7 +27,7 @@ export function buildPeakTramPassingLoop(scene){
   const bp=[b.x+nx*sign*1.65,b.y-.27,b.z+nz*sign*1.65],bq=[c.x+nx*sign*1.65,c.y-.27,c.z+nz*sign*1.65];
   quad(bed,ap,aq,bq,bp,[.31,.30,.27]);
   for(const [v,w] of [[ap,aq],[bp,bq]]){
-   const va=Math.max(v[1],hongKongTerrainHeight(v[0],v[2])-.08),wb=Math.max(w[1],hongKongTerrainHeight(w[0],w[2])-.08);
+   const va=Math.max(v[1],peakTramLoopGrade(v[0],v[2])-.08),wb=Math.max(w[1],peakTramLoopGrade(w[0],w[2])-.08);
    if(va>v[1]||wb>w[1])quad(walls,v,w,[w[0],wb,w[2]],[v[0],va,v[2]],[.42,.42,.38]);
   }
  }
