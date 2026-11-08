@@ -102,3 +102,8 @@ test('roof pavilion connects around lift shaft to both side terraces',async()=>{
  for(let x=0;x<=3;x+=.1)check(x,-12.1);for(let z=-12.1;z<=-6;z+=.1)check(3,z);for(let x=3;x>=0;x-=.1)check(x,-6);for(let z=-6;z<=7;z+=.1)check(0,z);for(let x=P.MURRAY_PAVILION.x0-2;x<=P.MURRAY_PAVILION.x1+2;x+=.1)check(x,6.6);
  for(const name of ['The Murray Popinjays transparent pavilion glazing','The Murray Popinjays bronze pavilion frames','The Murray Popinjays pavilion roof','The Murray Popinjays blue dining chairs'])assert.ok(b.group.getObjectByName(name),name);
 });
+test('lobby glazing and photo-directed finishes have their material layers',()=>{
+ assert.ok(b.group.getObjectByName('The Murray lobby polished dark stone floor').material.map);assert.ok(b.group.getObjectByName('The Murray lobby stone reception and partition').material.map);
+ const glass=b.group.getObjectByName('The Murray recessed lobby glazing');assert.equal(glass.material.transparent,true);assert.ok(glass.material.opacity<.5);
+ for(const name of ['The Murray lobby marble panel joints','The Murray lobby vertical bronze window screens','The Murray lobby reception counter supports','The Murray lobby reception marble tops','The Murray lobby suspended charcoal inspired sculpture'])assert.ok(b.group.getObjectByName(name),name);
+});

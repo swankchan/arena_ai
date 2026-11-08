@@ -21,7 +21,7 @@ export function buildMurray(scene){
  const concrete=store(),reveals=store(),glass=store(),arches=store(),archSoffit=store(),paving=store();
  const trims=[],roof=[],piers=[],frames=[],lobby=[],colliders=[];
  const material=(roughness,metalness=0)=>{const m=new THREE.MeshStandardNodeMaterial({side:THREE.DoubleSide,roughness,metalness});m.colorNode=attribute('color');return m;};
- const stone=new THREE.MeshStandardMaterial({color:0xb5b5ab,roughness:.84,side:THREE.DoubleSide}),dark=new THREE.MeshStandardMaterial({color:0x263a3c,roughness:.28,metalness:.3,side:THREE.DoubleSide}),bronze=new THREE.MeshStandardMaterial({color:0x826b4d,roughness:.42,metalness:.65}),black=new THREE.MeshStandardMaterial({color:0x394544,roughness:.72}),terrace=new THREE.MeshStandardMaterial({color:0x71766d,roughness:.92});
+ const stone=new THREE.MeshStandardMaterial({color:0xb5b5ab,roughness:.84,side:THREE.DoubleSide}),dark=new THREE.MeshStandardMaterial({color:0xa1b3ad,roughness:.28,metalness:.1,side:THREE.DoubleSide,transparent:true,opacity:.3,depthWrite:false}),bronze=new THREE.MeshStandardMaterial({color:0x826b4d,roughness:.42,metalness:.65}),black=new THREE.MeshStandardMaterial({color:0x394544,roughness:.72}),terrace=new THREE.MeshStandardMaterial({color:0x71766d,roughness:.92});
  // Four facades: u runs horizontally along the wall; depth points inwards.
  const faces=[
   {len:D,bays:15,archBays:7,at:(u,y,d=0)=>[W/2-d,y,u],axis:'x',side:1},
