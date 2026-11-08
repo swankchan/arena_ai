@@ -1,0 +1,8 @@
+const {test}=require('node:test'),assert=require('node:assert/strict');
+test('source street lamps and arms near the lower passing loop clear estimated track envelope',async()=>{
+ const {loopBranch}=await import('../js/cities/hongkong/peak-tram-passing-loop-site.js'),{HK_STREET_LIGHTS:L}=await import('../js/hk-street-light-data.js'),{HK_STREET_LIGHT_CLEARANCE:C}=await import('../js/hk-street-light-clearance-data.js'),{hongKongTerrainHeight:g}=await import('../js/cities/hongkong/terrain.js');
+ const routes=['A','B'].map(loopBranch),overrides=new Map(C.overrides.map(v=>[v[0],v])),suppressed=new Set(C.suppressed),all=routes.flat();
+ const bounds={minX:Math.min(...all.map(p=>p.x))-15,maxX:Math.max(...all.map(p=>p.x))+15,minZ:Math.min(...all.map(p=>p.z))-15,maxZ:Math.max(...all.map(p=>p.z))+15};
+ function closest(x,z){let best=null;for(const path of routes)for(let i=1;i<path.length;i++){const a=path[i-1],b=path[i],dx=b.x-a.x,dz=b.z-a.z,t=Math.max(0,Math.min(1,((x-a.x)*dx+(z-a.z)*dz)/(dx*dx+dz*dz))),d=Math.hypot(x-a.x-dx*t,z-a.z-dz*t);if(!best||d<best.d)best={d,y:a.y+(b.y-a.y)*t};}return best;}
+ for(let i=0;i<L.lamps.length;i++){if(suppressed.has(i))continue;const p=L.lamps[i],o=overrides.get(i),x=p[0]+(o?.[1]||0)/100,z=p[1]+(o?.[2]||0)/100;if(x<bounds.minX||x>bounds.maxX||z<bounds.minZ||z>bounds.maxZ)continue;const y=o?o[3]/100:g(x,z)+.025,q=closest(x,z);if(y+9.6>=q.y-.5&&y<=q.y+4)assert.ok(q.d>2.4,`pole ${i}`);for(let j=0;j<p[3];j++)for(let d=0;d<=2.15;d+=.25){let t=p[2]+j*Math.PI,h=closest(x+Math.sin(t)*d,z+Math.cos(t)*d);if(y+9.6>=h.y-.5&&y+9.24<=h.y+4)assert.ok(h.d>2.4,`arm ${i}`);}}
+});
