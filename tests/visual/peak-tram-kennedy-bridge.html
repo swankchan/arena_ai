@@ -1,0 +1,13 @@
+<!doctype html><meta charset="utf-8"><style>body{margin:0}</style>
+<script type="importmap">{"imports":{"three":"../../vendor/three/build/three.webgpu.js","three/webgpu":"../../vendor/three/build/three.webgpu.js","three/tsl":"../../vendor/three/build/three.tsl.js","three/addons/":"../../vendor/three/examples/jsm/"}}</script>
+<script type="module">
+import * as THREE from 'three/webgpu';
+import {buildPeakTramKennedyBridge,KENNEDY_BRIDGE_POINTS as P} from '../../js/cities/hongkong/peak-tram-kennedy-bridge.js';
+const scene=new THREE.Scene();scene.background=new THREE.Color(0xc0d0d4);buildPeakTramKennedyBridge(scene);scene.add(new THREE.HemisphereLight(0xffffff,0x626f64,1.2));
+const sun=new THREE.DirectionalLight(0xffffff,2);sun.position.set(-100,200,-50);scene.add(sun);
+const a=P[0],b=P.at(-1),x=(a.x+b.x)/2,z=(a.z+b.z)/2,y=(a.y+b.y)/2;
+// The flat surface is only a visual reference; road height checks use the real runtime query.
+const surface=new THREE.Mesh(new THREE.PlaneGeometry(100,100),new THREE.MeshStandardMaterial({color:0x797d78}));surface.rotation.x=-Math.PI/2;surface.position.set(x,64.7,z);scene.add(surface);
+const camera=new THREE.PerspectiveCamera(38,1.6,.1,500);camera.position.set(x+30,y+16,z+35);camera.lookAt(x,y-2,z);
+const renderer=new THREE.WebGPURenderer({forceWebGL:true,antialias:true});await renderer.init();renderer.setSize(1280,800);document.body.appendChild(renderer.domElement);renderer.render(scene,camera);window.ready=true;
+</script>

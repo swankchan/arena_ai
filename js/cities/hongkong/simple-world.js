@@ -2,6 +2,7 @@ import { buildHkapa } from './hkapa-world.js';
 import { runLoadingSteps, runLoadingStepsAsync } from '../../loading-steps.js';
 import { buildMurray } from './murray-world.js';
 import { buildPeakTower } from './peak-tower-world.js';
+import { buildPeakTramKennedyBridge } from './peak-tram-kennedy-bridge.js';
 import { buildGovernmentHouse } from './government-house-world.js';
 import { buildSogoCausewayBay } from './sogo-world.js';
 import { buildJardineHouse } from './jardine-house-world.js';
@@ -169,6 +170,7 @@ function* buildSimpleHongKongWorldSteps(scene) {
   const governmentHouse = buildGovernmentHouse(scene);
   yield 'Building 凌霄閣 Peak Tower...';
   const peakTower = buildPeakTower(scene);
+  const peakTramKennedyBridge = buildPeakTramKennedyBridge(scene);
   const murray = buildMurray(scene);
   const blueHouse = buildBlueHouse(scene);
   yield 'Building 香港演藝學院 Hong Kong Academy for Performing Arts...';
@@ -479,7 +481,7 @@ function* buildSimpleHongKongWorldSteps(scene) {
     ...obrienFootbridge.stats,
     ...windsorHouse.stats,
     ...sogo.stats,
-    ...governmentHouse.stats, ...peakTower.stats, ...murray.stats,
+    ...governmentHouse.stats, ...peakTower.stats, ...peakTramKennedyBridge.stats, ...murray.stats,
     ...blueHouse.stats,
     ...hkapa.stats,
     ...jardineHouse.stats,
@@ -575,7 +577,7 @@ function* buildSimpleHongKongWorldSteps(scene) {
 
   return {
     root: scene,
-    colliders: [...full.colliders, ...crossings.colliders, ...hsbc.colliders, ...shunTak.colliders, ...chaterGarden.colliders, ...statueSquare.colliders, ...worldWideHouse.colliders, ...entertainmentBuilding.colliders, ...mandarinOriental.colliders, ...princesBuilding.colliders, ...hongKongClub.colliders, ...hangSeng.colliders, ...standardChartered.colliders, ...twoIfc.colliders, ...ifcMall.colliders, ...generalPostOffice.colliders, ...revenueTower.colliders, ...wanchaiTower.colliders, ...immigrationTower.colliders, ...obrienFootbridge.colliders, ...windsorHouse.colliders, ...sogo.colliders, ...governmentHouse.colliders, ...peakTower.colliders, ...murray.colliders, ...blueHouse.colliders, ...hkapa.colliders, ...jardineHouse.colliders, ...icc.colliders, ...bankOfChina.colliders, ...centralPlaza.colliders, ...theCenter.colliders, ...ninaTower.colliders, ...cheungKong.colliders, ...k11Atelier.colliders, ...cullinanI.colliders, ...cullinanII.colliders, ...masterpiece.colliders, ...langhamPlace.colliders, ...summit.colliders, ...hopewell.colliders, ...sunHungKai.colliders, ...twoPacificPlace.colliders, ...airside.colliders, ...leeGardenOne.colliders, ...oneIfc.colliders, ...championTower.colliders, ...ckc2.colliders, ...qgo.colliders, ...centralGovernment.colliders, ...heritage1881.colliders, ...theArch.colliders, ...sorrento.colliders, ...conrad.colliders, ...hysan.colliders, ...twoTaikoo.colliders, ...theHenderson.colliders, ...oneExchange.colliders, ...twoExchange.colliders, ...courtOfFinalAppeal.colliders, ...hkcec.colliders, ...mongKokStadium.colliders, ...hongKongStadium.colliders, ...coliseum.colliders, ...laiYuen.colliders, ...queenElizabethStadium.colliders, ...kaiTakStadium.colliders, ...kaiTakArena.colliders, ...kaiTakYouth.colliders, ...happyValley.colliders, ...shaTin.colliders, ...oceanPark.colliders, ...timesSquare.colliders, ...oceanTerminal.colliders, ...starHouse.colliders, ...marcoPolo.colliders, ...oceanCentre.colliders, ...princeHotel.colliders, ...gatewayTowerOne.colliders, ...gatewayTowerTwo.colliders, ...gatewayTowerThree.colliders, ...gatewayTowerFive.colliders, ...gatewayTowerSix.colliders, ...pacificClub.colliders, ...spaceMuseum.colliders, ...culturalCentre.colliders, ...cityHall.colliders, ...centralLibrary.colliders, ...clockTower.colliders, ...peninsulaHotel.colliders, ...sheratonHotel.colliders, ...salisburyYMCA.colliders, ...kowloonShangriLa.colliders, ...tstWaterfrontRailing.colliders, ...hongKongPark.colliders, ...kowloonPark.colliders, ...victoriaPark.colliders, ...airport.colliders],
+    colliders: [...full.colliders, ...crossings.colliders, ...hsbc.colliders, ...shunTak.colliders, ...chaterGarden.colliders, ...statueSquare.colliders, ...worldWideHouse.colliders, ...entertainmentBuilding.colliders, ...mandarinOriental.colliders, ...princesBuilding.colliders, ...hongKongClub.colliders, ...hangSeng.colliders, ...standardChartered.colliders, ...twoIfc.colliders, ...ifcMall.colliders, ...generalPostOffice.colliders, ...revenueTower.colliders, ...wanchaiTower.colliders, ...immigrationTower.colliders, ...obrienFootbridge.colliders, ...windsorHouse.colliders, ...sogo.colliders, ...governmentHouse.colliders, ...peakTower.colliders, ...peakTramKennedyBridge.colliders, ...murray.colliders, ...blueHouse.colliders, ...hkapa.colliders, ...jardineHouse.colliders, ...icc.colliders, ...bankOfChina.colliders, ...centralPlaza.colliders, ...theCenter.colliders, ...ninaTower.colliders, ...cheungKong.colliders, ...k11Atelier.colliders, ...cullinanI.colliders, ...cullinanII.colliders, ...masterpiece.colliders, ...langhamPlace.colliders, ...summit.colliders, ...hopewell.colliders, ...sunHungKai.colliders, ...twoPacificPlace.colliders, ...airside.colliders, ...leeGardenOne.colliders, ...oneIfc.colliders, ...championTower.colliders, ...ckc2.colliders, ...qgo.colliders, ...centralGovernment.colliders, ...heritage1881.colliders, ...theArch.colliders, ...sorrento.colliders, ...conrad.colliders, ...hysan.colliders, ...twoTaikoo.colliders, ...theHenderson.colliders, ...oneExchange.colliders, ...twoExchange.colliders, ...courtOfFinalAppeal.colliders, ...hkcec.colliders, ...mongKokStadium.colliders, ...hongKongStadium.colliders, ...coliseum.colliders, ...laiYuen.colliders, ...queenElizabethStadium.colliders, ...kaiTakStadium.colliders, ...kaiTakArena.colliders, ...kaiTakYouth.colliders, ...happyValley.colliders, ...shaTin.colliders, ...oceanPark.colliders, ...timesSquare.colliders, ...oceanTerminal.colliders, ...starHouse.colliders, ...marcoPolo.colliders, ...oceanCentre.colliders, ...princeHotel.colliders, ...gatewayTowerOne.colliders, ...gatewayTowerTwo.colliders, ...gatewayTowerThree.colliders, ...gatewayTowerFive.colliders, ...gatewayTowerSix.colliders, ...pacificClub.colliders, ...spaceMuseum.colliders, ...culturalCentre.colliders, ...cityHall.colliders, ...centralLibrary.colliders, ...clockTower.colliders, ...peninsulaHotel.colliders, ...sheratonHotel.colliders, ...salisburyYMCA.colliders, ...kowloonShangriLa.colliders, ...tstWaterfrontRailing.colliders, ...hongKongPark.colliders, ...kowloonPark.colliders, ...victoriaPark.colliders, ...airport.colliders],
     bounds: full.bounds,
     stats,
     personSpawn: { ...SPAWN.person },
