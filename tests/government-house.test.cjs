@@ -20,6 +20,11 @@ test('tower balcony has rounded geometry and a separate coping',()=>{
  assert.ok(bounds.min.x<13.7&&bounds.max.x>22.3&&bounds.min.z<-13.3&&bounds.max.z>-4.7);
  assert.ok(bounds.min.y>19.8&&bounds.max.y<21);
 });
+test('tower includes its smaller attached turret and hipped roof',()=>{
+ const b=M.buildGovernmentHouse(new T.Group());for(const name of ['Government House tower attached turret','Government House turret hipped roof','Government House turret arched window insets','Government House turret window trims and brackets']){
+  const mesh=b.group.getObjectByName(name);assert.ok(mesh,name);const p=mesh.geometry.getAttribute('position');assert.ok(p.count>10);for(const v of p.array)assert.ok(Number.isFinite(v));
+ }
+});
 test('north verandah has separate arched insets, surrounds and parapet vents',()=>{
  const b=M.buildGovernmentHouse(new T.Group());for(const name of ['Government House north verandah arched insets','Government House north verandah arch surrounds','Government House north verandah parapet vents']){
   const mesh=b.group.getObjectByName(name);assert.ok(mesh,name);const p=mesh.geometry.getAttribute('position');assert.ok(p.count>100);for(const value of p.array)assert.ok(Number.isFinite(value));

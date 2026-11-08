@@ -127,6 +127,29 @@ export function buildGovernmentHouse(scene) {
  merged(group,tw,mat.glass,'Government House arched tower window insets');
  merged(group,tf,mat.trim,'Government House arched tower window surrounds',false);
  merged(group,grilles,mat.stone,'Government House tower diamond grilles',false);
+ // The aerial and north-wing references show a smaller hipped-roof turret
+ // projecting from the tower. Its face/offset and dimensions are estimates.
+ const turretBody=[],turretDetail=[],turretGlass=[];
+ const turret=new RoundedBoxGeometry(3.5,4.1,3.0,4,.38);
+ turret.translate(18,17.0,-13.65);turretBody.push(turret);
+ merged(group,turretBody,mat.plaster,'Government House tower attached turret');
+ const turretRoof=new THREE.Mesh(hipRoof(18,-13.65,4.2,3.7,19.05,.8),mat.roof);
+ turretRoof.name='Government House turret hipped roof';group.add(turretRoof);
+ for(const x of [16.95,18,19.05]){
+  // Rounded heads remain surface details; the turret is not a room.
+  const radius=.22,shape=new THREE.Shape();shape.moveTo(-radius,0);shape.lineTo(radius,0);shape.lineTo(radius,.65);
+  shape.absarc(0,.65,radius,0,Math.PI,false);shape.lineTo(-radius,0);
+  const g=new THREE.ShapeGeometry(shape,10);g.translate(x,17.5,-15.19);turretGlass.push(g);
+  for(const dx of [-radius,radius])beam(turretDetail,[x+dx,17.5,-15.22],[x+dx,18.15,-15.22],.055,.055);
+  for(let i=0;i<10;i++){const a=i*Math.PI/10,b=(i+1)*Math.PI/10;
+   beam(turretDetail,[x+radius*Math.cos(a),18.15+radius*Math.sin(a),-15.22],[x+radius*Math.cos(b),18.15+radius*Math.sin(b),-15.22],.055,.055);
+  }
+ }
+ for(const x of [17.05,18.95])beam(turretDetail,[x,14.55,-12.8],[x,15.25,-15.0],.22,.22);
+ merged(group,turretGlass,mat.glass,'Government House turret arched window insets',false);
+ merged(group,turretDetail,mat.stone,'Government House turret window trims and brackets',false);
+ colliders.push(harbourCityLocalCollider(SITE,18,-13.65,3.5,3.0,base+14.5,base+19.85));
+
  box(porch,[1,4.05,9.2],[12,.45,5.5]);for(const x of [-5,7])for(const z of [7.2,11.7]){box(porch,[x,2,z],[.68,4,.68]);const w=harbourCityLocalToWorld(SITE,x,z),foot=Math.min(-.15,hongKongTerrainHeight(w.x,w.z)-base-.15);box(porch,[x,(foot+.28)/2,z],[1,.28-foot,1]);colliders.push(harbourCityLocalCollider(SITE,x,z,1,1,base+foot,base+4.3));}
  merged(group,porch,mat.stone,'Government House granite carriage porch');
  const entry=[],ef=[];box(entry,[1,1.8,6.48],[5.2,3.6,.12]);for(const x of [-1.6,1,3.6])box(ef,[x,1.8,6.58],[.16,3.65,.16]);for(const y of [.12,3.65])box(ef,[1,y,6.58],[5.4,.16,.16]);merged(group,entry,mat.deep,'Government House south entrance glazing');merged(group,ef,mat.stone,'Government House granite entrance surround');
