@@ -38,6 +38,19 @@ const tunnelWays = new Map();
 const verifiedBridgeWays = new Map(HK_VERIFIED_BRIDGES.ways.map((way) => [way.wayId, way]));
 const profileCache = new Map();
 const smoothedWayCache = new Map();
+// Government House approach and the forecourt branch share a node but independent
+// per-way smoothing used to put them 3.5 m apart. These are indices in the bundled
+// road snapshot, NOT OSM IDs; fail closed if the source is regenerated.
+const GH_FORECOURT = 38479, GH_APPROACH = 38480;
+const GH_EXPECTED = new Map([
+  [GH_FORECOURT, [-272.9,415.6,-257,401.3,-266.9,391.8,-267.2,380.8,-257.9,371.9,-245.4,373.4,-225.7,391.8,-226,403.7,-234,410.8,-246.6,410.3,-257,401.3]],
+  [GH_APPROACH, [-225.7,391.8,-212.8,393.9,-200.4,408.5,-198.3,413.9,-197.8,419.5,-202.2,441.4,-201,444.8,-198.7,446.4,-190.6,448.5,-185.9,448,-180.1,444.3,-157.2,424.8,-153.9,424,-150.5,425.2]]
+]);
+for (const [id, expected] of GH_EXPECTED) {
+  const r=HK_FULL_ROADS.roads[id];
+  if (!r || r[0]!=='' || r[1]!==5.5 || r[4]!==0 || r[5].length!==expected.length || r[5].some((v,i)=>v!==expected[i]))
+    throw new Error(`Government House road profile ${id} no longer matches source`);
+}
 let tunnelVertexCount = 0;
 
 for (const [wayId, road] of HK_FULL_ROADS.roads.entries()) {
@@ -122,6 +135,11 @@ export function roadRibbonHeightAtVertex(wayId, vertexIndex) {
     const nodes = [];
     for (let i = 0; i < flat.length; i += 2) nodes.push({ x: flat[i], z: flat[i + 1],
       height: rawRoadRibbonHeightAtVertex(wayId, i / 2) });
+    if (wayId === GH_APPROACH) {
+      // Tie the shared forecourt junction exactly, then lift intermediate valley
+      // vertices toward a continuous grade; endpoints otherwise remain unchanged.
+      nodes[0].height = roadRibbonHeightAtVertex(GH_FORECOURT, 6);
+    }
     heights = smoothConstrainedProfileHeights(nodes);
     smoothedWayCache.set(wayId, heights);
   }
@@ -181,6 +199,13 @@ function buildRibbonProfile(wayId, segmentIndex) {
   if (length < 0.001) {
     const height = roadRibbonHeightAtVertex(wayId, segmentIndex);
     return { ts: [0, 1], heights: [height, height] };
+  }
+  // This local driveway is a visually obvious staircase when smoothed vertices
+  // alternate with unsmoothed DTM interior stations. Use the same continuous
+  // vertex-to-vertex profile for drawing, paint and movement. The forecourt
+  // approach segment immediately before the shared node gets the same treatment.
+  if (wayId === GH_APPROACH || (wayId === GH_FORECOURT && segmentIndex === 5)) {
+    return { ts: [0, 1], heights: [roadRibbonHeightAtVertex(wayId, segmentIndex), roadRibbonHeightAtVertex(wayId, segmentIndex + 1)] };
   }
   const stations = [0, 1], boundaries = new Set();
   for (let distance = ROAD_PROFILE_STEP; distance < length; distance += ROAD_PROFILE_STEP) stations.push(distance / length);
