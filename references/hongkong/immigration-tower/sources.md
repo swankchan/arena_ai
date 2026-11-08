@@ -1,0 +1,9 @@
+# Sources and observations — Immigration Tower
+
+Research date 2026-10-24. No source below is a surveyed engineering model.
+
+- [OSM way 510722228/full.json](https://api.openstreetmap.org/api/0.6/way/510722228/full.json), version 8, timestamp 2026-10-01, © OpenStreetMap contributors, ODbL: named building, Gloucester Road 7, glass, 180 m, levels 50, layer 2; node 5382735659 marked entrance. Its `wikipedia` and Commons tags incorrectly identify Court of Final Appeal; ignore those tags. Coordinate ring embedded in project source. OSM layer 2 needs analysis against real roads and footbridges rather than treating it as a measured ground datum.
+- [Skyscraper Center](https://www.skyscrapercenter.com/building/immigration-tower/2271): architectural height 180.8 m, 49 floors; a separate 193.8 m figure appears, so rooftop advertisement/equipment should not be counted as occupied floors.
+- [Wikipedia](https://en.wikipedia.org/wiki/Immigration_Tower): completed 1990; 49 floors, ground and first-floor entrances, sky lobby 38th floor, connected elevated walkway, former Treasury tenant. Verify facade dimensions independently; source text is not a floor plan.
+- [Tourism Commission](https://www.tourism.gov.hk/symphony/english/participating/participating_hk_06.html): Immigration Tower is a Symphony of Lights participant via a rooftop LED screen, not verified facade-wide floodlights. Billboard advertiser has changed, so avoid presenting a specific logo as timeless fact.
+- The photos show reflective blue-grey glazing, fine pale mullion grid and substantial black horizontal/vertical bands. Daylight reflections change the apparent colour. Dark podium with lighter canopy and sign, trees and garden. One image shows a clearly open footbridge-level entrance. Exact dimensions, occupied floors lit at night, indoor floor plan, ground levels, bridge connections and road clearances need separate analysis.
