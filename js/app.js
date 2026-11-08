@@ -52,7 +52,7 @@ export function startCity(cityId) {
 async function initApp(cityStub) {
   const { city } = await cityStub.load();
 
-  document.title = `${city.name} — Slop Cities`;
+  document.title = city.name;
   document.body.dataset.city = city.id;
   const brandTitle = document.getElementById('brand-title');
   if (brandTitle) brandTitle.textContent = city.name;
