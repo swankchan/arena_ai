@@ -1718,3 +1718,6 @@ body.touch-enabled .instrument { width: 113px; flex-basis: 113px; }
 .model-export button { padding: 9px 14px; border: 1px solid var(--glass-border); border-radius: 8px; cursor: pointer; }
 .model-export button:disabled { opacity: .55; cursor: wait; }
 .model-export [role="status"]:empty { display: none; }
+.model-export label { display: block; margin: 10px 0 4px; color: var(--text-2); font-size: 12px; }
+.model-export input, .model-export select { width: 100%; padding: 9px; border: 1px solid var(--glass-border); border-radius: 8px; background: #20252b; color: #f4f6f5; }
+.model-export-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }

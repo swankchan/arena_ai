@@ -37,7 +37,7 @@ test('vehicle speed HUD and meter use kilometres per hour', () => {
 
 test('native module entry and imports share canonical preloaded URLs on GitHub Pages', () => {
   const links = preloads.map((match) => match[1]);
-  assert.equal(links.length, 3);
+  assert.equal(links.length, 4);
   assert.equal(new Set(links).size, links.length, 'each module is preloaded once');
   assert.equal(entries.length, 1);
   assert.equal(entries[0][1], './js/main.js');

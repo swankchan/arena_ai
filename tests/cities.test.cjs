@@ -57,6 +57,6 @@ test('the home screen exposes the city picker before the simulation starts', () 
   const main = read('js/main.js');
   assert.match(main, /renderCityCards\(\);/);
   const staticImports = [...main.matchAll(/^import .* from ['"]([^'"]+)['"];/gm)].map((match) => match[1]);
-  assert.deepEqual(staticImports, ['./cities/registry.js', './taxi-styles.js']);
+  assert.deepEqual(staticImports, ['./cities/registry.js', './taxi-styles.js', './exports/building-catalog.js']);
   assert.match(main, /import\('\.\/app\.runtime\.js'\)/, 'the self-contained 3D runtime loads after the lightweight entry');
 });

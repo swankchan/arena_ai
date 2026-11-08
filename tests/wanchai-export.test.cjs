@@ -26,7 +26,7 @@ test('isolated export bundles only model dependencies and round-trips through Ob
   assert.ok(restored.children.some(child => child.material.map));
   assert.deepEqual(restored.position.toArray(), [0, 0, 0]);
   const src = readFileSync('js/main.js', 'utf8');
-  assert.match(src, /import\('\.\/exports\/wanchai-export\.runtime\.js'\)/);
+  assert.match(src, /import\('\.\/exports\/building-export\.js'\)/);
 });
 
 test('isolated model geometry and transforms match the game tower', async () => {
@@ -80,6 +80,6 @@ test('experimental TSL JSON contains the node graph and a fixed night uniform', 
   assert.ok(restored.children.some(child => child.material.map));
   assert.equal(restored.children.length, createWanchaiExport().object.children.length);
   const html = readFileSync('index.html', 'utf8');
-  assert.match(html, /id="export-wanchai-tsl"/);
-  assert.match(html, /普通匯入器不支援 NodeMaterial/);
+  assert.match(html, /id="export-building-tsl"/);
+  assert.match(html, /Editor r187 普通匯入器/);
 });

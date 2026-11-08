@@ -20,6 +20,7 @@
   <!-- Only the lightweight picker is preloaded. The self-contained city runtime loads on demand. -->
   <link rel="modulepreload" href="./js/cities/registry.js" />
   <link rel="modulepreload" href="./js/taxi-styles.js" />
+  <link rel="modulepreload" href="./js/exports/building-catalog.js" />
   <link rel="modulepreload" href="./js/main.js" />
   <script type="module" src="./js/main.js"></script>
   <!-- Inter (UI) & Overpass (street-name signs: modelled on Highway Gothic, the US road sign typeface) -->
@@ -73,10 +74,16 @@
       <p id="city-picker-status" class="city-picker-status" role="status" aria-live="polite" hidden></p>
       <section class="model-export" aria-labelledby="model-export-title">
         <h2 id="model-export-title">Three.js Editor 模型匯出（試驗）</h2>
-        <p>獨立下載灣仔政府大樓，不用進入香港。合併的窗戶未能逐個選取。</p>
-        <button id="export-wanchai" type="button">下載普通材質 JSON（Editor 可匯入）</button>
-        <button id="export-wanchai-tsl" type="button">下載 TSL JSON（實驗）</button>
-        <p>TSL 版保留材質節點及固定夜景值，但 Three.js Editor r187 的普通匯入器不支援 NodeMaterial；不能直接在 Editor 還原夜燈，需相容的節點載入器。遊戲日夜控制亦不會跟隨。</p>
+        <p>選擇已支援的建物，不用載入完整香港場景。部分建物需下載較多地圖資料；大型模型檔案可能很大。</p>
+        <label for="model-search">搜尋建物</label>
+        <input id="model-search" type="search" placeholder="輸入名稱 Search" autocomplete="off">
+        <label for="model-select">選擇建物</label>
+        <select id="model-select" aria-label="選擇要匯出的建物"></select>
+        <div class="model-export-actions">
+          <button id="export-building" type="button">下載普通材質 JSON</button>
+          <button id="export-building-tsl" type="button">下載 TSL JSON（實驗）</button>
+        </div>
+        <p>普通版可用 Editor 匯入，但複雜材質、夜燈會簡化；合併的窗戶不能逐個選取。TSL 版不能用 Editor r187 普通匯入器還原，亦不連接遊戲日夜控制。</p>
         <p id="model-export-status" role="status" aria-live="polite"></p>
       </section>
     </div>

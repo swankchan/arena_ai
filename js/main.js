@@ -1,5 +1,6 @@
 import { CITIES, getCity } from './cities/registry.js';
 import { getTaxiStyle } from './taxi-styles.js';
+import { EXPORT_BUILDINGS } from './exports/building-catalog.js';
 
 // Lightweight application entry. Keep the home screen independent of Three.js and city-pack
 // imports so the picker still renders when a runtime module or graphics dependency is unavailable.
@@ -82,35 +83,61 @@ async function selectCity(cityId) {
 
 renderCityCards();
 
+const modelSelect = document.getElementById('model-select');
+const modelSearch = document.getElementById('model-search');
+const modelStatus = document.getElementById('model-export-status');
 const exportButtons = [
-  { id: 'export-wanchai', tsl: false },
-  { id: 'export-wanchai-tsl', tsl: true }
+  { id: 'export-building', tsl: false },
+  { id: 'export-building-tsl', tsl: true }
 ];
+function updateModelOptions() {
+  const previous = modelSelect.value;
+  const query = modelSearch.value.trim().toLocaleLowerCase();
+  const matches = EXPORT_BUILDINGS.filter(item => `${item.name} ${item.id}`.toLocaleLowerCase().includes(query));
+  modelSelect.replaceChildren();
+  for (const item of matches) {
+    const option = document.createElement('option');
+    option.value = item.id; option.textContent = item.name;
+    modelSelect.appendChild(option);
+  }
+  if (matches.some(item => item.id === previous)) modelSelect.value = previous;
+  modelStatus.textContent = matches.length ? `${matches.length} 個可匯出項目` : '找不到符合的建物。';
+  for (const { id } of exportButtons) document.getElementById(id).disabled = !matches.length;
+}
+if (modelSelect && modelSearch && modelStatus) {
+  modelSearch.addEventListener('input', updateModelOptions);
+  updateModelOptions();
+}
 for (const { id, tsl } of exportButtons) {
   const button = document.getElementById(id);
   button?.addEventListener('click', async () => {
-    const status = document.getElementById('model-export-status');
+    const selected = EXPORT_BUILDINGS.find(item => item.id === modelSelect.value);
+    if (!selected) return;
     const buttons = exportButtons.map(item => document.getElementById(item.id)).filter(Boolean);
     buttons.forEach(item => { item.disabled = true; });
-    status.textContent = '正在建立模型及 JSON…';
+    modelSelect.disabled = modelSearch.disabled = true;
+    modelStatus.textContent = `正在載入及建立 ${selected.name}…大型模型可能需要較長時間。`;
     try {
       await new Promise(resolve => setTimeout(resolve, 0));
-      const exports = await import('./exports/wanchai-export.runtime.js');
-      const json = tsl ? exports.createWanchaiTslExport() : exports.createWanchaiExport();
+      const { createBuildingExport } = await import('./exports/building-export.js');
+      const json = await createBuildingExport(selected.id, { tsl });
       const url = URL.createObjectURL(new Blob([JSON.stringify(json)], { type: 'application/json' }));
       try {
         const link = document.createElement('a');
         link.href = url;
-        link.download = tsl ? 'wanchai-tower-tsl-experimental.json' : 'wanchai-tower-threejs.json';
+        link.download = `${selected.id}${tsl ? '-tsl-experimental' : '-threejs'}.json`;
         document.body.appendChild(link); link.click(); link.remove();
       } finally { setTimeout(() => URL.revokeObjectURL(url), 60000); }
-      status.textContent = tsl
-        ? '已準備 TSL 檔案。Editor 普通匯入器不支援節點材質，請使用相容的 NodeObjectLoader；此為固定夜景，並非遊戲日夜控制。'
-        : '已準備下載。請在 Three.js Editor 選 File → Import。夜燈及遊戲碰撞資料不包含在內。';
+      modelStatus.textContent = tsl
+        ? `${selected.name} TSL 檔案已準備；Editor 普通匯入器不支援節點材質。`
+        : `${selected.name} 已準備下載。可在 Three.js Editor 選 File → Import。材質及燈光可能有簡化。`;
     } catch (error) {
       console.error('[model export]', error);
-      status.textContent = '匯出失敗，請重試；詳情請查看瀏覽器 console。';
-    } finally { buttons.forEach(item => { item.disabled = false; }); }
+      modelStatus.textContent = `匯出 ${selected.name} 失敗：${error.message || '請重試並查看瀏覽器 console'}`;
+    } finally {
+      modelSelect.disabled = modelSearch.disabled = false;
+      buttons.forEach(item => { item.disabled = false; });
+    }
   });
 }
 
