@@ -105,11 +105,10 @@ test('The Salisbury has a traceable DTM pad and unchanged outside terrain', () =
 
 test('world authors the photo-reviewed pale precast podium, red YMCA identity, banded towers and entrance', () => {
   const world = fs.readFileSync(path.join(root, 'js/cities/hongkong/salisbury-ymca-world.js'), 'utf8');
-  for (const pattern of [/light warm-grey precast Salisbury podium/, /Small square Salisbury podium windows/, /White podium window surrounds/, /dark blue-grey shopfront piers/, /dark shopfront fascia band/, /red painted wall panel/, /Red YMCA emblem/, /two unequal Salisbury towers/, /continuous rounded white horizontal window bands/, /curved-corner windows/, /Lower central connector/, /Warm Salisbury entrance downlights/, /SALISBURY_TOWER_MODEL_HEIGHTS/, /salisburyTerrainHeightAt/]) assert.match(world, pattern);
+  for (const pattern of [/light warm-grey precast Salisbury podium/, /Small square Salisbury podium windows/, /White podium window surrounds/, /dark blue-grey shopfront piers/, /dark shopfront fascia band/, /Red YMCA emblem/, /two unequal Salisbury towers/, /continuous rounded white horizontal window bands/, /curved-corner windows/, /Lower central connector/, /Warm Salisbury entrance downlights/, /SALISBURY_TOWER_MODEL_HEIGHTS/, /salisburyTerrainHeightAt/]) assert.match(world, pattern);
   assert.doesNotMatch(world, /image-search|\.jpg|\.png/);
-  // The reviewed daylight photograph rules out a uniformly white tower and a dark concrete podium.
+  // The older model is provisional and needs correction against the archived photographs.
   assert.doesNotMatch(world, /Photo-derived white rounded Salisbury tower/);
-  assert.doesNotMatch(world, /dark-grey Salisbury podium/);
   assert.match(world, /roughness: 0\.62/);
 });
 
@@ -118,4 +117,23 @@ test('The Salisbury is integrated into world, ground, road profiles, map and run
   const map = fs.readFileSync(path.join(root, 'js/cities/hongkong/map.js'), 'utf8'), index = fs.readFileSync(path.join(root, 'js/cities/hongkong/index.js'), 'utf8');
   assert.match(simple, /buildSalisburyYMCA/); assert.match(simple, /salisburyYMCA\.groundHeightAt/); assert.match(simple, /\.\.\.salisburyYMCA\.colliders/); assert.match(simple, /\.\.\.salisburyYMCA\.landmarks/);
   assert.match(road, /SALISBURY_GROUND_RINGS/); assert.match(map, /SALISBURY_SITE\.ring/); assert.match(map, /salisburyYMCAMapSite/); assert.match(index, /salisburyYMCA: world\.salisburyYMCA/);
+});
+
+
+test('all Salisbury mesh geometry contains finite positions and bounding boxes', async () => {
+  class Canvas { getContext() { return new Proxy({}, {get: () => () => {}, set: () => true}); } }
+  const previous = global.document;
+  global.document = {createElement: () => new Canvas()};
+  try {
+    const THREE = await import('three/webgpu');
+    const {buildSalisburyYMCA} = await import('../js/cities/hongkong/salisbury-ymca-world.js');
+    const {root} = buildSalisburyYMCA(new THREE.Scene());
+    root.traverse(o => {
+      if (!o.isMesh) return;
+      const pos = o.geometry.getAttribute('position');
+      for (const v of pos.array) assert.ok(Number.isFinite(v), o.name);
+      o.geometry.computeBoundingBox();
+      for (const v of [...o.geometry.boundingBox.min.toArray(), ...o.geometry.boundingBox.max.toArray()]) assert.ok(Number.isFinite(v), o.name);
+    });
+  } finally { global.document = previous; }
 });

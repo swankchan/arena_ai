@@ -59,13 +59,12 @@ function buildEntrance(group, base, materials) {
 }
 
 // Reviewed exterior photography (The Salisbury, Salisbury Road corner) shows light warm-grey precast/concrete
-// cladding with white window surrounds, a dark blue-grey shopfront base at street level and a red painted wall
-// at the west end - not the uniformly dark podium this module previously assumed.
+// cladding and darker podium. The existing podium is provisional: clearer photographs show a charcoal
+// tiled podium rather than this pale shell. See references/hongkong/salisbury-ymca before rebuilding it.
 function buildPodium(group, base, materials) {
   const site = SALISBURY_SITE;
   const precast = new THREE.MeshStandardMaterial({ color: 0x9b9a93, roughness: 0.9, metalness: 0.02 });
   const shopfront = new THREE.MeshStandardMaterial({ color: 0x333d46, roughness: 0.66, metalness: 0.14 });
-  const redAccent = new THREE.MeshStandardMaterial({ color: 0x9d2b32, roughness: 0.8, metalness: 0.04 });
   meshFromGeometry(group, ringShellGeometry(site.localRing, 4.8, SALISBURY_PODIUM_HEIGHT), precast,
     'Exact OSM four-level light warm-grey precast Salisbury podium above the dark shopfront base');
   const ground = createRingWindowRows(site, {
@@ -98,7 +97,7 @@ function buildPodium(group, base, materials) {
   ringBand(bands, site, 4.82, 0.26, 0.18, 0.25); ringBand(bands, site, 14.65, 0.35, 0.30, 0.34);
   // Dark shopfront base: navy fascia over every street-level bay plus pilasters between bays, matching the
   // reviewed corner photograph where the ground floor reads as a dark band under pale precast.
-  const fascia = [], red = [];
+  const fascia = [];
   let fasciaSegments = 0;
   for (let edge = 0; edge < site.localRing.length / 2 - 1; edge++) {
     const length = harbourCityEdgeOutward(site.localRing, edge).length, bays = Math.max(1, Math.round(length / 3.8));
@@ -108,11 +107,8 @@ function buildPodium(group, base, materials) {
       edgeBox(fascia, site, edge, middle, 4.58, 0.17, length / bays * 0.94, 0.62, 0.34); fasciaSegments++;
     }
   }
-  // The red painted panel sits on the short west return of the podium in the reviewed photograph.
-  for (const [edge, t] of [[0, 0.18], [15, 0.82]]) edgeBox(red, site, edge, t, 2.35, 0.13, 3.4, 4.5, 0.22);
   merged(group, piers, shopfront, 'The Salisbury dark blue-grey shopfront piers');
   merged(group, fascia, shopfront, 'The Salisbury dark shopfront fascia band above the street-level glazing');
-  merged(group, red, redAccent, 'The Salisbury red painted wall panel on the west return');
   merged(group, bands, precast, 'The Salisbury pale precast stone courses');
   colliders.push(...buildEntrance(group, base, materials));
 
