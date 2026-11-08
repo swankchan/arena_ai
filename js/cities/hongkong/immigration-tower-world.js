@@ -7,7 +7,7 @@ import { store, quad, point, edgeBox, meshStore, merged, roofGeometry, nightAmou
 import { makeCanvasSign } from './tst-hotel-world-utils.js';
 import { OBRIEN_DECK_HEIGHT } from './obrien-footbridge-architecture.js';
 
-// Photo-directed exterior; public bridge and complete interior are not modeled.
+// Photo-directed exterior, bridge-side and garden-side entrance vestibules.
 export function buildImmigrationTower(scene){
  const base=hongKongTerrainHeight(site.x,site.z),group=new THREE.Group(),glass=store(),podium=store(),frames=[],fine=[],colliders=[];
  group.name='Immigration Tower — 入境事務大樓';group.position.set(site.x,base,site.z);group.rotation.y=site.ry;scene.add(group);
@@ -127,6 +127,50 @@ export function buildImmigrationTower(scene){
  const n=harbourCityEdgeOutward(site.localRing,0),sign=makeCanvasSign(9.5,1.3,(ctx,c)=>{
   ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillStyle='#d7e0e0';ctx.font='bold 104px sans-serif';ctx.fillText('入境事務大樓  IMMIGRATION TOWER',c.width/2,c.height/2,c.width*.94);
  });sign.position.set(...point(site,0,.78,12.75,.17));sign.rotation.y=Math.atan2(n.nx,n.nz);sign.name='Immigration Tower entrance lettering';group.add(sign);
+
+ // Garden G/F entrance: POF records two open double-door portals separated by
+ // glazing. The footprints, frames and limited interior are estimates, not a plan.
+ const groundFloor=[],groundGrid=[],groundWalls=[],groundCeiling=[],groundLights=[],doorFrame=[],groundTactile=[];
+ box(groundFloor,[-16.7,.015,0],[17.4,.03,14]);
+ box(groundCeiling,[-16.7,4.3,0],[17.4,.18,14]);
+ for(let x=-25;x<-8;x+=1)box(groundGrid,[x,.035,0],[.018,.012,14]);
+ for(let z=-6;z<=6;z+=1)box(groundGrid,[-16.7,.035,z],[17.4,.012,.018]);
+ for(const [x,z,w,d] of [[-8,0,.18,14],[-16.7,-7,17.4,.18],[-16.7,7,17.4,.18]]){
+  box(groundWalls,[x,2.15,z],[w,4.3,d]);
+  colliders.push(harbourCityLocalCollider(site,x,z,w,d,base,base+4.3));
+ }
+ for(let x=-23;x< -8;x+=3.5)for(const z of [-4,0,4])box(groundLights,[x,4.195,z],[.8,.025,.38]);
+ for(const z of [-1.45,1.45]){
+  box(groundTactile,[-26.4,.045,z],[.45,.03,2]);
+  box(groundTactile,[-23,.045,z],[3,.03,.15]);
+ }
+ // Centre glazing and open leaves against the two sides; the openings remain
+ // walkable. The metal-framed central pane is transparent, not an opaque wall.
+ const entranceX=site.localRing[2], pane=new THREE.Mesh(new THREE.BoxGeometry(.09,3.5,.50),new THREE.MeshStandardMaterial({color:0x637d7b,metalness:.2,roughness:.18,transparent:true,opacity:.42}));
+ pane.position.set(entranceX,1.75,0);pane.name='Immigration Tower garden entrance centre glass';group.add(pane);
+ colliders.push(harbourCityLocalCollider(site,entranceX,0,.15,.5,base,base+3.5));
+ for(const z of [-.25,.25])beam(doorFrame,[entranceX,0,z],[entranceX,3.6,z],.075);
+ for(const z of [-2.9,2.9])beam(doorFrame,[entranceX,0,z],[entranceX,3.6,z],.09);
+ beam(doorFrame,[entranceX,3.6,-2.9],[entranceX,3.6,2.9],.09);
+ // Stainless-steel door leaves are drawn folded back at either side of entry.
+ for(const z of [-2.8,2.8]){
+  beam(doorFrame,[entranceX,0,z],[entranceX-1.2,0,z],.055);
+  beam(doorFrame,[entranceX,3.4,z],[entranceX-1.2,3.4,z],.055);
+  beam(doorFrame,[entranceX-1.2,0,z],[entranceX-1.2,3.4,z],.055);
+ }
+ for(const z of [-4.5,0,4.5])box(groundLights,[-28.2,4.22,z],[.38,.025,.8]);
+ const groundLamp=new THREE.MeshStandardNodeMaterial({color:0xb9b8a7,roughness:.65});groundLamp.emissiveNode=color(0xffe3b3).mul(nightAmount()).mul(.8);
+ const groundStone=new THREE.MeshStandardMaterial({color:0x88877e,roughness:.75,metalness:.08});
+ const groundWallMat=new THREE.MeshStandardMaterial({color:0x777970,roughness:.8});
+ const groundJoints=new THREE.MeshStandardMaterial({color:0x555b56,roughness:.9});
+ const groundYellow=new THREE.MeshStandardMaterial({color:0x9e9060,roughness:.85});
+ merged(group,groundFloor,groundStone,'Immigration Tower garden vestibule floor');
+ merged(group,groundGrid,groundJoints,'Immigration Tower garden vestibule joints',false);
+ merged(group,groundWalls,groundWallMat,'Immigration Tower garden vestibule provisional walls');
+ merged(group,groundCeiling,groundWallMat,'Immigration Tower garden vestibule ceiling');
+ merged(group,groundLights,groundLamp,'Immigration Tower garden vestibule and canopy night lights',false);
+ merged(group,groundTactile,groundYellow,'Immigration Tower garden doorway tactile paving',false);
+ merged(group,doorFrame,thinFrame,'Immigration Tower garden entry metal framing',false);
  // Estimated 1/F entrance vestibule: finish the HF95 end without inventing
  // the unverified Central Plaza passage or the interior stair arrangement.
  // Floor is exactly at bridge height rather than tied to fluctuating ground.
