@@ -31,6 +31,9 @@ function sheratonNodePalette(options) {
   }
   // Hotel rooms read as warm-lit interiors at dusk, not emissive blue-green glass.
   // Individual occupancy is illustrative, not a measured operating pattern.
+  // Upper rings wind opposite the podium: their window triangles face inward.
+  // Render both faces so lit panes are visible from outside on either ring winding.
+  palette.glazing.side = THREE.DoubleSide;
   palette.glazing.emissiveNode = color(0xffd39b).mul(attribute('aLit', 'float')).mul(nightAmount()).mul(2.8);
   return palette;
 }
@@ -216,7 +219,7 @@ function buildRearWing(group, base, materials) {
   return {windows: windows.panels, colliders: harbourCityRingColliders(site, base + SHERATON_PODIUM_HEIGHT, base + SHERATON_REAR_WING_HEIGHT, .42)};
 }
 function buildBillboard(group, materials) {
-  // The actual advertising varies over time; a dark unbranded face avoids inventing an advert.
+  // Billboard imagery changes; use a fictional, unbranded city graphic rather than a real advertisement.
   const support = [], screen = [], frame = [], y = SHERATON_MODEL_HEIGHT;
   box(screen, [2, y + 5.3, 30.55], [66, 9.4, .20]);
   for (const x of [-31, -20, -9, 2, 13, 24, 35]) {
@@ -226,6 +229,17 @@ function buildBillboard(group, materials) {
   }
   for (const h of [y + .6, y + 10]) beam(frame, [-31, h, 30.55], [35, h, 30.55], .12);
   merged(group, screen, materials.dark, 'Sheraton roof billboard unbranded screen');
+  const display = makeCanvasSign(65.5, 9.0, (ctx, canvas) => {
+    ctx.fillStyle = '#12324d'; ctx.fillRect(0, 0, canvas.width, canvas.height);
+    ctx.fillStyle = '#225a70'; ctx.fillRect(0, canvas.height * .71, canvas.width, canvas.height * .29);
+    ctx.fillStyle = '#e4c68b'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.font = 'bold 132px Georgia, serif'; ctx.fillText('HONG KONG', canvas.width * .5, canvas.height * .40, 1400);
+    ctx.font = '52px Arial, sans-serif'; ctx.fillText('VICTORIA HARBOUR', canvas.width * .5, canvas.height * .73, 1200);
+  }, { transparent: false });
+  illuminateSheratonSign(display);
+  display.material.emissiveNode = texture(display.material.map).rgb.mul(nightAmount()).mul(2.2);
+  display.name = 'Sheraton rooftop billboard illuminated fictional city graphic';
+  display.position.set(2, y + 5.3, 30.67); group.add(display);
   merged(group, support, materials.metal, 'Sheraton roof billboard triangular trusses');
   merged(group, frame, materials.metal, 'Sheraton roof billboard frame');
 }

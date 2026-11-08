@@ -22,3 +22,6 @@ Multiple further exterior, elevation, entrance and pool searches were visually c
 - [Fish&Tips 2019 visitor review](https://fishand.tips/en/hotel/Sheraton_HongKong_HotelTowers/) shows a recessed, tall entrance, dark frame, glass doors and Sheraton circular emblem, and identifies the pool on level 18. Door, advertising and signage details may have changed since 2019.
 
 The photo archive is retained for reference, not licensed for use as game textures. Detailed massing, roof and billboard dimensions remain photo-directed estimates.
+
+## Night visibility correction
+Positive-winding upper-wing window quads face into their shells and front-face culling hid them from outdoors despite their emissive nodes. The hotel-local glazing now renders both sides. The formerly deliberately dark, unbranded rooftop billboard now has an emissive, fictional Hong Kong harbour graphic; it is not a reconstruction of any real current advertisement. The lighting still requires a visual check in the actual WebGPU game.

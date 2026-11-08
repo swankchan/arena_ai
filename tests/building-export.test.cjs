@@ -114,3 +114,39 @@ test('Peninsula night fountain and facade lighting serialize as node materials',
     assert.ok(material.inputNodes?.emissiveNode, name);
   }
 });
+
+test('YMCA and Sheraton lit guestroom panes are visible from outside and billboard has a night node', async () => {
+  const THREE = await import('three/webgpu');
+  const { buildSalisburyYMCA } = await import('../js/cities/hongkong/salisbury-ymca-world.js');
+  const { buildSheratonHotel } = await import('../js/cities/hongkong/sheraton-hotel-world.js');
+  for (const [build, names] of [
+    [buildSalisburyYMCA, ['Tower 1 individual square and curved-corner windows', 'Tower 2 individual square and curved-corner windows']],
+    [buildSheratonHotel, ['Sheraton individual dark guestroom glazing panels', 'Rear wing individual guestroom glazing']],
+  ]) {
+    const scene = new THREE.Scene(), model = build(scene); scene.updateMatrixWorld(true);
+    for (const name of names) {
+      const pane = model.root.getObjectByName(name); assert.ok(pane, name);
+      assert.equal(pane.material.side, THREE.DoubleSide, name);
+      assert.ok(pane.material.emissiveNode, name);
+      const p = pane.geometry.getAttribute('position'), lit = pane.geometry.getAttribute('aLit');
+      let index = -1; for (let i = 0; i < p.count; i += 6) if (lit.getX(i) > 0) { index = i; break; }
+      assert.ok(index >= 0, `${name} has lit panes`);
+      const a = new THREE.Vector3().fromBufferAttribute(p, index).applyMatrix4(pane.matrixWorld);
+      const b = new THREE.Vector3().fromBufferAttribute(p, index + 1).applyMatrix4(pane.matrixWorld);
+      const c = new THREE.Vector3().fromBufferAttribute(p, index + 2).applyMatrix4(pane.matrixWorld);
+      const normal = b.clone().sub(a).cross(c.clone().sub(a)).normalize();
+      const centre = a.clone().add(b).add(c).multiplyScalar(1 / 3);
+      // Positive-winding hotel rings generate inward-facing triangles; test from their outside.
+      const ray = new THREE.Raycaster(centre.clone().addScaledVector(normal, -1), normal);
+      assert.ok(ray.intersectObject(pane).some(hit => hit.distance < 1.01), `${name} must render from the formerly culled side`);
+      pane.material.side = THREE.FrontSide;
+      assert.equal(ray.intersectObject(pane).filter(hit => hit.distance < 1.01).length, 0, `${name} regression check: front-only culled the pane`);
+      pane.material.side = THREE.DoubleSide;
+    }
+  }
+  const json = await (await import('../js/exports/building-export.js')).createBuildingExport('sheraton-hotel', {tsl: true});
+  const objects = []; const visit = o => {objects.push(o); for (const c of o.children || []) visit(c);}; visit(json.object);
+  const sign = objects.find(o => o.name === 'Sheraton rooftop billboard illuminated fictional city graphic');
+  assert.ok(sign); const material = json.materials.find(m => m.uuid === sign.material);
+  assert.equal(material.type, 'MeshStandardNodeMaterial'); assert.ok(material.inputNodes?.emissiveNode);
+});
