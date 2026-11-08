@@ -130,3 +130,22 @@ test('no occupied collider seals the tall arch void or the near-top circular ope
   assert.deepEqual(occupied(world.colliders,arch.THE_ARCH_LINK_SITE.x,arch.THE_ARCH_LINK_SITE.z,base+arch.THE_ARCH_LINK.crownOculusY),[]);
   assert.ok(world.colliders.some((c)=>c.minY>=base+arch.THE_ARCH_LINK.soffit));
 });
+
+test('residential and clubhouse glazing is double-sided, node-lit and includes projecting Sky Club bays', async () => {
+  globalThis.document = { createElement: () => ({ width: 0, height: 0, getContext: () => ({ fillRect(){}, fillText(){} }) }) };
+  const THREE = await import('three/webgpu');
+  const { buildTheArch } = await import('../js/cities/hongkong/the-arch-world.js');
+  const scene = new THREE.Scene(); buildTheArch(scene, { groundOffset: 6.196010572952247 });
+  const bay = scene.getObjectByName('The Arch — projecting curved Sky Club glazing');
+  assert.ok(bay); assert.equal(bay.material.side, THREE.DoubleSide);
+  assert.ok(bay.material.isNodeMaterial && bay.material.emissiveNode);
+  assert.ok([...bay.geometry.getAttribute('aLit').array].some((v) => v > 0));
+  let residential = 0;
+  scene.traverse((o) => {
+    if (!o.name.includes('individual green-blue sliding-door panes')) return;
+    residential++;
+    assert.equal(o.material.side, THREE.DoubleSide);
+    assert.ok(o.material.isNodeMaterial && o.material.emissiveNode);
+  });
+  assert.ok(residential >= 4);
+});

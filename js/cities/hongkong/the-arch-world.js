@@ -127,12 +127,43 @@ function oculusPanelGeometry(z) {
   geometry.translate(0, THE_ARCH_LINK.crownOculusY, z); return geometry;
 }
 
+// The glazed Sky Club projects beyond the arch on each face. Its two faces differ in photographs;
+// these curved bays and the dimensions are visual approximations, not surveyed facade geometry.
+function addClubhouseBays(group, materials) {
+  const glazing = store(), trim = [];
+  for (const [side, halfWidth, projection] of [[-1, 11.5, 2.3], [1, 7.0, 1.4]]) {
+    const segments = 16, bottom = THE_ARCH_LINK.soffit + 1.0, top = THE_ARCH_LINK.top - 0.8;
+    const pos = (i, y) => {
+      const x = -halfWidth + 2 * halfWidth * i / segments;
+      const bulge = projection * (1 - (x / halfWidth) ** 2);
+      return [x, y, side * (11.1 + bulge)];
+    };
+    for (let i = 0; i < segments; i++) {
+      for (let row = 0; row < 4; row++) {
+        const lo = lerp(bottom, top, row / 4), hi = lerp(bottom, top, (row + 1) / 4);
+        quad(glazing, pos(i, lo + .08), pos(i + 1, lo + .08), pos(i + 1, hi - .08), pos(i, hi - .08), [0.20, 0.43, 0.40], .30);
+      }
+      const a = pos(i, bottom), b = pos(i + 1, bottom);
+      for (let row = 0; row <= 4; row++) {
+        const y = lerp(bottom, top, row / 4);
+        const mid = [(a[0]+b[0])/2, y, (a[2]+b[2])/2];
+        box(trim, mid, [Math.hypot(b[0]-a[0], b[2]-a[2]) + .04, .13, .15], Math.atan2(-(b[2]-a[2]), b[0]-a[0]));
+      }
+      box(trim, pos(i, (bottom + top) / 2), [.12, top-bottom, .18]);
+    }
+    box(trim, pos(segments, (bottom + top) / 2), [.12, top-bottom, .18]);
+  }
+  meshStore(group, glazing, materials.glazing, 'The Arch — projecting curved Sky Club glazing', false);
+  merged(group, trim, materials.paleStone, 'The Arch — Sky Club glazed bay frames', false);
+}
+
 function buildElevatedArch(root, base, materials) {
   const site = THE_ARCH_LINK_SITE, group = new THREE.Group(); group.name = 'The Arch — genuine tall void, elevated clubhouse and circular crown opening';
   group.position.set(site.x, base, site.z); group.rotation.y = site.ry; root.add(group);
   const clubhouse = addResidentialFacade(group, site, { y0: THE_ARCH_LINK.soffit, y1: THE_ARCH_LINK.upperBridgeTop,
     courses: 10, bayWidth: 1.65, balconies: false, spandrel: 0.82, seed: 121,
     glassA: [0.045,0.15,0.16], glassB: [0.22,0.40,0.37], spandrelTint: [0.40,0.26,0.18], litThreshold: 0.70 }, materials, 'The Arch elevated clubhouse and upper bridge');
+  addClubhouseBays(group, materials);
   meshFromGeometry(group, roofGeometry(site.localRing, THE_ARCH_LINK.soffit), materials.bronze, 'The Arch — deep bronze soffit over the real rectangular void');
   const soffitRibs = [];
   for (let x = -29; x <= 29; x += 2.0) box(soffitRibs, [x, THE_ARCH_LINK.soffit - 0.32, 0], [0.16, 0.62, 21.6]);
@@ -165,8 +196,15 @@ function buildElevatedArch(root, base, materials) {
 export function buildTheArch(scene, { groundOffset = 0 } = {}) {
   const root = new THREE.Group(); root.name = 'The Arch — four authored towers and photo-directed elevated arch'; scene.add(root);
   const materials = harbourCityPalette({ stone: [0.45,0.28,0.20], paleStone: [0.73,0.69,0.57], metal: [0.36,0.24,0.18], roof: [0.24,0.28,0.27], roughness: 0.25, metalness: 0.34 });
+  // Preserve node graphs for export; ring winding varies, so panes must be visible from outside.
+  for (const key of ['glazing', 'interior', 'stone', 'paleStone', 'white']) {
+    const source = materials[key];
+    const node = new THREE.MeshStandardNodeMaterial({ color: source.color, roughness: source.roughness, metalness: source.metalness, vertexColors: source.vertexColors, side: source.side });
+    node.colorNode = source.colorNode; node.emissiveNode = source.emissiveNode; source.dispose(); materials[key] = node;
+  }
+  materials.glazing.side = THREE.DoubleSide;
   materials.bronze = new THREE.MeshStandardMaterial({ color: 0x865038, roughness: 0.46, metalness: 0.42 });
-  warmWindowEmission(materials.glazing, [1.0,0.78,0.49], 0.65);
+  warmWindowEmission(materials.glazing, [1.0,0.78,0.49], 2.8);
   const podium = buildPodium(root, groundOffset, materials), towers = buildTowers(root, groundOffset, materials), arch = buildElevatedArch(root, groundOffset, materials);
   const colliders = [...podium.colliders, ...towers.colliders, ...arch.colliders];
   const landmarks = [THE_ARCH_SITE, ...THE_ARCH_TOWER_SITES].map((site) => ({
