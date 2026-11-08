@@ -9,7 +9,11 @@ import { HK_FULL_ROADS as source } from '../../hk-full-roads-data.js';
 // Postal private driveway (44961) is an inferred 8.4 m ribbon alongside the mapped
 // building; 7.6 m avoids grazing its long rear facade while preserving two lanes.
 // The width is an estimate, not a surveyed kerb.
+// Gloucester Road service ribbon next to the OSM HF95 staircase (way 148858993).
+// The default inferred width overlaps the footbridge stairs; keep both traffic
+// lanes on the original centreline and reduce 8.4 to 7.0 m (not surveyed kerbs).
 const corrections = new Map([
+  [8995, { width: 7.0, name: '告士打道', originalWidth: 8.4, lanes: 2, original: [1381,307.8,1288.2,316.1,1253.3,315.8] }],
   [44961, { width: 7.6, name: '', originalWidth: 8.4, lanes: 2, original: [10.5, -194, 44.2, -172, 44.2, -167.8, 28, -141.4] }],
   [17569, { width: 11.2, original: [-292.7, -164.2, -217.5, -61.3] }],
   [17570, { width: 11.2, original: [-217.5, -61.3, -209.6, -50.7] }],

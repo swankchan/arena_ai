@@ -7,6 +7,7 @@ import { buildBlueHouse } from './blue-house-world.js';
 import { buildWindsorHouse } from './windsor-house-world.js';
 import { buildRevenueTower } from './revenue-tower-world.js';
 import { buildImmigrationTower } from './immigration-tower-world.js';
+import { buildObrienFootbridge } from './obrien-footbridge-world.js';
 import { buildGeneralPostOffice } from './general-post-office-world.js';
 import { buildIfcMall } from './ifc-mall-world.js';
 import { buildWorldWideHouse } from './world-wide-house-world.js';
@@ -156,6 +157,7 @@ export function buildSimpleHongKongWorld(scene, { setStatus = () => {} } = {}) {
   const generalPostOffice = buildGeneralPostOffice(scene);
   const revenueTower = buildRevenueTower(scene);
   const immigrationTower = buildImmigrationTower(scene);
+  const obrienFootbridge = buildObrienFootbridge(scene);
   const windsorHouse = buildWindsorHouse(scene);
   setStatus('Building 銅鑼灣崇光百貨 SOGO...');
   const sogo = buildSogoCausewayBay(scene);
@@ -447,7 +449,8 @@ export function buildSimpleHongKongWorld(scene, { setStatus = () => {} } = {}) {
     const finalGround = isHsbcPlazaPoint(x, z) ? Math.max(governmentHouseGround, hsbc.plazaTop) : governmentHouseGround;
     const murrayGround = mode === 'person' && !groundUsesRoad ? murray.groundHeightAt(x, z, finalGround, referenceY) : finalGround;
     const peakStationGround = mode === 'person' && !groundUsesRoad ? peakTower.groundHeightAt(x, z, murrayGround, referenceY) : murrayGround;
-    return ifcMall.groundHeightAt(x, z, peakStationGround, referenceY);
+    const finalSurface = ifcMall.groundHeightAt(x, z, peakStationGround, referenceY);
+    return mode === 'person' ? obrienFootbridge.groundHeightAt(x,z,finalSurface,referenceY) : finalSurface;
   }
 
   const stats = {
@@ -462,6 +465,7 @@ export function buildSimpleHongKongWorld(scene, { setStatus = () => {} } = {}) {
     ...generalPostOffice.stats,
     ...revenueTower.stats,
     ...immigrationTower.stats,
+    ...obrienFootbridge.stats,
     ...windsorHouse.stats,
     ...sogo.stats,
     ...governmentHouse.stats, ...peakTower.stats, ...murray.stats,
@@ -559,7 +563,7 @@ export function buildSimpleHongKongWorld(scene, { setStatus = () => {} } = {}) {
 
   return {
     root: scene,
-    colliders: [...full.colliders, ...crossings.colliders, ...hsbc.colliders, ...shunTak.colliders, ...chaterGarden.colliders, ...statueSquare.colliders, ...worldWideHouse.colliders, ...entertainmentBuilding.colliders, ...mandarinOriental.colliders, ...princesBuilding.colliders, ...hongKongClub.colliders, ...hangSeng.colliders, ...standardChartered.colliders, ...twoIfc.colliders, ...ifcMall.colliders, ...generalPostOffice.colliders, ...revenueTower.colliders, ...immigrationTower.colliders, ...windsorHouse.colliders, ...sogo.colliders, ...governmentHouse.colliders, ...peakTower.colliders, ...murray.colliders, ...blueHouse.colliders, ...jardineHouse.colliders, ...icc.colliders, ...bankOfChina.colliders, ...centralPlaza.colliders, ...theCenter.colliders, ...ninaTower.colliders, ...cheungKong.colliders, ...k11Atelier.colliders, ...cullinanI.colliders, ...cullinanII.colliders, ...masterpiece.colliders, ...langhamPlace.colliders, ...summit.colliders, ...hopewell.colliders, ...sunHungKai.colliders, ...twoPacificPlace.colliders, ...airside.colliders, ...leeGardenOne.colliders, ...oneIfc.colliders, ...championTower.colliders, ...ckc2.colliders, ...qgo.colliders, ...centralGovernment.colliders, ...heritage1881.colliders, ...theArch.colliders, ...sorrento.colliders, ...conrad.colliders, ...hysan.colliders, ...twoTaikoo.colliders, ...theHenderson.colliders, ...oneExchange.colliders, ...twoExchange.colliders, ...courtOfFinalAppeal.colliders, ...hkcec.colliders, ...mongKokStadium.colliders, ...hongKongStadium.colliders, ...coliseum.colliders, ...laiYuen.colliders, ...queenElizabethStadium.colliders, ...kaiTakStadium.colliders, ...kaiTakArena.colliders, ...kaiTakYouth.colliders, ...happyValley.colliders, ...shaTin.colliders, ...oceanPark.colliders, ...timesSquare.colliders, ...oceanTerminal.colliders, ...starHouse.colliders, ...marcoPolo.colliders, ...oceanCentre.colliders, ...princeHotel.colliders, ...gatewayTowerOne.colliders, ...gatewayTowerTwo.colliders, ...gatewayTowerThree.colliders, ...gatewayTowerFive.colliders, ...gatewayTowerSix.colliders, ...pacificClub.colliders, ...spaceMuseum.colliders, ...culturalCentre.colliders, ...cityHall.colliders, ...centralLibrary.colliders, ...clockTower.colliders, ...peninsulaHotel.colliders, ...sheratonHotel.colliders, ...salisburyYMCA.colliders, ...kowloonShangriLa.colliders, ...tstWaterfrontRailing.colliders, ...hongKongPark.colliders, ...kowloonPark.colliders, ...victoriaPark.colliders, ...airport.colliders],
+    colliders: [...full.colliders, ...crossings.colliders, ...hsbc.colliders, ...shunTak.colliders, ...chaterGarden.colliders, ...statueSquare.colliders, ...worldWideHouse.colliders, ...entertainmentBuilding.colliders, ...mandarinOriental.colliders, ...princesBuilding.colliders, ...hongKongClub.colliders, ...hangSeng.colliders, ...standardChartered.colliders, ...twoIfc.colliders, ...ifcMall.colliders, ...generalPostOffice.colliders, ...revenueTower.colliders, ...immigrationTower.colliders, ...obrienFootbridge.colliders, ...windsorHouse.colliders, ...sogo.colliders, ...governmentHouse.colliders, ...peakTower.colliders, ...murray.colliders, ...blueHouse.colliders, ...jardineHouse.colliders, ...icc.colliders, ...bankOfChina.colliders, ...centralPlaza.colliders, ...theCenter.colliders, ...ninaTower.colliders, ...cheungKong.colliders, ...k11Atelier.colliders, ...cullinanI.colliders, ...cullinanII.colliders, ...masterpiece.colliders, ...langhamPlace.colliders, ...summit.colliders, ...hopewell.colliders, ...sunHungKai.colliders, ...twoPacificPlace.colliders, ...airside.colliders, ...leeGardenOne.colliders, ...oneIfc.colliders, ...championTower.colliders, ...ckc2.colliders, ...qgo.colliders, ...centralGovernment.colliders, ...heritage1881.colliders, ...theArch.colliders, ...sorrento.colliders, ...conrad.colliders, ...hysan.colliders, ...twoTaikoo.colliders, ...theHenderson.colliders, ...oneExchange.colliders, ...twoExchange.colliders, ...courtOfFinalAppeal.colliders, ...hkcec.colliders, ...mongKokStadium.colliders, ...hongKongStadium.colliders, ...coliseum.colliders, ...laiYuen.colliders, ...queenElizabethStadium.colliders, ...kaiTakStadium.colliders, ...kaiTakArena.colliders, ...kaiTakYouth.colliders, ...happyValley.colliders, ...shaTin.colliders, ...oceanPark.colliders, ...timesSquare.colliders, ...oceanTerminal.colliders, ...starHouse.colliders, ...marcoPolo.colliders, ...oceanCentre.colliders, ...princeHotel.colliders, ...gatewayTowerOne.colliders, ...gatewayTowerTwo.colliders, ...gatewayTowerThree.colliders, ...gatewayTowerFive.colliders, ...gatewayTowerSix.colliders, ...pacificClub.colliders, ...spaceMuseum.colliders, ...culturalCentre.colliders, ...cityHall.colliders, ...centralLibrary.colliders, ...clockTower.colliders, ...peninsulaHotel.colliders, ...sheratonHotel.colliders, ...salisburyYMCA.colliders, ...kowloonShangriLa.colliders, ...tstWaterfrontRailing.colliders, ...hongKongPark.colliders, ...kowloonPark.colliders, ...victoriaPark.colliders, ...airport.colliders],
     bounds: full.bounds,
     stats,
     personSpawn: { ...SPAWN.person },
@@ -583,6 +587,7 @@ export function buildSimpleHongKongWorld(scene, { setStatus = () => {} } = {}) {
     generalPostOffice,
     revenueTower,
     immigrationTower,
+    obrienFootbridge,
     windsorHouse,
     sogo,
     governmentHouse,

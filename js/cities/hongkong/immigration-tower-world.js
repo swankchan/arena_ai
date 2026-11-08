@@ -23,8 +23,18 @@ export function buildImmigrationTower(scene){
   for(let j=0;j<bays;j++){
    const a=j/bays,b=(j+1)/bays,entrance=(e===0&&(1-b)*length<2.4)||(e===1&&a*length<2.4);
    const q=p((a+b)/2,0),w=harbourCityLocalToWorld(site,q[0],q[2]);const bottom=hongKongTerrainHeight(w.x,w.z)-base-.18;
-   if(!entrance)face(glass,a+.002,b-.002,bottom,10.6,[.12,.17,.19],.025,.08);else openings++;
-   colliders.push(harbourCitySegmentCollider(site,e,a,b,base+(entrance?5.0:bottom),base+height,.25));
+   // OSM node 1235363336 marks the level-one HF95 connection on edge 4.
+   // Two portal openings retain the photographed centre pier; sizes are approximate.
+   const xm=point(site,e,(a+b)/2,0)[0];
+   const bridgeOpening=e===4&&((xm>=1.5&&xm<4.6)||(xm>=6&&xm<9.2));
+   if(bridgeOpening){
+    face(glass,a+.002,b-.002,bottom,7.5,[.12,.17,.19],.025,.08);
+    colliders.push(harbourCitySegmentCollider(site,e,a,b,base+bottom,base+7.5,.25));
+    colliders.push(harbourCitySegmentCollider(site,e,a,b,base+10.6,base+height,.25));
+   } else {
+    if(!entrance)face(glass,a+.002,b-.002,bottom,10.6,[.12,.17,.19],.025,.08);else openings++;
+    colliders.push(harbourCitySegmentCollider(site,e,a,b,base+(entrance?5.0:bottom),base+height,.25));
+   }
    face(podium,a,b,10.6,15.6,[.052,.060,.065],.03);
    for(let f=0;f<46;f++){
     const lo=15.6+f*(163.4/46),hi=15.6+(f+1)*(163.4/46),v=.89+.13*hash(e,j,f),on=hash(f,e,j+11)>.77?.7:0;
@@ -55,6 +65,8 @@ export function buildImmigrationTower(scene){
   for(let i=0;i<count;i++){
    const a=start+(end-start)*i/count,b=start+(end-start)*(i+1)/count;
    const shade=.86+.08*hash(e,i,2);
+   const centre=point(site,e,(a+b)/2,0)[0];
+   if(e===4 && centre>0 && centre<10.5)continue; // HF95 first-floor portal.
    quad(streetCanopy,p(a,5.5,1.7),p(b,5.5,1.7),p(b,9.3,.12),p(a,9.3,.12),[.53*shade,.55*shade,.54*shade]);
    beam(streetRails,p(a,5.5,1.75),p(a,9.3,.17),.09);
   }
