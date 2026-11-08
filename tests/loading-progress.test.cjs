@@ -17,13 +17,25 @@ test('cooperative world construction reports each real step before work, preserv
   await assert.rejects(runLoadingStepsAsync((function* () { yield 'start'; throw new Error('bad'); })(), () => {}, async () => {}), /bad/);
 });
 
-test('only shader job completion is reported as a percentage, followed by indeterminate GPU warmup', () => {
+test('shader job progress is counted and followed by indeterminate GPU warmup', () => {
   const app = read('js/app.js'), world = read('js/cities/hongkong/simple-world.js');
-  assert.match(app, /Shader jobs processed: \$\{done\} \/ \$\{jobs.length\}/);
+  assert.match(app, /setStatus\(\{ label: 'Shader jobs processed', done, total: jobs.length \}\)/);
   assert.match(app, /setLoadingIndeterminate\(\);\s*setStatus\('Preparing first frame/);
   assert.match(app, /onSubmittedWorkDone/);
   assert.match(world, /function\* buildSimpleHongKongWorldSteps/);
   assert.match(world, /yield 'Building Hong Kong/);
   assert.match(read('js/cities/hongkong/index.js'), /await buildHongKongWorldAsync/);
-  assert.match(read('js/main.js'), /Loading city runtime/);
+  assert.match(read('js/main.js'), /無法取得下載百分比/);
+});
+
+
+test('terrain and roads report actual processed rows and records as separate phase percentages', () => {
+  const full = read('js/cities/hongkong/full-world.js');
+  const app = read('js/app.js');
+  assert.match(full, /done: row, total: grid\.h - 1/);
+  assert.match(full, /done: wayId, total: HK_FULL_ROADS\.roads\.length/);
+  assert.match(full, /done: roadChunksDone, total: chunks\.size \+ bridgeChunks\.size/);
+  assert.match(app, /Math\.floor\(done \/ status\.total \* 100\)/);
+  assert.match(app, /setLoadingProgress\(done \/ status\.total\)/);
+  assert.match(full, /runLoadingSteps\(buildFullHongKongWorldSteps\(root, options\)\)/);
 });

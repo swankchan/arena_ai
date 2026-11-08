@@ -1,3 +1,4 @@
+import { runLoadingSteps } from '../../loading-steps.js';
 import * as THREE from 'three/webgpu';
 import { HK_FULL_MAP } from '../../hk-full-map-data.js';
 import { HK_FULL_ROADS } from './building-priority-roads.js';
@@ -200,7 +201,7 @@ function addTunnelCoastStations(stations, x1, z1, dx, dz) {
   }
 }
 
-function createRoadChunks(root, includeCore) {
+function* createRoadChunksSteps(root, includeCore) {
   const chunks = new Map(), bridgeChunks = new Map();
   const chunkAt = (x, z) => {
     const key = `${Math.floor(x / CHUNK)},${Math.floor(z / CHUNK)}`;
@@ -216,7 +217,9 @@ function createRoadChunks(root, includeCore) {
   };
   let segments = 0, sourceSegments = 0, joins = 0, submergedTunnelSegments = 0, verifiedBridgeSegments = 0, verifiedBridgePiers = 0;
   let derivedPaintQuads = 0, derivedPaintSuppressedQuads = 0;
+  yield { label: '道路資料處理', done: 0, total: HK_FULL_ROADS.roads.length };
   for (const [wayId, road] of HK_FULL_ROADS.roads.entries()) {
+    if (wayId > 0 && wayId % 512 === 0) yield { label: '道路資料處理', done: wayId, total: HK_FULL_ROADS.roads.length };
     if (CROSSING_FLAT_EXCLUSION_IDS.has(wayId)) continue;
     const [, width, , , , flat] = road;
     const lanes = signedRoadLaneCount(road);
@@ -300,7 +303,11 @@ function createRoadChunks(root, includeCore) {
   }
   const material = createHongKongRoadSurfaceMaterial({ dry: true, derivedMarkings: DERIVED_ROAD_MARKINGS });
   let meshes = 0;
+  yield { label: '道路網格組裝', done: 0, total: chunks.size + bridgeChunks.size };
+  let roadChunksDone = 0;
   for (const [key, chunk] of chunks) {
+    if (roadChunksDone && roadChunksDone % 20 === 0) yield { label: '道路網格組裝', done: roadChunksDone, total: chunks.size + bridgeChunks.size };
+    roadChunksDone++;
     if (!chunk.positions.length) continue;
     const geometry = new THREE.BufferGeometry();
     geometry.setAttribute('position', new THREE.Float32BufferAttribute(chunk.positions, 3));
@@ -322,6 +329,8 @@ function createRoadChunks(root, includeCore) {
   const concreteMaterial = new THREE.MeshStandardMaterial({ color: 0x777b78, roughness: 0.93, metalness: 0, side: THREE.DoubleSide });
   let verifiedBridgeMeshes = 0;
   for (const [key, chunk] of bridgeChunks) {
+    if (roadChunksDone && roadChunksDone % 20 === 0) yield { label: '道路網格組裝', done: roadChunksDone, total: chunks.size + bridgeChunks.size };
+    roadChunksDone++;
     if (!chunk.positions.length) continue;
     const geometry = new THREE.BufferGeometry();
     geometry.setAttribute('position', new THREE.Float32BufferAttribute(chunk.positions, 3));
@@ -364,11 +373,13 @@ function setTerrainSmoothNormals(geometry) {
   geometry.setAttribute('normal', new THREE.Float32BufferAttribute(normals, 3));
 }
 
-function createTerrainChunks(root, includeCore) {
+function* createTerrainChunksSteps(root, includeCore) {
   const grid = HONG_KONG_TERRAIN_META.grid;
   const chunks = new Map();
   const parkMask = new Uint8Array((grid.w - 1) * (grid.h - 1));
+  yield { label: '地勢公園資料', done: 0, total: grid.h - 1 };
   for (let row = 0; row < grid.h - 1; row++) {
+    if (row > 0 && row % 8 === 0) yield { label: '地勢公園資料', done: row, total: grid.h - 1 };
     for (let col = 0; col < grid.w - 1; col++) {
       const park = territoryParkAt(grid.minX + (col + 0.5) * grid.cell, grid.minZ + (row + 0.5) * grid.cell);
       parkMask[row * (grid.w - 1) + col] = park ? park.cat + 1 : 0;
@@ -401,7 +412,9 @@ function createTerrainChunks(root, includeCore) {
     sourceTriangles++;
   };
   const coastCells = HK_TERRAIN.coast.cells;
+  yield { label: '地勢及海岸網格', done: 0, total: grid.h - 1 };
   for (let row = 0; row < grid.h - 1; row++) {
+    if (row > 0 && row % 8 === 0) yield { label: '地勢及海岸網格', done: row, total: grid.h - 1 };
     const z0 = grid.minZ + row * grid.cell, z1 = z0 + grid.cell;
     for (let col = 0; col < grid.w - 1; col++) {
       const x0 = grid.minX + col * grid.cell, x1 = x0 + grid.cell;
@@ -424,7 +437,11 @@ function createTerrainChunks(root, includeCore) {
   }
   const material = new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 1, metalness: 0 });
   let meshes = 0, triangles = 0;
+  yield { label: '地勢網格組裝', done: 0, total: chunks.size };
+  let terrainChunksDone = 0;
   for (const [key, chunk] of chunks) {
+    if (terrainChunksDone && terrainChunksDone % 8 === 0) yield { label: '地勢網格組裝', done: terrainChunksDone, total: chunks.size };
+    terrainChunksDone++;
     let geometry = new THREE.BufferGeometry();
     geometry.setAttribute('position', new THREE.Float32BufferAttribute(chunk.positions, 3));
     const rects = chunkRects.get(key) || [];
@@ -476,7 +493,7 @@ function createSeawalls(root, waterLevel, includeCore) {
   return { colliders, openings };
 }
 
-export function buildFullHongKongWorld(root, { waterLevel = -2.2, includeCore = false } = {}) {
+export function* buildFullHongKongWorldSteps(root, { waterLevel = -2.2, includeCore = false } = {}) {
   const waterCentre = [(FULL_BOUNDS.minX + FULL_BOUNDS.maxX) * 0.5, (FULL_BOUNDS.minZ + FULL_BOUNDS.maxZ) * 0.5];
   const waterY = waterLevel - 0.06;
   const waterOpeningRects = buildTunnelOpeningRects(CROSSING_ROUTES, waterY);
@@ -491,8 +508,9 @@ export function buildFullHongKongWorld(root, { waterLevel = -2.2, includeCore = 
   water.name = 'HongKongTerritorialWater';
   root.add(water);
 
-  const terrain = createTerrainChunks(root, includeCore);
-  const roads = createRoadChunks(root, includeCore);
+  const terrain = yield* createTerrainChunksSteps(root, includeCore);
+  const roads = yield* createRoadChunksSteps(root, includeCore);
+  yield 'Building seawalls and coastal collision…';
   const seawalls = createSeawalls(root, waterLevel, includeCore);
   const colliders = seawalls.colliders;
   return {
@@ -532,6 +550,10 @@ export function buildFullHongKongWorld(root, { waterLevel = -2.2, includeCore = 
       terrainMaxElevation: HONG_KONG_TERRAIN_META.grid.maxElevation
     }
   };
+}
+
+export function buildFullHongKongWorld(root, options = {}) {
+  return runLoadingSteps(buildFullHongKongWorldSteps(root, options));
 }
 
 // Compatibility constants are now offsets from the sampled DTM, not a claim that the territory is flat.

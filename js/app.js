@@ -66,7 +66,7 @@ async function initApp(cityStub) {
   const loadingStatus = document.getElementById('loading-status');
   const loadingTrack = loadingOverlay ? loadingOverlay.querySelector('.loader-track') : null;
   const loadingFill = document.getElementById('loading-progress');
-  // Only shader compilation has a known job count; other phases remain indeterminate.
+  // Known work units have phase-specific progress; unknown-duration phases remain indeterminate.
   const setLoadingProgress = (p) => {
     if (!loadingFill) return;
     if (loadingTrack) loadingTrack.classList.remove('is-indeterminate');
@@ -76,8 +76,15 @@ async function initApp(cityStub) {
     if (loadingTrack) loadingTrack.classList.add('is-indeterminate');
     if (loadingFill) loadingFill.style.transform = '';
   };
-  const setStatus = (text) => {
-    if (loadingStatus) loadingStatus.textContent = text;
+  const setStatus = (status) => {
+    if (status && typeof status === 'object' && status.total > 0) {
+      const done = Math.min(status.total, Math.max(0, status.done));
+      setLoadingProgress(done / status.total);
+      if (loadingStatus) loadingStatus.textContent = `${status.label}：${Math.floor(done / status.total * 100)}%（${done.toLocaleString()} / ${status.total.toLocaleString()}）`;
+    } else {
+      setLoadingIndeterminate();
+      if (loadingStatus) loadingStatus.textContent = status;
+    }
   };
 
   setStatus(`Initializing three.js r${THREE.REVISION} WebGPURenderer & TSL Shaders...`);
@@ -782,18 +789,14 @@ async function initApp(cityStub) {
     let next = 0;
     let done = 0;
     if (jobs.length) {
-      setLoadingProgress(0);
-      setStatus(`Shader jobs processed: 0 / ${jobs.length}`);
+      setStatus({ label: 'Shader jobs processed', done: 0, total: jobs.length });
     }
     const worker = async () => {
       while (next < jobs.length) {
         const job = jobs[next++];
         for (const object of job) await compile(object);
         done++;
-        if (loadingStatus) {
-          loadingStatus.textContent = `Shader jobs processed: ${done} / ${jobs.length} (${Math.round((done / jobs.length) * 100)}%)`;
-        }
-        setLoadingProgress(done / jobs.length);
+        setStatus({ label: 'Shader jobs processed', done, total: jobs.length });
       }
     };
     await Promise.all(Array.from({ length: COMPILE_POOL }, worker));

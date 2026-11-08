@@ -1817,3 +1817,5 @@ body.touch-enabled .instrument { width: 113px; flex-basis: 113px; }
 #loading-status { max-width: min(90vw, 450px); }
 @media (max-height: 520px) { .loader-map { width: min(230px, 50vw); margin-bottom: 12px; } .loader-title { font-size: 26px; } .loader-track { margin: 14px 0 10px; } }
 .loader-map-credit { margin-top: 18px; color: rgba(210, 223, 212, .45); font-size: 10px; letter-spacing: .02em; }
+
+.loading-phase-note { margin-top: 8px; color: rgba(210, 223, 212, .48); font-size: 10px; letter-spacing: .02em; }

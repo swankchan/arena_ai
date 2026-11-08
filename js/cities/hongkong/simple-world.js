@@ -22,7 +22,7 @@ import { buildPrincesBuilding } from './princes-building-world.js';
 import { buildHongKongClub } from './hong-kong-club-world.js';
 import { buildHangSengHeadquarters } from './hang-seng-world.js';
 import { buildHongKongColiseum } from './coliseum-world.js';
-import { buildFullHongKongWorld, FULL_WORLD_HEIGHT } from './full-world.js';
+import { buildFullHongKongWorldSteps, FULL_WORLD_HEIGHT } from './full-world.js';
 import { buildHongKongCrossings } from './crossings-world.js';
 import { crossingSurfaceAt, selectCrossingGround } from './crossings.js';
 import { fullRoadSurfaceAt, isTerritoryLand, isTerritoryRoad, territoryParkAt } from './full-meta.js';
@@ -127,7 +127,7 @@ const WATER_LEVEL = -2.2;
 // the six explicit sea crossings retain their own main-span / submerged profiles. No generated building blocks.
 function* buildSimpleHongKongWorldSteps(scene) {
   yield 'Building Hong Kong’s unified territory-wide road map...';
-  const full = buildFullHongKongWorld(scene, { waterLevel: WATER_LEVEL, includeCore: true });
+  const full = yield* buildFullHongKongWorldSteps(scene, { waterLevel: WATER_LEVEL, includeCore: true });
   yield 'Building Hong Kong International Airport: three runways, terminals and control towers...';
   const airport = buildHongKongAirport(scene);
   yield 'Building the HSBC Main Building landmark...';

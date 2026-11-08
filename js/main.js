@@ -54,7 +54,7 @@ async function selectCity(cityId) {
   const overlay = document.getElementById('loading-overlay');
   const start = document.getElementById('start-overlay');
   const status = document.getElementById('loading-status');
-  if (status) status.textContent = 'Loading city runtime…';
+  if (status) status.textContent = '載入程式中（無法取得下載百分比）…';
   overlay?.querySelector('.loader-track')?.classList.add('is-indeterminate');
   overlay?.classList.remove('hidden');
   start?.classList.add('hidden');
