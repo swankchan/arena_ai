@@ -1,15 +1,29 @@
 <!doctype html><meta charset="utf-8"><title>Peak Tram full track experiment</title><style>body{margin:0;background:#1a2522;color:white;font:15px system-ui}aside{position:absolute;left:14px;top:12px;padding:10px;background:#14221dd9;max-width:420px}canvas{display:block}</style>
-<aside>山頂纜車全線軌道試排（獨立場景）<br>高程是估算；未接駁道路、地勢切口或遊戲。</aside>
+<aside>山頂纜車全線試排（獨立場景，不可乘搭）<br>軌道及車廂運動均為估算；地勢、道路、車站及行車淨空未完成。<br><label><input type="checkbox" id="play" checked> 動態預覽</label> <label><input type="checkbox" id="follow"> 跟隨車廂</label><br><label>時間 <input id="time" type="range" min="0" max="1000" value="0"></label> <span id="state"></span></aside>
 <script type="importmap">{"imports":{"three":"../../vendor/three/build/three.webgpu.js","three/webgpu":"../../vendor/three/build/three.webgpu.js","three/tsl":"../../vendor/three/build/three.tsl.js","three/addons/":"../../vendor/three/examples/jsm/"}}</script>
 <script type="module">
 import * as THREE from 'three/webgpu';
 import {buildPeakTramTrackPreview} from '../../js/cities/hongkong/peak-tram-track-preview.js';
 import {hongKongTerrainHeight} from '../../js/cities/hongkong/terrain.js';
+import {PEAK_TRAM_PROFILE} from '../../js/cities/hongkong/peak-tram-profile-data.js';
+import {createPeakTramCar} from '../../js/cities/hongkong/peak-tram-car.js';
+import {measurePeakTramRoute,peakTramExperimentAtTime} from '../../js/cities/hongkong/peak-tram-motion.js';
 const scene=new THREE.Scene();scene.background=new THREE.Color(0xa9bfca);scene.add(buildPeakTramTrackPreview().group);
 const geometry=new THREE.PlaneGeometry(1400,1300,140,130);geometry.rotateX(-Math.PI/2);geometry.translate(-540,0,850);
 const pos=geometry.attributes.position;for(let i=0;i<pos.count;i++){const x=pos.getX(i),z=pos.getZ(i);pos.setY(i,hongKongTerrainHeight(x,z)-.3);}geometry.computeVertexNormals();
 const land=new THREE.Mesh(geometry,new THREE.MeshStandardMaterial({color:0x697d68,roughness:1,transparent:true,opacity:.48,side:THREE.DoubleSide,depthWrite:false}));land.renderOrder=2;scene.add(land);
 scene.add(new THREE.HemisphereLight(0xeefaff,0x5b665d,1.5));const sun=new THREE.DirectionalLight(0xffffff,2);sun.position.set(-600,1000,100);scene.add(sun);
 const camera=new THREE.PerspectiveCamera(38,1.6,1,6000);camera.position.set(-1450,1200,2000);camera.lookAt(-540,220,850);
-const renderer=new THREE.WebGPURenderer({forceWebGL:true,antialias:true});await renderer.init();renderer.setSize(1280,800);document.body.appendChild(renderer.domElement);renderer.render(scene,camera);window.ready=true;
+const routes=['A','B'].map(k=>measurePeakTramRoute(PEAK_TRAM_PROFILE.routes[k]));
+const cars=[createPeakTramCar(),createPeakTramCar()];for(const car of cars){car.rotation.order='YZX';scene.add(car);}
+const renderer=new THREE.WebGPURenderer({forceWebGL:true,antialias:true});await renderer.init();renderer.setSize(1280,800);document.body.appendChild(renderer.domElement);
+const play=document.querySelector('#play'),follow=document.querySelector('#follow'),slider=document.querySelector('#time'),state=document.querySelector('#state');
+let time=0,previous=null;const period=peakTramExperimentAtTime(...routes,0).period;
+slider.addEventListener('input',()=>{time=Number(slider.value)/1000*period;play.checked=false;});
+function frame(now){if(previous!==null&&play.checked)time=(time+Math.min((now-previous)/1000,.1))%period;previous=now;
+ const motion=peakTramExperimentAtTime(...routes,time);for(let i=0;i<2;i++){const pose=i?motion.B:motion.A;cars[i].position.set(pose.position.x,pose.position.y,pose.position.z);cars[i].rotation.set(0,pose.yaw,pose.pitch,'YZX');}
+ slider.value=String(Math.round(time/period*1000));state.textContent=motion.state;
+ if(follow.checked){const p=motion.A.position;camera.position.set(p.x+55,p.y+45,p.z+65);camera.lookAt(p.x,p.y,p.z);}else{camera.position.set(-1450,1200,2000);camera.lookAt(-540,220,850);}
+ renderer.render(scene,camera);requestAnimationFrame(frame);}
+ requestAnimationFrame(frame);window.ready=true;
 </script>
