@@ -25,7 +25,8 @@ export function buildBarkerRoadEarthworks(scene){
  for(let i=0;i<triangles.length;i+=6){
   const a=[triangles[i],0,triangles[i+1]],b=[triangles[i+2],0,triangles[i+3]],c=[triangles[i+4],0,triangles[i+5]];
   for(const p of [a,b,c])p[1]=barkerRoadDatum(p[0],p[2]);
-  for(const p of [a,b,c]){floor.positions.push(...p);floor.colors.push(.29,.30,.28);floor.lit.push(0);}
+  // Shapely's CCW X/Z triangles face down in Three.js; reverse for an upward face.
+  for(const p of [a,c,b]){floor.positions.push(...p);floor.colors.push(.29,.30,.28);floor.lit.push(0);}
  }
  let wallCount=0;
  for(let i=1;i<boundary.length;i++){
