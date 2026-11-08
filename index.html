@@ -71,7 +71,12 @@
       <p class="start-lede">Two worlds, one engine. Explore Hong Kong from real geodata or a generated Grid City.</p>
       <div id="city-cards" class="city-cards"></div>
       <p id="city-picker-status" class="city-picker-status" role="status" aria-live="polite" hidden></p>
-      <p class="start-footnote">Add more cities as packs in <code>js/cities/</code>.</p>
+      <section class="model-export" aria-labelledby="model-export-title">
+        <h2 id="model-export-title">Three.js Editor 模型匯出（試驗）</h2>
+        <p>獨立下載灣仔政府大樓，不用進入香港。匯入 Editor 後可檢查模型；合併的窗戶未能逐個選取，動態夜燈不會保留。</p>
+        <button id="export-wanchai" type="button">下載灣仔政府大樓 JSON</button>
+        <p id="model-export-status" role="status" aria-live="polite"></p>
+      </section>
     </div>
   </div>
 

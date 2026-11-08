@@ -1706,3 +1706,10 @@ body.touch-enabled .gauge { display: block; padding: 7px 9px 5px; }
 body.touch-enabled .instrument { width: 94px; flex-basis: 94px; }
 #hud-speed { font-size: inherit; font-weight: inherit; line-height: inherit; letter-spacing: normal; }
 .instrument-needle { transform-box: view-box; transform-origin: 50% 50%; }
+
+.model-export { margin-top: 20px; padding: 16px 20px; border: 1px solid var(--glass-border); border-radius: var(--r-panel); background: var(--glass); }
+.model-export h2 { margin: 0 0 8px; font-size: 16px; }
+.model-export p { color: var(--text-2); font-size: 13px; line-height: 1.5; }
+.model-export button { padding: 9px 14px; border: 1px solid var(--glass-border); border-radius: 8px; cursor: pointer; }
+.model-export button:disabled { opacity: .55; cursor: wait; }
+.model-export [role="status"]:empty { display: none; }
