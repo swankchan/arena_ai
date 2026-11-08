@@ -32,5 +32,18 @@ test('two first-floor tower entry openings match bridge height',()=>{
  const pier=geo.harbourCityLocalToWorld(s,5.2,21.17);assert.ok(tower.colliders.some(c=>c.minY<13.4&&c.maxY>12.6&&coll.colliderContains(c,pier.x,pier.z)));
 });
 test('world wires bridge collision and pedestrian ground separately from cars',()=>{
- const src=require('node:fs').readFileSync('js/cities/hongkong/simple-world.js','utf8');assert.match(src,/buildObrienFootbridge\(scene\)/);assert.match(src,/\.\.\.obrienFootbridge\.colliders/);assert.match(src,/mode === 'person' \? obrienFootbridge\.groundHeightAt/);
+ const src=require('node:fs').readFileSync('js/cities/hongkong/simple-world.js','utf8');assert.match(src,/buildObrienFootbridge\(scene\)/);assert.match(src,/\.\.\.obrienFootbridge\.colliders/);assert.match(src,/if \(mode !== 'person'\) return finalSurface/);assert.match(src,/obrienFootbridge\.groundHeightAt/);assert.match(src,/immigrationTower\.groundHeightAt/);
+});
+
+test('bridge-side lobby floor is continuous and bounded, with night fittings',()=>{
+ const tower=building.buildImmigrationTower(new T.Group()),bridge=W.buildObrienFootbridge(new T.Group()),s=site.IMMIGRATION_TOWER_SITE;
+ for(const name of ['Immigration Tower 1F vestibule floor','Immigration Tower 1F vestibule ceiling','Immigration Tower 1F floor joints','Immigration Tower 1F tactile strips','Immigration Tower 1F night lights','Immigration Tower HF95 entrance sign'])assert.ok(tower.group.getObjectByName(name),name);
+ assert.ok(tower.group.getObjectByName('Immigration Tower 1F night lights').material.emissiveNode);
+ for(const x of [2.5,7.5])for(let z=18;z<=23;z+=.1){
+  const p=geo.harbourCityLocalToWorld(s,x,z),surface=tower.groundHeightAt(p.x,p.z,bridge.groundHeightAt(p.x,p.z,5,A.OBRIEN_DECK_HEIGHT),A.OBRIEN_DECK_HEIGHT);
+  assert.equal(surface,A.OBRIEN_DECK_HEIGHT,`gap at ${x}, ${z}`);
+  assert.ok(![...tower.colliders,...bridge.colliders].some(c=>c.minY<A.OBRIEN_DECK_HEIGHT+1.6&&c.maxY>A.OBRIEN_DECK_HEIGHT+.2&&coll.colliderContains(c,p.x,p.z)),`blocked at ${x}, ${z}`);
+ }
+ const inside=geo.harbourCityLocalToWorld(s,3,18);assert.equal(tower.groundHeightAt(inside.x,inside.z,5,5),5);
+ const outside=geo.harbourCityLocalToWorld(s,3,11);assert.equal(tower.groundHeightAt(outside.x,outside.z,5,A.OBRIEN_DECK_HEIGHT),5);
 });

@@ -450,7 +450,9 @@ export function buildSimpleHongKongWorld(scene, { setStatus = () => {} } = {}) {
     const murrayGround = mode === 'person' && !groundUsesRoad ? murray.groundHeightAt(x, z, finalGround, referenceY) : finalGround;
     const peakStationGround = mode === 'person' && !groundUsesRoad ? peakTower.groundHeightAt(x, z, murrayGround, referenceY) : murrayGround;
     const finalSurface = ifcMall.groundHeightAt(x, z, peakStationGround, referenceY);
-    return mode === 'person' ? obrienFootbridge.groundHeightAt(x,z,finalSurface,referenceY) : finalSurface;
+    if (mode !== 'person') return finalSurface;
+    const bridgeSurface = obrienFootbridge.groundHeightAt(x,z,finalSurface,referenceY);
+    return immigrationTower.groundHeightAt(x,z,bridgeSurface,referenceY);
   }
 
   const stats = {

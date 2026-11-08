@@ -2,9 +2,10 @@ import * as THREE from 'three/webgpu';
 import { attribute, color } from 'three/tsl';
 import { IMMIGRATION_TOWER_SITE as site, IMMIGRATION_TOWER_HEIGHT as height } from './immigration-tower-architecture.js';
 import { hongKongTerrainHeight } from './terrain.js';
-import { harbourCityEdgeOutward, harbourCitySegmentCollider, harbourCityLocalToWorld, harbourCityLocalCollider } from './harbour-city-architecture.js';
+import { harbourCityEdgeOutward, harbourCitySegmentCollider, harbourCityLocalToWorld, harbourCityWorldToLocal, harbourCityLocalCollider } from './harbour-city-architecture.js';
 import { store, quad, point, edgeBox, meshStore, merged, roofGeometry, nightAmount, hash, box, beam } from './harbour-city-world-utils.js';
 import { makeCanvasSign } from './tst-hotel-world-utils.js';
+import { OBRIEN_DECK_HEIGHT } from './obrien-footbridge-architecture.js';
 
 // Photo-directed exterior; public bridge and complete interior are not modeled.
 export function buildImmigrationTower(scene){
@@ -69,9 +70,9 @@ export function buildImmigrationTower(scene){
    if(e===4 && centre>0 && centre<10.5)continue; // HF95 first-floor portal.
    quad(streetCanopy,p(a,5.5,1.7),p(b,5.5,1.7),p(b,9.3,.12),p(a,9.3,.12),[.53*shade,.55*shade,.54*shade]);
    beam(streetRails,p(a,5.5,1.75),p(a,9.3,.17),.09);
+   beam(streetRails,p(a,5.5,1.75),p(b,5.5,1.75),.12);
+   beam(streetRails,p(a,9.3,.17),p(b,9.3,.17),.12);
   }
-  beam(streetRails,p(start,5.5,1.75),p(end,5.5,1.75),.12);
-  beam(streetRails,p(start,9.3,.17),p(end,9.3,.17),.12);
  }
  const slopeMat=new THREE.MeshStandardNodeMaterial({side:THREE.DoubleSide,roughness:.43,metalness:.28});slopeMat.colorNode=attribute('color');
  meshStore(group,streetCanopy,slopeMat,'Immigration Tower Gloucester Road sloping panels');
@@ -126,6 +127,48 @@ export function buildImmigrationTower(scene){
  const n=harbourCityEdgeOutward(site.localRing,0),sign=makeCanvasSign(9.5,1.3,(ctx,c)=>{
   ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillStyle='#d7e0e0';ctx.font='bold 104px sans-serif';ctx.fillText('入境事務大樓  IMMIGRATION TOWER',c.width/2,c.height/2,c.width*.94);
  });sign.position.set(...point(site,0,.78,12.75,.17));sign.rotation.y=Math.atan2(n.nx,n.nz);sign.name='Immigration Tower entrance lettering';group.add(sign);
+ // Estimated 1/F entrance vestibule: finish the HF95 end without inventing
+ // the unverified Central Plaza passage or the interior stair arrangement.
+ // Floor is exactly at bridge height rather than tied to fluctuating ground.
+ const level=OBRIEN_DECK_HEIGHT-base, floors=[],ceiling=[],tileLines=[],tactile=[],lobbyLights=[],walls=[];
+ box(floors,[10.5,level-.12,16.667],[20,.24,9]);
+ box(ceiling,[10.5,level+3.0,16.667],[20,.16,9]);
+ for(let x=1;x<20.5;x+=1)box(tileLines,[x,level+.007,16.667],[.018,.012,9]);
+ for(let z=12.667;z<21.167;z+=1)box(tileLines,[10.5,level+.008,z],[20,.012,.018]);
+ // The interior routing is illustrative; POF records metallic tactile paving.
+ for(const x of [2.5,7.5])box(tactile,[x,level+.016,19.35],[.22,.025,3.5]);
+ box(tactile,[5,level+.018,20.5],[7,.025,.35]);
+ for(let x=2;x<20;x+=3)for(const z of [14.1,18.4])box(lobbyLights,[x,level+2.91,z],[1.1,.025,.32]);
+ // Guard the incomplete ends of this vestibule; do not suggest an open exit
+ // into unmodelled space. Location of the internal partition is inferred.
+ for(const [x,z,w,d] of [[10.5,12.15,20,.18],[.5,16.67,.18,9],[20.5,16.67,.18,9]]){
+  box(walls,[x,level+1.5,z],[w,3,d]);
+  colliders.push(harbourCityLocalCollider(site,x,z,w,d,OBRIEN_DECK_HEIGHT,OBRIEN_DECK_HEIGHT+3));
+ }
+ const floorMat=new THREE.MeshStandardMaterial({color:0x85877f,roughness:.68,metalness:.13});
+ const jointMat=new THREE.MeshStandardMaterial({color:0x515552,roughness:.85});
+ const lobbyMat=new THREE.MeshStandardMaterial({color:0x89877c,roughness:.8,metalness:.08});
+ const tactileMat=new THREE.MeshStandardMaterial({color:0xa9aaa3,roughness:.45,metalness:.58});
+ const lobbyLamp=new THREE.MeshStandardNodeMaterial({color:0xd2c9ae,roughness:.6});lobbyLamp.emissiveNode=color(0xffe4b7).mul(nightAmount()).mul(.9);
+ merged(group,floors,floorMat,'Immigration Tower 1F vestibule floor');
+ merged(group,ceiling,lobbyMat,'Immigration Tower 1F vestibule ceiling');
+ merged(group,tileLines,jointMat,'Immigration Tower 1F floor joints',false);
+ merged(group,tactile,tactileMat,'Immigration Tower 1F tactile strips',false);
+ merged(group,lobbyLights,lobbyLamp,'Immigration Tower 1F night lights',false);
+ merged(group,walls,lobbyMat,'Immigration Tower 1F provisional enclosure');
+ const bridgeSign=makeCanvasSign(9.4,1.05,(ctx,c)=>{
+  ctx.fillStyle='#15191a';ctx.fillRect(0,0,c.width,c.height);
+  ctx.fillStyle='#d9dede';ctx.textAlign='center';ctx.textBaseline='middle';ctx.font='bold 95px sans-serif';
+  ctx.fillText('入境事務大樓  IMMIGRATION TOWER',c.width/2,c.height/2,c.width*.94);
+ });
+ const bridgeNormal=harbourCityEdgeOutward(site.localRing,4);
+ bridgeSign.position.set(5.3,level+2.55,21.26);bridgeSign.rotation.y=Math.atan2(bridgeNormal.nx,bridgeNormal.nz);
+ bridgeSign.name='Immigration Tower HF95 entrance sign';group.add(bridgeSign);
+ const groundHeightAt=(x,z,current,ref)=>{
+  if(!Number.isFinite(ref)||ref<OBRIEN_DECK_HEIGHT-.8||ref>OBRIEN_DECK_HEIGHT+2.5)return current;
+  const p=harbourCityWorldToLocal(site,x,z);
+  return p.x>=.5&&p.x<=20.5&&p.z>=12.167&&p.z<=21.167?OBRIEN_DECK_HEIGHT:current;
+ };
  const landmark={name:'入境事務大樓',englishName:'Immigration Tower',x:site.x,z:site.z,w:site.w,d:site.d,h:height,ring:site.ring,bounds:site.bounds,osmId:site.osmId,kind:'landmark',labelHeight:false};
- return {group,colliders,landmarks:[landmark],base,stats:{immigrationTowerOsm:site.osmId,immigrationTowerHeight:height,immigrationTowerLevels:49,immigrationTowerGlassPanels:panes,immigrationTowerLitPanels:lit,immigrationTowerEntranceBays:openings}};
+ return {group,colliders,groundHeightAt,landmarks:[landmark],base,stats:{immigrationTowerOsm:site.osmId,immigrationTowerHeight:height,immigrationTowerLevels:49,immigrationTowerGlassPanels:panes,immigrationTowerLitPanels:lit,immigrationTowerEntranceBays:openings}};
 }
