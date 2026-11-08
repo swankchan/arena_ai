@@ -4,7 +4,7 @@ import {hongKongTerrainHeight} from './terrain.js';
 // Experimental vertical alignment, not surveyed. Extends beyond MacDonnell stop to the next mapped node.
 const route=PEAK_TRAM_PROFILE.routes.A;
 const begin=route.findIndex(p=>p.id===KENNEDY_BRIDGE_POINTS.at(-1).id);
-const end=route.findIndex(p=>p.id==='n988059498');
+const end=route.findIndex(p=>p.id==='n2715451261');
 if(begin<0||end<=begin)throw Error('Kennedy approach endpoints missing');
 export const KENNEDY_APPROACH_POINTS=Object.freeze(route.slice(begin,end+1));
 // Approximate platform footprint at the uphill end of the current approach.
@@ -12,6 +12,10 @@ export const KENNEDY_APPROACH_POINTS=Object.freeze(route.slice(begin,end+1));
 export const MACDONNELL_PLATFORM_START=KENNEDY_APPROACH_POINTS.find(p=>p.s>=247).s;
 export const MACDONNELL_PLATFORM_END=KENNEDY_APPROACH_POINTS.find(p=>p.id==='n988059698').s;
 export function isMacDonnellPlatformSegment(a,b){return a.s>=MACDONNELL_PLATFORM_START && b.s<=MACDONNELL_PLATFORM_END;}
+export const MAY_PLATFORM_START=KENNEDY_APPROACH_POINTS.find(p=>p.s>=484).s;
+export const MAY_PLATFORM_END=KENNEDY_APPROACH_POINTS.find(p=>p.id==='n988059498').s;
+export function isMayPlatformSegment(a,b){return a.s>=MAY_PLATFORM_START && b.s<=MAY_PLATFORM_END;}
+export function isIntermediatePlatformSegment(a,b){return isMacDonnellPlatformSegment(a,b)||isMayPlatformSegment(a,b);}
 // Only the fully road-covered core is modelled as a stone vault. Portal edges
 // and dimensions are estimated from the scene, not an engineering survey.
 export function isMacDonnellBridgeSegment(a,b){return a.s>=220 && b.s<=226.1;}
@@ -29,7 +33,7 @@ export function kennedyApproachCuts(){
    if(hongKongTerrainHeight(x,z)-.08>y-.30)intrudes=true;
   }
   if(!intrudes)continue;
-  const station=isMacDonnellPlatformSegment(a,b),shift=station?1.2:0;
+  const station=isIntermediatePlatformSegment(a,b),shift=station?1.2:0;
   const cx=(a.x+b.x)/2+nx*shift,cz=(a.z+b.z)/2+nz*shift,hx=l/2+.08,hz=station?2.8:(isMacDonnellBridgeSegment(a,b)||isMagazineGapBridgeSegment(a,b)||isMayRoadBridgeSegment(a,b))?1.85:1.6,ex=Math.abs(ux)*hx+Math.abs(uz)*hz,ez=Math.abs(uz)*hx+Math.abs(ux)*hz;
   rects.push({cx,cz,ux,uz,hx,hz,minX:cx-ex,maxX:cx+ex,minZ:cz-ez,maxZ:cz+ez,routeId:'peak-tram-kennedy-approach'});
  }
