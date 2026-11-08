@@ -1,3 +1,4 @@
+import {buildMurrayRooftop} from './murray-rooftop.js';
 import * as THREE from 'three/webgpu';
 import {MURRAY_SITE as SITE} from './murray-architecture.js';
 import {MURRAY_LOBBY as L} from './murray-lobby-site.js';
@@ -38,6 +39,7 @@ export function buildMurrayLift(root,datum,colliders){
  for(const x of [-14.2,14.2]){box(parapet,[x,E.roof+.36,0],[.22,.72,50]);box(rails,[x,E.roof+1,0],[.08,.08,50]);for(let z=-24;z<=24;z+=2)box(rails,[x,E.roof+.5,z],[.06,1,.06]);colliders.push(harbourCityLocalCollider(SITE,x,0,.12,50,datum+E.roof,datum+E.roof+1.1));}
  for(const x of [-9.8,9.8])for(const z of [2,10,18]){cylinder(tables,[x,E.roof+.73,z],.55,.08,16);cylinder(legs,[x,E.roof+.35,z],.06,.7,12);for(const dz of [-.9,.9]){box(chairs,[x,E.roof+.42,z+dz],[.62,.1,.58]);box(chairs,[x,E.roof+.74,z+dz+Math.sign(dz)*.25],[.62,.65,.08]);}colliders.push(harbourCityLocalCollider(SITE,x,z,1.25,2.6,datum+E.roof,datum+E.roof+1));}
  merged(root,roof,stone,'The Murray rooftop terrace floor');merged(root,rails,metal,'The Murray rooftop terrace guardrails',false);merged(root,parapet,stone,'The Murray rooftop terrace parapet');merged(root,tables,wood,'The Murray rooftop outdoor tables');merged(root,chairs,dark,'The Murray rooftop outdoor chairs');merged(root,legs,metal,'The Murray rooftop outdoor seating frames',false);
+ buildMurrayRooftop(root,datum,E.roof,colliders);
  const car=new THREE.Group();car.name='The Murray moving lift car';root.add(car);
  box(carParts,[0,-.1,centerZ],[3,.2,3.2]);box(carParts,[0,3,centerZ],[3,.14,3.2]);for(const x of [-1.46,1.46])box(carParts,[x,1.5,centerZ],[.08,3,3.2]);box(carParts,[0,1.5,E.z1-.08],[3,3,.08]);for(const x of [-1.4,1.4])box(carTrim,[x,1.4,E.z0+.08],[.08,2.8,.08]);merged(car,carParts,wood,'The Murray lift car interior');merged(car,carTrim,metal,'The Murray lift car door frame',false);
  for(const landing of [E.lobby,E.roof]){const sign=makeCanvasSign(3,.65,(ctx,c)=>{ctx.clearRect(0,0,c.width,c.height);ctx.fillStyle='#eee2c5';ctx.textAlign='center';ctx.textBaseline='middle';ctx.font=`bold ${Math.floor(c.height*.25)}px sans-serif`;ctx.fillText('WAIT HERE TO CALL',c.width/2,c.height*.32,c.width-16);ctx.fillText('WAIT INSIDE TO TRAVEL',c.width/2,c.height*.72,c.width-16);},{transparent:true,canvasWidth:768,canvasHeight:160});sign.rotation.y=Math.PI;sign.position.set(0,landing+3.45,E.z0-.15);sign.name='The Murray lift instructions';root.add(sign);}

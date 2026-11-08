@@ -96,3 +96,9 @@ test('lift connects to lobby and roof without blocking walking clearance',async(
  for(let z=L.z0-.55;z>=L.z0-5;z-=.1){check(0,z,b.datum+L.roof);const p=util.harbourCityLocalToWorld(A.MURRAY_SITE,0,z);assert.equal(b.groundHeightAt(p.x,p.z,0,b.datum+L.roof),b.datum+L.roof);}
  const index=require('node:fs').readFileSync('js/cities/hongkong/index.js','utf8'),world=require('node:fs').readFileSync('js/cities/hongkong/simple-world.js','utf8');assert.match(index,/world\.murray\.lift\.group/);assert.match(index,/world\.update\(dt, elapsed, \{ cameraSystem, controllerManager \}\)/);assert.match(world,/murray\.lift\.update\(dt, context\.controllerManager\)/);
 });
+test('roof pavilion connects around lift shaft to both side terraces',async()=>{
+ const E=await import('../js/cities/hongkong/murray-lift.js'),P=await import('../js/cities/hongkong/murray-rooftop.js'),y=b.datum+E.MURRAY_LIFT.roof;
+ const check=(x,z)=>{const p=util.harbourCityLocalToWorld(A.MURRAY_SITE,x,z);assert.equal(b.groundHeightAt(p.x,p.z,0,y),y);for(const c of b.colliders)if(y+1.75>=c.minY&&y+.1<=c.maxY)assert.equal(collision.colliderContains(c,p.x,p.z,.48),false,`collision ${x},${z}`);};
+ for(let x=0;x<=3;x+=.1)check(x,-12.1);for(let z=-12.1;z<=-6;z+=.1)check(3,z);for(let x=3;x>=0;x-=.1)check(x,-6);for(let z=-6;z<=7;z+=.1)check(0,z);for(let x=P.MURRAY_PAVILION.x0-2;x<=P.MURRAY_PAVILION.x1+2;x+=.1)check(x,6.6);
+ for(const name of ['The Murray Popinjays transparent pavilion glazing','The Murray Popinjays bronze pavilion frames','The Murray Popinjays pavilion roof','The Murray Popinjays blue dining chairs'])assert.ok(b.group.getObjectByName(name),name);
+});

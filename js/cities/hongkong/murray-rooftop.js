@@ -1,0 +1,18 @@
+import * as THREE from 'three/webgpu';
+import {MURRAY_SITE as SITE} from './murray-architecture.js';
+import {harbourCityLocalCollider} from './harbour-city-architecture.js';
+import {box,cylinder,sphere,beam,merged} from './harbour-city-world-utils.js';
+// Published photographs show a glass pavilion and wraparound terrace; geometry is interpretive.
+export const MURRAY_PAVILION=Object.freeze({x0:-7.2,x1:7.2,z0:-4.5,z1:18.5,height:4.2});
+export function buildMurrayRooftop(root,datum,y,colliders){
+ const p=MURRAY_PAVILION,glass=[],frame=[],roof=[],floor=[],joints=[],furniture=[],bases=[],seats=[],lights=[],plants=[];
+ const gold=new THREE.MeshStandardMaterial({color:0x9a7d56,metalness:.65,roughness:.36}),glazing=new THREE.MeshStandardMaterial({color:0xa6bcbc,transparent:true,opacity:.27,roughness:.22,metalness:.1,depthWrite:false}),canopy=new THREE.MeshStandardMaterial({color:0x424a49,roughness:.63,metalness:.3}),stone=new THREE.MeshStandardMaterial({color:0x999994,roughness:.7}),marble=new THREE.MeshStandardMaterial({color:0xd3cbbc,roughness:.38}),blue=new THREE.MeshStandardMaterial({color:0x354c60,roughness:.9}),warm=new THREE.MeshStandardMaterial({color:0xffdfa9,emissive:0xffc879,emissiveIntensity:.35,roughness:.65}),green=new THREE.MeshStandardMaterial({color:0x5b7653,roughness:1});
+ const wall=(x,z,w,d)=>{box(glass,[x,y+p.height/2,z],[w,p.height,d]);colliders.push(harbourCityLocalCollider(SITE,x,z,w,d,datum+y,datum+y+p.height));};
+ wall(-4.5,p.z0,5.4,.09);wall(4.5,p.z0,5.4,.09);wall(0,p.z1,14.4,.09);for(const x of [p.x0,p.x1]){wall(x,.15,.09,9.3);wall(x,13.45,.09,10.1);}
+ for(const z of [p.z0,p.z1]){box(frame,[0,y+p.height,z],[14.5,.14,.18]);for(let x=p.x0;x<=p.x1+.01;x+=2.4)if(z!==p.z0||Math.abs(x)>1.8)box(frame,[x,y+p.height/2,z],[.10,p.height,.13]);}
+ for(const x of [p.x0,p.x1]){box(frame,[x,y+p.height,(p.z0+p.z1)/2],[.18,.14,p.z1-p.z0]);for(let z=p.z0;z<=p.z1;z+=2.3)if(z<4.8||z>8.2)box(frame,[x,y+p.height/2,z],[.13,p.height,.10]);}
+ box(roof,[0,y+p.height+.13,7],[15.2,.26,23.8]);box(floor,[0,y+.016,7],[14.2,.032,22.8]);for(let x=-6;x<=6;x+=2)box(joints,[x,y+.035,7],[.018,.008,22.6]);for(let z=-4;z<=18;z+=2)box(joints,[0,y+.036,z],[14.1,.008,.018]);
+ for(const x of [-3.7,3.7])for(const z of [0,11,15]){cylinder(furniture,[x,y+.73,z],.68,.08,16);cylinder(bases,[x,y+.36,z],.07,.72,12);cylinder(bases,[x,y+.04,z],.3,.08,12);for(const dz of [-1.05,1.05]){box(seats,[x,y+.45,z+dz],[.72,.13,.65]);box(seats,[x,y+.85,z+dz+Math.sign(dz)*.28],[.72,.72,.12]);for(const dx of [-.26,.26])for(const dz2 of [-.22,.22])box(bases,[x+dx,y+.21,z+dz+dz2],[.04,.42,.04]);}colliders.push(harbourCityLocalCollider(SITE,x,z,1.45,3.1,datum+y,datum+y+1.25));beam(bases,[x,y+p.height-.05,z],[x,y+3.05,z],.035,.035);sphere(lights,[x,y+2.9,z],.2,12);}
+ for(const x of [-12.3,12.3])for(const z of [-16,15]){box(furniture,[x,y+.27,z],[.8,.54,3]);for(let dz=-1;dz<=1;dz+=.5)sphere(plants,[x,y+.65,z+dz],.28,10);colliders.push(harbourCityLocalCollider(SITE,x,z,.8,3,datum+y,datum+y+1));}
+ merged(root,glass,glazing,'The Murray Popinjays transparent pavilion glazing',false);merged(root,frame,gold,'The Murray Popinjays bronze pavilion frames',false);merged(root,roof,canopy,'The Murray Popinjays pavilion roof');merged(root,floor,stone,'The Murray Popinjays restaurant floor');merged(root,joints,gold,'The Murray Popinjays floor joints',false);merged(root,furniture,marble,'The Murray Popinjays tables and planters');merged(root,bases,gold,'The Murray Popinjays furniture and light supports',false);merged(root,seats,blue,'The Murray Popinjays blue dining chairs');merged(root,lights,warm,'The Murray Popinjays pendant lights',false);merged(root,plants,green,'The Murray Popinjays terrace greenery',false);
+}
