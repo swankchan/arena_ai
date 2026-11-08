@@ -1,0 +1,39 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>山頂纜車 3D 參考地圖</title>
+<style>
+ body{margin:0;background:#111b1b;color:#edf4ef;font:15px system-ui,sans-serif} header{padding:14px 18px;display:flex;flex-wrap:wrap;gap:10px;align-items:center} h1{font-size:18px;margin:0 10px 0 0} label{display:flex;align-items:center;gap:6px} input,button{font:inherit;border:1px solid #98b1a7;border-radius:5px;padding:7px 10px} input{width:270px} button{background:#d9eae0;cursor:pointer} button:disabled{opacity:.5;cursor:default} p{margin:0 18px 10px;line-height:1.5} #status{color:#ffdd9a} #map{height:calc(100vh - 160px);min-height:420px;width:100%} gmp-map-3d{display:block;width:100%;height:100%}
+</style>
+</head>
+<body>
+<header><h1>山頂纜車 3D 參考</h1><label>Google Maps API key <input id="key" type="password" autocomplete="off" spellcheck="false"></label><button id="load">載入地圖</button><button class="place" data-place="central" disabled>中央站</button><button class="place" data-place="kennedy" disabled>堅尼地道</button><button class="place" data-place="barker" disabled>白加道</button><button class="place" data-place="peak" disabled>山頂站</button></header>
+<p>供人工參考，不是工程測量。Google Maps 使用可能產生費用，3D 覆蓋範圍亦視乎 Google 提供的資料。金鑰只放在此頁記憶體，會傳送到 Google 以載入 API；請使用限制了網域及 API 的金鑰。重新整理可清除。</p>
+<p id="status" role="status">輸入金鑰後載入；如授權失敗，請檢查 API、帳單及網站來源限制。</p>
+<div id="map"></div>
+<script>
+// No key is saved in the repository, localStorage, page URL or server request.
+const places={central:[22.2771695,114.158577,60],kennedy:[22.276545,114.1580862,90],barker:[22.2709577,114.1517471,390],peak:[22.271123,114.1501414,420]};
+const status=document.querySelector('#status'),input=document.querySelector('#key'),load=document.querySelector('#load'),container=document.querySelector('#map');
+let map;
+window.gm_authFailure=()=>{status.textContent='Google 認證失敗：請檢查 API 啟用、帳單及來源限制；重新整理後重試。';};
+load.addEventListener('click',()=>{
+ const key=input.value.trim();if(!key){status.textContent='請先輸入金鑰。';return;}
+ input.value='';input.disabled=true;load.disabled=true;status.textContent='正在載入 Google Maps；如未出現地圖，可能是網絡、授權或帳單問題。';
+ const script=document.createElement('script');script.async=true;
+ script.src='https://maps.googleapis.com/maps/api/js?'+new URLSearchParams({key,v:'beta',libraries:'maps3d'});
+ script.onerror=()=>{status.textContent='無法載入 Google Maps JavaScript；請檢查瀏覽器網絡連線，然後重新整理重試。';};
+ script.onload=async()=>{
+  try{
+   const {Map3DElement}=await google.maps.importLibrary('maps3d');
+   map=new Map3DElement({mode:'HYBRID',center:{lat:places.central[0],lng:places.central[1],altitude:places.central[2]},range:850,tilt:65,heading:225});
+   container.replaceChildren(map);document.querySelectorAll('.place').forEach(b=>b.disabled=false);
+   status.textContent='API 已載入；地圖顯示及可用範圍仍須確認。可拖曳／縮放，或選擇車站位置。';
+  }catch(e){status.textContent='3D 地圖初始化失敗；請檢查 Google API 設定並重新整理。';}
+ };
+ document.head.appendChild(script);
+});
+document.querySelectorAll('.place').forEach(b=>b.addEventListener('click',()=>{if(!map)return;const [lat,lng,altitude]=places[b.dataset.place];map.center={lat,lng,altitude};map.range=500;map.tilt=65;}));
+</script>
+</body></html>
