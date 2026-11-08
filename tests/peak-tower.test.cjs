@@ -51,3 +51,13 @@ test('station terrain cut is local and sampled road corridors remain untouched',
  for(let x=s.x0;x<=s.x1;x+=.5)for(let z=s.z0;z<=s.z1;z+=.5){const p=util.harbourCityLocalToWorld(site,x,z);assert.equal(road.fullRoadSurfaceAt(p.x,p.z,0,s.platformY),null);}
  const src=require('node:fs').readFileSync('js/cities/hongkong/simple-world.js','utf8');assert.match(src,/mode === 'person' && !groundUsesRoad \? peakTower\.groundHeightAt/);
 });
+test('upper station access bridge and concourse have a human-width route',async()=>{
+ const C=await import('../js/cities/hongkong/peak-station-access.js'),a=C.PEAK_STATION_ACCESS,s=A.PEAK_TOWER_SITE,b=M.buildPeakTower(new T.Group()),radius=.48;
+ for(let x=a.bridgeX0;x<=a.bridgeX1;x+=.2){const z=(a.bridgeZ0+a.bridgeZ1)/2,p=util.harbourCityLocalToWorld(s,x,z),y=C.peakStationBridgeHeight(x),g=terrain.hongKongTerrainHeight(p.x,p.z);
+  assert.ok(y>=g-.03 && y-g<2);assert.equal(road.fullRoadSurfaceAt(p.x,p.z,.5,y),null);assert.ok(Math.abs(b.groundHeightAt(p.x,p.z,g,y)-y)<1e-7);
+  for(const c of b.colliders)if(y+1.75>=c.minY&&y+.1<=c.maxY)assert.equal(collision.colliderContains(c,p.x,p.z,radius),false,`bridge blocked at ${x}`);
+ }
+ const x=(a.doorMin+a.doorMax)/2;
+ for(let z=5;z<=10.8;z+=.1){let p=util.harbourCityLocalToWorld(s,x,z);for(const c of b.colliders)if(A.PEAK_TOWER_BASE+1.75>=c.minY&&A.PEAK_TOWER_BASE+.1<=c.maxY)assert.equal(collision.colliderContains(c,p.x,p.z,radius),false,`door blocked at z=${z.toFixed(1)}`);}
+ for(const n of ['Peak Tram upper concourse floor','Peak Tram upper concourse walls','Peak Tram upper station access bridge','Peak Tram upper station bridge railings'])assert.ok(b.group.getObjectByName(n),n);
+});

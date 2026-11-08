@@ -1,3 +1,4 @@
+import {buildPeakStationAccess,peakStationAccessGroundHeight,PEAK_STATION_ACCESS as ACCESS} from './peak-station-access.js';
 import {buildPeakUpperStation} from './peak-upper-station-world.js';
 import {peakUpperStationGroundHeight} from './peak-upper-station-site.js';
 import * as THREE from 'three/webgpu';
@@ -30,9 +31,16 @@ export function buildPeakTower(scene) {
   if(extent>2){box(windows,[0,y,depth+.05],[extent*2,1.45,.10]);for(let x=-extent;x<=extent;x+=3.1)box(frames,[x,y,depth+.15],[.07,1.55,.08]);box(frames,[0,y-.77,depth+.14],[extent*2,.09,.12]);box(frames,[0,y+.77,depth+.14],[extent*2,.09,.12]);}}
  // Glazed lower volumes, banded steel and columns; set back from the north road and the mapped track.
  for(const z of [-9.45,9.45]){
-  box(windows,[0,9.1,z],[42.8,16.4,.11]);
-  for(let x=-21;x<=21;x+=2.1)box(frames,[x,9.1,z+Math.sign(z)*.09],[.09,16.4,.1]);
-  for(let y=1;y<=17;y+=3.2)box(floorBands,[0,y,z+Math.sign(z)*.1],[43,.22,.21]);
+  if(z<0)box(windows,[0,9.1,z],[42.8,16.4,.11]);
+  else {
+   for(const [a,b] of [[-21.4,ACCESS.doorMin],[ACCESS.doorMax,21.4]])box(windows,[(a+b)/2,9.1,z],[b-a,16.4,.11]);
+   box(windows,[(ACCESS.doorMin+ACCESS.doorMax)/2,10.55,z],[ACCESS.doorMax-ACCESS.doorMin,13.5,.11]);
+  }
+  for(let x=-21;x<=21;x+=2.1)if(z<0||x<ACCESS.doorMin||x>ACCESS.doorMax)box(frames,[x,9.1,z+Math.sign(z)*.09],[.09,16.4,.1]);
+  for(let y=1;y<=17;y+=3.2){
+   if(z>0&&y===1){for(const [a,b] of [[-21.5,ACCESS.doorMin],[ACCESS.doorMax,21.5]])box(floorBands,[(a+b)/2,y,z+.1],[b-a,.22,.21]);}
+   else box(floorBands,[0,y,z+Math.sign(z)*.1],[43,.22,.21]);
+  }
  }
  for(const x of [-21.5,21.5]){
   box(windows,[x,9.1,0],[.11,16.4,18.8]);
@@ -62,8 +70,9 @@ export function buildPeakTower(scene) {
  box(shopPanels,[0,14.2,-9.57],[15.6,5.3,.14]);
  for(let y=11.65;y<=16.8;y+=.36)box(louvres,[0,y,-9.69],[15.5,.07,.14]);
  for(const z of [-9.59,9.59])for(const x of [-12,12]){
-  box(stonework,[x,2.7,z],[6.0,4.6,.14]);
-  for(let y=.8;y<5;y+=.9)box(shopTrim,[x,y,z+Math.sign(z)*.1],[5.95,.035,.06]);
+  const panelWidth=z>0&&x===12?4.5:6.0,center=x-(6-panelWidth)/2;
+  box(stonework,[center,2.7,z],[panelWidth,4.6,.14]);
+  for(let y=.8;y<5;y+=.9)box(shopTrim,[center,y,z+Math.sign(z)*.1],[panelWidth-.05,.035,.06]);
  }
  // The approach glazing, canopies and shopfronts are exterior-only representations.
  for(const x of [-16,10,16]){
@@ -87,8 +96,9 @@ export function buildPeakTower(scene) {
  box(trim,[-3,4.75,10.25],[13,.25,2]);merged(group,entrance,mats.dark,'Peak Tower south entrance glazing');merged(group,trim,mats.rail,'Peak Tower entrance frame and canopy');
  const sign=makeCanvasSign(12,1.7,(ctx,c)=>{ctx.clearRect(0,0,c.width,c.height);ctx.fillStyle='#dbe4dd';ctx.font=`bold ${Math.floor(c.height*.60)}px sans-serif`;ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText('THE PEAK TOWER',c.width/2,c.height/2);},{transparent:true,canvasWidth:1024,canvasHeight:160});sign.name='Peak Tower entrance sign';sign.position.set(-3,5.8,9.7);group.add(sign);
  // Collision only around the inset lower core. The high shell does not obstruct road vehicles.
- const colliders=[harbourCityLocalCollider(SITE,0,-9.45,43,.30,BASE-15,BASE+17.5),harbourCityLocalCollider(SITE,0,9.45,43,.30,BASE-15,BASE+17.5),harbourCityLocalCollider(SITE,-21.5,0,.3,18.6,BASE-15,BASE+17.5),harbourCityLocalCollider(SITE,21.5,0,.3,18.6,BASE-15,BASE+17.5)];
+ const colliders=[harbourCityLocalCollider(SITE,0,-9.45,43,.30,BASE-15,BASE+17.5),harbourCityLocalCollider(SITE,(-21.5+ACCESS.doorMin)/2,9.45,ACCESS.doorMin+21.5,.30,BASE-15,BASE+17.5),harbourCityLocalCollider(SITE,(ACCESS.doorMax+21.5)/2,9.45,21.5-ACCESS.doorMax,.30,BASE-15,BASE+17.5),harbourCityLocalCollider(SITE,(ACCESS.doorMin+ACCESS.doorMax)/2,9.45,ACCESS.doorMax-ACCESS.doorMin,.30,BASE+3.8,BASE+17.5),harbourCityLocalCollider(SITE,-21.5,0,.3,18.6,BASE-15,BASE+17.5),harbourCityLocalCollider(SITE,21.5,0,.3,18.6,BASE-15,BASE+17.5)];
  const upperStation=buildPeakUpperStation(group,colliders);
+ const stationAccess=buildPeakStationAccess(group,colliders);
  const landmark={name:'凌霄閣',englishName:'Peak Tower',x:SITE.x,z:SITE.z,w:SITE.w,d:SITE.d,h:32,ring:SITE.ring,bounds:SITE.bounds,osmId:SITE.osmId,kind:'landmark',labelHeight:false};
- return {group,colliders,upperStation,groundHeightAt:peakUpperStationGroundHeight,landmarks:[landmark],stats:{peakTowerOsm:SITE.osmId,peakTowerShellSegments:count,peakTowerDeckAltitude:PEAK_TOWER_DECK,peakTowerColumns:4,peakTowerUpperStationSegments:1}};
+ return {group,colliders,upperStation,stationAccess,groundHeightAt:(x,z,current,referenceY)=>peakStationAccessGroundHeight(x,z,peakUpperStationGroundHeight(x,z,current,referenceY),referenceY),landmarks:[landmark],stats:{peakTowerOsm:SITE.osmId,peakTowerShellSegments:count,peakTowerDeckAltitude:PEAK_TOWER_DECK,peakTowerColumns:4,peakTowerUpperStationSegments:1}};
 }
