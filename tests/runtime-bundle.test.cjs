@@ -14,7 +14,7 @@ test('the self-contained city runtime is current and has no external module impo
   assert.deepEqual(manifest.externalImports, []);
   assert.ok(manifest.inputs.includes('js/cities/hongkong/index.js'));
   assert.ok(!manifest.inputs.includes('js/cities/newyork/index.js'));
-  assert.ok(manifest.inputs.includes('js/cities/grid/index.js'));
+  assert.ok(!manifest.inputs.includes('js/cities/grid/index.js'));
   assert.ok(manifest.inputs.includes('vendor/three/build/three.webgpu.js'));
   assert.ok(!manifest.inputs.includes('js/building-collision.js'));
 

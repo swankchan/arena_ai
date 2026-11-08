@@ -7,13 +7,14 @@ const read = (path) => readFileSync(join(__dirname, '..', path), 'utf8');
 let registry;
 test.before(async () => { registry = await import('../js/cities/registry.js'); });
 
-test('the registry offers Hong Kong and Grid City, with unique ids', () => {
+test('the registry offers only Hong Kong, with unique ids', () => {
   const { CITIES } = registry;
-  assert.ok(CITIES.length >= 2);
+  assert.equal(CITIES.length, 1);
   const ids = CITIES.map((city) => city.id);
   assert.equal(new Set(ids).size, ids.length);
-  assert.deepEqual(ids, ['hongkong', 'grid']);
+  assert.deepEqual(ids, ['hongkong']);
   assert.equal(registry.getCity('newyork'), null);
+  assert.equal(registry.getCity('grid'), null);
   for (const city of CITIES) {
     assert.ok(city.name, `${city.id} has a name`);
     assert.ok(city.tagline, `${city.id} has a tagline`);
