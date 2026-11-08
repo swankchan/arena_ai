@@ -1808,10 +1808,10 @@ body.touch-enabled .instrument { width: 113px; flex-basis: 113px; }
   .city-card-english { display: none; }
 }
 
-/* Full-bleed map: same atlas as the game, darkened for readable loading information. */
+/* A restrained, centred map backdrop, kept fully visible behind the loader. */
 #loading-overlay { overflow: hidden; isolation: isolate; }
 .loader-map { position: absolute; inset: 0; z-index: -1; overflow: hidden; background: #0b1519; pointer-events: none; }
-.loader-map img { display: block; width: 100%; height: 100%; object-fit: cover; opacity: .72; }
+.loader-map img { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: min(680px, 82vw); max-height: 76vh; height: auto; object-fit: contain; opacity: .72; }
 .loader-map::after { content: ''; position: absolute; inset: 0; background: radial-gradient(ellipse at 50% 48%, rgba(5, 12, 14, .73) 0%, rgba(5, 12, 14, .55) 50%, rgba(5, 10, 12, .82) 100%); }
 .loader-map-caption { position: absolute; z-index: 1; top: max(24px, env(safe-area-inset-top)); right: max(24px, env(safe-area-inset-right)); color: rgba(221, 233, 216, .72); font-size: 10px; letter-spacing: .16em; font-weight: 700; }
 .loader-map-caption span { color: #dfc577; }
