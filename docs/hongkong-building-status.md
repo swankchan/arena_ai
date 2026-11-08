@@ -88,7 +88,7 @@ inventory 已同步更新為「45 已加入／55 待製作」，並保留「40 �
 | `HK-B0032` | 友邦金融中心 AIA Central | 中環 | 185 m | OSM way 107324767 |
 | `HK-B0033` | 太古廣場三座 Three Pacific Place | 金鐘 | 182 m | OSM way 88391081 |
 | `HK-B0034` | 會展廣場辦公大樓 Convention Plaza Office Tower | 灣仔 | 181 m | OSM way 107497689 |
-| `HK-B0035` | 入境事務大樓 Immigration Tower | 灣仔 | 180 m | OSM way 510722228 |
+| `HK-B0035` | 入境事務大樓 Immigration Tower（外觀已加入、地台／天橋等待完成） | 灣仔 | 180 m | OSM way 510722228；[現況](immigration-tower.md) |
 | `HK-B0038` | 華潤大廈 China Resources Building | 灣仔 | 178 m | OSM way 107497701 |
 | `HK-B0039` | 遠東金融中心 Far East Finance Centre | 金鐘 | 176 m | OSM way 107336261 |
 | `HK-B0040` | 力寶中心第一座 Lippo Centre Tower 1 | 金鐘 | 172 m | OSM way 107336260 |

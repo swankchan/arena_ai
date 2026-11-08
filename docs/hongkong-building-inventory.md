@@ -103,7 +103,7 @@
 | `HK-B0032` | 友邦金融中心 AIA Central | 中環 | 待製作 | 否 | 否 | 185 m | OSM way **107324767** | — |
 | `HK-B0033` | 太古廣場三座 Three Pacific Place | 金鐘 | 待製作 | 否 | 否 | 182 m | OSM way **88391081** | — |
 | `HK-B0034` | 會展廣場辦公大樓 Convention Plaza Office Tower | 灣仔 | 待製作 | 否 | 否 | 181 m | OSM way **107497689** | — |
-| `HK-B0035` | 入境事務大樓 Immigration Tower | 灣仔 | 待製作 | 否 | 否 | 180 m | OSM way **510722228** | — |
+| `HK-B0035` | 入境事務大樓 Immigration Tower | 灣仔 | 部分加入，未驗收 | 是 | 未驗證 | 180.8 m／49 層 | OSM way **510722228** v8 | `immigration-tower-world.js`；[未完成事項](immigration-tower.md) |
 | `HK-B0036` | 稅務大樓 Revenue Tower | 灣仔 | 已加入 | 是 | 是 | 180 m | OSM way **27087037** | `revenue-tower-world.js`；`3e768c0` |
 | `HK-B0037` | 怡和大廈 Jardine House | 中環 | 已加入 | 是 | 是 | 178.54 m | OSM way **42293714** | `jardine-house-world.js`；`9b004d3` |
 | `HK-B0038` | 華潤大廈 China Resources Building | 灣仔 | 待製作 | 否 | 否 | 178 m | OSM way **107497701** | — |
