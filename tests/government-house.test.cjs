@@ -25,6 +25,11 @@ test('north verandah has separate arched insets, surrounds and parapet vents',()
   const mesh=b.group.getObjectByName(name);assert.ok(mesh,name);const p=mesh.geometry.getAttribute('position');assert.ok(p.count>100);for(const value of p.array)assert.ok(Number.isFinite(value));
  }
 });
+test('boundary wall and iron railings leave the gate drive open',()=>{
+ const b=M.buildGovernmentHouse(new T.Group()),s=A.GOVERNMENT_HOUSE_SITE;assert.ok(b.stats.governmentHouseBoundarySegments>=40);
+ for(const name of ['Government House garden boundary stone walls','Government House garden boundary wall coping','Government House garden boundary iron railings'])assert.ok(b.group.getObjectByName(name),name);
+ for(let x=6;x<=13;x+=.25){const p=util.harbourCityLocalToWorld(s,x,58.5);for(const c of b.colliders)assert.ok(!collision.colliderContains(c,p.x,p.z),`blocked gate at ${x}`);}
+});
 test('nearby sampled road surfaces do not intersect colliders at vehicle height',()=>{
  const b=M.buildGovernmentHouse(new T.Group()),s=A.GOVERNMENT_HOUSE_SITE;let count=0,hits=0;
  for(let x=Math.floor(s.bounds.minX)-30;x<=s.bounds.maxX+30;x++)for(let z=Math.floor(s.bounds.minZ)-30;z<=s.bounds.maxZ+75;z++){

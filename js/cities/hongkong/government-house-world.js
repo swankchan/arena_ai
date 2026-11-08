@@ -171,6 +171,30 @@ export function buildGovernmentHouse(scene) {
  }
  // Decorative open iron leaves fold beside the lodges and leave the mapped gate drive clear.
  const gateBars=[],gateMaterial=new THREE.MeshStandardMaterial({color:0x303b36,roughness:.7,metalness:.45});
+ // Short, photo-directed boundary arms by the gate. The true perimeter is
+ // not mapped here: preserve gaps at roads and do not claim a complete fence.
+ // Mesh and collision segments follow raw terrain, not a flat site datum.
+ const gardenWall=store(),gardenCaps=[],gardenIron=[],wallColliders=[];
+ for(const [begin,end] of [[-25,1],[18,40]])for(let x=begin;x<end;x+=1){
+  const x1=Math.min(x+1,end),z=58.5,world0=harbourCityLocalToWorld(SITE,x,z),world1=harbourCityLocalToWorld(SITE,x1,z);
+  const y0=hongKongTerrainHeight(world0.x,world0.z)-base,y1=hongKongTerrainHeight(world1.x,world1.z)-base;
+  const middle=harbourCityLocalToWorld(SITE,(x+x1)/2,z),raw=hongKongTerrainHeight(middle.x,middle.z);
+  if(fullRoadSurfaceAt(middle.x,middle.z,1.5,raw))continue;
+  const low0=y0-.2,low1=y1-.2,top0=y0+1.55,top1=y1+1.55;
+  quad(gardenWall,[x,low0,z-.18],[x1,low1,z-.18],[x1,top1,z-.18],[x,top0,z-.18],[.57,.53,.48]);
+  quad(gardenWall,[x1,low1,z+.18],[x,low0,z+.18],[x,top0,z+.18],[x1,top1,z+.18],[.57,.53,.48]);
+  beam(gardenCaps,[x,top0,z],[x1,top1,z],.14,.44);
+  for(const dy of [.55,1.0])beam(gardenCaps,[x,y0+dy,z-.19],[x1,y1+dy,z-.19],.025,.025);
+  for(let i=0;i<4;i++){const t=(i+.5)/4,xx=x+(x1-x)*t,yy=y0+(y1-y0)*t;
+   box(gardenIron,[xx,yy+2.13,z],[.045,1.14,.045]);
+  }
+  for(const dy of [1.67,2.62])beam(gardenIron,[x,y0+dy,z],[x1,y1+dy,z],.055,.055);
+  wallColliders.push(harbourCityLocalCollider(SITE,(x+x1)/2,z,x1-x,.46,base+Math.min(low0,low1),base+Math.max(y0,y1)+2.7));
+ }
+ colliders.push(...wallColliders);
+ meshStore(group,gardenWall,vertex,'Government House garden boundary stone walls',false);
+ merged(group,gardenCaps,mat.stone,'Government House garden boundary wall coping',false);
+ merged(group,gardenIron,gateMaterial,'Government House garden boundary iron railings',false);
  for(const x of [5.15,13.85]){const z=58.5,p=harbourCityLocalToWorld(SITE,x,z),y=hongKongTerrainHeight(p.x,p.z)-base;
   for(let i=0;i<=8;i++)box(gateBars,[x,y+1.05,56.5+i*.25],[.07,2.1,.06]);
   for(const h of [.18,1.95])box(gateBars,[x,y+h,57.5],[.09,.09,2.1]);
@@ -179,5 +203,5 @@ export function buildGovernmentHouse(scene) {
  merged(group,lodgeWalls,mat.plaster,'Government House paired gate lodge walls');merged(group,lodgeRoof,green,'Government House green gate lodge roofs');merged(group,lodgeTrim,mat.stone,'Government House gate lodge cornices');merged(group,lodgeGlass,mat.deep,'Government House gate lodge doors');merged(group,lodgeColumns,mat.trim,'Government House gate lodge classical columns');
  colliders.push(harbourCityLocalCollider(SITE,18,-9,7.3,7.3,base+9,base+25.5));
  const landmark={name:'香港禮賓府',englishName:'Government House',x:SITE.x,z:SITE.z,w:SITE.w,d:SITE.d,h:25.5,ring:SITE.ring,bounds:SITE.bounds,osmId:SITE.osmId,kind:'landmark',labelHeight:false};
- return {group,colliders,landmarks:[landmark],stats:{governmentHouseWindows:windowCount,governmentHouseRoofs:5,governmentHouseTowerHeight:25.5,governmentHouseGateLodges:lodges,governmentHouseApronCells:apronCells},base,groundHeightAt:(x,z,raw)=>governmentHouseApronHeight(x,z,raw,base)};
+ return {group,colliders,landmarks:[landmark],stats:{governmentHouseWindows:windowCount,governmentHouseRoofs:5,governmentHouseTowerHeight:25.5,governmentHouseGateLodges:lodges,governmentHouseApronCells:apronCells,governmentHouseBoundarySegments:wallColliders.length},base,groundHeightAt:(x,z,raw)=>governmentHouseApronHeight(x,z,raw,base)};
 }
