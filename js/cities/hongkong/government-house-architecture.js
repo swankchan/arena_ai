@@ -1,0 +1,7 @@
+import { authoredOsmSource, makeAuthoredSite, projectHongKongLonLat } from './authored-landmark-site.js';
+// OSM way 42258038 v14. © OpenStreetMap contributors, ODbL 1.0.
+export const GOVERNMENT_HOUSE_SOURCE=authoredOsmSource({id:42258038,version:14,sourceTimestamp:'2018-12-03T11:38:49Z',tags:{building:'yes',heritage:'2',name:'香港禮賓府 Government House',start_date:'1855'},geometry:[
+[22.2789061,114.1571592],[22.2789544,114.1571055],[22.2788405,114.1569860],[22.2789037,114.1569157],[22.2788633,114.1568732],[22.2789090,114.1568224],[22.2788715,114.1567830],[22.2786606,114.1570177],[22.2787089,114.1570684],[22.2787723,114.1569978],[22.2788834,114.1571144],[22.2788566,114.1571442],[22.2788341,114.1571693],[22.2788158,114.1571897],[22.2787996,114.1572076],[22.2787801,114.1572293],[22.2787343,114.1571812],[22.2786009,114.1573297],[22.2784358,114.1575134],[22.2784723,114.1575517],[22.2782780,114.1577679],[22.2783865,114.1578817],[22.2785646,114.1576835],[22.2786164,114.1577379],[22.2789296,114.1573894],[22.2788762,114.1573334],[22.2789713,114.1572276],[22.2789061,114.1571592]].map(([lat,lon])=>({lat,lon}))});
+export const GOVERNMENT_HOUSE_SITE=makeAuthoredSite('governmentHouse','香港禮賓府','Government House',GOVERNMENT_HOUSE_SOURCE,{height:25.5,levels:2});
+// Mapped service-road gate, but OSM does not identify it as the ceremonial main entrance.
+export const GOVERNMENT_HOUSE_OSM_GATE=projectHongKongLonLat(114.1570174,22.2782019);
