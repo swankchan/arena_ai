@@ -1,3 +1,4 @@
+import { PLAYABLE_MODES, availableMode } from './playable-modes.js';
 import { gaugeNeedleDegrees, SPEED_GAUGE_MAX_KPH, ALTITUDE_GAUGE_MAX_METRES } from './telemetry-gauges.js';
 import * as THREE from 'three/webgpu';
 import { pass, mrt, output, normalView, positionView, metalness, roughness, vec2, smoothstep, velocity, screenUV, screenSize, uniform } from 'three/tsl';
@@ -136,7 +137,7 @@ async function initApp(cityStub) {
         controllerManager.setMode(mode);
         controllerManager.teleportActiveTo(p.x, p.z, p.heading, p.y);
       }
-      controllerManager.setMode(Object.hasOwn(controllerManager.entities, saved.activeMode) ? saved.activeMode : 'car');
+      controllerManager.setMode(availableMode(saved.activeMode));
       restored = true;
     }
   } catch { /* Missing or unavailable storage does not prevent playing. */ }
@@ -147,7 +148,7 @@ async function initApp(cityStub) {
       controllerManager.setMode(mode);
       controllerManager.teleportActiveTo(point.x, point.z, point.heading ?? Math.PI, point.y ?? null);
     }
-    controllerManager.setMode(controllerManager.entities[world.defaultMode ?? city.defaultMode] ? (world.defaultMode ?? city.defaultMode) : 'car');
+    controllerManager.setMode(availableMode(world.defaultMode ?? city.defaultMode));
   }
 
   function savePlayerState() {
@@ -217,7 +218,7 @@ async function initApp(cityStub) {
   const elControlsHint = document.getElementById('hud-controls-hint');
   const gamepadControls = new GamepadControls(controllerManager, cameraSystem, {
     onCycleMode: (step) => {
-      const modes = ['person', 'car', 'cyclist', 'helicopter'];
+      const modes = PLAYABLE_MODES;
       selectMode(modes[(modes.indexOf(controllerManager.activeMode) + step + modes.length) % modes.length]);
     },
     onCycleCamera: cycleCamera,
@@ -271,6 +272,7 @@ async function initApp(cityStub) {
   }
 
   function selectMode(mode) {
+    if (!PLAYABLE_MODES.includes(mode)) return;
     controllerManager.setMode(mode);
     touchControls.setMode(controllerManager.activeMode);
     gamepadControls.reset();
@@ -547,18 +549,12 @@ async function initApp(cityStub) {
     });
   }
 
-  // Global keyboard shortcuts for modes (1-4), cameras (V / 5-0), and HUD (H)
+  // Global keyboard shortcuts for modes (2 / 4), cameras (V / 5-0), and HUD (H)
   window.addEventListener('keydown', (e) => {
     if (isTypingInField(e)) return;
     switch (e.code) {
-      case 'Digit1':
-        selectMode('person');
-        break;
       case 'Digit2':
         selectMode('car');
-        break;
-      case 'Digit3':
-        selectMode('cyclist');
         break;
       case 'Digit4':
         selectMode('helicopter');
