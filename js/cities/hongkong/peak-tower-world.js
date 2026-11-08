@@ -1,3 +1,5 @@
+import {buildPeakUpperStation} from './peak-upper-station-world.js';
+import {peakUpperStationGroundHeight} from './peak-upper-station-site.js';
 import * as THREE from 'three/webgpu';
 import {PEAK_TOWER_SITE as SITE, PEAK_TOWER_BASE as BASE, PEAK_TOWER_DECK, peakTowerShellBottom} from './peak-tower-architecture.js';
 import {authoredLocalToWorld} from './authored-landmark-site.js';
@@ -86,6 +88,7 @@ export function buildPeakTower(scene) {
  const sign=makeCanvasSign(12,1.7,(ctx,c)=>{ctx.clearRect(0,0,c.width,c.height);ctx.fillStyle='#dbe4dd';ctx.font=`bold ${Math.floor(c.height*.60)}px sans-serif`;ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText('THE PEAK TOWER',c.width/2,c.height/2);},{transparent:true,canvasWidth:1024,canvasHeight:160});sign.name='Peak Tower entrance sign';sign.position.set(-3,5.8,9.7);group.add(sign);
  // Collision only around the inset lower core. The high shell does not obstruct road vehicles.
  const colliders=[harbourCityLocalCollider(SITE,0,-9.45,43,.30,BASE-15,BASE+17.5),harbourCityLocalCollider(SITE,0,9.45,43,.30,BASE-15,BASE+17.5),harbourCityLocalCollider(SITE,-21.5,0,.3,18.6,BASE-15,BASE+17.5),harbourCityLocalCollider(SITE,21.5,0,.3,18.6,BASE-15,BASE+17.5)];
+ const upperStation=buildPeakUpperStation(group,colliders);
  const landmark={name:'凌霄閣',englishName:'Peak Tower',x:SITE.x,z:SITE.z,w:SITE.w,d:SITE.d,h:32,ring:SITE.ring,bounds:SITE.bounds,osmId:SITE.osmId,kind:'landmark',labelHeight:false};
- return {group,colliders,landmarks:[landmark],stats:{peakTowerOsm:SITE.osmId,peakTowerShellSegments:count,peakTowerDeckAltitude:PEAK_TOWER_DECK,peakTowerColumns:4}};
+ return {group,colliders,upperStation,groundHeightAt:peakUpperStationGroundHeight,landmarks:[landmark],stats:{peakTowerOsm:SITE.osmId,peakTowerShellSegments:count,peakTowerDeckAltitude:PEAK_TOWER_DECK,peakTowerColumns:4,peakTowerUpperStationSegments:1}};
 }

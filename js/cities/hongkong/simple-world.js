@@ -444,7 +444,8 @@ export function buildSimpleHongKongWorld(scene, { setStatus = () => {} } = {}) {
     const governmentHouseGround = !groundUsesRoad ? governmentHouse.groundHeightAt(x, z, oceanParkGround) : oceanParkGround;
     const finalGround = isHsbcPlazaPoint(x, z) ? Math.max(governmentHouseGround, hsbc.plazaTop) : governmentHouseGround;
     const murrayGround = mode === 'person' && !groundUsesRoad ? murray.groundHeightAt(x, z, finalGround, referenceY) : finalGround;
-    return ifcMall.groundHeightAt(x, z, murrayGround, referenceY);
+    const peakStationGround = mode === 'person' && !groundUsesRoad ? peakTower.groundHeightAt(x, z, murrayGround, referenceY) : murrayGround;
+    return ifcMall.groundHeightAt(x, z, peakStationGround, referenceY);
   }
 
   const stats = {

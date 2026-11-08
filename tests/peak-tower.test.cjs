@@ -32,3 +32,22 @@ test('active scene includes model, statistics, colliders and landmark',()=>{
  const src=require('node:fs').readFileSync('js/cities/hongkong/simple-world.js','utf8');
  for(const re of [/buildPeakTower\(scene\)/,/\.\.\.peakTower\.stats/,/\.\.\.peakTower\.colliders/,/\.\.\.peakTower\.landmarks/,/peakTower\.landmarks\.length/])assert.match(src,re);
 });
+test('upper terminus is aligned to mapped nodes, has two platforms and a gauge-sized track',async()=>{
+ const S=await import('../js/cities/hongkong/peak-upper-station-site.js'),s=S.PEAK_UPPER_STATION,b=M.buildPeakTower(new T.Group()),site=A.PEAK_TOWER_SITE;
+ const stop=util.harbourCityWorldToLocal(site,...route.PEAK_TRAM_NODES.peak.world),end=util.harbourCityWorldToLocal(site,...route.PEAK_TRAM_NODES.upperEnd.world);
+ assert.ok(stop.x>s.x0 && stop.x<s.x1);assert.ok(Math.abs(stop.z-s.trackZ)<.1);assert.ok(Math.abs(end.x-s.x0)<1e-8);assert.equal(s.gauge,1.524);
+ for(const name of ['Peak Tram upper terminus platforms','Peak Tram upper terminus track bed','Peak Tram upper terminus rails','Peak Tram upper terminus sleepers','Peak Tram upper terminus transparent barriers','Peak Tram upper terminus platform edge strips'])assert.ok(b.group.getObjectByName(name),name);
+ for(let x=s.x0+.5;x<s.x1-.5;x+=.5){
+  for(const z of [s.z0+.8,s.z1-.8]){const p=util.harbourCityLocalToWorld(site,x,z);assert.equal(b.groundHeightAt(p.x,p.z,380,s.platformY),s.platformY);}
+  const p=util.harbourCityLocalToWorld(site,x,s.trackZ);assert.ok(Math.abs(b.groundHeightAt(p.x,p.z,380,s.platformY)-(s.platformY-.58))<1e-8);
+ }
+ const p=util.harbourCityLocalToWorld(site,stop.x,s.z0+.8);assert.equal(b.groundHeightAt(p.x,p.z,385,380),385);
+});
+test('station terrain cut is local and sampled road corridors remain untouched',async()=>{
+ const S=await import('../js/cities/hongkong/peak-upper-station-site.js'),s=S.PEAK_UPPER_STATION,site=A.PEAK_TOWER_SITE;
+ const {subtractTunnelOpenings,polygonArea}=await import('../js/cities/hongkong/tunnel-openings.js'),cut=S.peakUpperStationTerrainCut();
+ const local=[[s.x0+.1,s.z0+.1],[s.x1-.1,s.z0+.1],[s.x1-.1,s.z1-.1]].map(([x,z])=>{const p=util.harbourCityLocalToWorld(site,x,z);return [p.x,p.z]});
+ assert.equal(subtractTunnelOpenings(local,[cut]).reduce((a,p)=>a+polygonArea(p),0),0);
+ for(let x=s.x0;x<=s.x1;x+=.5)for(let z=s.z0;z<=s.z1;z+=.5){const p=util.harbourCityLocalToWorld(site,x,z);assert.equal(road.fullRoadSurfaceAt(p.x,p.z,0,s.platformY),null);}
+ const src=require('node:fs').readFileSync('js/cities/hongkong/simple-world.js','utf8');assert.match(src,/mode === 'person' && !groundUsesRoad \? peakTower\.groundHeightAt/);
+});
