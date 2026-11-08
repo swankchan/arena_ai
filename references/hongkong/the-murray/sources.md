@@ -1,0 +1,18 @@
+# The Murray — source notes
+
+Notes recorded 2026-10-24; these are summaries, **not copies of complete source documents**. Consult the linked originals for their context, image credits and current information. Heights and descriptions from sources are not necessarily surveyed levels.
+
+- [Foster + Partners project](https://www.fosterandpartners.com/projects/the-murray): renovation retains the distinctive recessed facade and multi-storey arches, and reconnects the building and surrounding green spaces.
+- [Foster + Partners project information via ArchShowcase](https://www10.aeccafe.com/blogs/arch-showcase/2018/07/06/the-murray-hotel-in-hong-kong-china-by-foster-partners/): project dimensions 51.5 × 31.5 m and height 93.83 m; published floor-count conventions vary.
+- [Foster + Partners plans via Metalocus](https://www.metalocus.es/en/news/a-former-government-headquarters-renovated-luxury-hotel-hong-kong-foster-partners): ground, podium, 01 and section drawings are retained in `images/`. The 01 plan shows a U-shaped circulation band and a curved approach; the diagram is not a surveyed georeferenced drawing.
+- [Architectural Record, 2018](https://www.architecturalrecord.com/articles/13326-the-murray-by-foster-partners): former car ramp winds behind the arches around the core, reused as a pedestrian walkway; the hotel lobby is beneath it. Includes a labelled third-floor diagram.
+- [Hong Kong Development Bureau, 2018](https://www.devb.gov.hk/en/home/my_blog/index_id_279.html): original vehicular ramp connected to Cotton Tree Drive; its underside forms the lobby's sloping ceiling after conversion.
+- [Latte Luxury News, 2018](https://latteluxurynews.com/2018/10/25/mary-gostelow-visits-hong-kongs-newest-luxury-hotel/): visitor counted 27 gold-edged black marble steps from the lobby to Garden Lounge. Does not establish stair location, riser dimensions or whether the Garden Level is identical to the 01 plan.
+- [Metropolis](https://metropolismag.com/projects/murray-hotel-norman-foster-design/): lobby materials include dark marble, gold-toned screens and ceiling panels; the Garden Lounge has bespoke lighting and handmade glass partitions.
+- [OpenStreetMap way 85320844 v14](https://www.openstreetmap.org/way/85320844): mapped building footprint; © OpenStreetMap contributors, ODbL. Data used by the scene is retained in `js/cities/hongkong/murray-architecture.js`.
+- [OpenStreetMap node 12718892293 v3](https://www.openstreetmap.org/node/12718892293): mapped Cassia javanica, tagged height 17 m and circumference 1.13 m; © OpenStreetMap contributors, ODbL. This is not a current tree survey; the [hotel also mentions a sapling](https://www.niccolohotels.com/en/the-murray-hong-kong/experiences/the-cassia-javanica-tree).
+- [Rooftop plan and project photographs](https://mooool.com/en/the-murray-by-foster-partner.html): roof restaurant location and glazing reference; details of the simulated pavilion are illustrative.
+
+## Known uncertainties
+
+The current DTM-derived datum is not an engineering elevation. No as-built ramp dimensions, precise levels, stair placement or surveyed lift-bank configuration have been established. Real-world site connections and the current tree condition require verification. The repository's model contains provisional gameplay geometry; see `docs/murray-building.md` for current implementation and test limitations.
