@@ -7,6 +7,10 @@ const begin=route.findIndex(p=>p.id===KENNEDY_BRIDGE_POINTS.at(-1).id);
 const end=route.findIndex(p=>p.id==='n988059698');
 if(begin<0||end<=begin)throw Error('Kennedy approach endpoints missing');
 export const KENNEDY_APPROACH_POINTS=Object.freeze(route.slice(begin,end+1));
+// Approximate platform footprint at the uphill end of the current approach.
+// The OSM stop node is its uphill end for this provisional design, not a survey.
+export const MACDONNELL_PLATFORM_START=KENNEDY_APPROACH_POINTS.find(p=>p.s>=247).s;
+export function isMacDonnellPlatformSegment(a,b){return a.s>=MACDONNELL_PLATFORM_START && b.s<=KENNEDY_APPROACH_POINTS.at(-1).s;}
 export function kennedyApproachCuts(){
  const rects=[];
  for(let i=1;i<KENNEDY_APPROACH_POINTS.length;i++){
@@ -19,7 +23,8 @@ export function kennedyApproachCuts(){
    if(hongKongTerrainHeight(x,z)-.08>y-.30)intrudes=true;
   }
   if(!intrudes)continue;
-  const cx=(a.x+b.x)/2,cz=(a.z+b.z)/2,hx=l/2+.08,hz=1.6,ex=Math.abs(ux)*hx+Math.abs(uz)*hz,ez=Math.abs(uz)*hx+Math.abs(ux)*hz;
+  const station=isMacDonnellPlatformSegment(a,b),shift=station?1.2:0;
+  const cx=(a.x+b.x)/2+nx*shift,cz=(a.z+b.z)/2+nz*shift,hx=l/2+.08,hz=station?2.8:1.6,ex=Math.abs(ux)*hx+Math.abs(uz)*hz,ez=Math.abs(uz)*hx+Math.abs(ux)*hz;
   rects.push({cx,cz,ux,uz,hx,hz,minX:cx-ex,maxX:cx+ex,minZ:cz-ez,maxZ:cz+ez,routeId:'peak-tram-kennedy-approach'});
  }
  return rects;

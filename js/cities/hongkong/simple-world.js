@@ -4,6 +4,7 @@ import { buildMurray } from './murray-world.js';
 import { buildPeakTower } from './peak-tower-world.js';
 import { buildPeakTramKennedyBridge } from './peak-tram-kennedy-bridge.js';
 import { buildPeakTramKennedyApproach } from './peak-tram-kennedy-approach.js';
+import { buildMacDonnellStation } from './peak-tram-macdonnell-station.js';
 import { buildGovernmentHouse } from './government-house-world.js';
 import { buildSogoCausewayBay } from './sogo-world.js';
 import { buildJardineHouse } from './jardine-house-world.js';
@@ -173,6 +174,7 @@ function* buildSimpleHongKongWorldSteps(scene) {
   const peakTower = buildPeakTower(scene);
   const peakTramKennedyBridge = buildPeakTramKennedyBridge(scene);
   const peakTramKennedyApproach = buildPeakTramKennedyApproach(scene);
+  const peakTramMacDonnell = buildMacDonnellStation(scene);
   const murray = buildMurray(scene);
   const blueHouse = buildBlueHouse(scene);
   yield 'Building 香港演藝學院 Hong Kong Academy for Performing Arts...';
@@ -483,7 +485,7 @@ function* buildSimpleHongKongWorldSteps(scene) {
     ...obrienFootbridge.stats,
     ...windsorHouse.stats,
     ...sogo.stats,
-    ...governmentHouse.stats, ...peakTower.stats, ...peakTramKennedyBridge.stats, ...peakTramKennedyApproach.stats, ...murray.stats,
+    ...governmentHouse.stats, ...peakTower.stats, ...peakTramKennedyBridge.stats, ...peakTramKennedyApproach.stats, ...peakTramMacDonnell.stats, ...murray.stats,
     ...blueHouse.stats,
     ...hkapa.stats,
     ...jardineHouse.stats,

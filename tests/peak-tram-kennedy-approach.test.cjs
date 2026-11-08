@@ -8,7 +8,7 @@ test('Kennedy approach joins the built bridge and cuts only its local terrain co
  const {fullRoadSurfaceAt}=await import('../js/cities/hongkong/full-meta.js');
  assert.equal(points[0].id,bridge.at(-1).id);assert.equal(points[0].y,bridge.at(-1).y);assert.equal(points.at(-1).id,'n988059698');
  const cuts=kennedyApproachCuts();assert.ok(cuts.length>0&&cuts.length<points.length);
- for(const rect of cuts)assert.ok(rect.hz<=1.6&&rect.hx<1.2);
+ for(const rect of cuts)assert.ok(rect.hz<=2.8&&rect.hx<1.2);
  const inRect=(p,r)=>{let x=p.x-r.cx,z=p.z-r.cz;return Math.abs(x*r.ux+z*r.uz)<=r.hx&&Math.abs(-x*r.uz+z*r.ux)<=r.hz;};
  let roadSamples=0;
  for(let i=1;i<points.length;i++){
