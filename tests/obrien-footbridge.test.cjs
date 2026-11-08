@@ -72,3 +72,13 @@ test('OSM Central Plaza link remains walkable from tower lobby through plaza ent
  }
  assert.ok(samples>1500);
 });
+test('A5 upper approach stays continuous and guarded before the unbuilt station',()=>{
+ const b=W.buildObrienFootbridge(new T.Group()),a=A.WANCHAI_A5_APPROACH.start,end=A.WANCHAI_A5_APPROACH.end,h=A.OBRIEN_DECK_HEIGHT,dx=end.x-a.x,dz=end.z-a.z,L=Math.hypot(dx,dz);
+ assert.equal(A.WANCHAI_A5_APPROACH.way,242379504);assert.ok(b.group.getObjectByName('Wan Chai A5 upper landing sign'));assert.ok(b.group.getObjectByName('Wan Chai A5 provisional end barrier'));
+ for(let i=0;i<90;i++)for(const o of [-.6,0,.6]){
+  const t=i/100,x=a.x+dx*t-dz/L*o,z=a.z+dz*t+dx/L*o;assert.equal(b.groundHeightAt(x,z,5,h),h);assert.equal(b.groundHeightAt(x,z,5,5),5);
+  assert.ok(!b.colliders.some(c=>c.minY<h+1.6&&c.maxY>h+.2&&coll.colliderContains(c,x,z,.2)),`blocked at ${t}`);
+ }
+ assert.ok(b.colliders.some(c=>c.minY<h+1.6&&c.maxY>h+.2&&coll.colliderContains(c,end.x,end.z)));
+ for(let i=0;i<=100;i++)for(let o=-3.6;o<=3.61;o+=.6){const t=i/100,x=a.x+dx*t-dz/L*o,z=a.z+dz*t+dx/L*o,r=road.fullRoadSurfaceAt(x,z,.2,5);if(r)assert.ok(h-A.OBRIEN_SLAB-r.height>=4.8);}
+});

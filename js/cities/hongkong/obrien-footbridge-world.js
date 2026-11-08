@@ -4,7 +4,8 @@ import { box, beam, merged, nightAmount } from './harbour-city-world-utils.js';
 import { segmentWall } from './colliders.js';
 import { hongKongTerrainHeight } from './terrain.js';
 import { fullRoadSurfaceAt } from './full-meta.js';
-import { OBRIEN_ROUTE as route, OBRIEN_STAIR as stair, OBRIEN_WIDTH as width, OBRIEN_DECK_HEIGHT as deck, OBRIEN_SLAB as slab, OBRIEN_STAIR_WIDTH as stairWidth, obrienFootbridgeGroundHeight, CENTRAL_PLAZA_LINK as plazaLink } from './obrien-footbridge-architecture.js';
+import { makeCanvasSign } from './tst-hotel-world-utils.js';
+import { OBRIEN_ROUTE as route, OBRIEN_STAIR as stair, OBRIEN_WIDTH as width, OBRIEN_DECK_HEIGHT as deck, OBRIEN_SLAB as slab, OBRIEN_STAIR_WIDTH as stairWidth, obrienFootbridgeGroundHeight, CENTRAL_PLAZA_LINK as plazaLink, WANCHAI_A5_APPROACH as a5 } from './obrien-footbridge-architecture.js';
 
 export function buildObrienFootbridge(scene){
  const group=new THREE.Group();group.name="O'Brien Road Footbridge HF95";scene.add(group);
@@ -59,6 +60,17 @@ export function buildObrienFootbridge(scene){
   }
  }
  for(let i=0;i<route.length-1;i++)line(route[i],route[i+1]);
+ // A5 upper approach. The unmapped underground concourse and escalator are
+ // intentionally blocked off; do not let the player fall through the deck.
+ line(a5.start,a5.end,width,true,false);
+ const adx=a5.end.x-a5.start.x,adz=a5.end.z-a5.start.z,al=Math.hypot(adx,adz),anx=-adz/al,anz=adx/al;
+ const terminal=[];
+ for(let i=0;i<=12;i++){const o=(i/12-.5)*width,x=a5.end.x+anx*o,z=a5.end.z+anz*o;beam(terminal,[x,deck,z],[x,deck+1.15,z],.05);}
+ for(const y of [deck+.16,deck+1.15])beam(terminal,[a5.end.x-anx*width/2,y,a5.end.z-anz*width/2],[a5.end.x+anx*width/2,y,a5.end.z+anz*width/2],.07);
+ const endGuard=segmentWall(a5.end.x-anx*width/2,a5.end.z-anz*width/2,a5.end.x+anx*width/2,a5.end.z+anz*width/2,{thickness:.07,base:deck,top:deck+1.2});if(endGuard)colliders.push(endGuard);
+ merged(group,terminal,steel,'Wan Chai A5 provisional end barrier');
+ const a5Sign=makeCanvasSign(5.2,.8,(ctx,c)=>{ctx.fillStyle='#222728';ctx.fillRect(0,0,c.width,c.height);ctx.fillStyle='#e1e3db';ctx.textAlign='center';ctx.textBaseline='middle';ctx.font='bold 105px sans-serif';ctx.fillText('灣仔站  Wan Chai Station   A5',c.width/2,c.height/2,c.width*.94);});
+ a5Sign.position.set(a5.end.x,deck+2.85,a5.end.z);a5Sign.rotation.y=Math.atan2(-adx,-adz);a5Sign.name='Wan Chai A5 upper landing sign';group.add(a5Sign);
  // Covered link is OSM way 40491215, supported at the buildings rather than
  // inventing ground piers across the service access below.
  line(plazaLink.start,plazaLink.end,plazaLink.width,true,false);
