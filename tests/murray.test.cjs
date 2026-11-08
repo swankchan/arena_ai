@@ -164,3 +164,28 @@ test('Garden Lounge entrance and central aisle remain walkable',async()=>{
  const p=util.harbourCityLocalToWorld(A.MURRAY_SITE,0,10),ground=terrain.hongKongTerrainHeight(p.x,p.z);
  assert.ok(y-ground>.4);assert.equal(b.groundHeightAt(p.x,p.z,ground,ground),ground);
 });
+test('wrapped ramp joins its existing low end and has a continuous walkable centreline',async()=>{
+ const W=await import('../js/cities/hongkong/murray-wrapped-ramp.js'),R=await import('../js/cities/hongkong/murray-ramp.js'),r=W.MURRAY_WRAPPED_RAMP;
+ assert.equal(b.wrappedRamp.segments,5);assert.ok(b.group.getObjectByName('The Murray wrapped ramp paving'));assert.ok(b.group.getObjectByName('The Murray wrapped ramp parapets'));
+ assert.ok(Math.abs(r.heights[0]-R.murrayRampLocalHeight(R.MURRAY_RAMP.z1))<1e-9);
+ let samples=0;for(let i=0;i<r.points.length-1;i++){
+  const [ax,az]=r.points[i],[bx,bz]=r.points[i+1],len=Math.hypot(bx-ax,bz-az),n=Math.ceil(len/.1);
+  assert.ok(Math.abs(r.heights[i+1]-r.heights[i])/len<=.101);
+  for(let j=0;j<=n;j++){
+   if(i===r.points.length-2&&j>n-7)continue; // guarded, not yet connected upper end
+   const t=j/n,x=ax+(bx-ax)*t,z=az+(bz-az)*t,localY=W.murrayWrappedRampLocalHeight(x,z),y=b.datum+localY,p=util.harbourCityLocalToWorld(A.MURRAY_SITE,x,z);samples++;
+   assert.notEqual(localY,null,`surface ${x},${z}`);
+   assert.ok(Math.abs(b.groundHeightAt(p.x,p.z,terrain.hongKongTerrainHeight(p.x,p.z),y)-y)<1e-5,`height ${x},${z}`);
+   for(const c of b.colliders)if(y+1.75>=c.minY&&y+.1<=c.maxY)assert.equal(collision.colliderContains(c,p.x,p.z,.48),false,`blocked ramp ${x.toFixed(2)},${z.toFixed(2)} height ${localY.toFixed(2)} ${JSON.stringify(c)}`);
+  }
+ }assert.ok(samples>1000);
+});
+test('wrapped ramp deck does not obstruct the nearby road corridor',async()=>{
+ const W=await import('../js/cities/hongkong/murray-wrapped-ramp.js');let hits=0,roadSamples=0;
+ for(let x=-15;x<=15;x+=.25)for(let z=-25;z<=26;z+=.25){const h=W.murrayWrappedRampLocalHeight(x,z);if(h===null)continue;const p=util.harbourCityLocalToWorld(A.MURRAY_SITE,x,z),ground=terrain.hongKongTerrainHeight(p.x,p.z),r=road.fullRoadSurfaceAt(p.x,p.z,.2,ground);if(!r)continue;roadSamples++;if(b.datum+h>=r.height-.2&&b.datum+h<=r.height+4.8)hits++;}
+ assert.equal(hits,0,`wrapped deck intersects nearby vehicle clearance at ${hits} of ${roadSamples} road samples`);
+});
+test('wrapped ramp height query follows the actual mesh triangles',async()=>{
+ const W=await import('../js/cities/hongkong/murray-wrapped-ramp.js'),p=b.group.getObjectByName('The Murray wrapped ramp paving').geometry.getAttribute('position');
+ for(let i=0;i<p.count;i+=3){let x=0,z=0,y=0;for(let j=0;j<3;j++){x+=p.getX(i+j)/3;y+=p.getY(i+j)/3;z+=p.getZ(i+j)/3;}assert.ok(Math.abs(W.murrayWrappedRampLocalHeight(x,z)-y)<1e-5,`mesh height mismatch ${x},${z}`);}
+});

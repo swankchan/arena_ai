@@ -1,3 +1,4 @@
+import {buildMurrayWrappedRamp,murrayWrappedRampGroundHeight} from './murray-wrapped-ramp.js';
 import {buildMurrayGarden} from './murray-garden.js';
 import {buildMurrayStairs,murrayStairGroundHeight} from './murray-stairs.js';
 import {buildMurrayLift} from './murray-lift.js';
@@ -85,9 +86,15 @@ export function buildMurray(scene){
  meshStore(root,arches,material(.87),'The Murray open arched arcade');meshStore(root,archSoffit,material(.91),'The Murray curved arch intrados');merged(root,piers,stone,'The Murray arcade piers');
  // The tree-facing east wall has a real opening, not a decorative door over a solid collider.
  for(const z of [-D/2+3,D/2-3]){
-  box(lobby,[0,1.6,z],[L.halfWidth*2,16.8,.18]);for(let x=-L.halfWidth;x<=L.halfWidth;x+=2.6)box(frames,[x,1.6,z+Math.sign(z)*.12],[.07,16.8,.08]);
+  // Upper west-side opening for the wrapped ramp at the +z end.
+  const parts=z>0?[[-L.halfWidth,-10],[-6,L.halfWidth]]:[[-L.halfWidth,L.halfWidth]];
+  for(const [a,b] of parts){box(lobby,[(a+b)/2,1.6,z],[b-a,16.8,.18]);colliders.push(harbourCityLocalCollider(SITE,(a+b)/2,z,b-a,.2,datum-7,datum+12));}
+  if(z>0){
+   for(const [a,b] of [[-6.8,1.4],[4.8,10]]){box(lobby,[-8,(a+b)/2,z],[4,b-a,.18]);colliders.push(harbourCityLocalCollider(SITE,-8,z,4,.2,datum+a,datum+b));}
+   for(const x of [-10,-6])box(frames,[x,3.1,z+.12],[.1,3.4,.1]);
+  }
+  for(let x=-L.halfWidth;x<=L.halfWidth;x+=2.6)if(z<0||x<-10||x>-6)box(frames,[x,1.6,z+Math.sign(z)*.12],[.07,16.8,.08]);
   box(frames,[0,5,z+Math.sign(z)*.12],[L.halfWidth*2,.09,.08]);
-  colliders.push(harbourCityLocalCollider(SITE,0,z,L.halfWidth*2,.2,datum-7,datum+12));
  }
  for(const x of [-W/2+3,W/2-3]){
   if(x<0){box(lobby,[x,1.6,0],[.18,16.8,D-6]);colliders.push(harbourCityLocalCollider(SITE,x,0,.2,D-6,datum-7,datum+12));}
@@ -120,6 +127,7 @@ export function buildMurray(scene){
  meshStore(root,paving,material(.97),'The Murray terrain-following arcade paving',false);
  // One terrain-connected ramp section; the rest of the wrapped route remains to be built.
  const rampSection=buildMurrayRamp(root,datum,colliders);
+ const wrappedRamp=buildMurrayWrappedRamp(root,datum,colliders);
  const interior=buildMurrayLobby(root,datum,colliders);
  const lift=buildMurrayLift(root,datum,colliders);
  const stairs=buildMurrayStairs(root,datum,colliders);
@@ -131,5 +139,5 @@ export function buildMurray(scene){
  sign.position.set(0,7,D/2+.04);sign.name='The Murray exterior lettering';root.add(sign);
  const courtyard=buildMurrayCourtyard(root,datum,colliders);
  const landmark={name:'美利大廈',englishName:'The Murray',x:SITE.x,z:SITE.z,w:SITE.w,d:SITE.d,h:93.83,ring:SITE.ring,bounds:SITE.bounds,osmId:SITE.osmId,kind:'landmark',labelHeight:false};
- return {group:root,colliders,landmarks:[landmark],datum,courtyard,rampSection,interior,lift,stairs,garden,groundHeightAt:(x,z,current,referenceY)=>murrayStairGroundHeight(x,z,lift.groundHeightAt(x,z,murrayLobbyGroundHeight(x,z,murrayRampGroundHeight(x,z,current,referenceY,datum),referenceY,datum),referenceY),referenceY,datum),stats:{murrayOsm:SITE.osmId,murrayWindows:windows,murrayArches:arcades,murrayFloors:ROWS,murrayBase:datum,murrayCassiaTree:12718892293,murrayCourtyardCells:courtyard.cells,murrayRampSegments:rampSection.segments,murrayLobbyRooms:1}};
+ return {group:root,colliders,landmarks:[landmark],datum,courtyard,rampSection,interior,lift,stairs,garden,wrappedRamp,groundHeightAt:(x,z,current,referenceY)=>murrayWrappedRampGroundHeight(x,z,murrayStairGroundHeight(x,z,lift.groundHeightAt(x,z,murrayLobbyGroundHeight(x,z,murrayRampGroundHeight(x,z,current,referenceY,datum),referenceY,datum),referenceY),referenceY,datum),referenceY,datum),stats:{murrayOsm:SITE.osmId,murrayWindows:windows,murrayArches:arcades,murrayFloors:ROWS,murrayBase:datum,murrayCassiaTree:12718892293,murrayCourtyardCells:courtyard.cells,murrayRampSegments:rampSection.segments,murrayLobbyRooms:1}};
 }
