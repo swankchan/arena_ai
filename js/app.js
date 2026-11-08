@@ -60,8 +60,6 @@ async function initApp(cityStub) {
   if (brandBullet) brandBullet.textContent = city.short;
   const loaderTitle = document.getElementById('loader-title');
   if (loaderTitle) loaderTitle.textContent = city.name;
-  const loaderBullet = document.getElementById('loader-bullet');
-  if (loaderBullet) loaderBullet.textContent = city.short;
 
   const container = document.getElementById('canvas-container');
   const loadingOverlay = document.getElementById('loading-overlay');

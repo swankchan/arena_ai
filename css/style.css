@@ -1807,3 +1807,13 @@ body.touch-enabled .instrument { width: 113px; flex-basis: 113px; }
   .cover-header-note { font-size: 7px; }
   .city-card-english { display: none; }
 }
+
+/* A lightweight atlas preview, made from the same road and coastline data as the game map. */
+.loader-map { width: min(380px, 78vw); position: relative; margin-bottom: 24px; filter: drop-shadow(0 18px 35px rgba(0,0,0,.3)); }
+.loader-map img { display: block; width: 100%; height: auto; border-radius: 12px; }
+.loader-map-caption { position: absolute; right: 12px; bottom: 11px; padding: 5px 7px; border-radius: 3px; background: rgba(7,16,18,.82); color: #d4e1d4; font-size: 8px; letter-spacing: .12em; font-weight: 700; }
+.loader-map-caption span { color: #dfc577; }
+.loader { max-width: calc(100vw - 32px); }
+#loading-status { max-width: min(90vw, 450px); }
+@media (max-height: 520px) { .loader-map { width: min(230px, 50vw); margin-bottom: 12px; } .loader-title { font-size: 26px; } .loader-track { margin: 14px 0 10px; } }
+.loader-map-credit { margin-top: 18px; color: rgba(210, 223, 212, .45); font-size: 10px; letter-spacing: .02em; }
