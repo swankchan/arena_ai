@@ -8,7 +8,7 @@ import { OBRIEN_ROUTE as route, OBRIEN_STAIR as stair, OBRIEN_WIDTH as width, OB
 
 export function buildObrienFootbridge(scene){
  const group=new THREE.Group();group.name="O'Brien Road Footbridge HF95";scene.add(group);
- const decks=[],roofs=[],rails=[],posts=[],lights=[],tactile=[],piers=[],steps=[],joints=[],colliders=[];
+ const decks=[],roofs=[],rails=[],posts=[],lights=[],tactile=[],piers=[],steps=[],joints=[],stairRoof=[],stairNosing=[],stairLights=[],colliders=[];
  const stone=new THREE.MeshStandardMaterial({color:0x727873,roughness:.88,metalness:.06});
  const roofMat=new THREE.MeshStandardMaterial({color:0xaaaead,roughness:.75,metalness:.16});
  const steel=new THREE.MeshStandardMaterial({color:0x606b68,roughness:.4,metalness:.65});
@@ -66,6 +66,18 @@ export function buildObrienFootbridge(scene){
  for(let i=0;i<count;i++){
   const t=(i+.5)/count,y=ground+(deck-ground)*(i+1)/count;
   box(steps,[stair.bottom.x+dx*t,y-.08,stair.bottom.z+dz*t],[stepRun+.02,.16,stairWidth],rot);
+  const end=(i+1)/count,x=stair.bottom.x+dx*end,z=stair.bottom.z+dz*end;
+  beam(stairNosing,[x-nx*(stairWidth/2-.03),y+.008,z-nz*(stairWidth/2-.03)],[x+nx*(stairWidth/2-.03),y+.008,z+nz*(stairWidth/2-.03)],.025,.035);
+ }
+ // OSM 148858993 is covered. Exact roof profile and the adjacent escalator's
+ // position are not surveyed: this simple pitched canopy follows the stair.
+ const rise=deck-ground,slope=Math.atan2(rise,L),slopeLength=Math.hypot(L,rise);
+ const roof=new THREE.BoxGeometry(slopeLength+.05,.18,stairWidth+.3);
+ roof.rotateZ(slope);roof.rotateY(rot);roof.translate((stair.bottom.x+stair.top.x)/2,(ground+deck)/2+3.45,(stair.bottom.z+stair.top.z)/2);stairRoof.push(roof);
+ for(let t=.1;t<1;t+=.2){
+  const x=stair.bottom.x+dx*t,z=stair.bottom.z+dz*t,y=ground+rise*t;
+  for(const side of [-1,1])beam(posts,[x+nx*side*(stairWidth/2-.08),y,z+nz*side*(stairWidth/2-.08)],[x+nx*side*(stairWidth/2-.08),y+3.35,z+nz*side*(stairWidth/2-.08)],.08);
+  box(stairLights,[x,y+3.32,z],[.6,.035,.24],rot);
  }
  for(const side of [-1,1]){
   const a=[stair.bottom.x+nx*side*stairWidth/2,ground+1,stair.bottom.z+nz*side*stairWidth/2];
@@ -77,7 +89,7 @@ export function buildObrienFootbridge(scene){
    const c=segmentWall(x0,z0,x1,z1,{thickness:.045,base:ground+(deck-ground)*t,top:ground+(deck-ground)*u+1.1});if(c)colliders.push(c);
   }
  }
- merged(group,decks,stone,'HF95 concrete deck');merged(group,roofs,roofMat,'HF95 covered canopy');merged(group,rails,steel,'HF95 balustrades');merged(group,posts,steel,'HF95 canopy supports');
- merged(group,joints,seam,'HF95 paving joints',false);merged(group,lights,lamp,'HF95 night ceiling luminaires',false);merged(group,tactile,yellow,'HF95 tactile guidance strips',false);merged(group,piers,stone,'HF95 road-safe piers');merged(group,steps,stone,'HF95 OSM access stairs');
+ merged(group,decks,stone,'HF95 concrete deck');merged(group,roofs,roofMat,'HF95 covered canopy');merged(group,stairRoof,roofMat,'HF95 stair canopy');merged(group,rails,steel,'HF95 balustrades');merged(group,posts,steel,'HF95 canopy supports');
+ merged(group,joints,seam,'HF95 paving joints',false);merged(group,stairNosing,seam,'HF95 stair nosings',false);merged(group,stairLights,lamp,'HF95 stair night lights',false);merged(group,lights,lamp,'HF95 night ceiling luminaires',false);merged(group,tactile,yellow,'HF95 tactile guidance strips',false);merged(group,piers,stone,'HF95 road-safe piers');merged(group,steps,stone,'HF95 OSM access stairs');
  return {group,colliders,landmarks:[],groundHeightAt:(x,z,current,ref)=>obrienFootbridgeGroundHeight(x,z,current,ref,ground),stats:{obrienFootbridgeSegments:route.length-1,obrienFootbridgeStairSteps:count}};
 }
