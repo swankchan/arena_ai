@@ -220,3 +220,7 @@ test('forecourt planting is present and leaves the tree-side arrival path clear'
  for(const name of ['The Murray forecourt planted stone beds','The Murray forecourt clipped shrubs'])assert.ok(b.group.getObjectByName(name),name);
  for(let x=12.6;x<=25;x+=.1){const z=-14.5,p=util.harbourCityLocalToWorld(A.MURRAY_SITE,x,z),y=b.groundHeightAt(p.x,p.z,terrain.hongKongTerrainHeight(p.x,p.z),b.datum-5);for(const c of b.colliders)if(y+1.75>=c.minY&&y+.1<=c.maxY)assert.equal(collision.colliderContains(c,p.x,p.z,.48),false,`forecourt path blocked ${x}`);}
 });
+test('ramp overhead lattice and suspended rings keep pedestrian headroom',async()=>{
+ const W=await import('../js/cities/hongkong/murray-wrapped-ramp.js'),high=Math.max(...W.MURRAY_WRAPPED_RAMP.heights);
+ for(const name of ['The Murray ramp overhead lattice','The Murray ramp suspended rings','The Murray ramp ring suspension']){const object=b.group.getObjectByName(name);assert.ok(object,name);object.geometry.computeBoundingBox();assert.ok(object.geometry.boundingBox.min.y>=high+1.75,`${name} too low`);}
+});

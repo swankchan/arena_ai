@@ -41,7 +41,7 @@ export function murrayWrappedRampGroundHeight(x,z,current,ref,datum){
  const y=datum+local;return ref>=y-.35&&ref<=y+2.5?y:current;
 }
 export function buildMurrayWrappedRamp(root,datum,colliders){
- const deck=store(),fascia=store(),top=[],joints=[];
+ const deck=store(),fascia=store(),top=[],joints=[],lattice=[],rings=[],suspension=[];
  const mat=new THREE.MeshStandardNodeMaterial({roughness:.86,side:THREE.DoubleSide});mat.colorNode=attribute('color');
  const bronze=new THREE.MeshStandardMaterial({color:0x918064,metalness:.6,roughness:.4});
  for(let i=0;i<segments.length;i++){
@@ -68,6 +68,24 @@ export function buildMurrayWrappedRamp(root,datum,colliders){
  quad(fascia,[a[0],last.h1-.15,a[1]],[b[0],last.h1-.15,b[1]],[b[0],last.h1+.95,b[1]],[a[0],last.h1+.95,a[1]],[.57,.58,.55]);
  beam(top,[a[0],last.h1+.98,a[1]],[b[0],last.h1+.98,b[1]],.05,.05);
  colliders.push(harbourCityLocalCollider(SITE,(a[0]+b[0])/2,(a[1]+b[1])/2,Math.hypot(b[0]-a[0],b[1]-a[1]),.1,datum+last.h1-.15,datum+last.h1+1.05,SITE.ry+Math.atan2(-(b[1]-a[1]),b[0]-a[0])));
+ // Reference photographs show a pale diagonal lattice and dark suspended rings
+ // over the ramp. Spacing here is illustrative, and stays above walking height.
+ for(const x of [-8,8]){
+  for(const dx of [-1.5,1.5])beam(lattice,[x+dx,13,-19],[x+dx,13,19],.1,.1);
+  for(let z=-19;z<19;z+=2){
+   beam(lattice,[x-1.5,13,z],[x+1.5,13,z+2],.075,.075);
+   beam(lattice,[x+1.5,13,z],[x-1.5,13,z+2],.075,.075);
+  }
+  for(const z of [-14,-4,6,16]){
+   const ring=new THREE.TorusGeometry(1.05,.035,8,36);ring.rotateX(Math.PI/2);ring.translate(x,11.5,z);rings.push(ring);
+   for(const dx of [-.7,.7])beam(suspension,[x+dx,11.5,z],[x+dx,13,z],.025,.025);
+  }
+ }
+ const ceiling=new THREE.MeshStandardMaterial({color:0xa0a298,roughness:.87});
+ const dark=new THREE.MeshStandardMaterial({color:0x302f2d,metalness:.45,roughness:.58});
+ merged(root,lattice,ceiling,'The Murray ramp overhead lattice',false);
+ merged(root,rings,dark,'The Murray ramp suspended rings',false);
+ merged(root,suspension,dark,'The Murray ramp ring suspension',false);
  meshStore(root,deck,mat,'The Murray wrapped ramp paving',false);meshStore(root,fascia,mat,'The Murray wrapped ramp parapets',false);
  merged(root,top,bronze,'The Murray wrapped ramp handrails',false);merged(root,joints,bronze,'The Murray wrapped ramp paving joints',false);
  return {segments:segments.length};
