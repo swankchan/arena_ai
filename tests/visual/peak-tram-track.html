@@ -1,0 +1,15 @@
+<!doctype html><meta charset="utf-8"><title>Peak Tram full track experiment</title><style>body{margin:0;background:#1a2522;color:white;font:15px system-ui}aside{position:absolute;left:14px;top:12px;padding:10px;background:#14221dd9;max-width:420px}canvas{display:block}</style>
+<aside>山頂纜車全線軌道試排（獨立場景）<br>高程是估算；未接駁道路、地勢切口或遊戲。</aside>
+<script type="importmap">{"imports":{"three":"../../vendor/three/build/three.webgpu.js","three/webgpu":"../../vendor/three/build/three.webgpu.js","three/tsl":"../../vendor/three/build/three.tsl.js","three/addons/":"../../vendor/three/examples/jsm/"}}</script>
+<script type="module">
+import * as THREE from 'three/webgpu';
+import {buildPeakTramTrackPreview} from '../../js/cities/hongkong/peak-tram-track-preview.js';
+import {hongKongTerrainHeight} from '../../js/cities/hongkong/terrain.js';
+const scene=new THREE.Scene();scene.background=new THREE.Color(0xa9bfca);scene.add(buildPeakTramTrackPreview().group);
+const geometry=new THREE.PlaneGeometry(1400,1300,140,130);geometry.rotateX(-Math.PI/2);geometry.translate(-540,0,850);
+const pos=geometry.attributes.position;for(let i=0;i<pos.count;i++){const x=pos.getX(i),z=pos.getZ(i);pos.setY(i,hongKongTerrainHeight(x,z)-.3);}geometry.computeVertexNormals();
+const land=new THREE.Mesh(geometry,new THREE.MeshStandardMaterial({color:0x697d68,roughness:1,transparent:true,opacity:.48,side:THREE.DoubleSide,depthWrite:false}));land.renderOrder=2;scene.add(land);
+scene.add(new THREE.HemisphereLight(0xeefaff,0x5b665d,1.5));const sun=new THREE.DirectionalLight(0xffffff,2);sun.position.set(-600,1000,100);scene.add(sun);
+const camera=new THREE.PerspectiveCamera(38,1.6,1,6000);camera.position.set(-1450,1200,2000);camera.lookAt(-540,220,850);
+const renderer=new THREE.WebGPURenderer({forceWebGL:true,antialias:true});await renderer.init();renderer.setSize(1280,800);document.body.appendChild(renderer.domElement);renderer.render(scene,camera);window.ready=true;
+</script>
