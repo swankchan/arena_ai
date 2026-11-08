@@ -1,5 +1,5 @@
 import * as THREE from 'three/webgpu';
-import { color } from 'three/tsl';
+import { attribute, color, texture } from 'three/tsl';
 import {
   SHERATON_SITE, SHERATON_UPPER_SITE, SHERATON_MODEL_HEIGHT, SHERATON_PODIUM_HEIGHT,
   SHERATON_VISIBLE_ROOM_ROWS, SHERATON_JACUZZI_COUNT, SHERATON_MAIN_ENTRANCE,
@@ -13,6 +13,38 @@ import {
   merged, box, cylinder, beam, edgeBox, ringBand, meshStore, harbourCityPalette, nightAmount,
 } from './harbour-city-world-utils.js';
 import { ringShellGeometry, meshFromGeometry, createRingWindowRows, makeCanvasSign } from './tst-hotel-world-utils.js';
+
+// Shared palette uses ordinary materials with renderer-time node properties. Use true
+// NodeMaterials here so Three.js JSON can serialize the shader graph as well.
+function sheratonNodePalette(options) {
+  const palette = harbourCityPalette(options);
+  for (const key of ['glazing', 'interior', 'stone', 'paleStone', 'white']) {
+    const source = palette[key];
+    const material = new THREE.MeshStandardNodeMaterial({
+      color: source.color, roughness: source.roughness, metalness: source.metalness,
+      side: source.side, vertexColors: source.vertexColors
+    });
+    material.colorNode = source.colorNode;
+    material.emissiveNode = source.emissiveNode;
+    source.dispose();
+    palette[key] = material;
+  }
+  // Hotel rooms read as warm-lit interiors at dusk, not emissive blue-green glass.
+  // Individual occupancy is illustrative, not a measured operating pattern.
+  palette.glazing.emissiveNode = color(0xffd39b).mul(attribute('aLit', 'float')).mul(nightAmount()).mul(2.8);
+  return palette;
+}
+
+function illuminateSheratonSign(sign) {
+  const old = sign.material;
+  const node = new THREE.MeshStandardNodeMaterial({
+    map: old.map, transparent: old.transparent, alphaTest: old.alphaTest,
+    side: old.side, roughness: old.roughness, metalness: old.metalness
+  });
+  node.emissiveNode = texture(old.map).rgb.mul(nightAmount()).mul(0.8);
+  sign.material = node;
+  old.dispose();
+}
 
 function siteGroup(root, base, name) {
   const group = new THREE.Group(); group.name = name; group.position.set(SHERATON_SITE.x, base, SHERATON_SITE.z);
@@ -51,13 +83,14 @@ function buildEntrance(group, base, materials) {
   merged(portal, canopy, materials.paleStone, 'Sheraton stone and metal entrance canopy');
   merged(portal, columns, materials.paleStone, 'Sheraton porte-cochere columns outside the central path');
   merged(portal, bollards, materials.metal, 'Sheraton arrival bollards');
-  const downlight = new THREE.MeshStandardMaterial({ color: 0xffe0a3, roughness: 0.45 });
+  const downlight = new THREE.MeshStandardNodeMaterial({ color: 0xffe0a3, roughness: 0.45 });
   downlight.emissiveNode = color(1, 0.67, 0.30).mul(nightAmount()).mul(1.2);
   merged(portal, lights, downlight, 'Warm Sheraton canopy downlights', false);
   const sign = makeCanvasSign(10.2, 0.72, (ctx, canvas) => {
     ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillStyle = '#eee7d6';
     ctx.font = '600 108px Arial, sans-serif'; ctx.fillText('S H E R A T O N', canvas.width / 2, canvas.height / 2, 1450);
   }, { emissive: true, canvasWidth: 1536, canvasHeight: 160 });
+  illuminateSheratonSign(sign);
   sign.position.set(0, SHERATON_CANOPY_SOFFIT + 0.05, SHERATON_CANOPY_DEPTH + 0.015); portal.add(sign);
   const colliders = [];
   for (const x of [-5.9, 5.9]) {
@@ -139,16 +172,19 @@ function buildUpperSlab(group, base, materials) {
     ctx.fillStyle = '#e7e0cd'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.font = 'bold 340px Georgia, serif';
     ctx.fillText('S', canvas.width / 2, canvas.height / 2 + 15);
   }, { emissive: true, canvasWidth: 768, canvasHeight: 768 });
+  illuminateSheratonSign(disc);
   disc.name = 'Sheraton circular S emblem'; disc.position.set(-36.7, 66.4, 32.86); group.add(disc);
   const vertical = makeCanvasSign(3.3, 30, (ctx, canvas) => {
     ctx.fillStyle = '#e9e3d3'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.font = '600 122px Arial, sans-serif';
     for (const [index, letter] of [...'SHERATON'].entries()) ctx.fillText(letter, canvas.width / 2, 105 + index * 188);
   }, { emissive: true, canvasWidth: 384, canvasHeight: 1536 });
+  illuminateSheratonSign(vertical);
   vertical.name = 'Vertical SHERATON blade lettering'; vertical.position.set(-36.7, 39.0, 32.93); group.add(vertical);
   const roofSign = makeCanvasSign(31, 2.0, (ctx, canvas) => {
     ctx.fillStyle = '#ede7d7'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.font = '600 116px Arial, sans-serif';
     ctx.fillText('SHERATON', canvas.width / 2, canvas.height / 2, 1430);
   }, { emissive: true, canvasWidth: 1536, canvasHeight: 180 });
+  illuminateSheratonSign(roofSign);
   roofSign.name = 'SHERATON upper long-facade lettering'; roofSign.position.set(10, 68.8, 32.28); group.add(roofSign);
   return { windows: windows.panels, colliders: harbourCityRingColliders(site, base + SHERATON_PODIUM_HEIGHT, base + SHERATON_MODEL_HEIGHT, 0.42) };
 }
@@ -157,7 +193,7 @@ function buildRoofAmenities(group, materials) {
   const roof = new THREE.Group(); roof.name = 'Sheraton official Level 18 rooftop pool and three Jacuzzis — visual placement only'; group.add(roof);
   const deck = [], loungers = [], rails = [];
   box(deck, [7, SHERATON_MODEL_HEIGHT + 0.09, 25], [55, 0.18, 11.6]);
-  const water = new THREE.MeshStandardMaterial({ color: 0x3b8b9b, roughness: 0.16, metalness: 0.16, transparent: true, opacity: 0.84 });
+  const water = new THREE.MeshStandardNodeMaterial({ color: 0x3b8b9b, roughness: 0.16, metalness: 0.16, transparent: true, opacity: 0.84 });
   water.emissiveNode = color(0.10, 0.28, 0.33).mul(nightAmount()).mul(0.22);
   const pool = new THREE.Mesh(new THREE.BoxGeometry(21, 0.20, 5.4), water); pool.name = 'Level 18 outdoor temperature-controlled pool'; pool.position.set(15, SHERATON_MODEL_HEIGHT + 0.23, 25); roof.add(pool);
   for (let i = 0; i < SHERATON_JACUZZI_COUNT; i++) {
@@ -179,7 +215,7 @@ function buildRoofAmenities(group, materials) {
 
 export function buildSheratonHotel(scene, { groundOffset = 0 } = {}) {
   const root = new THREE.Group(); root.name = 'Sheraton Hong Kong Hotel & Towers — exact podium and authored upper slab'; scene.add(root);
-  const materials = harbourCityPalette({ stone: [0.58, 0.55, 0.47], paleStone: [0.78, 0.75, 0.66], metal: [0.30, 0.27, 0.20], roof: [0.30, 0.32, 0.30], roughness: 0.31 });
+  const materials = sheratonNodePalette({ stone: [0.58, 0.55, 0.47], paleStone: [0.78, 0.75, 0.66], metal: [0.30, 0.27, 0.20], roof: [0.30, 0.32, 0.30], roughness: 0.31 });
   const group = siteGroup(root, groundOffset, 'Sheraton Nathan Road podium, guestroom slab and rooftop amenities');
   const podium = buildPodium(group, groundOffset, materials), upper = buildUpperSlab(group, groundOffset, materials); buildRoofAmenities(group, materials);
   const colliders = [...podium.colliders, ...upper.colliders];

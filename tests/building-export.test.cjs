@@ -67,3 +67,23 @@ test('exported Revenue Tower preserves game geometry and only moves the enclosin
     assert.deepEqual(copy.children[i].geometry.attributes.position.array, source.children[i].geometry.attributes.position.array);
   }
 });
+
+test('Sheraton TSL export includes actual facade, room and lamp nodes', async () => {
+  const { createBuildingExport } = await import('../js/exports/building-export.js');
+  const json = await createBuildingExport('sheraton-hotel', {tsl: true});
+  const materials = new Map(json.materials.map(m => [m.uuid, m]));
+  const objects = [];
+  const visit = obj => { objects.push(obj); for (const c of obj.children || []) visit(c); };
+  visit(json.object);
+  for (const name of ['Sheraton individual dark guestroom glazing panels', 'Warm Sheraton canopy downlights', 'Level 18 outdoor temperature-controlled pool', 'Sheraton circular S emblem']) {
+    const object = objects.find(o => o.name === name);
+    assert.ok(object, name);
+    const material = materials.get(object.material);
+    assert.equal(material.type, 'MeshStandardNodeMaterial', name);
+    assert.ok(material.inputNodes?.emissiveNode, name);
+  }
+  const windows = objects.find(o => o.name === 'Sheraton individual dark guestroom glazing panels');
+  assert.ok(materials.get(windows.material).inputNodes.colorNode);
+  assert.ok(json.nodes.some(n => n.type === 'AttributeNode' && n._attributeName === 'aLit'));
+  assert.ok(json.nodes.some(n => n.type === 'UniformNode' && n.value === 1.4));
+});
