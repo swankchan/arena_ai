@@ -41,3 +41,16 @@ test('garden entry has two walkable portals, central glass and lit ground vestib
  for(const z of [-1.45,1.45])for(let x=-28;x< -22;x+=.1){const p=util.harbourCityLocalToWorld(s,x,z);assert.ok(!b.colliders.some(c=>c.minY<b.base+1.7&&c.maxY>b.base+.2&&collision.colliderContains(c,p.x,p.z,.2)),`entry blocked at ${x},${z}`);}
  const p=util.harbourCityLocalToWorld(s,s.localRing[2],0);assert.ok(b.colliders.some(c=>c.minY<b.base+1.7&&c.maxY>b.base+.2&&collision.colliderContains(c,p.x,p.z)), 'glass divider is solid');
 });
+test('office lights use real node material and a stronger night-only emission graph',()=>{
+ const tower=M.buildImmigrationTower(new T.Group());
+ const mesh=tower.group.getObjectByName('Immigration Tower grey-blue glazed facade');
+ assert.ok(mesh.material.isMeshStandardNodeMaterial);
+ const lit=mesh.geometry.getAttribute('aLit').array;
+ assert.ok(lit.some(v=>v===0));assert.ok(lit.some(v=>v>.69&&v<.71));
+ // Confirm the serialized shader contains aLit, the light strength, and a live glow uniform.
+ const json=mesh.toJSON();
+ assert.ok(json.materials[0].inputNodes.emissiveNode);
+ assert.ok(json.nodes.some(n=>n.type==='AttributeNode' && n._attributeName==='aLit'));
+ assert.ok(json.nodes.some(n=>n.type==='ConstNode' && n.value===.9));
+ assert.ok(json.nodes.some(n=>n.type==='UniformNode'));
+});

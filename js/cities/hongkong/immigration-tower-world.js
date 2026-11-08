@@ -12,7 +12,9 @@ export function buildImmigrationTower(scene){
  const base=hongKongTerrainHeight(site.x,site.z),group=new THREE.Group(),glass=store(),podium=store(),frames=[],fine=[],colliders=[];
  group.name='Immigration Tower — 入境事務大樓';group.position.set(site.x,base,site.z);group.rotation.y=site.ry;scene.add(group);
  const glassMat=new THREE.MeshStandardNodeMaterial({side:THREE.DoubleSide,roughness:.24,metalness:.36});
- glassMat.colorNode=attribute('color');glassMat.emissiveNode=color(0xffd9ab).mul(attribute('aLit','float')).mul(nightAmount()).mul(.26);
+ // In the game these are actual NodeMaterials, but the old .26 multiplier made
+ // lit office panes very dim. Warm scattered occupancy is indicative, not surveyed.
+ glassMat.colorNode=attribute('color');glassMat.emissiveNode=color(0xffd9ab).mul(attribute('aLit','float')).mul(nightAmount()).mul(.9);
  const podiumMat=new THREE.MeshStandardNodeMaterial({side:THREE.DoubleSide,roughness:.52,metalness:.25});podiumMat.colorNode=attribute('color');
  const mainFrame=new THREE.MeshStandardMaterial({color:0x1e282d,roughness:.48,metalness:.5});
  const thinFrame=new THREE.MeshStandardMaterial({color:0x84949a,roughness:.38,metalness:.55});
