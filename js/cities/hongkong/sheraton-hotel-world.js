@@ -1,7 +1,7 @@
 import * as THREE from 'three/webgpu';
 import { attribute, color, texture } from 'three/tsl';
 import {
-  SHERATON_SITE, SHERATON_UPPER_SITE, SHERATON_MODEL_HEIGHT, SHERATON_PODIUM_HEIGHT,
+  SHERATON_SITE, SHERATON_UPPER_SITE, SHERATON_REAR_WING_SITE, SHERATON_REAR_WING_HEIGHT, SHERATON_REAR_WING_ROWS, SHERATON_MODEL_HEIGHT, SHERATON_PODIUM_HEIGHT,
   SHERATON_VISIBLE_ROOM_ROWS, SHERATON_JACUZZI_COUNT, SHERATON_MAIN_ENTRANCE,
   SHERATON_CANOPY_WIDTH, SHERATON_CANOPY_DEPTH, SHERATON_CANOPY_SOFFIT,
   sheratonWorldToLocal, sheratonRoadRecords, sheratonTerrainHeightAt,
@@ -127,20 +127,28 @@ function buildPodium(group, base, materials) {
     colliders.push(harbourCitySegmentCollider(site, edge, 0, 1, base + 5.8, base + SHERATON_PODIUM_HEIGHT, 0.44));
   }
   merged(group, piers, materials.paleStone, 'Sheraton ground-floor stone piers with open hotel entrance');
-  const podiumWindows = createRingWindowRows(site, {
-    y0: 6.1, rowCount: 2, floorHeight: 2.75, sill: 0.42, windowHeight: 1.55,
-    targetBayWidth: 4.3, windowRatio: 0.40, jambWidth: 0.18, frameDepth: 0.22,
-    tintA: [0.035, 0.055, 0.052], tintB: [0.15, 0.19, 0.17], litThreshold: 0.68,
-  });
-  meshStore(group, podiumWindows.glass, materials.glazing, 'Sheraton podium narrow windows');
-  merged(group, podiumWindows.frames, materials.paleStone, 'Sheraton podium concrete window surrounds');
-  merged(group, podiumWindows.sills, materials.paleStone, 'Sheraton podium stone lintels and sills');
+  // Large pale stone panels with thin joints and intermittent illuminated strips,
+  // not a second storey of generic identical windows.
+  const joints = [], sconces = [];
+  for (let edge = 0; edge < site.localRing.length / 2 - 1; edge++) {
+    const length = harbourCityEdgeOutward(site.localRing, edge).length;
+    if (length < 1) continue;
+    const bays = Math.max(1, Math.round(length / 2.1));
+    for (let i = 0; i <= bays; i++) edgeBox(joints, site, edge, i / bays, 9.15, .05, .035, 6.45, .045);
+    for (let y = 6.2; y < 12.3; y += 1.1) edgeBox(joints, site, edge, .5, y, .05, length, .035, .045);
+    for (let i = 0; i < Math.floor(length / 7); i++) edgeBox(sconces, site, edge, (i + .5) / Math.floor(length / 7), 11.0, .10, .14, 2.4, .08);
+  }
+  const jointMat = new THREE.MeshStandardMaterial({color: 0x77746f, roughness: .82});
+  const sconceMat = new THREE.MeshStandardNodeMaterial({color: 0xd2a86b, roughness: .65});
+  sconceMat.emissiveNode = color(0xffb95b).mul(nightAmount()).mul(1.2);
+  merged(group, joints, jointMat, 'Sheraton podium stone panel joints');
+  merged(group, sconces, sconceMat, 'Sheraton warm vertical podium lights', false);
   const bands = [];
   ringBand(bands, site, 5.82, 0.30, 0.24, 0.30); ringBand(bands, site, 9.0, 0.20, 0.16, 0.22);
   ringBand(bands, site, 12.35, 0.30, 0.30, 0.36);
   merged(group, bands, materials.paleStone, 'Sheraton podium horizontal stone courses');
   colliders.push(...buildEntrance(group, base, materials));
-  return { colliders, windows: windows.panels + podiumWindows.panels };
+  return { colliders, windows: windows.panels };
 }
 
 function buildUpperSlab(group, base, materials) {
@@ -150,48 +158,81 @@ function buildUpperSlab(group, base, materials) {
   const windows = createRingWindowRows(site, {
     y0: 13.15, rowCount: SHERATON_VISIBLE_ROOM_ROWS, floorHeight: 3.45, sill: 0.52, windowHeight: 2.32,
     targetBayWidth: 4.05, windowRatio: 0.71, jambWidth: 0.22, frameDepth: 0.30,
-    sillHeight: 0.20, lintelHeight: 0.18, tintA: [0.025, 0.060, 0.058], tintB: [0.19, 0.26, 0.23], litThreshold: 0.73,
+    sillHeight: 0.22, lintels: false, tintA: [0.025, 0.060, 0.058], tintB: [0.19, 0.26, 0.23], litThreshold: 0.73,
   });
   meshStore(group, windows.glass, materials.glazing, 'Sheraton individual dark guestroom glazing panels');
   merged(group, windows.frames, materials.paleStone, 'Sheraton projecting beige concrete room grid');
-  merged(group, windows.sills, materials.paleStone, 'Sheraton deep concrete sills and lintels');
+  merged(group, windows.sills, materials.ochre, 'Sheraton projecting warm ochre room sills');
   const bands = [];
   for (let row = 0; row <= SHERATON_VISIBLE_ROOM_ROWS; row++) ringBand(bands, site, 12.85 + row * 3.45, 0.15, 0.15, 0.19);
-  ringBand(bands, site, 71.65, 0.55, 0.30, 0.36);
+  ringBand(bands, site, SHERATON_MODEL_HEIGHT - 0.35, 0.55, 0.30, 0.36);
   merged(group, bands, materials.paleStone, 'Sheraton continuous floor edges and roof parapet');
 
-  // The current exterior's identifying west-end blade: pale frame, dark vertical recess, circular S and stacked lettering.
-  const blade = [], recess = [];
-  box(blade, [-36.7, 41.9, 32.42], [9.0, 58.7, 0.78]);
-  box(recess, [-36.7, 38.8, 32.84], [2.75, 43.0, 0.12]);
-  box(blade, [-41.75, 41.9, 25.0], [0.72, 58.7, 15.0]);
-  merged(group, blade, materials.paleStone, 'Sheraton tall west-end service and sign blade');
-  merged(group, recess, materials.dark, 'Sheraton dark recessed vertical service strip');
+  // The identifying west-end lift blade faces Nathan Road, not the harbour.
+  const blade = new THREE.Group(); blade.name = 'Sheraton west-end twin lift blade';
+  blade.position.set(-42.12, 0, 25); blade.rotation.y = -Math.PI / 2; group.add(blade);
+  const shell = [], recess = [], guides = [], cars = [];
+  box(shell, [0, 38.2, 0], [8.6, 51.4, .65]);
+  for (const x of [-1.25, 1.25]) {
+    box(recess, [x, 38.0, .36], [1.9, 43.6, .12]);
+    box(guides, [x, 38.0, .44], [.08, 43.6, .08]);
+    box(cars, [x, 52.5 - (x > 0 ? 3.4 : 0), .51], [1.45, 2.2, .18]);
+  }
+  merged(blade, shell, materials.paleStone, 'Sheraton tall west-end service and sign blade');
+  merged(blade, recess, materials.dark, 'Sheraton dark recessed twin lift strips');
+  merged(blade, guides, materials.metal, 'Sheraton lift guide rails');
+  merged(blade, cars, materials.ochre, 'Sheraton lift cars — illustrative position');
   const disc = makeCanvasSign(4.7, 4.7, (ctx, canvas) => {
-    ctx.strokeStyle = '#e7e0cd'; ctx.lineWidth = 20; ctx.beginPath(); ctx.arc(canvas.width / 2, canvas.height / 2, 245, 0, Math.PI * 2); ctx.stroke();
-    ctx.fillStyle = '#e7e0cd'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.font = 'bold 340px Georgia, serif';
+    ctx.strokeStyle = '#ddd1b3'; ctx.lineWidth = 20; ctx.beginPath(); ctx.arc(canvas.width / 2, canvas.height / 2, 245, 0, Math.PI * 2); ctx.stroke();
+    ctx.fillStyle = '#ddd1b3'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.font = 'bold 340px Georgia, serif';
     ctx.fillText('S', canvas.width / 2, canvas.height / 2 + 15);
   }, { emissive: true, canvasWidth: 768, canvasHeight: 768 });
   illuminateSheratonSign(disc);
-  disc.name = 'Sheraton circular S emblem'; disc.position.set(-36.7, 66.4, 32.86); group.add(disc);
-  const vertical = makeCanvasSign(3.3, 30, (ctx, canvas) => {
-    ctx.fillStyle = '#e9e3d3'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.font = '600 122px Arial, sans-serif';
-    for (const [index, letter] of [...'SHERATON'].entries()) ctx.fillText(letter, canvas.width / 2, 105 + index * 188);
-  }, { emissive: true, canvasWidth: 384, canvasHeight: 1536 });
-  illuminateSheratonSign(vertical);
-  vertical.name = 'Vertical SHERATON blade lettering'; vertical.position.set(-36.7, 39.0, 32.93); group.add(vertical);
+  disc.name = 'Sheraton circular S emblem'; disc.position.set(0, SHERATON_MODEL_HEIGHT - 3.6, .40); blade.add(disc);
   const roofSign = makeCanvasSign(31, 2.0, (ctx, canvas) => {
     ctx.fillStyle = '#ede7d7'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.font = '600 116px Arial, sans-serif';
     ctx.fillText('SHERATON', canvas.width / 2, canvas.height / 2, 1430);
   }, { emissive: true, canvasWidth: 1536, canvasHeight: 180 });
   illuminateSheratonSign(roofSign);
-  roofSign.name = 'SHERATON upper long-facade lettering'; roofSign.position.set(10, 68.8, 32.28); group.add(roofSign);
+  roofSign.name = 'SHERATON upper long-facade lettering'; roofSign.position.set(10, SHERATON_MODEL_HEIGHT - 1.6, 32.28); group.add(roofSign);
   return { windows: windows.panels, colliders: harbourCityRingColliders(site, base + SHERATON_PODIUM_HEIGHT, base + SHERATON_MODEL_HEIGHT, 0.42) };
+}
+
+
+function buildRearWing(group, base, materials) {
+  const site = SHERATON_REAR_WING_SITE;
+  meshFromGeometry(group, ringShellGeometry(site.localRing, SHERATON_PODIUM_HEIGHT, SHERATON_REAR_WING_HEIGHT), materials.stone,
+    'Photo-directed lower north wing around recessed court');
+  const windows = createRingWindowRows(site, {
+    y0: 13.15, rowCount: SHERATON_REAR_WING_ROWS, floorHeight: 3.45, sill: .52, windowHeight: 2.32,
+    targetBayWidth: 4.05, windowRatio: .71, jambWidth: .22, frameDepth: .30, sillHeight: .22, lintels: false,
+    tintA: [.025, .06, .058], tintB: [.19, .26, .23], litThreshold: .73, seed: 124697432,
+  });
+  meshStore(group, windows.glass, materials.glazing, 'Rear wing individual guestroom glazing');
+  merged(group, windows.frames, materials.paleStone, 'Rear wing pale vertical room fins');
+  merged(group, windows.sills, materials.ochre, 'Rear wing projecting ochre sills');
+  const parapet = []; ringBand(parapet, site, SHERATON_REAR_WING_HEIGHT - .28, .5, .2, .3);
+  merged(group, parapet, materials.paleStone, 'Rear wing roof parapet');
+  return {windows: windows.panels, colliders: harbourCityRingColliders(site, base + SHERATON_PODIUM_HEIGHT, base + SHERATON_REAR_WING_HEIGHT, .42)};
+}
+function buildBillboard(group, materials) {
+  // The actual advertising varies over time; a dark unbranded face avoids inventing an advert.
+  const support = [], screen = [], frame = [], y = SHERATON_MODEL_HEIGHT;
+  box(screen, [2, y + 5.3, 30.55], [66, 9.4, .20]);
+  for (const x of [-31, -20, -9, 2, 13, 24, 35]) {
+    beam(support, [x, y, 29.7], [x, y + 10.1, 30.4], .16);
+    beam(support, [x, y, 26.2], [x, y + 10.1, 30.4], .14);
+    beam(support, [x, y + .6, 29.7], [x, y + 5.2, 28.3], .09);
+  }
+  for (const h of [y + .6, y + 10]) beam(frame, [-31, h, 30.55], [35, h, 30.55], .12);
+  merged(group, screen, materials.dark, 'Sheraton roof billboard unbranded screen');
+  merged(group, support, materials.metal, 'Sheraton roof billboard triangular trusses');
+  merged(group, frame, materials.metal, 'Sheraton roof billboard frame');
 }
 
 function buildRoofAmenities(group, materials) {
   const roof = new THREE.Group(); roof.name = 'Sheraton official Level 18 rooftop pool and three Jacuzzis — visual placement only'; group.add(roof);
-  const deck = [], loungers = [], rails = [];
+  const deck = [], loungers = [], rails = [], rims = [], parasolPosts = [], parasols = [];
   box(deck, [7, SHERATON_MODEL_HEIGHT + 0.09, 25], [55, 0.18, 11.6]);
   const water = new THREE.MeshStandardNodeMaterial({ color: 0x3b8b9b, roughness: 0.16, metalness: 0.16, transparent: true, opacity: 0.84 });
   water.emissiveNode = color(0.10, 0.28, 0.33).mul(nightAmount()).mul(0.22);
@@ -199,26 +240,38 @@ function buildRoofAmenities(group, materials) {
   for (let i = 0; i < SHERATON_JACUZZI_COUNT; i++) {
     const jacuzzi = new THREE.Mesh(new THREE.CylinderGeometry(1.22, 1.22, 0.30, 24), water);
     jacuzzi.name = `Heated rooftop Jacuzzi ${i + 1}`; jacuzzi.position.set(-8 + i * 3.1, SHERATON_MODEL_HEIGHT + 0.28, 25); roof.add(jacuzzi);
+    const rim = new THREE.TorusGeometry(1.22, .12, 8, 24); rim.rotateX(Math.PI / 2); rim.translate(-8 + i * 3.1, SHERATON_MODEL_HEIGHT + .4, 25); rims.push(rim);
   }
   for (let i = 0; i < 8; i++) {
     const x = -15 + i * 6.1;
     box(loungers, [x, SHERATON_MODEL_HEIGHT + 0.40, 20.4], [2.0, 0.20, 0.68]);
     box(loungers, [x - 0.78, SHERATON_MODEL_HEIGHT + 0.70, 20.4], [0.55, 0.65, 0.68]);
   }
+  for (const x of [-12, 0, 12, 24]) {
+    cylinder(parasolPosts, [x, SHERATON_MODEL_HEIGHT + 1.45, 20.5], .045, 2.7, 8);
+    const umbrella = new THREE.ConeGeometry(1.35, .38, 8, 1, false);
+    umbrella.translate(x, SHERATON_MODEL_HEIGHT + 2.85, 20.5); parasols.push(umbrella);
+  }
   for (const z of [19.15, 30.85]) {
     beam(rails, [-21, SHERATON_MODEL_HEIGHT + 1.15, z], [35, SHERATON_MODEL_HEIGHT + 1.15, z], 0.065);
     for (let x = -21; x <= 35; x += 4) beam(rails, [x, SHERATON_MODEL_HEIGHT + 0.15, z], [x, SHERATON_MODEL_HEIGHT + 1.15, z], 0.055);
   }
-  merged(roof, deck, materials.paleStone, 'Photo-directed rooftop sundeck'); merged(roof, loungers, materials.white, 'Rooftop sundeck lounge chairs');
+  const furniture = new THREE.MeshStandardMaterial({color: 0x33332f, roughness: .8});
+  const parasol = new THREE.MeshStandardMaterial({color: 0x766d5f, roughness: .9, side: THREE.DoubleSide});
+  merged(roof, deck, materials.paleStone, 'Photo-directed rooftop sundeck'); merged(roof, loungers, furniture, 'Rooftop sundeck lounge chairs');
+  merged(roof, rims, materials.metal, 'Rooftop Jacuzzi rims');
+  merged(roof, parasolPosts, materials.metal, 'Rooftop parasol poles');
+  merged(roof, parasols, parasol, 'Rooftop taupe parasols');
   merged(roof, rails, materials.metal, 'Rooftop pool safety rails');
 }
 
 export function buildSheratonHotel(scene, { groundOffset = 0 } = {}) {
   const root = new THREE.Group(); root.name = 'Sheraton Hong Kong Hotel & Towers — exact podium and authored upper slab'; scene.add(root);
   const materials = sheratonNodePalette({ stone: [0.58, 0.55, 0.47], paleStone: [0.78, 0.75, 0.66], metal: [0.30, 0.27, 0.20], roof: [0.30, 0.32, 0.30], roughness: 0.31 });
+  materials.ochre = new THREE.MeshStandardMaterial({color: 0xb68d5c, roughness: .78, metalness: .04});
   const group = siteGroup(root, groundOffset, 'Sheraton Nathan Road podium, guestroom slab and rooftop amenities');
-  const podium = buildPodium(group, groundOffset, materials), upper = buildUpperSlab(group, groundOffset, materials); buildRoofAmenities(group, materials);
-  const colliders = [...podium.colliders, ...upper.colliders];
+  const podium = buildPodium(group, groundOffset, materials), upper = buildUpperSlab(group, groundOffset, materials), rear = buildRearWing(group, groundOffset, materials); buildRoofAmenities(group, materials); buildBillboard(group, materials);
+  const colliders = [...podium.colliders, ...upper.colliders, ...rear.colliders];
   const landmark = { name: SHERATON_SITE.name, englishName: SHERATON_SITE.englishName,
     x: SHERATON_SITE.x, z: SHERATON_SITE.z, w: SHERATON_SITE.w, d: SHERATON_SITE.d, h: SHERATON_MODEL_HEIGHT,
     bounds: { ...SHERATON_SITE.bounds }, ring: SHERATON_SITE.ring, osmId: SHERATON_SITE.osmId, heightEvidence: 'photo-directed scene convention' };
@@ -226,6 +279,6 @@ export function buildSheratonHotel(scene, { groundOffset = 0 } = {}) {
     roads: sheratonRoadRecords(), groundHeightAt: (x, z, ground) => sheratonTerrainHeightAt(x, z, ground, groundOffset),
     stats: { sheratonSourceBuildings: 1, sheratonSourceVertices: 15, sheratonRingArea: SHERATON_SITE.ringArea,
       sheratonOsmLevels: 17, sheratonVisibleRoomRows: SHERATON_VISIBLE_ROOM_ROWS, sheratonModelHeight: SHERATON_MODEL_HEIGHT,
-      sheratonUpperPhotoDirected: 1, sheratonWindows: podium.windows + upper.windows, sheratonRooftopJacuzzis: SHERATON_JACUZZI_COUNT,
+      sheratonUpperPhotoDirected: 1, sheratonWindows: podium.windows + upper.windows + rear.windows, sheratonRooftopJacuzzis: SHERATON_JACUZZI_COUNT,
       sheratonRoadCrossings: 0, sheratonColliders: colliders.length } };
 }

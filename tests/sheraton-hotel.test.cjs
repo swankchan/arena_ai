@@ -56,11 +56,11 @@ test('Sheraton preserves exact current OSM way 124697432 v9 and all source tags'
 });
 
 test('unverified height is not invented as an official fact and official Level 18 amenities stay separate', () => {
-  assert.equal(sheraton.SHERATON_MODEL_HEIGHT, 72); assert.equal(sheraton.SHERATON_OSM_LEVELS, 17);
-  assert.equal(sheraton.SHERATON_VISIBLE_ROOM_ROWS, 16); assert.equal(sheraton.SHERATON_POOL_LEVEL, 18); assert.equal(sheraton.SHERATON_JACUZZI_COUNT, 3);
+  assert.equal(sheraton.SHERATON_MODEL_HEIGHT, 64); assert.equal(sheraton.SHERATON_OSM_LEVELS, 17);
+  assert.equal(sheraton.SHERATON_VISIBLE_ROOM_ROWS, 14); assert.equal(sheraton.SHERATON_POOL_LEVEL, 18); assert.equal(sheraton.SHERATON_JACUZZI_COUNT, 3);
   assert.match(sheraton.SHERATON_UPPER_SITE.evidence, /not claimed as a surveyed upper-floor plan/);
   assert.ok(sheraton.SHERATON_RESEARCH_SOURCES.some((s) => /experiences/.test(s.url) && /Level 18/.test(s.evidence) && /three heated Jacuzzis/.test(s.evidence)));
-  assert.ok(sheraton.SHERATON_RESEARCH_SOURCES.some((s) => /124697432/.test(s.url) && /no height tag/.test(s.evidence) && /72 m is only/.test(s.evidence)));
+  assert.ok(sheraton.SHERATON_RESEARCH_SOURCES.some((s) => /124697432/.test(s.url) && /no height tag/.test(s.evidence) && /64 m is only/.test(s.evidence)));
 });
 
 test('photo-directed upper slab remains inside the exact irregular podium ring', () => {
@@ -70,6 +70,15 @@ test('photo-directed upper slab remains inside the exact irregular podium ring',
   for (let edge = 0; edge < upper.localRing.length / 2 - 1; edge++) for (let sample = 0; sample <= 40; sample++) {
     const t = sample / 40, i = edge * 2, x = upper.localRing[i] + (upper.localRing[i + 2] - upper.localRing[i]) * t, z = upper.localRing[i + 1] + (upper.localRing[i + 3] - upper.localRing[i + 1]) * t;
     assert.ok(inside(source.localRing, x, z), `upper slab outside podium at ${x},${z}`);
+  }
+});
+
+test('photo-directed rear wing remains inside the OSM footprint', () => {
+  const wing = sheraton.SHERATON_REAR_WING_SITE, ring = wing.localRing;
+  assert.ok(wing.photoDirected); assert.equal(wing.osmId, null);
+  for (let i = 0; i < ring.length - 2; i += 2) for (let t = 0; t <= 1; t += .025) {
+    const x = ring[i] * (1 - t) + ring[i + 2] * t, z = ring[i + 1] * (1 - t) + ring[i + 3] * t;
+    assert.ok(inside(sheraton.SHERATON_SITE.localRing, x, z), `${x},${z}`);
   }
 });
 
@@ -102,7 +111,7 @@ test('Sheraton uses a traceable local DTM pad and leaves outside terrain unchang
 
 test('world authors the room grid, current sign blade, entrance and official rooftop amenities', () => {
   const world = fs.readFileSync(path.join(root, 'js/cities/hongkong/sheraton-hotel-world.js'), 'utf8');
-  for (const pattern of [/createRingWindowRows/, /projecting beige concrete room grid/, /current exterior's identifying west-end blade/, /circular S emblem/, /Vertical SHERATON blade lettering/, /Nathan Road lobby doors/, /Warm Sheraton canopy downlights/, /Level 18 outdoor temperature-controlled pool/, /SHERATON_JACUZZI_COUNT/, /Rooftop sundeck lounge chairs/, /harbourCityRingColliders/, /sheratonTerrainHeightAt/]) assert.match(world, pattern);
+  for (const pattern of [/createRingWindowRows/, /projecting beige concrete room grid/, /west-end twin lift blade/, /circular S emblem/, /Rear wing projecting ochre sills/, /Sheraton roof billboard triangular trusses/, /Sheraton warm vertical podium lights/, /Nathan Road lobby doors/, /Warm Sheraton canopy downlights/, /Level 18 outdoor temperature-controlled pool/, /SHERATON_JACUZZI_COUNT/, /Rooftop sundeck lounge chairs/, /harbourCityRingColliders/, /sheratonTerrainHeightAt/]) assert.match(world, pattern);
   assert.doesNotMatch(world, /image-search|\.jpg|\.png/);
 });
 
@@ -113,4 +122,33 @@ test('Sheraton is integrated into world, ground, road profiles, map and runtime 
   const index = fs.readFileSync(path.join(root, 'js/cities/hongkong/index.js'), 'utf8');
   assert.match(simple, /buildSheratonHotel/); assert.match(simple, /sheratonHotel\.groundHeightAt/); assert.match(simple, /\.\.\.sheratonHotel\.colliders/); assert.match(simple, /\.\.\.sheratonHotel\.landmarks/);
   assert.match(road, /SHERATON_GROUND_RINGS/); assert.match(map, /SHERATON_SITE\.ring/); assert.match(map, /sheratonHotelMapSite/); assert.match(index, /sheratonHotel: world\.sheratonHotel/);
+});
+
+
+test('all rebuilt Sheraton mesh coordinates are finite and entrance clearance remains open', async () => {
+  class Canvas { getContext() { return new Proxy({}, {get: () => () => {}, set: () => true}); } }
+  const previous = global.document; global.document = {createElement: () => new Canvas()};
+  try {
+    const THREE = await import('three/webgpu');
+    const {buildSheratonHotel} = await import('../js/cities/hongkong/sheraton-hotel-world.js');
+    const base = terrain.sheratonPadHeight();
+    const model = buildSheratonHotel(new THREE.Scene(), {groundOffset: base});
+    model.root.traverse(object => {
+      if (!object.isMesh) return;
+      for (const value of object.geometry.attributes.position.array) assert.ok(Number.isFinite(value), object.name);
+      object.geometry.computeBoundingBox();
+      for (const value of [...object.geometry.boundingBox.min.toArray(), ...object.geometry.boundingBox.max.toArray()]) assert.ok(Number.isFinite(value), object.name);
+    });
+    const e = sheraton.SHERATON_MAIN_ENTRANCE, site = sheraton.SHERATON_SITE, ring = site.localRing, i = 2 * e.sourceEdge;
+    const dx = ring[i + 2] - ring[i], dz = ring[i + 3] - ring[i + 1], length = Math.hypot(dx, dz);
+    for (let along = -1.6; along <= 1.6; along += .4) {
+      const p = sheraton.sheratonLocalToWorld(site, e.localX + along * dx / length, e.localZ + along * dz / length);
+      const hits = model.colliders.filter(c => {
+        if (c.minY > base + 1.5 || c.maxY < base + 1.5) return false;
+        const x = p.x - c.obb.cx, z = p.z - c.obb.cz;
+        return Math.abs(x * c.obb.cs - z * c.obb.sn) < c.obb.hx && Math.abs(x * c.obb.sn + z * c.obb.cs) < c.obb.hz;
+      });
+      assert.equal(hits.length, 0, `entrance offset ${along}`);
+    }
+  } finally { global.document = previous; }
 });

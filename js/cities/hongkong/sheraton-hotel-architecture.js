@@ -1,5 +1,5 @@
 // Sheraton Hong Kong Hotel & Towers: exact OSM podium footprint with explicitly photo-directed upper-slab proportions.
-// No reliable published architectural height was found; the 72 m scene height is not presented as an official fact.
+// No reliable published architectural height was found; the 64 m scene height is not presented as an official fact.
 import {
   tstHotelOsmSource, makeTstHotelSite, makePhotoDirectedGroundRing, tstHotelTerrainHeightAt,
   tstHotelRoadRecords, tstHotelWorldToLocal, tstHotelLocalToWorld,
@@ -11,9 +11,9 @@ export const SHERATON_OSM_SOURCE = tstHotelOsmSource({ id: 124697432, version: 9
   nodes: [1387112154, 1387112150, 1387112146, 1387112147, 1387112140, 1387112139, 1387112136, 8974745438, 1387112137, 1387112144, 8582747131, 8582747132, 1387112141, 1387112148, 1387112149, 1387112154],
   geometry: [{ lat: 22.2955327, lon: 114.1729244 }, { lat: 22.2955040, lon: 114.1724991 }, { lat: 22.2953631, lon: 114.1725102 }, { lat: 22.2953708, lon: 114.1726244 }, { lat: 22.2950597, lon: 114.1726490 }, { lat: 22.2950519, lon: 114.1725348 }, { lat: 22.2949058, lon: 114.1725463 }, { lat: 22.2949088, lon: 114.1725900 }, { lat: 22.2949675, lon: 114.1734596 }, { lat: 22.2951364, lon: 114.1734463 }, { lat: 22.2951309, lon: 114.1733655 }, { lat: 22.2951085, lon: 114.1733672 }, { lat: 22.2950710, lon: 114.1728129 }, { lat: 22.2953895, lon: 114.1727878 }, { lat: 22.2953994, lon: 114.1729349 }, { lat: 22.2955327, lon: 114.1729244 }] });
 
-export const SHERATON_MODEL_HEIGHT = 72;
+export const SHERATON_MODEL_HEIGHT = 64;
 export const SHERATON_OSM_LEVELS = 17;
-export const SHERATON_VISIBLE_ROOM_ROWS = 16;
+export const SHERATON_VISIBLE_ROOM_ROWS = 14;
 export const SHERATON_PODIUM_HEIGHT = 12.5;
 export const SHERATON_POOL_LEVEL = 18;
 export const SHERATON_JACUZZI_COUNT = 3;
@@ -28,6 +28,18 @@ export const SHERATON_UPPER_SITE = Object.freeze({
   osmType: null, osmId: null, source: null, photoDirected: true, localRing: SHERATON_UPPER_LOCAL_RING,
   w: 84, d: 14, height: SHERATON_MODEL_HEIGHT,
   evidence: 'Long upper slab proportion and placement derived from reviewed exterior photographs; contained by the exact OSM podium ring and not claimed as a surveyed upper-floor plan.',
+});
+
+// The recessed north wing is visible in the archived Nathan Road photographs.
+// Its upper footprint and height are estimated, not separate OSM building parts.
+export const SHERATON_REAR_WING_HEIGHT = 57;
+export const SHERATON_REAR_WING_ROWS = 12;
+export const SHERATON_REAR_WING_SITE = Object.freeze({
+  ...SHERATON_SITE, key: 'sheratonRearWing', name: 'Sheraton photo-directed north wing',
+  osmType: null, osmId: null, source: null, photoDirected: true,
+  localRing: Object.freeze([-34, -17, -19.2, -17, -19.2, 18.5, -34, 18.5, -34, -17]),
+  height: SHERATON_REAR_WING_HEIGHT,
+  evidence: 'Estimated rear guestroom wing based on exterior photographs, not a surveyed plan or an independent OSM way.',
 });
 
 export const SHERATON_MAIN_ENTRANCE = harbourCityEdgeFrame(SHERATON_SITE, 3,
@@ -58,7 +70,7 @@ export const SHERATON_RESEARCH_SOURCES = Object.freeze([
   Object.freeze({ url: 'https://www.marriott.com/en-us/hotels/hkgsi-sheraton-hong-kong-hotel-and-towers/overview/', publisher: 'Marriott — Sheraton Hong Kong Hotel & Towers', evidence: 'Official Tsim Sha Tsui identity and 20 Nathan Road address; official rooftop-pool amenity is separate from unverified building-height claims.' }),
   Object.freeze({ url: 'https://www.marriott.com/en-us/hotels/hkgsi-sheraton-hong-kong-hotel-and-towers/experiences/', publisher: 'Marriott — official experiences', evidence: 'Level 18 outdoor temperature-controlled pool facing the harbour, three heated Jacuzzis and a sundeck. These official amenities guide roof geometry without claiming a surveyed pool location.' }),
   Object.freeze({ url: 'https://marriott.com/hotels/hotel-photos/hkgsi-sheraton-hong-kong-hotel-and-towers', publisher: 'Marriott — official photo gallery', evidence: 'Official exterior and amenity gallery. Reviewed exterior references direct the long beige-concrete / dark-glass guestroom grid, projecting vertical service and sign blade, circular S emblem, SHERATON lettering, warm podium and entrance canopy; photos are not redistributed or treated as measured elevations.' }),
-  Object.freeze({ url: 'https://www.openstreetmap.org/api/0.6/way/124697432/full.json', publisher: 'OpenStreetMap contributors', evidence: 'Current way 124697432 v9 supplies the exact 15-vertex closed building ring, 17-level tag, address and 1974-02-18 start_date. It has no height tag; 72 m is only the documented visual scene convention.' }),
+  Object.freeze({ url: 'https://www.openstreetmap.org/api/0.6/way/124697432/full.json', publisher: 'OpenStreetMap contributors', evidence: 'Current way 124697432 v9 supplies the exact 15-vertex closed building ring, 17-level tag, address and 1974-02-18 start_date. It has no height tag; 64 m is only the documented visual scene convention.' }),
 ]);
 
 export function sheratonTerrainHeightAt(x, z, rawHeight, padHeight) { return tstHotelTerrainHeightAt(SHERATON_GROUND_SITES, x, z, rawHeight, padHeight); }

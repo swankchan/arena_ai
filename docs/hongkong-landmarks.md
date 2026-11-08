@@ -989,15 +989,12 @@
 - **地面與碰撞**：兩幢建築及前庭共用由現有 DTM 採樣最高值形成的 **5 m** 施工平台；這是可重算場景 datum，不是已核實工程標高。`terrain.js`、`road-elevation.js`、`simple-world.js` 的 ground query、道路剖面及碰撞使用同一來源；道路被選取時仍優先使用道路 ground。Node geometry smoke 為 **43 meshes／119,361 triangles／90 colliders／0 non-finite vertices**，主入口及 Arcade 入口地面碰撞命中均為 **0**。
 - **驗證**：`tests/peninsula-hotel.test.cjs` 涵蓋兩個精確來源、面積、雙高度／樓層口径、兩類入口、前庭道路、噴泉淨空、街燈、DTM、建築細節及整合。程式只使用程序化材質及 canvas 字樣，沒有外部圖片資產。
 
-## 香港喜來登酒店 `HK-TST-SH`：客房長板、標誌刀片牆及 Level 18 泳池（2026-11-06）
+## 香港喜來登酒店 `HK-TST-SH`：海港長翼、北翼及 Level 18 泳池
 
-- **位置與精確來源**：彌敦道20號，採額外 TST ID，不改變100幢清單的36／64統計。目前 OSM building way **124697432 v9**（source timestamp **2026-04-06T06:18:34Z**）保存完整15個獨立頂點、節點、經緯度及tags；ring 面積 **2813.905410766136 m²**。原始 `building:levels=17`、`start_date=1974-02-18` 與地址保留，沒有把用地或其他酒店套過來。
-- **高度誠實口径**：OSM **沒有 height tag**，本輪也沒有找到可核實的官方／CTBUH建築高度；模型的 **72 m** 只為照片導向場景體量，絕不寫成官方高度。16道客房窗列、OSM 17層及官方 **Level 18** 泳池設施是三種不同資料／視覺口径，沒有互相取代。
-- **體量及立面**：精確不規則 ring 用作低層 podium；上層 **84 × 14 m** 長板是照片導向體量，邊界160個樣本全部留在精確 podium ring 內，不冒充第二個 OSM building way。外牆使用淺米色混凝土格框、突出窗台／線腳及深色客房玻璃，另建西端較高服務／標誌刀片牆、深色直向凹槽、圓形 S 徽章、直向及橫向 SHERATON 字樣；日間保留混凝土深度，夜間招牌及大堂只作暖光。
-- **入口與 MTR 區分**：Nathan Road 主入口採照片導向 source edge **3**，有玻璃門、門框／拉手、暖光雨篷、柱、downlights 及 bollards。OSM **node 8974745438 `railway=subway_entrance`、`ref=J4`** 只保留為來源脈絡，沒有誤當酒店大門；入口地面碰撞命中為 **0**。
-- **官方屋面設施**：Marriott 官方 experiences 頁確認 **Level 18** 戶外恆溫泳池、三個加熱 Jacuzzis 及 sundeck；模型加入泳池、剛好三個圓形 Jacuzzis、八張躺椅及安全欄杆。具體屋面位置及尺寸是視覺安排，不是實測泳池平面。
-- **道路、街燈及地面**：精確建築 ring 和 **14 × 5.2 m** 照片導向入口雨篷均以全港道路中心線及 `width/2+0.35 m` 重掃，center／corridor 均為 **0**；clearance 後街燈在兩個範圍亦為 **0**。因此不搬路、不改標線／信號、不搬燈，也不搬歪建築。DTM 採樣形成的施工平台為 **5.164158550106379 m**，是可重算場景 datum，不是工程標高；ground query、道路剖面、碰撞及模型 base 一致。
-- **驗證**：`tests/sheraton-hotel.test.cjs` 覆蓋精確來源、無高度tag的誠實處理、上層體量 containment、入口／J4、道路／街燈、DTM、立面／標誌／泳池及整合。Node geometry smoke 為 **32 meshes／54,059 triangles／114 colliders／0 non-finite vertices**，主入口地面碰撞命中 **0**；沒有打包外部照片。
+- **來源**：彌敦道 20 號，OSM way **124697432 v9** 保留15個獨立頂點、`building:levels=17`、`start_date=1974-02-18`；沒有高度標籤。[多輪外貌、夜景、入口及泳池參考和授權備註](../references/hongkong/sheraton-hotel/README.md)。
+- **體量及立面**：OSM 不規則 ring 為裙樓，海港長翼 84 × 14 m、後方北翼約 14.8 × 35.5 m 均按照片估算及置於地盤內，兩翼高度約 **64／57 m**，不當作實測或 OSM 高度。長翼 14 行、北翼 12 行窗為模型視覺數量，與 OSM 層數及官方 Level 18 不可混為同一測量。淺暖灰立面格框、金赭色突出台板、深色玻璃、石面板縫及裙樓暖色垂直燈參考照片；大字招牌、圓形 S、兩條深色升降機槽及車廂位置為近似。屋頂廣告板和三角支架的尺寸為估算，廣告內容留空。
+- **入口及設施**：Nathan Road 入口依 source edge 3 推算，玻璃門及雨篷不冒充 OSM entrance node；J4 地鐵節點另作來源脈絡。Marriott 確認 Level 18 戶外泳池、三個 Jacuzzi 及日光平台，圖中位置並非實測；另參考照片加了躺椅、傘及欄杆。窗、入口燈、裙樓燈及招牌使用日夜 NodeMaterial；亮窗數量、升降機停泊位置和燈光強度是示意。
+- **地勢、道路與驗證**：建築輪廓及 14 × 5.2 m 入口篷的道路中心線與寬度走廊檢查均無交叉，已清理街燈無佔用，不改路或標線；地台及模型採用 DTM 採樣 5.164 m，並非工程標高。測試涵蓋上翼邊界取樣、道路、街燈、有限幾何、入口地面碰撞採樣和節點序列化；不等於遊戲 WebGPU 日夜目視或連續駕駛核驗。普通 Editor JSON 不保留動態 TSL，TSL JSON 亦非原生 ObjectLoader 格式。
 
 ## 港青酒店 The Salisbury–YMCA of Hong Kong `HK-TST-YMCA`
 

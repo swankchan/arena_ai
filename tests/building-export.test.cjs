@@ -75,7 +75,7 @@ test('Sheraton TSL export includes actual facade, room and lamp nodes', async ()
   const objects = [];
   const visit = obj => { objects.push(obj); for (const c of obj.children || []) visit(c); };
   visit(json.object);
-  for (const name of ['Sheraton individual dark guestroom glazing panels', 'Warm Sheraton canopy downlights', 'Level 18 outdoor temperature-controlled pool', 'Sheraton circular S emblem']) {
+  for (const name of ['Sheraton individual dark guestroom glazing panels', 'Warm Sheraton canopy downlights', 'Sheraton warm vertical podium lights', 'Rear wing individual guestroom glazing', 'Level 18 outdoor temperature-controlled pool', 'Sheraton circular S emblem']) {
     const object = objects.find(o => o.name === name);
     assert.ok(object, name);
     const material = materials.get(object.material);
