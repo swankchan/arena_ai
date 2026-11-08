@@ -45,6 +45,12 @@ test('boundary wall and iron railings leave the gate drive open',()=>{
  for(const name of ['Government House garden boundary stone walls','Government House garden boundary wall coping','Government House garden boundary iron railings'])assert.ok(b.group.getObjectByName(name),name);
  for(let x=6;x<=13;x+=.25){const p=util.harbourCityLocalToWorld(s,x,58.5);for(const c of b.colliders)assert.ok(!collision.colliderContains(c,p.x,p.z),`blocked gate at ${x}`);}
 });
+test('extended roadside frontage has pierced parapet, railings and road clearance',()=>{
+ const b=M.buildGovernmentHouse(new T.Group()),s=A.GOVERNMENT_HOUSE_SITE,segments=b.group.userData.frontageSegments;
+ assert.ok(segments.length>=45);assert.equal(segments[0].x0,-60);assert.equal(segments.at(-1).x1,60);
+ for(const name of ['Government House frontage boundary masonry','Government House frontage pierced parapet','Government House frontage spear railings'])assert.ok(b.group.getObjectByName(name),name);
+ for(const q of segments)for(const t of [0,.25,.5,.75,1]){const p=util.harbourCityLocalToWorld(s,q.x0+t,q.z),h=terrain.hongKongTerrainHeight(p.x,p.z);assert.equal(road.fullRoadSurfaceAt(p.x,p.z,1.5,h),null);}
+});
 test('garden island clumps stay clear of sampled road surfaces',()=>{
  const b=M.buildGovernmentHouse(new T.Group()),s=A.GOVERNMENT_HOUSE_SITE;const plants=b.group.userData.gardenPlantSamples;
  assert.ok(plants.length>30);assert.equal(plants.length,b.stats.governmentHouseGardenClumps);

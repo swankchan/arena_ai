@@ -268,6 +268,40 @@ export function buildGovernmentHouse(scene) {
   for(const dy of [1.67,2.62])beam(gardenIron,[x,y0+dy,z],[x1,y1+dy,z],.055,.055);
   wallColliders.push(harbourCityLocalCollider(SITE,(x+x1)/2,z,x1-x,.46,base+Math.min(low0,low1),base+Math.max(y0,y1)+2.7));
  }
+ // Continue the roadside frontage outward from the existing gate arms.
+ // The photograph at Albert Path and the official gate image show a light
+ // pierced parapet above masonry with dark spear-topped railings. Exact
+ // boundary alignment is unverified; preserve all mapped roads and leave the
+ // rest of the perimeter for a surveyed boundary, rather than enclosing roads.
+ const frontageBase=store(),frontageParapet=[],frontageIron=[],frontageColliders=[];
+ const frontageSegments=[];
+ for(const [begin,end] of [[-60,-25],[40,60]])for(let x=begin;x<end;x++){
+  const z=58.5,x1=x+1,a=harbourCityLocalToWorld(SITE,x,z),b=harbourCityLocalToWorld(SITE,x1,z);
+  const h0=hongKongTerrainHeight(a.x,a.z),h1=hongKongTerrainHeight(b.x,b.z);
+  // Subsamples and clearance account for the full 1 m span, not only its centre.
+  let obstructed=false;
+  for(const t of [0,.25,.5,.75,1]){const p=harbourCityLocalToWorld(SITE,x+t,z),raw=hongKongTerrainHeight(p.x,p.z);if(fullRoadSurfaceAt(p.x,p.z,1.5,raw)){obstructed=true;break;}}
+  if(obstructed)continue;
+  const y0=h0-base,y1=h1-base,lo0=y0-.2,lo1=y1-.2;
+  quad(frontageBase,[x,lo0,z-.18],[x1,lo1,z-.18],[x1,y1+.8,z-.18],[x,y0+.8,z-.18],[.57,.53,.48]);
+  quad(frontageBase,[x1,lo1,z+.18],[x,lo0,z+.18],[x,y0+.8,z+.18],[x1,y1+.8,z+.18],[.57,.53,.48]);
+  for(const dy of [.8,1.63,1.72])beam(frontageParapet,[x,y0+dy,z],[x1,y1+dy,z],.13,.36);
+  // Repeated slender pale stone members leave real openings, not a white panel.
+  for(let j=0;j<4;j++){
+   const t=(j+.5)/4,xx=x+t,yy=y0+(y1-y0)*t;
+   box(frontageParapet,[xx,yy+1.23,z],[.07,.78,.26]);
+   box(frontageIron,[xx,yy+2.24,z],[.045,1.05,.045]);
+   const tip=new THREE.ConeGeometry(.085,.16,4);tip.rotateY(Math.PI/4);tip.translate(xx,yy+2.84,z);frontageIron.push(tip);
+  }
+  for(const dy of [1.82,2.65])beam(frontageIron,[x,y0+dy,z],[x1,y1+dy,z],.055,.055);
+  frontageColliders.push(harbourCityLocalCollider(SITE,x+.5,z,1,.46,Math.min(h0,h1)-.2,Math.max(h0,h1)+2.92));
+  frontageSegments.push({x0:x,x1,z});
+ }
+ meshStore(group,frontageBase,vertex,'Government House frontage boundary masonry',false);
+ merged(group,frontageParapet,mat.trim,'Government House frontage pierced parapet',false);
+ merged(group,frontageIron,gateMaterial,'Government House frontage spear railings',false);
+ group.userData.frontageSegments=frontageSegments;
+ wallColliders.push(...frontageColliders);
  colliders.push(...wallColliders);
  meshStore(group,gardenWall,vertex,'Government House garden boundary stone walls',false);
  merged(group,gardenCaps,mat.stone,'Government House garden boundary wall coping',false);
