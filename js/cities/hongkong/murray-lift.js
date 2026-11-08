@@ -44,13 +44,20 @@ export function buildMurrayLift(root,datum,colliders){
  box(carParts,[0,-.1,centerZ],[3,.2,3.2]);box(carParts,[0,3,centerZ],[3,.14,3.2]);for(const x of [-1.46,1.46])box(carParts,[x,1.5,centerZ],[.08,3,3.2]);box(carParts,[0,1.5,E.z1-.08],[3,3,.08]);for(const x of [-1.4,1.4])box(carTrim,[x,1.4,E.z0+.08],[.08,2.8,.08]);merged(car,carParts,wood,'The Murray lift car interior');merged(car,carTrim,metal,'The Murray lift car door frame',false);
  for(const landing of [E.lobby,E.roof]){const sign=makeCanvasSign(3,.65,(ctx,c)=>{ctx.clearRect(0,0,c.width,c.height);ctx.fillStyle='#eee2c5';ctx.textAlign='center';ctx.textBaseline='middle';ctx.font=`bold ${Math.floor(c.height*.25)}px sans-serif`;ctx.fillText('WAIT HERE TO CALL',c.width/2,c.height*.32,c.width-16);ctx.fillText('WAIT INSIDE TO TRAVEL',c.width/2,c.height*.72,c.width-16);},{transparent:true,canvasWidth:768,canvasHeight:160});sign.rotation.y=Math.PI;sign.position.set(0,landing+3.45,E.z0-.15);sign.name='The Murray lift instructions';root.add(sign);}
  const cover=new THREE.Mesh(new THREE.BoxGeometry(3.2,.08,3.4),stone);cover.name='The Murray lift roof safety cover';cover.position.set(0,E.roof-.04,centerZ);root.add(cover);
- const state=createMurrayLiftMotion();car.position.y=state.y;
+ const state=createMurrayLiftMotion();car.position.y=state.y;let rider=null;
  return {group:car,state,groundHeightAt:(x,z,current,ref)=>murrayRoofHeight(x,z,current,ref,datum,state),update(dt,manager){
   const person=manager?.activeMode==='person'?manager.entities.person:null,p=person?authoredWorldToLocal(SITE,person.position.x,person.position.z):null;
   const inside=!!person&&isMurrayLiftPoint(p.x,p.z)&&Math.abs(person.position.y-(datum+state.y))<1.2;
   const near=!!person&&p.x>E.x0&&p.x<E.x1&&p.z>=E.z0-2&&p.z<=E.z0;
   const callAt=near&&Math.abs(person.position.y-(datum+E.lobby))<1?E.lobby:near&&Math.abs(person.position.y-(datum+E.roof))<1?E.roof:null;
-  const wasMoving=state.moving;advanceMurrayLiftMotion(state,dt,inside,callAt);car.position.y=state.y;cover.visible=state.y<E.roof-.05;
-  if(person&&inside&&(state.moving||wasMoving)){const w=authoredLocalToWorld(SITE,0,centerZ);person.position.set(w.x,datum+state.y,w.z);person.verticalVel=0;person.speed=0;}
+  const wasMoving=state.moving;
+  // Keep the passenger in the car throughout a journey, but never pull a player back
+  // after switching mode or teleporting away. Empty recalls do not acquire passengers.
+  if(rider&&(person!==rider||!p||Math.hypot(p.x,p.z-centerZ)>5||Math.abs(person.position.y-(datum+state.y))>3))rider=null;
+  advanceMurrayLiftMotion(state,dt,inside,callAt);
+  if(!wasMoving&&state.moving&&inside)rider=person;
+  car.position.y=state.y;cover.visible=state.y<E.roof-.05;
+  if(rider){const w=authoredLocalToWorld(SITE,0,centerZ);rider.position.set(w.x,datum+state.y,w.z);rider.verticalVel=0;rider.speed=0;if(rider.mesh)rider.mesh.position.copy(rider.position);}
+  if(wasMoving&&!state.moving)rider=null;
  }};
 }

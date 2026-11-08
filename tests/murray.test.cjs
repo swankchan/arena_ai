@@ -107,3 +107,11 @@ test('lobby glazing and photo-directed finishes have their material layers',()=>
  const glass=b.group.getObjectByName('The Murray recessed lobby glazing');assert.equal(glass.material.transparent,true);assert.ok(glass.material.opacity<.5);
  for(const name of ['The Murray lobby marble panel joints','The Murray lobby vertical bronze window screens','The Murray lobby reception counter supports','The Murray lobby reception marble tops','The Murray lobby suspended charcoal inspired sculpture'])assert.ok(b.group.getObjectByName(name),name);
 });
+test('moving lift retains its rider against walking input and releases after teleport or mode switch',async()=>{
+ const E=await import('../js/cities/hongkong/murray-lift.js'),L=E.MURRAY_LIFT;
+ const run=()=>{const instance=M.buildMurray(new T.Group()),pt=util.harbourCityLocalToWorld(A.MURRAY_SITE,0,(L.z0+L.z1)/2),p={position:new T.Vector3(pt.x,instance.datum+L.lobby,pt.z),mesh:{position:new T.Vector3()},speed:0,verticalVel:0},m={activeMode:'person',entities:{person:p}};for(let i=0;i<21;i++)instance.lift.update(.1,m);return {instance,p,m};};
+ const a=run();assert.equal(a.instance.lift.state.moving,true);
+ for(let i=0;i<20;i++){const q=util.harbourCityLocalToWorld(A.MURRAY_SITE,0,L.z0-.25);a.p.position.x=q.x;a.p.position.z=q.z;a.instance.lift.update(.05,a.m);const local=util.harbourCityWorldToLocal(A.MURRAY_SITE,a.p.position.x,a.p.position.z);assert.ok(Math.abs(local.z-(L.z0+L.z1)/2)<1e-6);assert.deepEqual(a.p.mesh.position,a.p.position);}
+ a.p.position.set(10000,10000,10000);a.instance.lift.update(.05,a.m);assert.equal(a.p.position.x,10000);
+ const b=run(),y=b.p.position.y;b.m.activeMode='car';b.instance.lift.update(.05,b.m);assert.equal(b.p.position.y,y);
+});
