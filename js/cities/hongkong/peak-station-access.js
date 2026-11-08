@@ -1,4 +1,6 @@
 import * as THREE from 'three/webgpu';
+import {color} from 'three/tsl';
+import {nightAmount} from './harbour-city-world-utils.js';
 import {PEAK_TOWER_SITE as SITE, PEAK_TOWER_BASE as BASE} from './peak-tower-architecture.js';
 import {PEAK_UPPER_STATION as STATION} from './peak-upper-station-site.js';
 import {authoredLocalToWorld,authoredWorldToLocal} from './authored-landmark-site.js';
@@ -20,10 +22,23 @@ export function peakStationAccessGroundHeight(x,z,current,referenceY){
  return Math.abs(referenceY-y)<2 ? y : current;
 }
 export function buildPeakStationAccess(root,colliders){
- const floor=[],ceiling=[],walls=[],frames=[],stripes=[],bridge=store(),skirt=store(),handrails=[];
+ const floor=[],ceiling=[],walls=[],frames=[],stripes=[],bridge=store(),skirt=store(),handrails=[],lightHousings=[],lightDiffusers=[],floorJoints=[];
  const tile=new THREE.MeshStandardMaterial({color:0x777c76,roughness:.76}),wall=new THREE.MeshStandardMaterial({color:0x8f9690,roughness:.72}),metal=new THREE.MeshStandardMaterial({color:0x8f9c9a,roughness:.42,metalness:.55}),black=new THREE.MeshStandardMaterial({color:0x28393a,roughness:.7});
+ // Warm ceiling fittings are an inferred treatment for the approximate concourse,
+ // not a claim to reproduce the real station's lighting layout.
+ const diffuser=new THREE.MeshStandardNodeMaterial({color:0xe3d7bd,roughness:.65});
+ diffuser.emissiveNode=color(0xffc982).mul(nightAmount()).mul(1.5);
  box(floor,[(A.roomX0+A.roomX1)/2,-.12,(A.roomZ0+A.roomZ1)/2],[A.roomX1-A.roomX0,.24,A.roomZ1-A.roomZ0]);
  box(ceiling,[(A.roomX0+A.roomX1)/2,4.1,(A.roomZ0+A.roomZ1)/2],[A.roomX1-A.roomX0,.2,A.roomZ1-A.roomZ0]);
+ // Recessed-looking linear fixtures sit below the ceiling; the emissive diffusers
+ // turn on with the city's night uniform. No extra road-facing point lights.
+ for(const x of [A.roomX0+1.6,A.roomX1-1.6])for(let z=A.roomZ0+1.25;z<A.roomZ1-.7;z+=2.2){
+  box(lightHousings,[x,3.955,z],[.38,.09,1.35]);
+  box(lightDiffusers,[x,3.902,z],[.28,.025,1.21]);
+ }
+ // Fine joints define a stone-tile surface rather than one featureless slab.
+ for(let x=A.roomX0+1;x<A.roomX1;x+=1)box(floorJoints,[x,.006,(A.roomZ0+A.roomZ1)/2],[.018,.012,A.roomZ1-A.roomZ0]);
+ for(let z=A.roomZ0+1;z<A.roomZ1;z+=1)box(floorJoints,[(A.roomX0+A.roomX1)/2,.007,z],[A.roomX1-A.roomX0,.012,.018]);
  for(const x of [A.roomX0,A.roomX1]){
   box(walls,[x,2,(A.roomZ0+A.roomZ1)/2],[.18,4,A.roomZ1-A.roomZ0]);
   colliders.push(harbourCityLocalCollider(SITE,x,(A.roomZ0+A.roomZ1)/2,.18,A.roomZ1-A.roomZ0,BASE-.2,BASE+4));
@@ -47,6 +62,9 @@ export function buildPeakStationAccess(root,colliders){
   for(let x=A.bridgeX0;x<A.bridgeX1;x+=2){let endX=Math.min(x+2,A.bridgeX1),lo=Math.min(peakStationBridgeHeight(x),peakStationBridgeHeight(endX)),hi=Math.max(peakStationBridgeHeight(x),peakStationBridgeHeight(endX));colliders.push(harbourCityLocalCollider(SITE,(x+endX)/2,z,endX-x,.08,lo-.1,hi+1));}
  }
  merged(root,floor,tile,'Peak Tram upper concourse floor');merged(root,ceiling,wall,'Peak Tram upper concourse ceiling');merged(root,walls,wall,'Peak Tram upper concourse walls');merged(root,frames,metal,'Peak Tram upper concourse doorway frame');merged(root,stripes,black,'Peak Tram upper concourse floor strips',false);
+ merged(root,floorJoints,black,'Peak Tram upper concourse stone floor joints',false);
+ merged(root,lightHousings,metal,'Peak Tram upper concourse ceiling light housings',false);
+ merged(root,lightDiffusers,diffuser,'Peak Tram upper concourse night light diffusers',false);
  meshStore(root,bridge,tile,'Peak Tram upper station access bridge');meshStore(root,skirt,wall,'Peak Tram upper station access bridge sides');merged(root,handrails,metal,'Peak Tram upper station bridge railings',false);
  return {bridgeEnd:PEAK_STATION_BRIDGE_END};
 }

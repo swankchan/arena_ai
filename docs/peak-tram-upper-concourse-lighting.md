@@ -1,0 +1,5 @@
+# Upper concourse lighting refinement
+
+The existing upper-station access concourse is an approximate gameplay model, not a survey or complete station. Its new linear ceiling-light housings and warm diffusers are an inferred lighting treatment, not a verified fixture layout; their TSL emissive nodes follow `cityUniforms.uInteriorGlow` through the shared `nightAmount()` function. Fine dark joints articulate the existing stone-like floor. The fittings do not add colliders or new point lights, and no terrain or road geometry has changed.
+
+The photo of the upper entrance in `references/hongkong/peak-tram/` shows warm recessed lighting under the entrance canopy, but dates from 2009 and does not document this specific interior. See `docs/peak-tram-research.md` for current information and limitations. The station, track, terrain, carriage and access still require detailed on-site/visual validation. Automated checks cover mesh existence and local placement, night-node wiring, the existing pedestrian corridor and sampled road clearances; they do not establish actual night appearance, full-game WebGPU rendering or continuous collision safety.
