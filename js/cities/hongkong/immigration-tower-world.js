@@ -34,7 +34,10 @@ export function buildImmigrationTower(scene){
   }
   for(let f=0;f<=46;f++)edgeBox(fine,site,e,.5,15.6+f*(163.4/46),.11,length,.055,.10);
   for(const y of [15.6,63,121,179.3])edgeBox(frames,site,e,.5,y,.15,length,.85,.22);
-  const divisions=Math.max(1,Math.round(length/12));for(let j=0;j<=divisions;j++)edgeBox(frames,site,e,j/divisions,97.3,.15,.55,163.4,.22);
+  // The 2016 whole-building view shows strong corner piers, not regularly spaced thick interior stripes.
+  const previous=harbourCityEdgeOutward(site.localRing,(e+site.localRing.length/2-2)%(site.localRing.length/2-1));
+  const current=harbourCityEdgeOutward(site.localRing,e);
+  if(Math.abs(previous.nx*current.nz-previous.nz*current.nx)>.1)edgeBox(frames,site,e,0,97.3,.15,1.1,163.4,.25);
   face(podium,0,1,179,180.8,[.065,.076,.082],.03);
  }
  meshStore(group,glass,glassMat,'Immigration Tower grey-blue glazed facade');
@@ -42,6 +45,32 @@ export function buildImmigrationTower(scene){
  merged(group,frames,mainFrame,'Immigration Tower major black frames');
  merged(group,fine,thinFrame,'Immigration Tower fine curtain wall grid',false);
  merged(group,[roofGeometry(site.localRing,height)],mainFrame,'Immigration Tower roof');
+ // Gloucester Road face: pale sloping entrance glazing / cladding beneath the dark sign band.
+ // Bay dimensions and pitch are estimated from the street photograph. The ends are kept
+ // within the mapped facade and clear of vehicle roads; it is not the separate footbridge.
+ const streetCanopy=store(),streetRails=[];
+ for(const [e,start,end] of [[3,.68,1],[4,0,.92]]){
+  const count=Math.ceil(harbourCityEdgeOutward(site.localRing,e).length*(end-start)/3);
+  const p=(t,y,o)=>point(site,e,t,y,o);
+  for(let i=0;i<count;i++){
+   const a=start+(end-start)*i/count,b=start+(end-start)*(i+1)/count;
+   const shade=.86+.08*hash(e,i,2);
+   quad(streetCanopy,p(a,5.5,1.7),p(b,5.5,1.7),p(b,9.3,.12),p(a,9.3,.12),[.53*shade,.55*shade,.54*shade]);
+   beam(streetRails,p(a,5.5,1.75),p(a,9.3,.17),.09);
+  }
+  beam(streetRails,p(start,5.5,1.75),p(end,5.5,1.75),.12);
+  beam(streetRails,p(start,9.3,.17),p(end,9.3,.17),.12);
+ }
+ const slopeMat=new THREE.MeshStandardNodeMaterial({side:THREE.DoubleSide,roughness:.43,metalness:.28});slopeMat.colorNode=attribute('color');
+ meshStore(group,streetCanopy,slopeMat,'Immigration Tower Gloucester Road sloping panels');
+ merged(group,streetRails,thinFrame,'Immigration Tower sloping panel joints',false);
+ const streetNormal=harbourCityEdgeOutward(site.localRing,3);
+ const streetSign=makeCanvasSign(10,1.2,(ctx,c)=>{
+  ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillStyle='#dae1df';ctx.font='bold 104px sans-serif';
+  ctx.fillText('入境事務大樓  IMMIGRATION TOWER',c.width/2,c.height/2,c.width*.94);
+ });
+ streetSign.position.set(...point(site,3,.27,12.8,.16));streetSign.rotation.y=Math.atan2(streetNormal.nx,streetNormal.nz);
+ streetSign.name='Immigration Tower Gloucester Road lettering';group.add(streetSign);
  // Historic Philips rooftop sign: the 2007–2021 skyline rather than the later advertiser.
  // The metal lattice and letter proportions are photo-estimated, not measured.
  const roofEdge=8, signWidth=42, signHeight=10, roofFrame=[];
