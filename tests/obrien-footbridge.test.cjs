@@ -56,3 +56,19 @@ test('city lamp poles and arms overlapping HF95 are identified without affecting
  assert.equal(A.obrienLampConflicts(0,0,0,1),false);
  const src=require('node:fs').readFileSync('js/cities/hongkong/street-lighting.js','utf8');assert.match(src,/applyClearance && obrienLampConflicts/);assert.match(src,/streetLightFootbridgeSuppressed/);
 });
+test('OSM Central Plaza link remains walkable from tower lobby through plaza entry',async()=>{
+ const {buildCentralPlaza}=await import('../js/cities/hongkong/central-plaza-world.js');const {HONG_KONG_TERRAIN_META:m}=await import('../js/cities/hongkong/terrain.js');
+ const tower=building.buildImmigrationTower(new T.Group()),bridge=W.buildObrienFootbridge(new T.Group()),plaza=buildCentralPlaza(new T.Group(),{groundOffset:m.centralPlazaPadHeight}),h=A.OBRIEN_DECK_HEIGHT;
+ assert.equal(A.CENTRAL_PLAZA_LINK.way,40491215);assert.ok(plaza.group.getObjectByName('CentralPlaza bridge entrance vestibule floor'));
+ let samples=0;
+ for(const [name,a,b] of [['lobby',A.IMMIGRATION_LOBBY_LINK.start,A.IMMIGRATION_LOBBY_LINK.end],['bridge',A.CENTRAL_PLAZA_LINK.start,A.CENTRAL_PLAZA_LINK.end],['plaza',A.CENTRAL_PLAZA_LINK.end,A.CENTRAL_PLAZA_LINK.inside]]){
+  const dx=b.x-a.x,dz=b.z-a.z,L=Math.hypot(dx,dz);
+  for(let i=0;i<=200;i++)for(const offset of [-.6,0,.6]){
+   const t=i/200,x=a.x+dx*t-dz/L*offset,z=a.z+dz*t+dx/L*offset;
+   assert.equal(bridge.groundHeightAt(x,z,5,h),h);assert.equal(bridge.groundHeightAt(x,z,5,5),5);
+   for(const [label,items] of [['tower',tower.colliders],['bridge',bridge.colliders],['plaza',plaza.colliders]])for(const c of items)assert.ok(!(c.minY<h+1.6&&c.maxY>h+.2&&coll.colliderContains(c,x,z,.2)),`${name} blocked by ${label} at ${t} offset ${offset}`);
+   const r=road.fullRoadSurfaceAt(x,z,.2,5);if(r)assert.ok(h-A.OBRIEN_SLAB-r.height>=4.8);samples++;
+  }
+ }
+ assert.ok(samples>1500);
+});

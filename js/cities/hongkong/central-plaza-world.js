@@ -232,7 +232,17 @@ function signTexture() {
 }
 
 function createPodium(group, materials) {
-  const base = store(), upper = store(); loft(base, 0, 4.2, [0.16, 0.23, 0.19]); loft(upper, 4.2, CENTRAL_PLAZA_PODIUM_HEIGHT, [0.08, 0.15, 0.17]);
+  const base = store(), upper = store(); loft(base, 0, 4.2, [0.16, 0.23, 0.19]);
+  // Cut the OSM 40491215 level-one doorway on edge 7; other edges remain
+  // unchanged. Height and doorway width are estimates, not a surveyed plan.
+  const ring=CENTRAL_PLAZA_LOCAL_RING, tint=[0.08,0.15,0.17];
+  for(let i=0;i+3<ring.length;i+=2){
+    const a=[ring[i],ring[i+1]],b=[ring[i+2],ring[i+3]];
+    const section=(t0,t1,y0,y1)=>quad(upper,[lerp(a[0],b[0],t0),y0,lerp(a[1],b[1],t0)],[lerp(a[0],b[0],t1),y0,lerp(a[1],b[1],t1)],[lerp(a[0],b[0],t1),y1,lerp(a[1],b[1],t1)],[lerp(a[0],b[0],t0),y1,lerp(a[1],b[1],t0)],tint);
+    if(i!==14){section(0,1,4.2,CENTRAL_PLAZA_PODIUM_HEIGHT);continue;}
+    section(0,1,4.2,7.5);section(0,1,10.6,CENTRAL_PLAZA_PODIUM_HEIGHT);
+    section(0,.17,7.5,10.6);section(.83,1,7.5,10.6);
+  }
   meshStore(group, base, materials.granite, 'CentralPlazaVerdeBahiaGranitePodiumBase');
   meshStore(group, upper, materials.podiumGlass, 'CentralPlazaThirtyPointFiveMetreGlazedEntrancePodium');
   const columns = [];
@@ -243,11 +253,23 @@ function createPodium(group, materials) {
     for (let column = 0; column < count; column++) {
       const t = (column + 0.5) / count, x = lerp(ax, bx, t), z = lerp(az, bz, t);
       const outX = x, outZ = z, outLength = Math.hypot(outX, outZ) || 1;
-      columns.push({ x: x + outX / outLength * 0.65, y: CENTRAL_PLAZA_PODIUM_HEIGHT * 0.5, z: z + outZ / outLength * 0.65 });
+      const px=x+outX/outLength*.65,pz=z+outZ/outLength*.65;
+      if(i===14){ // retain the column above and below the bridge-level portal
+        columns.push({x:px,z:pz,y:3.75,sy:7.5/CENTRAL_PLAZA_PODIUM_HEIGHT});
+        columns.push({x:px,z:pz,y:(10.6+CENTRAL_PLAZA_PODIUM_HEIGHT)/2,sy:(CENTRAL_PLAZA_PODIUM_HEIGHT-10.6)/CENTRAL_PLAZA_PODIUM_HEIGHT});
+      }else columns.push({x:px,y:CENTRAL_PLAZA_PODIUM_HEIGHT*.5,z:pz});
     }
   }
   instances(group, new THREE.CylinderGeometry(1, 1, CENTRAL_PLAZA_PODIUM_HEIGHT, 12), materials.greenGranite,
     columns, 'CentralPlazaTwoMetreGraniteEntranceColumns');
+
+  const vestibuleFloor=new THREE.Mesh(new THREE.BoxGeometry(8,.2,7),new THREE.MeshStandardMaterial({color:0x706e65,roughness:.72,metalness:.12}));
+  vestibuleFloor.position.set(-26,7.4,20);vestibuleFloor.name='CentralPlaza bridge entrance vestibule floor';group.add(vestibuleFloor);
+  const vestibuleCeiling=new THREE.Mesh(new THREE.BoxGeometry(8,.15,7),new THREE.MeshStandardMaterial({color:0x85867f,roughness:.75}));
+  vestibuleCeiling.position.set(-26,10.55,20);vestibuleCeiling.name='CentralPlaza bridge entrance vestibule ceiling';group.add(vestibuleCeiling);
+  const lightMat=new THREE.MeshStandardNodeMaterial({color:0xc9c3ad,roughness:.65});lightMat.emissiveNode=color(0xffdcb0).mul(nightAmount()).mul(.8);
+  const lamps=[];for(const x of [-28,-25])for(const z of [18,21]){const g=new THREE.BoxGeometry(.9,.025,.3);g.translate(x,10.46,z);lamps.push(g);}
+  merged(group,lamps,lightMat,'CentralPlaza bridge vestibule night lights');
 
   // Main entrance on the long south face (local edge 9), with its own doors, canopy and modest identification sign.
   const i = 18, ax = CENTRAL_PLAZA_LOCAL_RING[i], az = CENTRAL_PLAZA_LOCAL_RING[i + 1];
@@ -301,7 +323,13 @@ export function buildCentralPlaza(root, { groundOffset = 0 } = {}) {
 
   const body = planBounds(CENTRAL_PLAZA_PODIUM_HEIGHT), crown = planBounds(CENTRAL_PLAZA_OSM_ROOF_HEIGHT);
   const colliders = [
-    centralPlazaLocalCollider({ w: body.hx * 2 + 1.4, d: body.hz * 2 + 1.4, minY: 0, maxY: CENTRAL_PLAZA_PODIUM_HEIGHT }),
+    // Preserve the previous full collision below and above the bridge. At 1/F,
+    // four rectangles leave a small entrance pocket rather than a solid OBB.
+    centralPlazaLocalCollider({ w: body.hx * 2 + 1.4, d: body.hz * 2 + 1.4, minY: 0, maxY: 7.5 }),
+    centralPlazaLocalCollider({ w: body.hx * 2 + 1.4, d: body.hz * 2 + 1.4, minY: 10.6, maxY: CENTRAL_PLAZA_PODIUM_HEIGHT }),
+    centralPlazaLocalCollider({x:(-22+body.hx+.7)/2,z:0,w:body.hx+.7+22,d:body.hz*2+1.4,minY:7.5,maxY:10.6}),
+    centralPlazaLocalCollider({x:(-body.hx-.7-22)/2,z:(-body.hz-.7+15)/2,w:body.hx+.7-22,d:body.hz+.7+15,minY:7.5,maxY:10.6}),
+    centralPlazaLocalCollider({x:(-body.hx-.7-22)/2,z:(25.5+body.hz+.7)/2,w:body.hx+.7-22,d:body.hz+.7-25.5,minY:7.5,maxY:10.6}),
     centralPlazaLocalCollider({ w: body.hx * 2, d: body.hz * 2, minY: CENTRAL_PLAZA_PODIUM_HEIGHT, maxY: CENTRAL_PLAZA_BODY_TOP }),
     centralPlazaLocalCollider({ w: crown.hx * 2, d: crown.hz * 2, minY: CENTRAL_PLAZA_BODY_TOP, maxY: CENTRAL_PLAZA_OSM_ROOF_HEIGHT }),
     centralPlazaLocalCollider({ w: crown.hx * 2, d: crown.hz * 2, minY: CENTRAL_PLAZA_OSM_ROOF_HEIGHT, maxY: CENTRAL_PLAZA_PYRAMID_TOP }),

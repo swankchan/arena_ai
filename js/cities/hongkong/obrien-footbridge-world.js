@@ -4,7 +4,7 @@ import { box, beam, merged, nightAmount } from './harbour-city-world-utils.js';
 import { segmentWall } from './colliders.js';
 import { hongKongTerrainHeight } from './terrain.js';
 import { fullRoadSurfaceAt } from './full-meta.js';
-import { OBRIEN_ROUTE as route, OBRIEN_STAIR as stair, OBRIEN_WIDTH as width, OBRIEN_DECK_HEIGHT as deck, OBRIEN_SLAB as slab, OBRIEN_STAIR_WIDTH as stairWidth, obrienFootbridgeGroundHeight } from './obrien-footbridge-architecture.js';
+import { OBRIEN_ROUTE as route, OBRIEN_STAIR as stair, OBRIEN_WIDTH as width, OBRIEN_DECK_HEIGHT as deck, OBRIEN_SLAB as slab, OBRIEN_STAIR_WIDTH as stairWidth, obrienFootbridgeGroundHeight, CENTRAL_PLAZA_LINK as plazaLink } from './obrien-footbridge-architecture.js';
 
 export function buildObrienFootbridge(scene){
  const group=new THREE.Group();group.name="O'Brien Road Footbridge HF95";scene.add(group);
@@ -15,7 +15,7 @@ export function buildObrienFootbridge(scene){
  const seam=new THREE.MeshStandardMaterial({color:0x3a403d,roughness:.9});
  const yellow=new THREE.MeshStandardMaterial({color:0xa89961,roughness:.8});
  const lamp=new THREE.MeshStandardNodeMaterial({color:0xc8c8bc,roughness:.65});lamp.emissiveNode=color(0xffe6bb).mul(nightAmount()).mul(.95);
- function line(a,b,w=width,withRoof=true){
+ function line(a,b,w=width,withRoof=true,placePiers=true){
   const dx=b.x-a.x,dz=b.z-a.z,L=Math.hypot(dx,dz),ux=dx/L,uz=dz/L,nx=-uz,nz=ux,rot=Math.atan2(-dz,dx),mid={x:(a.x+b.x)/2,z:(a.z+b.z)/2};
   box(decks,[mid.x,deck-slab/2,mid.z],[L+.05,slab,w],rot);
   if(withRoof){
@@ -51,7 +51,7 @@ export function buildObrienFootbridge(scene){
     for(const side of [-1,1]){const sx=x+nx*side*(w/2-.15),sz=z+nz*side*(w/2-.15);beam(posts,[sx,deck,sz],[sx,deck+3.5,sz],.12);}
     const ground=hongKongTerrainHeight(x,z);
     // Never place ground piers on carriageways, including inferred widths + buffer.
-    if(!fullRoadSurfaceAt(x,z,1.1,ground) && ground<deck-slab-1){
+    if(placePiers && !fullRoadSurfaceAt(x,z,1.1,ground) && ground<deck-slab-1){
      box(piers,[x,(ground+deck-slab)/2,z],[.7,deck-slab-ground,.7]);
      const c=segmentWall(x-.3,z,x+.3,z,{thickness:.35,base:ground,top:deck-slab});if(c)colliders.push(c);
     }
@@ -59,6 +59,9 @@ export function buildObrienFootbridge(scene){
   }
  }
  for(let i=0;i<route.length-1;i++)line(route[i],route[i+1]);
+ // Covered link is OSM way 40491215, supported at the buildings rather than
+ // inventing ground piers across the service access below.
+ line(plazaLink.start,plazaLink.end,plazaLink.width,true,false);
  // Narrow uncovered connector between main bridge and the surveyed stair way.
  line(stair.top,stair.junction,stairWidth,false);
  const ground=hongKongTerrainHeight(stair.bottom.x,stair.bottom.z),dx=stair.top.x-stair.bottom.x,dz=stair.top.z-stair.bottom.z,L=Math.hypot(dx,dz),rot=Math.atan2(-dz,dx),nx=-dz/L,nz=dx/L;

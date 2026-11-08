@@ -11,6 +11,14 @@ export const OBRIEN_ROUTE = Object.freeze([
  [22.2795540,114.1730635],[22.2796098,114.1730563]
 ].map(ll));
 export const OBRIEN_STAIR = Object.freeze({bottom:ll([22.2790600,114.1728600]),top:ll([22.2790825,114.1730874]),junction:OBRIEN_ROUTE[8]});
+// OSM bridge 40491215, Immigration Tower to Central Plaza, © OSM contributors.
+export const CENTRAL_PLAZA_LINK=Object.freeze({
+ start:ll([22.2797060,114.1732482]),end:ll([22.2798124,114.1734042]),
+ inside:ll([22.2798209,114.1734184]), width:4.8, way:40491215
+});
+export const IMMIGRATION_LOBBY_LINK=Object.freeze({
+ start:ll([22.2796402,114.1731427]),end:CENTRAL_PLAZA_LINK.start,width:4.8,way:364266386
+});
 export const OBRIEN_DECK_HEIGHT = 12.5, OBRIEN_WIDTH=7.2, OBRIEN_SLAB=.55, OBRIEN_STAIR_WIDTH=2.4;
 export function segmentProjection(p,a,b) {
  const dx=b.x-a.x,dz=b.z-a.z,len2=dx*dx+dz*dz;
@@ -25,7 +33,11 @@ export function obrienFootbridgeGroundHeight(x,z,current,referenceY,stairBottomH
   if(referenceY>=y-.8 && referenceY<=y+2.5)return y;
  }
  const segments=[...OBRIEN_ROUTE.slice(0,-1).map((a,i)=>[a,OBRIEN_ROUTE[i+1]]),[OBRIEN_STAIR.top,OBRIEN_STAIR.junction]];
- if(referenceY>=OBRIEN_DECK_HEIGHT-.8 && referenceY<=OBRIEN_DECK_HEIGHT+2.5 && segments.some(([a,b])=>segmentProjection(p,a,b).distance<=OBRIEN_WIDTH/2))return OBRIEN_DECK_HEIGHT;
+ if(referenceY>=OBRIEN_DECK_HEIGHT-.8 && referenceY<=OBRIEN_DECK_HEIGHT+2.5){
+  if(segments.some(([a,b])=>segmentProjection(p,a,b).distance<=OBRIEN_WIDTH/2))return OBRIEN_DECK_HEIGHT;
+  for(const [a,b] of [[IMMIGRATION_LOBBY_LINK.start,IMMIGRATION_LOBBY_LINK.end],[CENTRAL_PLAZA_LINK.start,CENTRAL_PLAZA_LINK.end],[CENTRAL_PLAZA_LINK.end,CENTRAL_PLAZA_LINK.inside]])
+   if(segmentProjection(p,a,b).distance<=CENTRAL_PLAZA_LINK.width/2)return OBRIEN_DECK_HEIGHT;
+ }
  return current;
 }
 

@@ -5,7 +5,7 @@ import { hongKongTerrainHeight } from './terrain.js';
 import { harbourCityEdgeOutward, harbourCitySegmentCollider, harbourCityLocalToWorld, harbourCityWorldToLocal, harbourCityLocalCollider } from './harbour-city-architecture.js';
 import { store, quad, point, edgeBox, meshStore, merged, roofGeometry, nightAmount, hash, box, beam } from './harbour-city-world-utils.js';
 import { makeCanvasSign } from './tst-hotel-world-utils.js';
-import { OBRIEN_DECK_HEIGHT } from './obrien-footbridge-architecture.js';
+import { OBRIEN_DECK_HEIGHT, IMMIGRATION_LOBBY_LINK } from './obrien-footbridge-architecture.js';
 
 // Photo-directed exterior, bridge-side and garden-side entrance vestibules.
 export function buildImmigrationTower(scene){
@@ -27,7 +27,8 @@ export function buildImmigrationTower(scene){
    // OSM node 1235363336 marks the level-one HF95 connection on edge 4.
    // Two portal openings retain the photographed centre pier; sizes are approximate.
    const xm=point(site,e,(a+b)/2,0)[0];
-   const bridgeOpening=e===4&&((xm>=1.5&&xm<4.6)||(xm>=6&&xm<9.2));
+   const zm=point(site,e,(a+b)/2,0)[2];
+   const bridgeOpening=(e===4&&((xm>=1.5&&xm<4.6)||(xm>=6&&xm<9.2))) || (e===6&&zm>9&&zm<15);
    if(bridgeOpening){
     face(glass,a+.002,b-.002,bottom,7.5,[.12,.17,.19],.025,.08);
     colliders.push(harbourCitySegmentCollider(site,e,a,b,base+bottom,base+7.5,.25));
@@ -183,9 +184,17 @@ export function buildImmigrationTower(scene){
  for(const x of [2.5,7.5])box(tactile,[x,level+.016,19.35],[.22,.025,3.5]);
  box(tactile,[5,level+.018,20.5],[7,.025,.35]);
  for(let x=2;x<20;x+=3)for(const z of [14.1,18.4])box(lobbyLights,[x,level+2.91,z],[1.1,.025,.32]);
+ // Extension follows OSM's 1/F indoor path towards the east exit.
+ const innerA=harbourCityWorldToLocal(site,IMMIGRATION_LOBBY_LINK.start.x,IMMIGRATION_LOBBY_LINK.start.z);
+ const innerB=harbourCityWorldToLocal(site,IMMIGRATION_LOBBY_LINK.end.x,IMMIGRATION_LOBBY_LINK.end.z);
+ const ddx=innerB.x-innerA.x,ddz=innerB.z-innerA.z, corridorLength=Math.hypot(ddx,ddz),corridorRotation=Math.atan2(-ddz,ddx);
+ box(floors,[(innerA.x+innerB.x)/2,level-.114,(innerA.z+innerB.z)/2],[corridorLength+.1,.24,IMMIGRATION_LOBBY_LINK.width],corridorRotation);
+ box(ceiling,[(innerA.x+innerB.x)/2,level+3.008,(innerA.z+innerB.z)/2],[corridorLength+.1,.16,IMMIGRATION_LOBBY_LINK.width],corridorRotation);
+ for(let t=.15;t<1;t+=.25)box(lobbyLights,[innerA.x+ddx*t,level+2.91,innerA.z+ddz*t],[.8,.025,.28],corridorRotation);
+ box(tactile,[(innerA.x+innerB.x)/2,level+.025,(innerA.z+innerB.z)/2],[corridorLength,.025,.15],corridorRotation);
  // Guard the incomplete ends of this vestibule; do not suggest an open exit
  // into unmodelled space. Location of the internal partition is inferred.
- for(const [x,z,w,d] of [[10.5,12.15,20,.18],[.5,16.67,.18,9],[20.5,16.67,.18,9]]){
+ for(const [x,z,w,d] of [[10.5,12.15,20,.18],[.5,16.67,.18,9],[20.5,19.5,.18,3.33]]){
   box(walls,[x,level+1.5,z],[w,3,d]);
   colliders.push(harbourCityLocalCollider(site,x,z,w,d,OBRIEN_DECK_HEIGHT,OBRIEN_DECK_HEIGHT+3));
  }
