@@ -5,52 +5,11 @@ import {
   STAR_FERRY_ROUTES, createStarFerryMotion, advanceStarFerryMotion, sampleStarFerryRoute
 } from './star-ferry-routes.js';
 import { sampleHongKongHarbourSwell } from './harbour-swell.js';
+import { createJunkVessel, sampleJunkRoute, JUNK_ROUTE } from './junk-vessel.js';
 
 // Victoria Harbour life: three source-footprint Star Ferry terminals, both current franchised routes and a red-sailed
 // junk. The ordinary green/white double-ended ferries use the official Morning Star length/beam as their scale datum.
 const MEAN_WATER_LEVEL = -2.26; // buildFullHongKongWorld presents its mean surface at WATER_LEVEL - 0.06.
-
-function box(w, h, d, color, x, y, z, material = null) {
-  const mesh = new THREE.Mesh(
-    new THREE.BoxGeometry(w, h, d),
-    material || new THREE.MeshStandardMaterial({ color, roughness: 0.55, metalness: 0.1 })
-  );
-  mesh.position.set(x, y, z);
-  mesh.castShadow = true;
-  mesh.receiveShadow = true;
-  return mesh;
-}
-
-function createJunk() {
-  const group = new THREE.Group();
-  group.name = 'RedSailedJunk';
-  const wood = new THREE.MeshStandardMaterial({ color: 0x4a2a18, roughness: 0.82 });
-  const red = new THREE.MeshStandardMaterial({
-    color: 0x8f1712, roughness: 0.68, metalness: 0.02, side: THREE.DoubleSide,
-    emissive: 0x2a0603, emissiveIntensity: 0.25
-  });
-  group.add(box(6.4, 1.1, 19, 0, 0, 0.65, 0, wood));
-  group.add(box(5.2, 0.7, 11, 0, 0, 1.35, -1.5, wood));
-  group.add(box(2.4, 1.3, 3.8, 0, 0, 2.2, -5.4, wood));
-  const sailGeometry = new THREE.BufferGeometry();
-  sailGeometry.setAttribute('position', new THREE.Float32BufferAttribute([
-    0, 0, 0, 0, 8.5, 0, 4.6, 1.1, 0,
-    0, 0, 0, 0, 8.0, 0, -4.2, 1.4, 0
-  ], 3));
-  sailGeometry.computeVertexNormals();
-  const sail = new THREE.Mesh(sailGeometry, red);
-  sail.position.set(0, 2.5, 3.0);
-  sail.castShadow = true;
-  group.add(sail);
-  const mast = new THREE.Mesh(
-    new THREE.CylinderGeometry(0.12, 0.18, 11, 6),
-    new THREE.MeshStandardMaterial({ color: 0x332015, roughness: 0.85 })
-  );
-  mast.position.set(0, 6.2, 3.0);
-  mast.castShadow = true;
-  group.add(mast);
-  return group;
-}
 
 function createWake() {
   const length = STAR_FERRY_DIMENSIONS.length;
@@ -90,7 +49,7 @@ export function createHongKongHarbour(scene) {
     return { mesh, wake, route, motion, t: motion.s / route.length, dir: motion.dir, speed: 0 };
   });
 
-  const junk = createJunk();
+  const junk = createJunkVessel();
   group.add(junk);
 
   function update(dt, elapsed) {
@@ -119,16 +78,14 @@ export function createHongKongHarbour(scene) {
     }
 
     // Keep the junk in open western-harbour water, clear of both franchised ferry paths and all three new berths.
-    const angle = elapsed * 0.028;
-    const radius = 185;
-    const cx = -350 + Math.cos(angle) * radius;
-    const cz = -1150 + Math.sin(angle) * radius * 0.6;
-    const aheadX = -350 + Math.cos(angle + 0.02) * radius;
-    const aheadZ = -1150 + Math.sin(angle + 0.02) * radius * 0.6;
-    const swell = sampleHongKongHarbourSwell(cx, cz, elapsed);
-    junk.position.set(cx, MEAN_WATER_LEVEL - 0.39 + swell.height, cz);
-    junk.rotation.y = Math.atan2(aheadX - cx, aheadZ - cz);
-    junk.rotation.z = Math.sin(elapsed * 0.5) * 0.02;
+    const point = sampleJunkRoute(elapsed * JUNK_ROUTE.angularSpeed);
+    const swell = sampleHongKongHarbourSwell(point.x, point.z, elapsed);
+    const forwardX = Math.sin(point.heading), forwardZ = Math.cos(point.heading);
+    const slopeForward = swell.slopeX * forwardX + swell.slopeZ * forwardZ;
+    const slopeSide = swell.slopeX * forwardZ - swell.slopeZ * forwardX;
+    junk.position.set(point.x, MEAN_WATER_LEVEL + swell.height, point.z);
+    junk.rotation.set(-Math.atan(slopeForward) * 0.55, point.heading,
+      Math.atan(slopeSide) * 0.45 + Math.sin(elapsed * 0.5) * 0.006, 'YXZ');
   }
 
   update(0, 0);
