@@ -180,12 +180,23 @@ export function buildGovernmentHouse(scene) {
  meshStore(group,apron,vertex,'Government House terrain-blended entrance apron',false);
  // Twin gate lodges approximately flank mapped barrier node 1294918105. OSM does not map their footprints.
  // They are outside the mapped roadway; the central road opening stays unobstructed.
- const lodgeWalls=[],lodgeRoof=[],lodgeTrim=[],lodgeGlass=[],lodgeColumns=[],green=new THREE.MeshStandardMaterial({color:0x2e8b70,roughness:.72,side:THREE.DoubleSide});
+ const lodgeWalls=[],lodgeRoof=[],lodgeTrim=[],lodgeGlass=[],lodgeColumns=[],lodgeRoofBands=[],lodgeRibs=[],green=new THREE.MeshStandardMaterial({color:0x2e8b70,roughness:.72,side:THREE.DoubleSide});
  let lodges=0;
  for(const x of [3,16]){
   const z=58.5, pos=harbourCityLocalToWorld(SITE,x,z),y=hongKongTerrainHeight(pos.x,pos.z)-base;
   box(lodgeWalls,[x,y+1.8,z],[4,3.6,4.5]);box(lodgeTrim,[x,y+3.65,z],[4.5,.30,5]);box(lodgeTrim,[x,y+.2,z],[4.3,.4,4.8]);
   lodgeRoof.push(hipRoof(x,z,4.1,4.6,y+3.82,.75));
+  // Dark perimeter fascia, ribs and small central roof vent visible in the
+  // official gate photo; the lodge dimensions remain illustrative.
+  for(const dz of [-2.34,2.34])box(lodgeRoofBands,[x,y+3.88,z+dz],[4.65,.22,.25]);
+  for(const dx of [-2.2,2.2])box(lodgeRoofBands,[x+dx,y+3.88,z],[.25,.22,4.5]);
+  for(let dx=-1.7;dx<=1.7;dx+=.34){
+   beam(lodgeRibs,[x+dx,y+3.84,z-2.22],[x,y+4.59,z],.045,.045);
+   beam(lodgeRibs,[x+dx,y+3.84,z+2.22],[x,y+4.59,z],.045,.045);
+  }
+  box(lodgeTrim,[x,y+4.64,z],[.65,.38,.65]);box(lodgeRoofBands,[x,y+4.85,z],[.78,.10,.78]);
+  box(lodgeTrim,[x,y+2.75,z+2.38],[1.8,.18,.48]);
+  box(lodgeRoofBands,[x,y+2.91,z+2.38],[1.95,.12,.55]);
   box(lodgeGlass,[x,y+1.5,z+2.27],[1.25,2.5,.08]);
   for(const dx of [-.72,.72])box(lodgeTrim,[x+dx,y+1.5,z+2.33],[.14,2.7,.14]);
   box(lodgeTrim,[x,y+2.87,z+2.33],[1.55,.18,.14]);
@@ -223,6 +234,8 @@ export function buildGovernmentHouse(scene) {
   for(const h of [.18,1.95])box(gateBars,[x,y+h,57.5],[.09,.09,2.1]);
  }
  merged(group,gateBars,gateMaterial,'Government House open gate leaves');
+ merged(group,lodgeRoofBands,mat.roof,'Government House gate lodge dark roof fascia',false);
+ merged(group,lodgeRibs,green,'Government House gate lodge green roof ribs',false);
  merged(group,lodgeWalls,mat.plaster,'Government House paired gate lodge walls');merged(group,lodgeRoof,green,'Government House green gate lodge roofs');merged(group,lodgeTrim,mat.stone,'Government House gate lodge cornices');merged(group,lodgeGlass,mat.deep,'Government House gate lodge doors');merged(group,lodgeColumns,mat.trim,'Government House gate lodge classical columns');
  colliders.push(harbourCityLocalCollider(SITE,18,-9,7.3,7.3,base+9,base+25.5));
  const landmark={name:'香港禮賓府',englishName:'Government House',x:SITE.x,z:SITE.z,w:SITE.w,d:SITE.d,h:25.5,ring:SITE.ring,bounds:SITE.bounds,osmId:SITE.osmId,kind:'landmark',labelHeight:false};

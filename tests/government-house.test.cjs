@@ -30,6 +30,11 @@ test('north verandah has separate arched insets, surrounds and parapet vents',()
   const mesh=b.group.getObjectByName(name);assert.ok(mesh,name);const p=mesh.geometry.getAttribute('position');assert.ok(p.count>100);for(const value of p.array)assert.ok(Number.isFinite(value));
  }
 });
+test('gate lodge roofs include fascia and visible metal ribs',()=>{
+ const b=M.buildGovernmentHouse(new T.Group());for(const name of ['Government House gate lodge dark roof fascia','Government House gate lodge green roof ribs']){
+  const mesh=b.group.getObjectByName(name);assert.ok(mesh,name);assert.ok(mesh.geometry.getAttribute('position').count>50);
+ }
+});
 test('boundary wall and iron railings leave the gate drive open',()=>{
  const b=M.buildGovernmentHouse(new T.Group()),s=A.GOVERNMENT_HOUSE_SITE;assert.ok(b.stats.governmentHouseBoundarySegments>=40);
  for(const name of ['Government House garden boundary stone walls','Government House garden boundary wall coping','Government House garden boundary iron railings'])assert.ok(b.group.getObjectByName(name),name);
