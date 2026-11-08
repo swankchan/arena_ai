@@ -189,3 +189,29 @@ test('wrapped ramp height query follows the actual mesh triangles',async()=>{
  const W=await import('../js/cities/hongkong/murray-wrapped-ramp.js'),p=b.group.getObjectByName('The Murray wrapped ramp paving').geometry.getAttribute('position');
  for(let i=0;i<p.count;i+=3){let x=0,z=0,y=0;for(let j=0;j<3;j++){x+=p.getX(i+j)/3;y+=p.getY(i+j)/3;z+=p.getZ(i+j)/3;}assert.ok(Math.abs(W.murrayWrappedRampLocalHeight(x,z)-y)<1e-5,`mesh height mismatch ${x},${z}`);}
 });
+test('curved approach connects the wrapped ramp to terrain with walkable clearance',async()=>{
+ const curve=b.curvedEntrance,W=await import('../js/cities/hongkong/murray-wrapped-ramp.js'),s=curve.stations;
+ for(const name of ['The Murray curved ramp entrance paving','The Murray curved ramp entrance parapets','The Murray curved ramp entrance handrails'])assert.ok(b.group.getObjectByName(name),name);
+ const check=(x,z,y)=>{const p=util.harbourCityLocalToWorld(A.MURRAY_SITE,x,z),worldY=b.datum+y;assert.ok(Math.abs(b.groundHeightAt(p.x,p.z,terrain.hongKongTerrainHeight(p.x,p.z),worldY)-worldY)<1e-4,`height ${x},${z}`);for(const c of b.colliders)if(worldY+1.75>=c.minY&&worldY+.1<=c.maxY)assert.equal(collision.colliderContains(c,p.x,p.z,.48),false,`blocked curve ${x.toFixed(2)},${z.toFixed(2)} ${JSON.stringify(c)}`);};
+ for(let z=23.6;z<25.09;z+=.05)check(-4.2,z,W.murrayWrappedRampLocalHeight(-4.2,z));
+ let previous=null;for(let i=0;i<s.length;i++){
+  const [a,b1]=s[i],x=(a.x+b1.x)/2,z=(a.z+b1.z)/2,y=curve.heightAt(x,z);assert.notEqual(y,null);check(x,z,y);
+  if(previous)assert.ok(Math.abs(y-previous.y)/Math.hypot(x-previous.x,z-previous.z)<.20,`steep approach near station ${i}`);previous={x,z,y};
+ }
+ const end=s.at(-1);for(const p of end){const q=util.harbourCityLocalToWorld(A.MURRAY_SITE,p.x,p.z);assert.ok(Math.abs(b.datum+p.y-terrain.hongKongTerrainHeight(q.x,q.z))<.05);}
+});
+test('curved approach surface and railings avoid nearby vehicle clearance',async()=>{
+ const curve=b.curvedEntrance;let hit=0;for(let i=0;i<curve.stations.length-1;i++)for(let t=0;t<=1;t+=.2)for(let u=0;u<=1;u+=.2){
+  const a=curve.stations[i],b1=curve.stations[i+1],mix=(v,w,f)=>v+(w-v)*f;
+  const x=mix(mix(a[0].x,a[1].x,u),mix(b1[0].x,b1[1].x,u),t),z=mix(mix(a[0].z,a[1].z,u),mix(b1[0].z,b1[1].z,u),t),y=curve.heightAt(x,z);if(y===null)continue;
+  const p=util.harbourCityLocalToWorld(A.MURRAY_SITE,x,z),r=road.fullRoadSurfaceAt(p.x,p.z,.35,terrain.hongKongTerrainHeight(p.x,p.z));if(r&&b.datum+y>=r.height-.2&&b.datum+y<=r.height+4.8)hit++;
+ }assert.equal(hit,0,`road conflicts ${hit}`);
+});
+test('curved ramp stays above terrain and joins the adjacent ground at its end',()=>{
+ const s=b.curvedEntrance.stations;let maxUnder=0;
+ for(let i=0;i<s.length-1;i++)for(let v=0;v<=1;v+=.25)for(let u=.05;u<=.95;u+=.15){
+  const a=s[i],c=s[i+1],mix=(x,y,t)=>x+(y-x)*t,x=mix(mix(a[0].x,a[1].x,u),mix(c[0].x,c[1].x,u),v),z=mix(mix(a[0].z,a[1].z,u),mix(c[0].z,c[1].z,u),v),y=b.curvedEntrance.heightAt(x,z);if(y===null)continue;
+  const p=util.harbourCityLocalToWorld(A.MURRAY_SITE,x,z),g=terrain.hongKongTerrainHeight(p.x,p.z);maxUnder=Math.max(maxUnder,g-b.datum-y);
+ }assert.ok(maxUnder<.04,`terrain covers ramp by ${maxUnder}m`);
+ let prev=null;for(let x=0;x<=2.4;x+=.1){const p=util.harbourCityLocalToWorld(A.MURRAY_SITE,x,52),ground=terrain.hongKongTerrainHeight(p.x,p.z);for(const c of b.colliders)if(ground+1.75>=c.minY&&ground+.1<=c.maxY)assert.equal(collision.colliderContains(c,p.x,p.z,.48),false,`blocked ground exit ${x}`);if(prev!==null)assert.ok(Math.abs(ground-prev)<.08);prev=ground;}
+});

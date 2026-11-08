@@ -54,6 +54,7 @@ export function buildMurrayWrappedRamp(root,datum,colliders){
    // Skip edges at the ramp's start and end: they meet adjacent surfaces.
    for(let side=0;side<2;side++){
     if(i===0)continue; // Transition merges into the narrower existing ramp.
+    if(i===1&&side===1&&j>=n-8&&j<=n-2)continue; // Opening for the curved exterior approach.
     const p=point(side,t0),q=point(side,t1),dx=q[0]-p[0],dz=q[2]-p[2],length=Math.hypot(dx,dz);
     quad(fascia,[p[0],p[1]-.15,p[2]],[q[0],q[1]-.15,q[2]],[q[0],q[1]+.95,q[2]],[p[0],p[1]+.95,p[2]],[.57,.58,.55]);
     beam(top,[p[0],p[1]+.98,p[2]],[q[0],q[1]+.98,q[2]],.05,.05);

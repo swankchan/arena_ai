@@ -1,3 +1,4 @@
+import {buildMurrayCurvedEntrance} from './murray-curved-entrance.js';
 import {buildMurrayWrappedRamp,murrayWrappedRampGroundHeight} from './murray-wrapped-ramp.js';
 import {buildMurrayGarden} from './murray-garden.js';
 import {buildMurrayStairs,murrayStairGroundHeight} from './murray-stairs.js';
@@ -128,6 +129,7 @@ export function buildMurray(scene){
  // One terrain-connected ramp section; the rest of the wrapped route remains to be built.
  const rampSection=buildMurrayRamp(root,datum,colliders);
  const wrappedRamp=buildMurrayWrappedRamp(root,datum,colliders);
+ const curvedEntrance=buildMurrayCurvedEntrance(root,datum,colliders);
  const interior=buildMurrayLobby(root,datum,colliders);
  const lift=buildMurrayLift(root,datum,colliders);
  const stairs=buildMurrayStairs(root,datum,colliders);
@@ -139,5 +141,5 @@ export function buildMurray(scene){
  sign.position.set(0,7,D/2+.04);sign.name='The Murray exterior lettering';root.add(sign);
  const courtyard=buildMurrayCourtyard(root,datum,colliders);
  const landmark={name:'美利大廈',englishName:'The Murray',x:SITE.x,z:SITE.z,w:SITE.w,d:SITE.d,h:93.83,ring:SITE.ring,bounds:SITE.bounds,osmId:SITE.osmId,kind:'landmark',labelHeight:false};
- return {group:root,colliders,landmarks:[landmark],datum,courtyard,rampSection,interior,lift,stairs,garden,wrappedRamp,groundHeightAt:(x,z,current,referenceY)=>murrayWrappedRampGroundHeight(x,z,murrayStairGroundHeight(x,z,lift.groundHeightAt(x,z,murrayLobbyGroundHeight(x,z,murrayRampGroundHeight(x,z,current,referenceY,datum),referenceY,datum),referenceY),referenceY,datum),referenceY,datum),stats:{murrayOsm:SITE.osmId,murrayWindows:windows,murrayArches:arcades,murrayFloors:ROWS,murrayBase:datum,murrayCassiaTree:12718892293,murrayCourtyardCells:courtyard.cells,murrayRampSegments:rampSection.segments,murrayLobbyRooms:1}};
+ return {group:root,colliders,landmarks:[landmark],datum,courtyard,rampSection,interior,lift,stairs,garden,wrappedRamp,curvedEntrance,groundHeightAt:(x,z,current,referenceY)=>curvedEntrance.groundHeightAt(x,z,murrayWrappedRampGroundHeight(x,z,murrayStairGroundHeight(x,z,lift.groundHeightAt(x,z,murrayLobbyGroundHeight(x,z,murrayRampGroundHeight(x,z,current,referenceY,datum),referenceY,datum),referenceY),referenceY,datum),referenceY,datum),referenceY),stats:{murrayOsm:SITE.osmId,murrayWindows:windows,murrayArches:arcades,murrayFloors:ROWS,murrayBase:datum,murrayCassiaTree:12718892293,murrayCourtyardCells:courtyard.cells,murrayRampSegments:rampSection.segments,murrayLobbyRooms:1}};
 }
