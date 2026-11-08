@@ -5,7 +5,7 @@ test.before(async()=>{
 });
 test('Murray mapped site, deep windows and open arcades',()=>{
  const s=A.MURRAY_SITE;assert.equal(s.osmId,85320844);assert.equal(s.source.version,14);assert.equal(s.height,93.83);assert.equal(b.stats.murrayWindows,966);assert.equal(b.stats.murrayArches,22);
- for(const name of ['The Murray precast facade grid','The Murray deep skewed window reveals','The Murray recessed angled glazing','The Murray open arched arcade','The Murray curved arch intrados','The Murray arcade piers','The Murray recessed lobby glazing','The Murray bronze lobby mullions','The Murray terrain-following arcade paving','The Murray former car ramp walkable paving','The Murray roof terrace and parapet'])assert.ok(b.group.getObjectByName(name),name);
+ for(const name of ['The Murray precast facade grid','The Murray deep skewed window reveals','The Murray recessed angled glazing','The Murray open arched arcade','The Murray curved arch intrados','The Murray arcade piers','The Murray recessed lobby glazing','The Murray bronze lobby mullions','The Murray terrain-following arcade paving','The Murray former car ramp walkable paving','The Murray rooftop terrace floor'])assert.ok(b.group.getObjectByName(name),name);
  b.group.updateMatrixWorld(true);for(let i=0;i<s.localRing.length;i+=2){const p=new T.Vector3(s.localRing[i],0,s.localRing[i+1]).applyMatrix4(b.group.matrixWorld);assert.ok(Math.abs(p.x-s.ring[i])<1e-7);assert.ok(Math.abs(p.z-s.ring[i+1])<1e-7);}
  for(const c of b.colliders){assert.ok(c.minY<c.maxY);for(const k of ['minX','maxX','minZ','maxZ','minY','maxY'])assert.ok(Number.isFinite(c[k]));}
 });
@@ -72,4 +72,27 @@ test('lobby terrain cut stays within the building and off sampled roads',async()
 test('existing ramp centre is clear for a walking person end to end',async()=>{
  const R=await import('../js/cities/hongkong/murray-ramp.js'),r=R.MURRAY_RAMP;
  for(let z=r.z0;z<=r.z1;z+=.1){const x=(r.x0+r.x1)/2,p=util.harbourCityLocalToWorld(A.MURRAY_SITE,x,z),y=b.datum+R.murrayRampLocalHeight(z);for(const c of b.colliders)if(y+1.75>=c.minY&&y+.1<=c.maxY)assert.equal(collision.colliderContains(c,p.x,p.z,.48),false,`collision at ${x.toFixed(2)}, ${z.toFixed(2)}`);}
+});
+test('lift carries a passenger and can be recalled at either landing',async()=>{
+ const E=await import('../js/cities/hongkong/murray-lift.js'),s=E.createMurrayLiftMotion(),L=E.MURRAY_LIFT;
+ for(let i=0;i<21;i++)E.advanceMurrayLiftMotion(s,.1,false,L.roof);assert.equal(s.moving,true);
+ for(let i=0;i<200;i++)E.advanceMurrayLiftMotion(s,.1,false,L.roof);assert.equal(s.y,L.roof);
+ for(let i=0;i<21;i++)E.advanceMurrayLiftMotion(s,.1,false,L.lobby);for(let i=0;i<200;i++)E.advanceMurrayLiftMotion(s,.1,false,L.lobby);assert.equal(s.y,L.lobby);
+ const pt=util.harbourCityLocalToWorld(A.MURRAY_SITE,0,(L.z0+L.z1)/2),person={position:new T.Vector3(pt.x,b.datum+L.lobby,pt.z),verticalVel:0,speed:0},manager={activeMode:'person',entities:{person}};
+ for(let i=0;i<210;i++)b.lift.update(.1,manager);assert.equal(b.lift.state.y,L.roof);assert.equal(person.position.y,b.datum+L.roof);
+ const cover=b.group.getObjectByName('The Murray lift roof safety cover');assert.equal(cover.visible,false);
+ for(const gap of [.1,.5,2])assert.equal(E.murrayRoofHeight(pt.x,pt.z,0,b.datum+L.roof,b.datum,{y:L.roof-gap}),b.datum+L.roof);
+});
+test('lift carries a person through the actual controller gravity integration',async()=>{
+ const E=await import('../js/cities/hongkong/murray-lift.js'),{ThirdPersonControllerManager}=await import('../js/controllers.js'),lift=b.lift,L=E.MURRAY_LIFT;Object.assign(lift.state,E.createMurrayLiftMotion());
+ const pt=util.harbourCityLocalToWorld(A.MURRAY_SITE,0,(L.z0+L.z1)/2),p={position:new T.Vector3(pt.x,b.datum+L.lobby,pt.z),verticalVel:0,speed:0,heading:0};
+ const ctx={activeMode:'person',entities:{person:p},keys:{},resolveHorizontalCollision(){},getGroundHeight:(x,z,mode,ref)=>b.groundHeightAt(x,z,terrain.hongKongTerrainHeight(x,z),ref)};
+ for(let i=0;i<450;i++){ThirdPersonControllerManager.prototype.updatePerson.call(ctx,.05);lift.update(.05,ctx);}assert.equal(lift.state.y,L.roof);assert.equal(p.position.y,b.datum+L.roof);
+});
+test('lift connects to lobby and roof without blocking walking clearance',async()=>{
+ const E=await import('../js/cities/hongkong/murray-lift.js'),L=E.MURRAY_LIFT;
+ const check=(x,z,y)=>{const p=util.harbourCityLocalToWorld(A.MURRAY_SITE,x,z);for(const c of b.colliders)if(y+1.75>=c.minY&&y+.1<=c.maxY)assert.equal(collision.colliderContains(c,p.x,p.z,.48),false,`collision ${x},${z}`);};
+ for(let z=-14.5;z<=(L.z0+L.z1)/2;z+=.1)check(0,z,b.interior.floor);
+ for(let z=L.z0-.55;z>=L.z0-5;z-=.1){check(0,z,b.datum+L.roof);const p=util.harbourCityLocalToWorld(A.MURRAY_SITE,0,z);assert.equal(b.groundHeightAt(p.x,p.z,0,b.datum+L.roof),b.datum+L.roof);}
+ const index=require('node:fs').readFileSync('js/cities/hongkong/index.js','utf8'),world=require('node:fs').readFileSync('js/cities/hongkong/simple-world.js','utf8');assert.match(index,/world\.murray\.lift\.group/);assert.match(index,/world\.update\(dt, elapsed, \{ cameraSystem, controllerManager \}\)/);assert.match(world,/murray\.lift\.update\(dt, context\.controllerManager\)/);
 });

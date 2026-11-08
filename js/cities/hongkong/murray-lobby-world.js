@@ -1,4 +1,5 @@
 import * as THREE from 'three/webgpu';
+import {MURRAY_LIFT as E} from './murray-lift.js';
 import {MURRAY_LOBBY as L} from './murray-lobby-site.js';
 import {MURRAY_SITE as SITE} from './murray-architecture.js';
 import {harbourCityLocalCollider} from './harbour-city-architecture.js';
@@ -20,8 +21,9 @@ export function buildMurrayLobby(root,datum,colliders){
  for(const x of [-8,8])box(lines,[x,y+.02,cz],[.045,.02,d-2]);
  for(const z of [L.z0+1,L.z1-1])box(lines,[0,y+.02,z],[16,.02,.045]);
  // The underside of the old ramp is expressed as a gently inclined bronze ceiling.
- for(let z=L.z0;z<L.z1;z+=.5){const height=2.0+(z-L.z0)*.10;box(slats,[0,height,z],[w-.5,.12,.11]);}
- quad(ceiling,[-L.halfWidth+.15,2.12,L.z0],[L.halfWidth-.15,2.12,L.z0],[L.halfWidth-.15,3.62,L.z1],[-L.halfWidth+.15,3.62,L.z1],[.18,.17,.15]);
+ for(let z=L.z0;z<L.z1;z+=.5){const height=2.0+(z-L.z0)*.10;if(z>=E.z0&&z<=E.z1){box(slats,[(-L.halfWidth+E.x0)/2,height,z],[E.x0+L.halfWidth-.25,.12,.11]);box(slats,[(L.halfWidth+E.x1)/2,height,z],[L.halfWidth-E.x1-.25,.12,.11]);}else box(slats,[0,height,z],[w-.5,.12,.11]);}
+ const ceilingY=z=>2.12+(z-L.z0)*.10;
+ for(const [x0,x1,z0,z1] of [[-L.halfWidth+.15,L.halfWidth-.15,L.z0,E.z0],[-L.halfWidth+.15,E.x0,E.z0,E.z1],[E.x1,L.halfWidth-.15,E.z0,E.z1],[-L.halfWidth+.15,L.halfWidth-.15,E.z1,L.z1]])quad(ceiling,[x0,ceilingY(z0),z0],[x1,ceilingY(z0),z0],[x1,ceilingY(z1),z1],[x0,ceilingY(z1),z1],[.18,.17,.15]);
  // A light stone screen separates this first lobby room from the unmodelled interior beyond.
  box(walls,[0,-.9,L.z1],[w,8.2,.2]);
  colliders.push(harbourCityLocalCollider(SITE,0,L.z1,w,.2,datum+y-.2,datum+4));

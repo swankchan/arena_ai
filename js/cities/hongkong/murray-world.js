@@ -1,3 +1,4 @@
+import {buildMurrayLift} from './murray-lift.js';
 import {MURRAY_LOBBY as L,isMurrayLobbyLocal,murrayLobbyGroundHeight} from './murray-lobby-site.js';
 import {buildMurrayLobby} from './murray-lobby-world.js';
 import {buildMurrayRamp,murrayRampGroundHeight} from './murray-ramp.js';
@@ -109,8 +110,7 @@ export function buildMurray(scene){
  // One terrain-connected ramp section; the rest of the wrapped route remains to be built.
  const rampSection=buildMurrayRamp(root,datum,colliders);
  const interior=buildMurrayLobby(root,datum,colliders);
- box(roof,[0,UPPER_TOP+.25,0],[W,.5,D]);box(roof,[0,UPPER_TOP+1.05,0],[W-3,1.1,D-3]);
- merged(root,roof,terrace,'The Murray roof terrace and parapet');
+ const lift=buildMurrayLift(root,datum,colliders);
  for(const z of [-D/2,D/2])box(trims,[0,UPPER_TOP-.2,z],[W,.24,.18]);for(const x of [-W/2,W/2])box(trims,[x,UPPER_TOP-.2,0],[.18,.24,D]);
  merged(root,trims,black,'The Murray roof edge');
  // Exterior sign: positioning is an estimate based on arrival photographs.
@@ -118,5 +118,5 @@ export function buildMurray(scene){
  sign.position.set(0,7,D/2+.04);sign.name='The Murray exterior lettering';root.add(sign);
  const courtyard=buildMurrayCourtyard(root,datum,colliders);
  const landmark={name:'美利大廈',englishName:'The Murray',x:SITE.x,z:SITE.z,w:SITE.w,d:SITE.d,h:93.83,ring:SITE.ring,bounds:SITE.bounds,osmId:SITE.osmId,kind:'landmark',labelHeight:false};
- return {group:root,colliders,landmarks:[landmark],datum,courtyard,rampSection,interior,groundHeightAt:(x,z,current,referenceY)=>murrayLobbyGroundHeight(x,z,murrayRampGroundHeight(x,z,current,referenceY,datum),referenceY,datum),stats:{murrayOsm:SITE.osmId,murrayWindows:windows,murrayArches:arcades,murrayFloors:ROWS,murrayBase:datum,murrayCassiaTree:12718892293,murrayCourtyardCells:courtyard.cells,murrayRampSegments:rampSection.segments,murrayLobbyRooms:1}};
+ return {group:root,colliders,landmarks:[landmark],datum,courtyard,rampSection,interior,lift,groundHeightAt:(x,z,current,referenceY)=>lift.groundHeightAt(x,z,murrayLobbyGroundHeight(x,z,murrayRampGroundHeight(x,z,current,referenceY,datum),referenceY,datum),referenceY),stats:{murrayOsm:SITE.osmId,murrayWindows:windows,murrayArches:arcades,murrayFloors:ROWS,murrayBase:datum,murrayCassiaTree:12718892293,murrayCourtyardCells:courtyard.cells,murrayRampSegments:rampSection.segments,murrayLobbyRooms:1}};
 }

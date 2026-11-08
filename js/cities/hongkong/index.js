@@ -66,7 +66,7 @@ export const city = {
 
     return {
       colliders: world.colliders,
-      dynamicRoots: [traffic.group, harbour.group, tramway.group, crowd.group],
+      dynamicRoots: [traffic.group, harbour.group, tramway.group, crowd.group, world.murray.lift.group],
       streetLighting: world.streetLighting,
       traffic,
       tramway,
@@ -161,7 +161,7 @@ export const city = {
       update(dt, elapsed, { cameraSystem, controllerManager }) {
         focus.x = cameraSystem.currentPos.x;
         focus.z = cameraSystem.currentPos.z;
-        world.update(dt, elapsed, { cameraSystem });
+        world.update(dt, elapsed, { cameraSystem, controllerManager });
         traffic.update(dt, controllerManager);
         crowd.update(dt, elapsed, cameraSystem.currentPos);
         harbour.update(dt, elapsed);

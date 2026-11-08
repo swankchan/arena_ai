@@ -564,6 +564,7 @@ export function buildSimpleHongKongWorld(scene, { setStatus = () => {} } = {}) {
     isPointOnSidewalk,
     getGroundHeight,
     update(dt, elapsed, context) {
+      murray.lift.update(dt, context.controllerManager);
       crossings.update?.(context);
       centralPlaza.update?.(dt, elapsed, context);
       theCenter.update?.(dt, elapsed, context);
