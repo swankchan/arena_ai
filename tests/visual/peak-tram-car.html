@@ -1,0 +1,14 @@
+<!doctype html><meta charset="utf-8"><title>Peak Tram car visual check</title><style>body{margin:0;background:#202a28}canvas{display:block}</style>
+<script type="importmap">{"imports":{"three":"../../vendor/three/build/three.webgpu.js","three/webgpu":"../../vendor/three/build/three.webgpu.js","three/tsl":"../../vendor/three/build/three.tsl.js","three/addons/":"../../vendor/three/examples/jsm/"}}</script>
+<script type="module">
+import * as THREE from 'three/webgpu';
+import {cityUniforms} from '../../js/tsl-materials.js';
+import {createPeakTramCar} from '../../js/cities/hongkong/peak-tram-car.js';
+const night=new URLSearchParams(location.search).has('night');cityUniforms.uInteriorGlow.value=night?1.4:0;
+const scene=new THREE.Scene();scene.background=new THREE.Color(night?0x17212b:0xc2d4dd);
+scene.add(createPeakTramCar());scene.add(new THREE.HemisphereLight(0xf1f4ef,0x5b625d,night?.28:1.1));
+const sun=new THREE.DirectionalLight(0xffffff,night?.12:2);sun.position.set(10,25,18);scene.add(sun);
+const ground=new THREE.Mesh(new THREE.PlaneGeometry(100,60),new THREE.MeshStandardMaterial({color:0x767c72}));ground.rotation.x=-Math.PI/2;ground.position.y=-.06;scene.add(ground);
+const camera=new THREE.PerspectiveCamera(35,1.6,.1,300);camera.position.set(25,13,43);camera.lookAt(0,1.7,0);
+const renderer=new THREE.WebGPURenderer({forceWebGL:true,antialias:true});await renderer.init();renderer.setSize(1280,800);document.body.appendChild(renderer.domElement);renderer.render(scene,camera);window.ready=true;
+</script>
