@@ -1,0 +1,11 @@
+const {test}=require('node:test'),assert=require('node:assert/strict');
+test('Barker approach joins the upper line and avoids sampled road and terrain',async()=>{
+ const THREE=await import('three/webgpu');const {BARKER_APPROACH_POINTS:p,BARKER_APPROACH_START:start,BARKER_APPROACH_END:end,barkerApproachPoint:point,barkerApproachBranchOffset:offset,barkerApproachCuts:cuts}=await import('../js/cities/hongkong/peak-tram-barker-approach-site.js');
+ const {upperLinePoint}=await import('../js/cities/hongkong/peak-tram-upper-line-site.js'),{buildPeakTramBarkerApproach:build}=await import('../js/cities/hongkong/peak-tram-barker-approach.js'),{hongKongTerrainHeight:g}=await import('../js/cities/hongkong/terrain.js'),{fullRoadSurfaceAt:road}=await import('../js/cities/hongkong/full-meta.js');
+ const first=upperLinePoint(start);assert.ok(Math.hypot(first.x-p[0].x,first.z-p[0].z)<1e-8);assert.ok(Math.abs(first.y-p[0].y)<1e-8);assert.equal(end,1070);assert.equal(offset(start),0);
+ const rects=cuts(),inside=(x,z,r)=>Math.abs((x-r.cx)*r.ux+(z-r.cz)*r.uz)<=r.hx+1e-6&&Math.abs(-(x-r.cx)*r.uz+(z-r.cz)*r.ux)<=r.hz+1e-6;
+ for(let s=start+.1;s<end-.1;s+=.4){let q=point(s);for(let o=-1.35;o<=offset(s)+1.35;o+=.45){let x=q.x+q.nx*o,z=q.z+q.nz*o,h=g(x,z);assert.equal(road(x,z,.5,h),null,`unexpected road at ${s}`);if(h-.08>q.y-.27)assert.ok(rects.some(r=>inside(x,z,r)),`buried track at ${s} offset ${o}`);}}
+ const r=build(new THREE.Group());assert.ok(r.stats.peakTramBarkerApproachSections>20);for(const n of ['Peak Tram Barker approach rails','Peak Tram Barker approach sleepers','Peak Tram Barker approach bed','Peak Tram Barker approach retaining faces','Peak Tram Barker approach piers'])assert.ok(r.group.getObjectByName(n),n);
+ for(const c of r.colliders)for(let x=c.minX-.5;x<=c.maxX+.5;x+=.25)for(let z=c.minZ-.5;z<=c.maxZ+.5;z+=.25)assert.equal(road(x,z,0,g(x,z)),null,'support intersects a road');
+});
+test('Barker approach cut, model and support colliders are connected to world',()=>{const fs=require('node:fs');assert.match(fs.readFileSync('js/cities/hongkong/full-world.js','utf8'),/\.\.\.barkerApproachCuts\(\)/);const s=fs.readFileSync('js/cities/hongkong/simple-world.js','utf8');assert.match(s,/buildPeakTramBarkerApproach\(scene\)/);assert.match(s,/\.\.\.peakTramBarkerApproach\.colliders/);});
