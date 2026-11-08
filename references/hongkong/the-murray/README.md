@@ -18,3 +18,5 @@ Captured 2026-10-24. These images were returned by image search and saved as sup
 | [popinjays-2.jpg](images/popinjays-2.jpg) | Rooftop restaurant and terrace | [The Luxe Voyager](https://www.theluxevoyager.com/luxe-hotels/hong-kong/the-murray-hong-kong-a-niccolo-hotel/the-murray-hong-kong-a-niccolo-hotel-popinjays-rooftop-restaurant-bar/); photographer/rights as credited on source. |
 
 The original downloadable pages/articles are not bundled here; `sources.md` contains attributed research notes and links. Existing images from prior searches that are not in this index were not recovered or verified in this pass.
+
+Mapped footway, steps and bridge data: [`osm-public-paths.json`](osm-public-paths.json), © OpenStreetMap contributors, ODbL. These are not surveyed pedestrian levels.

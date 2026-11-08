@@ -1,0 +1,11 @@
+{
+  "description": "Selected OSM ways near The Murray, captured 2026-10-24. These are map data, not a surveyed pedestrian-access plan.",
+  "copyright": "© OpenStreetMap contributors", "license": "https://opendatacommons.org/licenses/odbl/1-0/",
+  "ways": [
+    {"id": 1308940437, "version": 3, "tags": {"highway": "footway", "surface": "paved"}, "url": "https://api.openstreetmap.org/api/0.6/way/1308940437/full.json", "nodes": [
+      [12121482720,22.2779825,114.1595605],[12121518297,22.2779997,114.1595875],[12121518296,22.2780286,114.1596330],[12121482713,22.2780558,114.1596757],[12121482714,22.2783887,114.1600477],[12121482715,22.2784056,114.1600925],[12121482716,22.2784019,114.1601290],[12121482717,22.2783775,114.1601675],[7657956947,22.2782720,114.1602920]
+    ]},
+    {"id":820100374,"version":1,"tags":{"highway":"steps"},"url":"https://api.openstreetmap.org/api/0.6/way/820100374/full.json","nodes":[[7657956946,22.2781905,114.1603994],[7657956947,22.2782720,114.1602920]]},
+    {"id":1442100552,"version":1,"tags":{"bridge":"yes","highway":"footway","layer":"1"},"url":"https://api.openstreetmap.org/api/0.6/way/1442100552/full.json","nodes":[[2496629657,22.2782857,114.1604975],[7657956946,22.2781905,114.1603994],[6827749154,22.2781732,114.1603815]]}
+  ]
+}
