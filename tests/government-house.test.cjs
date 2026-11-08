@@ -13,6 +13,13 @@ test('tower has arched insets and diamond grilles on every face',()=>{
   mesh.geometry.computeBoundingBox();const box=mesh.geometry.boundingBox;assert.ok(box.min.x<14.4&&box.max.x>21.6,name);assert.ok(box.min.z<-12.6&&box.max.z> -5.4,name);
  }
 });
+test('tower balcony has rounded geometry and a separate coping',()=>{
+ const b=M.buildGovernmentHouse(new T.Group()),rounded=b.group.getObjectByName('Government House rounded tower balcony'),lip=b.group.getObjectByName('Government House tower balcony coping');
+ assert.ok(rounded);assert.ok(lip);assert.ok(rounded.geometry.getAttribute('position').count>200);
+ rounded.geometry.computeBoundingBox();const bounds=rounded.geometry.boundingBox;
+ assert.ok(bounds.min.x<13.7&&bounds.max.x>22.3&&bounds.min.z<-13.3&&bounds.max.z>-4.7);
+ assert.ok(bounds.min.y>19.8&&bounds.max.y<21);
+});
 test('nearby sampled road surfaces do not intersect colliders at vehicle height',()=>{
  const b=M.buildGovernmentHouse(new T.Group()),s=A.GOVERNMENT_HOUSE_SITE;let count=0,hits=0;
  for(let x=Math.floor(s.bounds.minX)-30;x<=s.bounds.maxX+30;x++)for(let z=Math.floor(s.bounds.minZ)-30;z<=s.bounds.maxZ+75;z++){

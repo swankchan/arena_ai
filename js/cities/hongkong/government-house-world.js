@@ -1,4 +1,5 @@
 import * as THREE from 'three/webgpu';
+import { RoundedBoxGeometry } from 'three/addons/geometries/RoundedBoxGeometry.js';
 import { GOVERNMENT_HOUSE_SITE as SITE } from './government-house-architecture.js';
 import { authoredHighestRawDatum, authoredWorldToLocal } from './authored-landmark-site.js';
 import { fullRoadSurfaceAt } from './full-meta.js';
@@ -59,8 +60,16 @@ export function buildGovernmentHouse(scene) {
  }
  merged(group,roofs,mat.roof,'Government House dark hipped tiled roofs');merged(group,tiles,mat.roofEdge,'Government House roof tile seams',false);
  box(details,[18,15.5,-9],[7.3,17,7.3]);box(details,[-24,10.7,-10],[3.3,3.4,3.3]);box(details,[18,22.8,-9],[8.5,.38,8.5]);
- for(const [cx,cz,w,d] of [[18,-5.18,5.8,.65],[18,-12.82,5.8,.65],[14.18,-9,.65,5.8],[21.82,-9,.65,5.8]])box(details,[cx,20.3,cz],[w,.5,d]);
  merged(group,details,mat.plaster,'Government House central landmark tower and balcony');
+ // Projecting rounded balcony/crown, rather than a hard-edged block. Its
+ // dimensions and repetition on all four faces are photo-directed estimates.
+ const balcony=[],balconyLip=[];
+ for(const [cx,cz,w,d] of [[18,-5.12,5.9,1.0],[18,-12.88,5.9,1.0],[14.12,-9,1.0,5.9],[21.88,-9,1.0,5.9]]){
+  const g=new RoundedBoxGeometry(w,.9,d,4,.43);g.translate(cx,20.36,cz);balcony.push(g);
+  box(balconyLip,[cx,20.76,cz],[w+.08,.12,d+.08]);
+ }
+ merged(group,balcony,mat.plaster,'Government House rounded tower balcony');
+ merged(group,balconyLip,mat.stone,'Government House tower balcony coping',false);
  for(const [name,x,z,w,d,y,rise] of [['tower',18,-9,9.1,9.1,24,1.5],['cupola',-24,-10,4.2,4.2,12.4,.8]]){const m=new THREE.Mesh(hipRoof(x,z,w,d,y,rise),mat.roof);m.name=`Government House ${name} tiled roof`;group.add(m);}
  // Tower details follow the preserved reference photograph: small arched
  // openings below the projecting crown and a larger latticed arched window.
