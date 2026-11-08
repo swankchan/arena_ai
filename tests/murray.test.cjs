@@ -5,7 +5,7 @@ test.before(async()=>{
 });
 test('Murray mapped site, deep windows and open arcades',()=>{
  const s=A.MURRAY_SITE;assert.equal(s.osmId,85320844);assert.equal(s.source.version,14);assert.equal(s.height,93.83);assert.equal(b.stats.murrayWindows,966);assert.equal(b.stats.murrayArches,22);
- for(const name of ['The Murray precast facade grid','The Murray deep skewed window reveals','The Murray recessed angled glazing','The Murray open arched arcade','The Murray curved arch intrados','The Murray arcade piers','The Murray recessed lobby glazing','The Murray bronze lobby mullions','The Murray terrain-following arcade paving','The Murray indicative bronze arrival ramp','The Murray roof terrace and parapet'])assert.ok(b.group.getObjectByName(name),name);
+ for(const name of ['The Murray precast facade grid','The Murray deep skewed window reveals','The Murray recessed angled glazing','The Murray open arched arcade','The Murray curved arch intrados','The Murray arcade piers','The Murray recessed lobby glazing','The Murray bronze lobby mullions','The Murray terrain-following arcade paving','The Murray former car ramp walkable paving','The Murray roof terrace and parapet'])assert.ok(b.group.getObjectByName(name),name);
  b.group.updateMatrixWorld(true);for(let i=0;i<s.localRing.length;i+=2){const p=new T.Vector3(s.localRing[i],0,s.localRing[i+1]).applyMatrix4(b.group.matrixWorld);assert.ok(Math.abs(p.x-s.ring[i])<1e-7);assert.ok(Math.abs(p.z-s.ring[i+1])<1e-7);}
  for(const c of b.colliders){assert.ok(c.minY<c.maxY);for(const k of ['minX','maxX','minZ','maxZ','minY','maxY'])assert.ok(Number.isFinite(c[k]));}
 });
@@ -37,4 +37,15 @@ test('mapped Cassia tree and terrain-following courtyard',async()=>{
   const p=util.harbourCityLocalToWorld(A.MURRAY_SITE,x,z);assert.equal(road.fullRoadSurfaceAt(p.x,p.z,1.05,terrain.hongKongTerrainHeight(p.x,p.z)),null);
   for(let j=0;j<6;j++){const p2=util.harbourCityLocalToWorld(A.MURRAY_SITE,pos.getX(i+j),pos.getZ(i+j));assert.ok(Math.abs(pos.getY(i+j)+b.datum-terrain.hongKongTerrainHeight(p2.x,p2.z)-.035)<.001);}
  }
+});
+
+test('ramp surface and height query agree and remain road-clear',async()=>{
+ const R=await import('../js/cities/hongkong/murray-ramp.js');const {x0,x1,z0,z1}=R.MURRAY_RAMP;
+ assert.equal(b.rampSection.segments,46);
+ for(let z=z0;z<=z1;z+=.25){const x=(x0+x1)/2,p=util.harbourCityLocalToWorld(A.MURRAY_SITE,x,z),y=b.datum+R.murrayRampLocalHeight(z),g=terrain.hongKongTerrainHeight(p.x,p.z);
+  assert.ok(y-g>.1 && y-g<.8);assert.ok(Math.abs(R.murrayRampGroundHeight(p.x,p.z,g,y,b.datum)-y)<1e-8);assert.equal(road.fullRoadSurfaceAt(p.x,p.z,.5,y),null);
+  for(const c of b.colliders)if(y>=c.minY&&y<=c.maxY)assert.equal(collision.colliderContains(c,p.x,p.z),false);
+ }
+ const p=util.harbourCityLocalToWorld(A.MURRAY_SITE,(x0+x1)/2,0);assert.equal(R.murrayRampGroundHeight(p.x,p.z,1,100,b.datum),1);
+ const src=require('node:fs').readFileSync('js/cities/hongkong/simple-world.js','utf8');assert.match(src,/mode === 'person' && !groundUsesRoad \? murray\.groundHeightAt/);
 });

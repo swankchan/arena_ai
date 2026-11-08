@@ -1,3 +1,4 @@
+import {buildMurrayRamp,murrayRampGroundHeight} from './murray-ramp.js';
 import {buildMurrayCourtyard} from './murray-courtyard.js';
 import * as THREE from 'three/webgpu';
 import {attribute} from 'three/tsl';
@@ -15,7 +16,7 @@ export function buildMurray(scene){
  const datum=authoredHighestRawDatum([SITE],hongKongTerrainHeight),root=new THREE.Group();
  root.name='美利大廈 The Murray';root.position.set(SITE.x,datum,SITE.z);root.rotation.y=SITE.ry;scene.add(root);
  const concrete=store(),reveals=store(),glass=store(),arches=store(),archSoffit=store(),paving=store();
- const trims=[],roof=[],piers=[],frames=[],lobby=[],ramp=[],rail=[],colliders=[];
+ const trims=[],roof=[],piers=[],frames=[],lobby=[],colliders=[];
  const material=(roughness,metalness=0)=>{const m=new THREE.MeshStandardNodeMaterial({side:THREE.DoubleSide,roughness,metalness});m.colorNode=attribute('color');return m;};
  const stone=new THREE.MeshStandardMaterial({color:0xb5b5ab,roughness:.84,side:THREE.DoubleSide}),dark=new THREE.MeshStandardMaterial({color:0x263a3c,roughness:.28,metalness:.3,side:THREE.DoubleSide}),bronze=new THREE.MeshStandardMaterial({color:0x826b4d,roughness:.42,metalness:.65}),black=new THREE.MeshStandardMaterial({color:0x394544,roughness:.72}),terrace=new THREE.MeshStandardMaterial({color:0x71766d,roughness:.92});
  // Four facades: u runs horizontally along the wall; depth points inwards.
@@ -95,10 +96,8 @@ export function buildMurray(scene){
   const v=(Math.floor(x+W/2)+Math.floor(z+D/2))%4===0?.48:.50;quad(paving,p(x,z),p(x1,z),p(x1,z1),p(x,z1),[v,v,v*.95]);
  }
  meshStore(root,paving,material(.97),'The Murray terrain-following arcade paving',false);
- // Photo-directed bronze-clad arrival ramp and high-level roof edge, within the footprint.
- const sideZ=D/2-3.4;beam(ramp,[-9,3.1,sideZ],[9,6.7,sideZ],.28,.9);beam(rail,[-9,4.1,sideZ],[9,7.7,sideZ],.07,.07);
- for(let i=0;i<=9;i++){let t=i/9,x=-9+18*t,y=3.1+3.6*t;box(rail,[x,y+.5,sideZ],[.07,1,.07]);}
- merged(root,ramp,bronze,'The Murray indicative bronze arrival ramp');merged(root,rail,bronze,'The Murray arrival ramp railings',false);
+ // One terrain-connected ramp section; the rest of the wrapped route remains to be built.
+ const rampSection=buildMurrayRamp(root,datum,colliders);
  box(roof,[0,UPPER_TOP+.25,0],[W,.5,D]);box(roof,[0,UPPER_TOP+1.05,0],[W-3,1.1,D-3]);
  merged(root,roof,terrace,'The Murray roof terrace and parapet');
  for(const z of [-D/2,D/2])box(trims,[0,UPPER_TOP-.2,z],[W,.24,.18]);for(const x of [-W/2,W/2])box(trims,[x,UPPER_TOP-.2,0],[.18,.24,D]);
@@ -108,5 +107,5 @@ export function buildMurray(scene){
  sign.position.set(0,7,D/2+.04);sign.name='The Murray exterior lettering';root.add(sign);
  const courtyard=buildMurrayCourtyard(root,datum,colliders);
  const landmark={name:'美利大廈',englishName:'The Murray',x:SITE.x,z:SITE.z,w:SITE.w,d:SITE.d,h:93.83,ring:SITE.ring,bounds:SITE.bounds,osmId:SITE.osmId,kind:'landmark',labelHeight:false};
- return {group:root,colliders,landmarks:[landmark],datum,courtyard,stats:{murrayOsm:SITE.osmId,murrayWindows:windows,murrayArches:arcades,murrayFloors:ROWS,murrayBase:datum,murrayCassiaTree:12718892293,murrayCourtyardCells:courtyard.cells}};
+ return {group:root,colliders,landmarks:[landmark],datum,courtyard,rampSection,groundHeightAt:(x,z,current,referenceY)=>murrayRampGroundHeight(x,z,current,referenceY,datum),stats:{murrayOsm:SITE.osmId,murrayWindows:windows,murrayArches:arcades,murrayFloors:ROWS,murrayBase:datum,murrayCassiaTree:12718892293,murrayCourtyardCells:courtyard.cells,murrayRampSegments:rampSection.segments}};
 }
