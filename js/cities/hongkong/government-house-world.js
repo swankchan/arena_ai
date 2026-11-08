@@ -10,6 +10,13 @@ import { box, cylinder, sphere, beam, merged, store, quad, meshStore, point, edg
 
 // All building heights, roof junctions and architectural details are photo-directed estimates.
 export const GOVERNMENT_HOUSE_EAVES=9.0, GOVERNMENT_HOUSE_TOWER_TOP=25.5;
+// Estimated enclosure in building-local metres, joining the two frontage ends.
+// It is not a property survey: the garden boundary is absent from the OSM
+// building way. Road conflicts are left open as access gaps.
+export const GOVERNMENT_HOUSE_ESTIMATED_PERIMETER=Object.freeze([
+ [-60,58.5],[-65,40],[-65,-26],[-52,-44],[50,-44],[65,-25],[65,35],[60,58.5]
+].map(p=>Object.freeze(p)));
+
 function hipRoof(x,z,w,d,y,rise) {
  const hx=w/2,hz=d/2, ridge=Math.max(0,hx-hz*.8), a=[x-hx,y,z-hz],b=[x+hx,y,z-hz],c=[x+hx,y,z+hz],d0=[x-hx,y,z+hz],l=[x-ridge,y+rise,z],r=[x+ridge,y+rise,z];
  const positions=[...a,...b,...r,...a,...r,...l,...b,...c,...r,...c,...d0,...l,...c,...l,...r,...d0,...a,...l];
@@ -302,6 +309,51 @@ export function buildGovernmentHouse(scene) {
  merged(group,frontageIron,gateMaterial,'Government House frontage spear railings',false);
  group.userData.frontageSegments=frontageSegments;
  wallColliders.push(...frontageColliders);
+ // Complete the estimated enclosing route around the sides and back. Segments
+ // are at most 1m and omitted at road crossings; these are open access gaps,
+ // not fictitious gates or surveyed property boundaries.
+ const outerWalls=store(),outerCaps=[],outerRails=[],outerPosts=[],outerSegments=[],outerGaps=[];
+ for(let edge=0;edge<GOVERNMENT_HOUSE_ESTIMATED_PERIMETER.length-1;edge++){
+  const [ax,az]=GOVERNMENT_HOUSE_ESTIMATED_PERIMETER[edge],[bx,bz]=GOVERNMENT_HOUSE_ESTIMATED_PERIMETER[edge+1];
+  const dx=bx-ax,dz=bz-az,len=Math.hypot(dx,dz),nx=-dz/len*.18,nz=dx/len*.18,n=Math.ceil(len);
+  for(let i=0;i<n;i++){
+   const t0=i/n,t1=(i+1)/n,x0=ax+dx*t0,z0=az+dz*t0,x1=ax+dx*t1,z1=az+dz*t1;
+   const at=(t)=>{const x=x0+(x1-x0)*t,z=z0+(z1-z0)*t,p=harbourCityLocalToWorld(SITE,x,z),h=hongKongTerrainHeight(p.x,p.z);return {x,z,p,h};};
+   const p0=at(0),p1=at(1);let blocked=false;
+   for(const t of [0,.25,.5,.75,1]){const p=at(t);if(fullRoadSurfaceAt(p.p.x,p.p.z,1.5,p.h)){blocked=true;break;}}
+   const record={edge,x0,z0,x1,z1};if(blocked){outerGaps.push(record);continue;}
+   const y0=p0.h-base,y1=p1.h-base;
+   quad(outerWalls,[x0+nx,y0-.2,z0+nz],[x1+nx,y1-.2,z1+nz],[x1+nx,y1+1.35,z1+nz],[x0+nx,y0+1.35,z0+nz],[.60,.59,.55]);
+   quad(outerWalls,[x1-nx,y1-.2,z1-nz],[x0-nx,y0-.2,z0-nz],[x0-nx,y0+1.35,z0-nz],[x1-nx,y1+1.35,z1-nz],[.60,.59,.55]);
+   beam(outerCaps,[x0,y0+1.38,z0],[x1,y1+1.38,z1],.14,.44);
+   for(const dy of [1.49,2.32])beam(outerRails,[x0,y0+dy,z0],[x1,y1+dy,z1],.06,.06);
+   for(let j=0;j<4;j++){const t=(j+.5)/4,x=x0+(x1-x0)*t,z=z0+(z1-z0)*t,y=y0+(y1-y0)*t;
+    box(outerPosts,[x,y+1.96,z],[.06,1.05,.06]);
+    const tip=new THREE.ConeGeometry(.08,.15,4);tip.translate(x,y+2.56,z);outerPosts.push(tip);
+   }
+   wallColliders.push(harbourCityLocalCollider(SITE,(x0+x1)/2,(z0+z1)/2,len/n+.02,.46,Math.min(p0.h,p1.h)-.2,Math.max(p0.h,p1.h)+2.65,SITE.ry+Math.atan2(-(z1-z0),x1-x0)));
+   outerSegments.push(record);
+  }
+ }
+ // Mark both sides of each road-created opening with a stone gate pier.
+ // Openings follow existing traffic geometry; they are not verified real gates.
+ const outerPiers=[];
+ for(let edge=0;edge<GOVERNMENT_HOUSE_ESTIMATED_PERIMETER.length-1;edge++){
+  const segs=outerSegments.filter(s=>s.edge===edge),gaps=outerGaps.filter(s=>s.edge===edge);
+  if(!gaps.length)continue;
+  for(const s of segs){
+   const near=gaps.some(g=>Math.hypot(s.x1-g.x0,s.z1-g.z0)<1e-6||Math.hypot(s.x0-g.x1,s.z0-g.z1)<1e-6);
+   if(!near)continue;
+   const x=(s.x0+s.x1)/2,z=(s.z0+s.z1)/2,p=harbourCityLocalToWorld(SITE,x,z),y=hongKongTerrainHeight(p.x,p.z)-base;
+   box(outerPiers,[x,y+1.3,z],[.4,2.6,.4]);box(outerPiers,[x,y+2.66,z],[.52,.12,.52]);
+  }
+ }
+ merged(group,outerPiers,mat.stone,'Government House estimated access opening piers',false);
+ meshStore(group,outerWalls,vertex,'Government House estimated side and rear boundary walls',false);
+ merged(group,outerCaps,mat.stone,'Government House estimated perimeter coping',false);
+ merged(group,outerRails,gateMaterial,'Government House estimated perimeter rails',false);
+ merged(group,outerPosts,gateMaterial,'Government House estimated perimeter spear posts',false);
+ group.userData.estimatedPerimeter={segments:outerSegments,roadGaps:outerGaps};
  colliders.push(...wallColliders);
  meshStore(group,gardenWall,vertex,'Government House garden boundary stone walls',false);
  merged(group,gardenCaps,mat.stone,'Government House garden boundary wall coping',false);
@@ -316,5 +368,5 @@ export function buildGovernmentHouse(scene) {
  merged(group,lodgeWalls,mat.plaster,'Government House paired gate lodge walls');merged(group,lodgeRoof,green,'Government House green gate lodge roofs');merged(group,lodgeTrim,mat.stone,'Government House gate lodge cornices');merged(group,lodgeGlass,mat.deep,'Government House gate lodge doors');merged(group,lodgeColumns,mat.trim,'Government House gate lodge classical columns');
  colliders.push(harbourCityLocalCollider(SITE,18,-9,7.3,7.3,base+9,base+25.5));
  const landmark={name:'香港禮賓府',englishName:'Government House',x:SITE.x,z:SITE.z,w:SITE.w,d:SITE.d,h:25.5,ring:SITE.ring,bounds:SITE.bounds,osmId:SITE.osmId,kind:'landmark',labelHeight:false};
- return {group,colliders,landmarks:[landmark],stats:{governmentHouseWindows:windowCount,governmentHouseRoofs:5,governmentHouseTowerHeight:25.5,governmentHouseGateLodges:lodges,governmentHouseApronCells:apronCells,governmentHouseBoundarySegments:wallColliders.length,governmentHouseGardenClumps:gardenPlants.length},base,groundHeightAt:(x,z,raw)=>governmentHouseApronHeight(x,z,raw,base)};
+ return {group,colliders,landmarks:[landmark],stats:{governmentHouseWindows:windowCount,governmentHouseRoofs:5,governmentHouseTowerHeight:25.5,governmentHouseGateLodges:lodges,governmentHouseApronCells:apronCells,governmentHouseBoundarySegments:wallColliders.length,governmentHousePerimeterRoadGaps:outerGaps.length,governmentHouseGardenClumps:gardenPlants.length},base,groundHeightAt:(x,z,raw)=>governmentHouseApronHeight(x,z,raw,base)};
 }

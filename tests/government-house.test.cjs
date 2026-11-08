@@ -51,6 +51,16 @@ test('extended roadside frontage has pierced parapet, railings and road clearanc
  for(const name of ['Government House frontage boundary masonry','Government House frontage pierced parapet','Government House frontage spear railings'])assert.ok(b.group.getObjectByName(name),name);
  for(const q of segments)for(const t of [0,.25,.5,.75,1]){const p=util.harbourCityLocalToWorld(s,q.x0+t,q.z),h=terrain.hongKongTerrainHeight(p.x,p.z);assert.equal(road.fullRoadSurfaceAt(p.x,p.z,1.5,h),null);}
 });
+test('estimated outer perimeter covers all sides, with marked road openings and matching colliders',()=>{
+ const b=M.buildGovernmentHouse(new T.Group()),s=A.GOVERNMENT_HOUSE_SITE,{segments,roadGaps}=b.group.userData.estimatedPerimeter;
+ assert.equal(M.GOVERNMENT_HOUSE_ESTIMATED_PERIMETER.length,8);assert.ok(segments.length>300);assert.ok(roadGaps.length>0);
+ for(let edge=0;edge<7;edge++)assert.ok(segments.some(q=>q.edge===edge),`edge ${edge}`);
+ for(const name of ['Government House estimated side and rear boundary walls','Government House estimated perimeter coping','Government House estimated perimeter rails','Government House estimated perimeter spear posts','Government House estimated access opening piers'])assert.ok(b.group.getObjectByName(name),name);
+ for(const q of segments){for(const t of [0,.25,.5,.75,1]){const p=util.harbourCityLocalToWorld(s,q.x0+(q.x1-q.x0)*t,q.z0+(q.z1-q.z0)*t),h=terrain.hongKongTerrainHeight(p.x,p.z);assert.equal(road.fullRoadSurfaceAt(p.x,p.z,1.5,h),null);}
+  const p=util.harbourCityLocalToWorld(s,(q.x0+q.x1)/2,(q.z0+q.z1)/2);assert.ok(b.colliders.some(c=>collision.colliderContains(c,p.x,p.z)),`missing collider at edge ${q.edge}`);
+ }
+ for(const q of roadGaps){let blocked=false;for(const t of [0,.25,.5,.75,1]){const p=util.harbourCityLocalToWorld(s,q.x0+(q.x1-q.x0)*t,q.z0+(q.z1-q.z0)*t),h=terrain.hongKongTerrainHeight(p.x,p.z);if(road.fullRoadSurfaceAt(p.x,p.z,1.5,h))blocked=true;}assert.ok(blocked);}
+});
 test('garden island clumps stay clear of sampled road surfaces',()=>{
  const b=M.buildGovernmentHouse(new T.Group()),s=A.GOVERNMENT_HOUSE_SITE;const plants=b.group.userData.gardenPlantSamples;
  assert.ok(plants.length>30);assert.equal(plants.length,b.stats.governmentHouseGardenClumps);
