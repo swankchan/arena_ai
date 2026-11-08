@@ -282,7 +282,7 @@ export function buildSalisburyYMCA(scene, { groundOffset = 0 } = {}) {
   materials.upperTile = tileMaterial('#a19c96', '#b6b0a8', '#898581');
   materials.terracePaving = tileMaterial('#8c8580', '#aaa39b', '#69625d');
   materials.glazing.dispose();
-  materials.glazing = new THREE.MeshStandardNodeMaterial({vertexColors: true, roughness: .4, metalness: .18});
+  materials.glazing = new THREE.MeshStandardNodeMaterial({vertexColors: true, roughness: .4, metalness: .18, side: THREE.DoubleSide});
   materials.glazing.colorNode = attribute('color').rgb;
   materials.glazing.emissiveNode = color(0xffd39b).mul(attribute('aLit', 'float')).mul(nightAmount()).mul(2.8);
   const podium = buildPodium(group, groundOffset, materials), connector = buildConnector(group, groundOffset, materials);
