@@ -13,7 +13,7 @@ test('existing lamps and arms clear the built Kennedy bridge and approach withou
   const d=Math.hypot(x-a.x-dx*t,z-a.z-dz*t);if(!result||d<result.d)result={d,y:a.y+(b.y-a.y)*t};
  }return result;}
  for(let i=0;i<L.lamps.length;i++){
-  if(suppressed.has(i))continue;const l=L.lamps[i];if(l[0]<-295||l[0]>-130||l[1]<580||l[1]>800)continue;
+  if(suppressed.has(i))continue;const l=L.lamps[i];if(l[0]<-320||l[0]>-130||l[1]<580||l[1]>830)continue;
   const ov=overrides.get(i),adj=adjust(i,l,ov),x=adj?.x??l[0]+(ov?.[1]||0)/100,z=adj?.z??l[1]+(ov?.[2]||0)/100,base=ov?ov[3]/100:ground(x,z)+.025;
   if(adj){moved++;assert.equal(fullRoadSurfaceAt(x,z,.5,base),null,`moved lamp ${i} is on a road`);}
   let q=closest(x,z);if(base+9.6>=q.y-.5&&base<=q.y+4)assert.ok(q.d>2.4,`pole ${i} track distance ${q.d}`);

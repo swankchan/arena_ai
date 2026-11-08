@@ -2,7 +2,7 @@ import * as THREE from 'three/webgpu';
 import {beam,box,merged,quad,store,meshStore} from './harbour-city-world-utils.js';
 import {hongKongTerrainHeight} from './terrain.js';
 import {fullRoadSurfaceAt} from './full-meta.js';
-import {KENNEDY_APPROACH_POINTS,isMacDonnellPlatformSegment,isMacDonnellBridgeSegment} from './peak-tram-kennedy-approach-site.js';
+import {KENNEDY_APPROACH_POINTS,isMacDonnellPlatformSegment,isMacDonnellBridgeSegment,isMagazineGapBridgeSegment} from './peak-tram-kennedy-approach-site.js';
 
 // A short non-playable track section connecting to the Kennedy Road bridge.
 // The earthworks and piers are approximations to the current scene DTM.
@@ -19,7 +19,7 @@ export function buildPeakTramKennedyApproach(scene){
   quad(bed,p(a,-1.60,-.27),p(b,-1.60,-.27),p(b,1.60,-.27),p(a,1.60,-.27),[.31,.30,.27]);
   // Both cut faces follow DTM on the outside edge, rather than flattening a wide pad.
   for(const side of [-1,1]){
-   if(isMacDonnellBridgeSegment(a,b))continue; // the vault supplies its own jambs
+   if(isMacDonnellBridgeSegment(a,b)||isMagazineGapBridgeSegment(a,b))continue; // the vault supplies its own jambs
    const off=side>0&&isMacDonnellPlatformSegment(a,b)?4:side*1.6,ax=a.x+nx*off,az=a.z+nz*off,bx=b.x+nx*off,bz=b.z+nz*off;
    const terrainA=hongKongTerrainHeight(ax,az),terrainB=hongKongTerrainHeight(bx,bz);
    const roadA=fullRoadSurfaceAt(ax,az,.35,terrainA),roadB=fullRoadSurfaceAt(bx,bz,.35,terrainB);
