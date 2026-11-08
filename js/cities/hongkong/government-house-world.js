@@ -168,6 +168,31 @@ export function buildGovernmentHouse(scene) {
   cylinder(urns,[x,y+.34,z],.48,.68,12,.58);sphere(shrubs,[x,y+1.05,z],.62,12);
  }
  merged(group,urns,mat.stone,'Government House forecourt planters');merged(group,shrubs,foliage,'Government House forecourt shrubs');
+ // Formal low planting in the mapped drive's central island, inspired by the
+ // official gate photo. Positions and species are illustrative, not a plan.
+ // Every clump is sampled with clearance from roads; nothing changes ground height.
+ const gardenGreen=[],gardenPink=[],gardenWhite=[],gardenYellow=[],gardenPlants=[];
+ const pink=new THREE.MeshStandardMaterial({color:0xc96682,roughness:1});
+ const white=new THREE.MeshStandardMaterial({color:0xd4cbbd,roughness:1});
+ const yellow=new THREE.MeshStandardMaterial({color:0xbfa548,roughness:1});
+ function gardenClump(x,z,r,kind){
+  const p=harbourCityLocalToWorld(SITE,x,z),raw=hongKongTerrainHeight(p.x,p.z);
+  if(fullRoadSurfaceAt(p.x,p.z,r+1.2,raw))return;
+  const y=raw-base;gardenPlants.push({x,z,r});
+  if(kind==='hedge')sphere(gardenGreen,[x,y+r*.58,z],r,10);
+  else {sphere(gardenGreen,[x,y+.14,z],r*.75,8);
+   const target=kind==='pink'?gardenPink:kind==='white'?gardenWhite:gardenYellow;
+   for(let i=0;i<5;i++){const a=i*Math.PI*2/5; sphere(target,[x+Math.cos(a)*r*.36,y+.29+(i%2)*.06,z+Math.sin(a)*r*.36],.09,8);}
+  }
+ }
+ // Two staggered bands of low shrubs and flowering clumps; the centre is kept open.
+ for(const z of [29,39])for(let x=-1;x<=20;x+=1.5)gardenClump(x,z,.46,'hedge');
+ for(const z of [30.25,37.75])for(let x=.5;x<=19;x+=1.25)gardenClump(x,z,.38,['pink','white','yellow'][Math.floor((x+.5)*4)%3]);
+ merged(group,gardenGreen,foliage,'Government House garden island low planting',false);
+ merged(group,gardenPink,pink,'Government House garden pink flowers',false);
+ merged(group,gardenWhite,white,'Government House garden pale flowers',false);
+ merged(group,gardenYellow,yellow,'Government House garden yellow flowers',false);
+ group.userData.gardenPlantSamples=gardenPlants;
  // Small paved approach: sampled from the same height function as player ground.
  const apron=store();
  const height=(x,z)=>{const w=harbourCityLocalToWorld(SITE,x,z),raw=hongKongTerrainHeight(w.x,w.z);return governmentHouseApronHeight(w.x,w.z,raw,base)-base+.015;};
@@ -239,5 +264,5 @@ export function buildGovernmentHouse(scene) {
  merged(group,lodgeWalls,mat.plaster,'Government House paired gate lodge walls');merged(group,lodgeRoof,green,'Government House green gate lodge roofs');merged(group,lodgeTrim,mat.stone,'Government House gate lodge cornices');merged(group,lodgeGlass,mat.deep,'Government House gate lodge doors');merged(group,lodgeColumns,mat.trim,'Government House gate lodge classical columns');
  colliders.push(harbourCityLocalCollider(SITE,18,-9,7.3,7.3,base+9,base+25.5));
  const landmark={name:'香港禮賓府',englishName:'Government House',x:SITE.x,z:SITE.z,w:SITE.w,d:SITE.d,h:25.5,ring:SITE.ring,bounds:SITE.bounds,osmId:SITE.osmId,kind:'landmark',labelHeight:false};
- return {group,colliders,landmarks:[landmark],stats:{governmentHouseWindows:windowCount,governmentHouseRoofs:5,governmentHouseTowerHeight:25.5,governmentHouseGateLodges:lodges,governmentHouseApronCells:apronCells,governmentHouseBoundarySegments:wallColliders.length},base,groundHeightAt:(x,z,raw)=>governmentHouseApronHeight(x,z,raw,base)};
+ return {group,colliders,landmarks:[landmark],stats:{governmentHouseWindows:windowCount,governmentHouseRoofs:5,governmentHouseTowerHeight:25.5,governmentHouseGateLodges:lodges,governmentHouseApronCells:apronCells,governmentHouseBoundarySegments:wallColliders.length,governmentHouseGardenClumps:gardenPlants.length},base,groundHeightAt:(x,z,raw)=>governmentHouseApronHeight(x,z,raw,base)};
 }
