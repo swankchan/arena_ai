@@ -26,38 +26,21 @@ function renderCityCards() {
     card.className = 'city-card';
     card.dataset.city = city.id;
 
-    const badge = document.createElement('span');
-    badge.className = 'city-card-badge';
-    badge.textContent = city.badge;
-
-    const name = document.createElement('span');
-    name.className = 'city-card-name';
-    name.textContent = city.name;
-
-    const tagline = document.createElement('span');
-    tagline.className = 'city-card-tagline';
-    tagline.textContent = city.tagline;
-
-    const description = document.createElement('span');
-    description.className = 'city-card-description';
-    description.textContent = city.description;
-
     const cta = document.createElement('span');
     cta.className = 'city-card-cta';
-    cta.textContent = 'Enter city →';
-
+    cta.textContent = '進入香港';
+    const english = document.createElement('span');
+    english.className = 'city-card-english';
+    english.textContent = 'ENTER THE CITY';
+    const arrow = document.createElement('span');
+    arrow.className = 'city-card-arrow';
+    arrow.setAttribute('aria-hidden', 'true');
+    arrow.textContent = '↗';
+    card.setAttribute('aria-label', `進入 ${city.name}`);
+    // Keep the taxi style lookup local to the selected city, without adding another choice to the cover.
     const taxiStyle = getTaxiStyle(city.taxiStyle);
-    if (taxiStyle) {
-      const taxi = document.createElement('span');
-      taxi.className = 'city-card-taxi';
-      const dot = document.createElement('span');
-      dot.className = 'city-card-taxi-dot';
-      dot.style.background = `#${taxiStyle.paint.toString(16).padStart(6, '0')}`;
-      taxi.append(dot, document.createTextNode(taxiStyle.label));
-      card.append(badge, name, tagline, description, taxi, cta);
-    } else {
-      card.append(badge, name, tagline, description, cta);
-    }
+    if (taxiStyle) card.dataset.taxiStyle = city.taxiStyle;
+    card.append(cta, english, arrow);
     card.addEventListener('click', () => selectCity(city.id));
     list.appendChild(card);
   }
@@ -145,5 +128,5 @@ for (const { id, tsl } of exportButtons) {
 const requestedCity = new URLSearchParams(window.location.search).get('city');
 if (requestedCity) {
   if (getCity(requestedCity)) selectCity(requestedCity);
-  else setPickerStatus(`Unknown city “${requestedCity}”. Choose a city below.`, true);
+  else setPickerStatus(`Unknown city “${requestedCity}”. Enter Hong Kong below.`, true);
 }

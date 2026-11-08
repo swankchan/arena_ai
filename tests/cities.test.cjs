@@ -60,3 +60,18 @@ test('the home screen exposes the city picker before the simulation starts', () 
   assert.deepEqual(staticImports, ['./cities/registry.js', './taxi-styles.js', './exports/building-catalog.js']);
   assert.match(main, /import\('\.\/app\.runtime\.js'\)/, 'the self-contained 3D runtime loads after the lightweight entry');
 });
+
+test('Hong Kong cover keeps direct entry and model export available without a city-choice heading', () => {
+  const html = read('index.html');
+  const main = read('js/main.js');
+  const css = read('css/style.css');
+  assert.doesNotMatch(html, /Choose a city/i);
+  assert.match(html, /HONG<\/span><span>KONG/);
+  assert.match(html, /<details class="model-export">/);
+  assert.match(html, /id="model-search"/);
+  assert.match(html, /id="export-building-tsl"/);
+  assert.match(main, /card\.addEventListener\('click', \(\) => selectCity\(city\.id\)\)/);
+  assert.match(main, /get\('city'\)/);
+  assert.match(css, /hong-kong-cover\.jpg/);
+  assert.ok(require('node:fs').existsSync(join(__dirname, '../assets/hong-kong-cover.jpg')));
+});

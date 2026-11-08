@@ -27,7 +27,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,400..800&amp;family=Overpass:wght@600;700&amp;display=swap" />
-  <link rel="stylesheet" href="./css/style.css?v=20261101-weather-ui" />
+  <link rel="stylesheet" href="./css/style.css?v=20261024-hk-cover" />
 </head>
 <body>
   <!-- Icon sprite (24 × 24 stroke icons, drawn in currentColor) -->
@@ -64,28 +64,43 @@
     </defs>
   </svg>
 
-  <!-- Home Screen: city picker (cards are generated from js/cities/registry.js) -->
+  <!-- Home: Hong Kong cover; the lightweight city entry remains registry-driven. -->
   <div id="start-overlay" class="start-overlay">
     <div class="start-panel">
-      <div class="start-kicker">Slop Cities</div>
-      <h1 class="start-title">Choose a city</h1>
-      <p class="start-lede">Explore Hong Kong from real geodata.</p>
-      <div id="city-cards" class="city-cards"></div>
-      <p id="city-picker-status" class="city-picker-status" role="status" aria-live="polite" hidden></p>
-      <section class="model-export" aria-labelledby="model-export-title">
-        <h2 id="model-export-title">Three.js Editor 模型匯出（試驗）</h2>
-        <p>選擇已支援的建物，不用載入完整香港場景。部分建物需下載較多地圖資料；大型模型檔案可能很大。</p>
-        <label for="model-search">搜尋建物</label>
-        <input id="model-search" type="search" placeholder="輸入名稱 Search" autocomplete="off">
-        <label for="model-select">選擇建物</label>
-        <select id="model-select" aria-label="選擇要匯出的建物"></select>
-        <div class="model-export-actions">
-          <button id="export-building" type="button">下載普通材質 JSON</button>
-          <button id="export-building-tsl" type="button">下載 TSL JSON（實驗）</button>
+      <header class="cover-header">
+        <div class="cover-brand"><span class="cover-brand-mark" aria-hidden="true">S<span>·</span>C</span><span> SLOP CITIES <small>城市探索</small></span></div>
+        <span class="cover-header-note"><span class="cover-live-dot"></span> HONG KONG EDITION</span>
+      </header>
+      <main class="cover-main">
+        <div class="cover-eyebrow"><span class="cover-line"></span> THE CITY IS YOURS <span class="cover-eyebrow-number">01 / 01</span></div>
+        <h1 class="start-title"><span>HONG</span><span>KONG<span class="cover-title-dot">.</span></span></h1>
+        <div class="cover-chinese">香港 <span> / </span> 自由探索</div>
+        <p class="start-lede">由維港到山頂，穿梭大街小巷。<br><span>One city. Endless ways to explore.</span></p>
+        <div id="city-cards" class="city-cards"></div>
+        <p id="city-picker-status" class="city-picker-status" role="status" aria-live="polite" hidden></p>
+      </main>
+      <aside class="cover-location" aria-label="Hong Kong coordinates"><span class="cover-location-index">HK / 01</span><span>22° 17′ N<br>114° 10′ E</span><span class="cover-location-line"></span><span>VICTORIA<br>HARBOUR</span></aside>
+      <footer class="cover-footer">
+        <div class="cover-footer-intro"><span class="cover-footer-label">EXPLORE YOUR WAY</span><span>行走 · 駕駛 · 踏單車 · 飛行</span></div>
+        <div class="cover-footer-meta"><span>OPEN WORLD EXPERIENCE</span><span>香港 / HONG KONG</span></div>
+      </footer>
+      <details class="model-export">
+        <summary><span>MODEL LAB <small>模型匯出（試驗）</small></span><span aria-hidden="true">＋</span></summary>
+        <div class="model-export-body">
+          <h2 id="model-export-title">Three.js Editor 模型匯出（試驗）</h2>
+          <p>選擇已支援的建物，不用載入完整香港場景。部分建物需下載較多地圖資料；大型模型檔案可能很大。</p>
+          <label for="model-search">搜尋建物</label>
+          <input id="model-search" type="search" placeholder="輸入名稱 Search" autocomplete="off">
+          <label for="model-select">選擇建物</label>
+          <select id="model-select" aria-label="選擇要匯出的建物"></select>
+          <div class="model-export-actions">
+            <button id="export-building" type="button">下載普通材質 JSON</button>
+            <button id="export-building-tsl" type="button">下載 TSL JSON（實驗）</button>
+          </div>
+          <p>普通版可用 Editor 匯入，但複雜材質、夜燈會簡化；合併的窗戶不能逐個選取。TSL 版不能用 Editor r187 普通匯入器還原，亦不連接遊戲日夜控制。</p>
+          <p id="model-export-status" role="status" aria-live="polite"></p>
         </div>
-        <p>普通版可用 Editor 匯入，但複雜材質、夜燈會簡化；合併的窗戶不能逐個選取。TSL 版不能用 Editor r187 普通匯入器還原，亦不連接遊戲日夜控制。</p>
-        <p id="model-export-status" role="status" aria-live="polite"></p>
-      </section>
+      </details>
     </div>
   </div>
 

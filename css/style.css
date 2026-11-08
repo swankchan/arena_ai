@@ -1721,3 +1721,89 @@ body.touch-enabled .instrument { width: 113px; flex-basis: 113px; }
 .model-export label { display: block; margin: 10px 0 4px; color: var(--text-2); font-size: 12px; }
 .model-export input, .model-export select { width: 100%; padding: 9px; border: 1px solid var(--glass-border); border-radius: 8px; background: #20252b; color: #f4f6f5; }
 .model-export-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
+
+/* Hong Kong cover: an editorial title page, not a city selection menu. */
+.start-overlay {
+  display: block;
+  padding: 0;
+  color: #f4f2eb;
+  background: #091419;
+  isolation: isolate;
+}
+.start-overlay::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  z-index: -2;
+  background: url('../assets/hong-kong-cover.jpg') center 55% / cover no-repeat;
+}
+.start-overlay::after {
+  content: '';
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  background: linear-gradient(90deg, rgba(4, 14, 18, .94) 0%, rgba(4, 14, 18, .79) 27%, rgba(4, 14, 18, .16) 72%),
+    linear-gradient(0deg, #091419 0%, rgba(4, 14, 18, .05) 39%, rgba(4, 14, 18, .34) 100%);
+}
+.start-panel { width: min(1600px, 100%); min-height: 100%; margin: 0 auto; padding: 35px 5.2vw 30px; display: flex; position: relative; gap: 0; }
+.cover-header { display: flex; align-items: center; justify-content: space-between; gap: 20px; }
+.cover-brand { display: flex; align-items: center; gap: 13px; font-size: 12px; font-weight: 800; letter-spacing: .17em; line-height: 1; }
+.cover-brand small { display: block; margin-top: 6px; font-size: 9px; color: #b0c0bf; font-weight: 500; letter-spacing: .23em; }
+.cover-brand-mark { display: flex; align-items: center; justify-content: center; width: 43px; height: 43px; border: 1px solid rgba(232, 238, 226, .55); font-size: 13px; letter-spacing: -.08em; }
+.cover-brand-mark span { color: #e95f47; }
+.cover-header-note, .cover-eyebrow, .cover-location, .cover-footer-label, .cover-footer-meta { font-size: 10px; font-weight: 700; letter-spacing: .18em; }
+.cover-header-note { display: flex; align-items: center; gap: 9px; color: #c6d2d0; }
+.cover-live-dot { width: 6px; height: 6px; border-radius: 50%; background: #ed735b; box-shadow: 0 0 12px #ed735b; }
+.cover-main { padding: clamp(90px, 14vh, 175px) 0 clamp(90px, 15vh, 175px); max-width: 690px; }
+.cover-eyebrow { display: flex; align-items: center; gap: 13px; color: #d4dfd9; }
+.cover-line { width: 32px; height: 2px; background: #e8735a; }
+.cover-eyebrow-number { color: #94a6a5; margin-left: 18px; }
+.start-title { margin: 22px 0 0; font-size: clamp(74px, 11.2vw, 160px); line-height: .77; font-weight: 800; letter-spacing: -.075em; }
+.start-title > span { display: block; }
+.start-title > span + span { margin-top: .16em; }
+.cover-title-dot { color: #ed735b; }
+.cover-chinese { margin-top: 27px; font-size: 17px; letter-spacing: .2em; font-weight: 600; color: #e5e9e3; }
+.cover-chinese span { color: #e8735a; margin: 0 8px; }
+.start-lede { margin: 23px 0 27px; color: #dce3df; font-size: 14px; line-height: 1.85; letter-spacing: .03em; }
+.start-lede span { color: #a3b4b2; font-size: 12px; letter-spacing: .04em; }
+.city-cards { display: flex; gap: 10px; }
+.city-card { display: inline-flex; flex-direction: row; align-items: center; gap: 14px; min-height: 60px; padding: 0 8px 0 21px; border: 1px solid #f0eee6; border-radius: 0; background: #f0eee6; color: #111e20; box-shadow: none; backdrop-filter: none; cursor: pointer; }
+.city-card:hover, .city-card:focus-visible { transform: translateY(-3px); background: #fff; border-color: #fff; }
+.city-card:focus-visible { outline: 3px solid #ef8c73; outline-offset: 4px; }
+.city-card-cta { margin: 0; font-size: 14px; font-weight: 750; letter-spacing: .08em; }
+.city-card:hover .city-card-cta, .city-card:focus-visible .city-card-cta { color: inherit; }
+.city-card-english { font-size: 9px; font-weight: 750; letter-spacing: .13em; color: #536463; }
+.city-card-arrow { display: grid; place-items: center; width: 43px; height: 43px; margin-left: 17px; background: #db614d; color: white; font-size: 21px; font-weight: 400; }
+.city-picker-status { max-width: 520px; margin-top: 16px; background: rgba(5, 19, 23, .85); }
+.cover-location { position: absolute; right: 5.2vw; top: 43%; display: flex; flex-direction: column; align-items: flex-end; gap: 18px; color: #d9e3df; text-align: right; line-height: 1.7; }
+.cover-location-index { color: #ed8a72; }
+.cover-location-line { height: 60px; width: 1px; background: rgba(235, 240, 234, .45); }
+.cover-footer { display: flex; align-items: flex-end; justify-content: space-between; gap: 25px; padding: 22px 0; border-top: 1px solid rgba(237, 244, 237, .28); }
+.cover-footer-intro, .cover-footer-meta { display: flex; flex-direction: column; gap: 9px; }
+.cover-footer-label { color: #ec8b75; }
+.cover-footer-intro > span:last-child { color: #e7eeeb; font-size: 12px; letter-spacing: .12em; }
+.cover-footer-meta { text-align: right; color: #a7b7b5; font-size: 9px; }
+.model-export { margin: 0; padding: 0; border: 1px solid rgba(236, 244, 237, .22); border-radius: 0; background: rgba(9, 21, 25, .76); }
+.model-export summary { display: flex; align-items: center; justify-content: space-between; gap: 15px; padding: 14px 17px; cursor: pointer; color: #edf0e9; font-size: 10px; font-weight: 750; letter-spacing: .14em; list-style: none; }
+.model-export summary::-webkit-details-marker { display: none; }
+.model-export summary small { color: #aebdb8; font-weight: 500; font-size: 11px; letter-spacing: .03em; margin-left: 8px; }
+.model-export summary:focus-visible { outline: 2px solid #ec8b75; outline-offset: -3px; }
+.model-export[open] summary { border-bottom: 1px solid rgba(236, 244, 237, .15); }
+.model-export-body { max-width: 740px; padding: 18px; }
+.model-export button { background: #e4e9e1; color: #142323; }
+@media (max-width: 700px) {
+  .start-overlay::before { background-position: 61% center; }
+  .start-overlay::after { background: linear-gradient(90deg, rgba(4, 14, 18, .9), rgba(4, 14, 18, .38)), linear-gradient(0deg, #091419 0%, transparent 60%); }
+  .start-panel { padding: 23px 24px 24px; }
+  .cover-header-note { font-size: 8px; letter-spacing: .12em; }
+  .cover-main { padding: 105px 0 85px; }
+  .start-title { font-size: clamp(68px, 16vw, 110px); }
+  .cover-location { display: none; }
+  .cover-footer { align-items: flex-start; }
+  .cover-footer-meta { font-size: 8px; }
+}
+@media (max-width: 380px) {
+  .cover-brand { font-size: 10px; }
+  .cover-header-note { font-size: 7px; }
+  .city-card-english { display: none; }
+}
