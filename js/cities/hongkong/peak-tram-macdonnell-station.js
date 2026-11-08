@@ -1,11 +1,11 @@
 import * as THREE from 'three/webgpu';
 import {color} from 'three/tsl';
 import {beam,box,merged,quad,store,meshStore,nightAmount} from './harbour-city-world-utils.js';
-import {KENNEDY_APPROACH_POINTS as route,MACDONNELL_PLATFORM_START} from './peak-tram-kennedy-approach-site.js';
+import {KENNEDY_APPROACH_POINTS as route,MACDONNELL_PLATFORM_START,MACDONNELL_PLATFORM_END} from './peak-tram-kennedy-approach-site.js';
 
 // Provisional visual station on the experimental route, not a survey. The
 // uphill OSM node is treated as an approximate platform end, not its centre.
-export const MACDONNELL_PLATFORM_END=route.at(-1).s;
+export {MACDONNELL_PLATFORM_END};
 export function macDonnellTrackPoint(s){
  const d=Math.max(MACDONNELL_PLATFORM_START,Math.min(MACDONNELL_PLATFORM_END,s));
  let i=route.findIndex(p=>p.s>=d);i=Math.max(1,i);const a=route[i-1],b=route[i];
