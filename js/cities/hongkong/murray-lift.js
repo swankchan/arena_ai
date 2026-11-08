@@ -16,7 +16,7 @@ export function createMurrayLiftMotion(){return {y:E.lobby,target:E.lobby,wait:0
 export function advanceMurrayLiftMotion(s,dt,inside,callAt=null){
  const step=Math.max(0,Math.min(.1,Number.isFinite(dt)?dt:0));
  if(s.moving){const diff=s.target-s.y;s.y+=Math.sign(diff)*Math.min(Math.abs(diff),E.speed*step);if(Math.abs(s.target-s.y)<1e-7){s.y=s.target;s.moving=false;s.armed=false;s.wait=0;}return s;}
- if(!inside){s.armed=true;if((callAt===E.lobby||callAt===E.gallery||callAt===E.roof)&&s.y!==callAt){s.wait+=step;if(s.wait>=E.wait){s.target=callAt;s.moving=true;s.wait=0;}}else s.wait=0;return s;}
+ if(!inside){s.armed=true;if((callAt===E.lobby||callAt===E.gallery||callAt===E.roof)&&s.y!==callAt){s.wait+=step;if(s.wait>=E.wait){s.target=callAt;s.direction=Math.sign(callAt-s.y);s.moving=true;s.wait=0;}}else s.wait=0;return s;}
  // At the intermediate landing an occupant may stay aboard; after five seconds
  // the journey continues in the same direction. At the end landings they must exit.
  if(!s.armed&&s.y===E.gallery){s.wait+=step;if(s.wait>=5){s.target=s.direction>0?E.roof:E.lobby;s.moving=true;s.wait=0;}return s;}

@@ -124,3 +124,12 @@ test('01 gallery is reached from lift and is continuous around the core',async()
  assert.equal(E.murrayRoofHeight(p.x,p.z,0,y,b.datum,{y:G.MURRAY_GALLERY.floor-1}),y);
  assert.equal(G.murrayGalleryGroundHeight(p.x,p.z,1,y+10,b.datum),1);
 });
+test('a gallery recall preserves the direction from either end and the intermediate cover follows the car',async()=>{
+ const E=await import('../js/cities/hongkong/murray-lift.js'),L=E.MURRAY_LIFT,s=E.createMurrayLiftMotion();
+ for(let i=0;i<21;i++)E.advanceMurrayLiftMotion(s,.1,false,L.roof);for(let i=0;i<200;i++)E.advanceMurrayLiftMotion(s,.1,false,L.roof);assert.equal(s.y,L.roof);
+ for(let i=0;i<21;i++)E.advanceMurrayLiftMotion(s,.1,false,L.gallery);for(let i=0;i<200;i++)E.advanceMurrayLiftMotion(s,.1,false,L.gallery);assert.equal(s.y,L.gallery);assert.equal(s.direction,-1);
+ for(let i=0;i<21;i++)E.advanceMurrayLiftMotion(s,.1,true);assert.equal(s.target,L.lobby);assert.equal(s.moving,true);
+ const lift=b.lift;Object.assign(lift.state,E.createMurrayLiftMotion());const manager={activeMode:'car',entities:{}};lift.update(.1,manager);
+ const cover=b.group.getObjectByName('The Murray lift gallery safety cover');assert.equal(cover.visible,true);
+ lift.state.y=L.gallery;lift.update(.1,manager);assert.equal(cover.visible,false);
+});
