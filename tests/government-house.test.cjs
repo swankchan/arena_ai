@@ -30,6 +30,11 @@ test('north verandah has separate arched insets, surrounds and parapet vents',()
   const mesh=b.group.getObjectByName(name);assert.ok(mesh,name);const p=mesh.geometry.getAttribute('position');assert.ok(p.count>100);for(const value of p.array)assert.ok(Number.isFinite(value));
  }
 });
+test('north roof has gabled dormers with roof and vent details',()=>{
+ const b=M.buildGovernmentHouse(new T.Group());for(const name of ['Government House north roof dormer gables','Government House north dormer tiled roofs','Government House north dormer roof edges','Government House north dormer vents']){
+  const mesh=b.group.getObjectByName(name);assert.ok(mesh,name);const p=mesh.geometry.getAttribute('position');assert.ok(p.count>=9);for(const v of p.array)assert.ok(Number.isFinite(v));
+ }
+});
 test('gate lodge roofs include fascia and visible metal ribs',()=>{
  const b=M.buildGovernmentHouse(new T.Group());for(const name of ['Government House gate lodge dark roof fascia','Government House gate lodge green roof ribs']){
   const mesh=b.group.getObjectByName(name);assert.ok(mesh,name);assert.ok(mesh.geometry.getAttribute('position').count>50);

@@ -83,6 +83,24 @@ export function buildGovernmentHouse(scene) {
   for(let i=1;i<n;i++){let dx=-half+i*w/n,rx=Math.max(-ridge,Math.min(ridge,dx));beam(tiles,[x+dx,y+.03,z-hz],[x+rx,y+rise+.03,z],.035,.035);beam(tiles,[x+dx,y+.03,z+hz],[x+rx,y+rise+.03,z],.035,.035);}
  }
  merged(group,roofs,mat.roof,'Government House dark hipped tiled roofs');merged(group,tiles,mat.roofEdge,'Government House roof tile seams',false);
+ // Small gabled roof vents are visible above the north verandah in the
+ // archived photographs. Spacing, dimensions and roofing are estimates.
+ const dormerGables=[],dormerRoofs=[],dormerTrims=[],dormerVents=[];
+ for(const x of [-10,4,18]){
+  const z=-21.15,y=9.60,w=2.1,rise=.85,back=z+2.1;
+  dormerGables.push(gable(x,z,y,w,rise));
+  const verts=[x-w/2,y,z,x,y+rise,z,x,y+rise+.35,back, x-w/2,y,z,x,y+rise+.35,back,x-w/2,y+.35,back,
+               x,y+rise,z,x+w/2,y,z,x+w/2,y+.35,back, x,y+rise,z,x+w/2,y+.35,back,x,y+rise+.35,back];
+  const roof=new THREE.BufferGeometry();roof.setAttribute('position',new THREE.Float32BufferAttribute(verts,3));roof.computeVertexNormals();dormerRoofs.push(roof);
+  beam(dormerTrims,[x-w/2,y,z-.02],[x,y+rise,z-.02],.10,.10);
+  beam(dormerTrims,[x,y+rise,z-.02],[x+w/2,y,z-.02],.10,.10);
+  for(const offset of [-.24,0,.24])box(dormerVents,[x+offset,y+.23,z-.04],[.11,.31,.08]);
+ }
+ merged(group,dormerGables,mat.plaster,'Government House north roof dormer gables',false);
+ merged(group,dormerRoofs,mat.roof,'Government House north dormer tiled roofs',false);
+ merged(group,dormerTrims,mat.roofEdge,'Government House north dormer roof edges',false);
+ merged(group,dormerVents,mat.deep,'Government House north dormer vents',false);
+
  box(details,[18,15.5,-9],[7.3,17,7.3]);box(details,[-24,10.7,-10],[3.3,3.4,3.3]);box(details,[18,22.8,-9],[8.5,.38,8.5]);
  merged(group,details,mat.plaster,'Government House central landmark tower and balcony');
  // Projecting rounded balcony/crown, rather than a hard-edged block. Its
