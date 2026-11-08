@@ -47,3 +47,11 @@ test('bridge-side lobby floor is continuous and bounded, with night fittings',()
  const inside=geo.harbourCityLocalToWorld(s,3,18);assert.equal(tower.groundHeightAt(inside.x,inside.z,5,5),5);
  const outside=geo.harbourCityLocalToWorld(s,3,11);assert.equal(tower.groundHeightAt(outside.x,outside.z,5,A.OBRIEN_DECK_HEIGHT),5);
 });
+test('city lamp poles and arms overlapping HF95 are identified without affecting distant lamps',async()=>{
+ const {HK_STREET_LIGHTS:l}=await import('../js/hk-street-light-data.js');const {HK_STREET_LIGHT_CLEARANCE:c}=await import('../js/hk-street-light-clearance-data.js');
+ const overrides=new Map(c.overrides.map(a=>[a[0],a])),suppressed=new Set(c.suppressed),ids=[];
+ for(let i=0;i<l.lamps.length;i++){if(suppressed.has(i))continue;const [x,z,h,n]=l.lamps[i],o=overrides.get(i);if(A.obrienLampConflicts(x+(o?.[1]||0)/100,z+(o?.[2]||0)/100,h,n))ids.push(i);}
+ assert.deepEqual(ids,[109662,109663,109746,109934,109935,111026,111031]);
+ assert.equal(A.obrienLampConflicts(0,0,0,1),false);
+ const src=require('node:fs').readFileSync('js/cities/hongkong/street-lighting.js','utf8');assert.match(src,/applyClearance && obrienLampConflicts/);assert.match(src,/streetLightFootbridgeSuppressed/);
+});

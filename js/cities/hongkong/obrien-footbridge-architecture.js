@@ -28,3 +28,16 @@ export function obrienFootbridgeGroundHeight(x,z,current,referenceY,stairBottomH
  if(referenceY>=OBRIEN_DECK_HEIGHT-.8 && referenceY<=OBRIEN_DECK_HEIGHT+2.5 && segments.some(([a,b])=>segmentProjection(p,a,b).distance<=OBRIEN_WIDTH/2))return OBRIEN_DECK_HEIGHT;
  return current;
 }
+
+// The generic 9.6 m street-lamp model rises through this bridge. Check its
+// pole and arm footprint with a conservative head margin, not just the base.
+// Only applied to surveyed city lamps, not synthetic caller-provided lamps.
+export function obrienLampConflicts(x,z,heading,arms){
+ if(x<1350||x>1440||z<245||z>520)return false;
+ const segments=[...OBRIEN_ROUTE.slice(0,-1).map((a,i)=>[a,OBRIEN_ROUTE[i+1],OBRIEN_WIDTH/2]),[OBRIEN_STAIR.top,OBRIEN_STAIR.junction,OBRIEN_STAIR_WIDTH/2],[OBRIEN_STAIR.bottom,OBRIEN_STAIR.top,OBRIEN_STAIR_WIDTH/2]];
+ for(let arm=0;arm<arms;arm++)for(let j=0;j<=10;j++){
+  const d=j*.25,h=heading+arm*Math.PI,p={x:x+Math.sin(h)*d,z:z+Math.cos(h)*d};
+  if(segments.some(([a,b,w])=>segmentProjection(p,a,b).distance<w+.2))return true;
+ }
+ return false;
+}
