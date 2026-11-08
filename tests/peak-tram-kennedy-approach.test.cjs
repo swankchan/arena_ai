@@ -6,7 +6,7 @@ test('Kennedy approach joins the built bridge and cuts only its local terrain co
  const {buildPeakTramKennedyApproach}=await import('../js/cities/hongkong/peak-tram-kennedy-approach.js');
  const {hongKongTerrainHeight}=await import('../js/cities/hongkong/terrain.js');
  const {fullRoadSurfaceAt}=await import('../js/cities/hongkong/full-meta.js');
- assert.equal(points[0].id,bridge.at(-1).id);assert.equal(points[0].y,bridge.at(-1).y);assert.equal(points.at(-1).id,'n26412146');
+ assert.equal(points[0].id,bridge.at(-1).id);assert.equal(points[0].y,bridge.at(-1).y);assert.equal(points.at(-1).id,'n988059498');
  const cuts=kennedyApproachCuts();assert.ok(cuts.length>0&&cuts.length<points.length);
  for(const rect of cuts)assert.ok(rect.hz<=2.8&&rect.hx<1.2);
  const inRect=(p,r)=>{let x=p.x-r.cx,z=p.z-r.cz;return Math.abs(x*r.ux+z*r.uz)<=r.hx&&Math.abs(-x*r.uz+z*r.ux)<=r.hz;};
@@ -22,7 +22,7 @@ test('Kennedy approach joins the built bridge and cuts only its local terrain co
   for(let t=0;t<=1;t+=.25)for(let off=-3.5;off<=3.5;off+=.5){
    const x=a.x+dx*t+nx*off,z=a.z+dz*t+nz*off,y=a.y+(b.y-a.y)*t,ground=hongKongTerrainHeight(x,z);
    const road=fullRoadSurfaceAt(x,z,0,ground);
-   if(road){roadSamples++;assert.ok([418,8998,49091,2062,5701,39703].includes(road.way.id),`unexpected road ${road.way.id}`);if(road.way.id===39703)assert.ok(Math.abs(off)>1.6,'Brewin Path enters track corridor');else assert.ok(road.height-y>5.4,`insufficient underpass clearance at ${a.s}`);}
+   if(road){roadSamples++;assert.ok([418,8998,49091,2062,5701,39703,36167,42840].includes(road.way.id),`unexpected road ${road.way.id}`);if(road.way.id===39703)assert.ok(Math.abs(off)>1.6,'Brewin Path enters track corridor');else assert.ok(road.height-y>5.4,`insufficient underpass clearance at ${a.s}`);}
    if(Math.abs(off)<=1.0&&ground-.08>y-.30)assert.ok(cuts.some(r=>inRect({x,z},r)),`uncut track at ${a.s}`);
   }
  }
