@@ -62,18 +62,22 @@ function createArcade(site, options) {
         const middle = (bay + 0.5) / bays;
         if (options.skip?.(edge, level, middle)) continue;
         const portal = options.portal?.(edge, level, middle);
+        const rectangular = options.rectangular?.(edge, level, middle);
+        const openGallery = options.openGallery?.(edge, level, middle);
         const width = Math.min(length / bays * 0.74, options.maxOpening ?? 3.1), radius = width / 2;
-        if (!portal) placeFacadeGeometry(glass, archPanelGeometry(width, height), site, edge, middle, 0.035).translate(0, base + 0.16, 0);
+        if (!portal && !openGallery) placeFacadeGeometry(glass, archPanelGeometry(width, height), site, edge, middle, 0.035).translate(0, base + 0.16, 0);
         const shoulder = height - radius;
         for (const side of [-1, 1]) edgeBox(piers, site, edge, middle + side * radius / length,
           base + 0.16 + shoulder * 0.5, 0.11, 0.17, shoulder, 0.28);
-        for (let segment = 0; segment < 12; segment++) {
+        if (rectangular) {
+          edgeBox(arches, site, edge, middle, base + height + 0.05, 0.13, width, 0.22, 0.25);
+        } else for (let segment = 0; segment < 12; segment++) {
           const a = segment / 12 * Math.PI, b = (segment + 1) / 12 * Math.PI;
           const pa = point(site, edge, middle + Math.cos(a) * radius / length, base + 0.16 + shoulder + Math.sin(a) * radius, 0.13);
           const pb = point(site, edge, middle + Math.cos(b) * radius / length, base + 0.16 + shoulder + Math.sin(b) * radius, 0.13);
           beam(arches, pa, pb, 0.19, 0.25);
         }
-        edgeBox(arches, site, edge, middle, base + 0.16 + height + 0.06, 0.15, 0.30, 0.30, 0.34);
+        if (!rectangular) edgeBox(arches, site, edge, middle, base + 0.16 + height + 0.06, 0.15, 0.30, 0.30, 0.34);
         archCount++;
         if (options.balustrades && (level > 0 || options.groundBalustrades)) {
           edgeBox(rails, site, edge, middle, base + 0.24, 0.32, length / bays * 0.82, 0.13, 0.22);
@@ -119,8 +123,17 @@ function buildMainBuilding(root, base, materials) {
   meshFromGeometry(group, ringShellGeometry(scaledRing(inner, 1.10), 16, 24, false), materials.dark,
     'Main Building — recessed upper walls around the real inner courtyard');
   const outer = addArcade(group, site, { y0: 12, levels: 3, floorHeight: 4, bayWidth: 3.55, balustrades: true,
-    portal: (edge, level, middle) => edge === 9 && level === 0 && Math.abs(middle - 0.5) < 0.08 }, materials, 'Main Building outer three-gallery verandah');
+    portal: (edge, level, middle) => edge === 9 && level === 0 && Math.abs(middle - 0.5) < 0.08,
+    rectangular: (edge, level) => edge === 9 && level > 0,
+    openGallery: (edge, level) => edge === 9 && level > 0 }, materials, 'Main Building outer three-gallery verandah');
   const courtyard = addArcade(group, innerSite, { y0: 12, levels: 3, floorHeight: 4, bayWidth: 3.35, balustrades: true }, materials, 'Main Building inner courtyard verandah');
+  // Warm lights illuminate the south verandah without making the whole stone shell emissive.
+  const galleryLights = [], frontLength = harbourCityEdgeOutward(site.localRing, 9).length;
+  const count = Math.max(1, Math.round(frontLength / 3.55));
+  for (let level = 0; level < 3; level++) for (let i = 0; i < count; i++) {
+    edgeBox(galleryLights, site, 9, (i + 0.5) / count, 15.85 + level * 4, -0.32, 0.36, 0.08, 0.22);
+  }
+  merged(group, galleryLights, materials.warmLight, 'Main Building — warm south verandah downlights', false);
   const cornices = []; ringBand(cornices, site, 24.35, 0.36, 0.26, 0.42); ringBand(cornices, site, 25.55, 0.52, 0.30, 0.48);
   ringBand(cornices, innerSite, 24.35, 0.36, 0.20, 0.34); merged(group, cornices, materials.paleStone, 'Main Building — layered entablature and 26 m parapet datum');
   const quoins = [];
@@ -276,7 +289,9 @@ function buildCourtyardFountain(root, base, materials) {
 export function buildHeritage1881(scene, { groundOffset = 0 } = {}) {
   const root = new THREE.Group(); root.name = '1881 Heritage — authored Former Marine Police Headquarters Compound'; scene.add(root);
   const materials = harbourCityPalette({ stone: [0.67, 0.64, 0.56], paleStone: [0.88, 0.86, 0.78], metal: [0.24, 0.28, 0.28], roof: [0.20, 0.23, 0.24] });
-  materials.archDark = new THREE.MeshStandardMaterial({ color: 0x263334, roughness: 0.34, metalness: 0.22, side: THREE.DoubleSide });
+  materials.warmLight = new THREE.MeshStandardNodeMaterial({ color: 0xe0c7a1, roughness: 0.5 });
+  materials.warmLight.emissiveNode = color(1, 0.64, 0.28).mul(nightAmount()).mul(0.65);
+  materials.archDark = new THREE.MeshStandardNodeMaterial({ color: 0x263334, roughness: 0.34, metalness: 0.22, side: THREE.DoubleSide });
   materials.archDark.emissiveNode = color(0.72, 0.51, 0.27).mul(nightAmount()).mul(0.18);
   materials.ballMetal = new THREE.MeshStandardMaterial({ color: 0xb9c1bd, roughness: 0.26, metalness: 0.82 });
   materials.water = new THREE.MeshStandardMaterial({ color: 0x4f8f98, roughness: 0.16, metalness: 0.30, transparent: true, opacity: 0.82 });

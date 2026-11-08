@@ -1,0 +1,15 @@
+# 1881 Heritage / Former Marine Police Headquarters — reference research
+
+Reviewed 2026-10-24. Images below are reference only, not game textures. Search-result copies may be resized; follow each source's conditions before reuse. Photographs are not measured drawings; seasonal decoration and shop signs change.
+
+| File | Source / rights | Observations |
+| --- | --- | --- |
+| `overview-wpcpey.jpg` | [Wpcpey, 23 February 2014](https://commons.wikimedia.org/wiki/File:1881_Heritage_Overview_201402.jpg), CC BY-SA 4.0, https://creativecommons.org/licenses/by-sa/4.0/ ; resized. Credit Wikipedia user Wpcpey. | Overall Salisbury Road orientation, tower, main building and fire station. |
+| `piazza-night-wpcpey.jpg` | [Wpcpey, 2 October 2014](https://commons.wikimedia.org/wiki/File:1881_Heritage_Night_view2_2014.jpg), CC BY-SA 4.0, https://creativecommons.org/licenses/by-sa/4.0/ ; resized. Credit Wikipedia user Wpcpey. | Warm retail lighting and stone portal, escalators. |
+| `round-house-main-film-office.jpg`, `round-house-aerial-film-office.jpg` | [Hong Kong Film Promotion and Facilitation Section photo 10 and photo 7](https://fpf.ccidahk.gov.hk/en/location/detail.php?id=1546); copyright/permission not established. | Round House white plaster, oculi, wood framed arched window, circular glass surrounds; aerial shows curved stair on adjacent tree planter, not wrapped around the signal tower. |
+| `round-house-snuffy.jpg` | [Snuffy, Flickr](https://www.flickr.com/photos/snuffy/276278843); rights not verified. | Round House front arched doorway, corbels, round window, time-ball. |
+| `fire-station-snuffy.jpg` | [Snuffy, Flickr](https://flickr.com/photos/snuffy/54314663573); rights not verified. | Former Kowloon Fire Station red brick and pale trim. |
+| `front-sassy.jpg` | [Sassy Hong Kong](https://www.sassyhongkong.com/revitalised-buildings-historic-landmarks-sites-hong-kong-culture/); rights not verified. | Main south elevation: ground arches, upper straight lintels and slender columns, arched end pavilions, retail terraces and central access. |
+| `terraces-chestnut.jpg` | [Chestnut Journal](https://chestnutjournal.com/2024/the-1881-heritage/); rights not verified. | Layered stone balustrades, arcaded storefronts and upper main building. |
+
+[Antiquities and Monuments Office](https://www.amo.gov.hk/en/historic-buildings/monuments/kowloon/monuments_51/index.html) states the main building was completed 1884, originally two storeys with the third added in the 1920s; the compound also includes the stable block and signal tower and became a declared monument in 1994. [Film Office](https://fpf.ccidahk.gov.hk/en/location/detail.php?id=1546) identifies Old Kowloon Fire Station and its accommodation as additional elements of the revitalised precinct. These are not modelled as independent surveyed buildings in the existing scene; further footprint/height and collision research is needed. The existing curved-stair location around the Round House is contradicted by the aerial photograph; it needs relocation, including ground and collision handling, not just visual adjustment.

@@ -177,3 +177,17 @@ test('the grand-stair axis has an actual open retail portal and no occupied coll
   const ground = heritage.heritage1881GroundHeightAt(point.x, point.z, 6.133281901137451, 6.133281901137451);
   assert.deepEqual(occupied(world.colliders, point.x, point.z, ground + 0.8), []);
 });
+
+test('south main verandah uses open rectangular upper bays and night-aware glazing', async () => {
+  globalThis.document = { createElement: () => ({ width: 0, height: 0, getContext: () => ({ fillRect() {}, fillText() {} }) }) };
+  const THREE = await import('three/webgpu');
+  const { buildHeritage1881 } = await import('../js/cities/hongkong/heritage-1881-world.js');
+  const world = buildHeritage1881(new THREE.Scene());
+  const light = world.groups.main.getObjectByName('Main Building — warm south verandah downlights');
+  const dark = world.groups.main.getObjectByName('Main Building outer three-gallery verandah — recessed arched glazing and open portals');
+  assert.ok(light && light.material.isNodeMaterial && light.material.emissiveNode);
+  assert.ok(dark && dark.material.isNodeMaterial && dark.material.emissiveNode);
+  const source = fs.readFileSync(path.join(root, 'js/cities/hongkong/heritage-1881-world.js'), 'utf8');
+  assert.match(source, /rectangular: \(edge, level\) => edge === 9 && level > 0/);
+  assert.match(source, /openGallery: \(edge, level\) => edge === 9 && level > 0/);
+});
