@@ -20,6 +20,11 @@ test('tower balcony has rounded geometry and a separate coping',()=>{
  assert.ok(bounds.min.x<13.7&&bounds.max.x>22.3&&bounds.min.z<-13.3&&bounds.max.z>-4.7);
  assert.ok(bounds.min.y>19.8&&bounds.max.y<21);
 });
+test('north verandah has separate arched insets, surrounds and parapet vents',()=>{
+ const b=M.buildGovernmentHouse(new T.Group());for(const name of ['Government House north verandah arched insets','Government House north verandah arch surrounds','Government House north verandah parapet vents']){
+  const mesh=b.group.getObjectByName(name);assert.ok(mesh,name);const p=mesh.geometry.getAttribute('position');assert.ok(p.count>100);for(const value of p.array)assert.ok(Number.isFinite(value));
+ }
+});
 test('nearby sampled road surfaces do not intersect colliders at vehicle height',()=>{
  const b=M.buildGovernmentHouse(new T.Group()),s=A.GOVERNMENT_HOUSE_SITE;let count=0,hits=0;
  for(let x=Math.floor(s.bounds.minX)-30;x<=s.bounds.maxX+30;x++)for(let z=Math.floor(s.bounds.minZ)-30;z<=s.bounds.maxZ+75;z++){

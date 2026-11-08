@@ -43,6 +43,7 @@ export function buildGovernmentHouse(scene) {
   for(const [y,h,off,depth] of [[.18,.32,.10,.20],[4.45,.18,.12,.22],[8.66,.24,.2,.38],[9.02,.18,.3,.6]])edgeBox(cornice,SITE,e,.5,y,off,len+.08,h,depth);
   const bays=Math.max(1,Math.floor(len/4.1));if(len<2.2)continue;
   for(let i=0;i<bays;i++)for(let row=0;row<2;row++){
+   if(e===23)continue; // The long north-facing edge is treated as an arched verandah below.
    const t=(i+.5)/bays,y=2.25+row*4.28,width=Math.min(2.05,len/bays*.56),height=2.35;
    if(row===1&&((e===16&&i===bays-2)||(e===17&&i===1))){edgeBox(loggias,SITE,e,t,y+.22,.10,Math.min(3.2,len/bays*.8),2.7,.15);edgeBox(frames,SITE,e,t,y-1.2,.20,Math.min(3.4,len/bays*.86),.16,.24);windowCount++;continue;}
    edgeBox(windows,SITE,e,t,y,.07,width,height,.09);
@@ -51,6 +52,29 @@ export function buildGovernmentHouse(scene) {
    edgeBox(frames,SITE,e,t,y-height/2-.10,.19,width+.32,.12,.22);windowCount++;
   }
  }
+ // Long rear elevation: arched verandah suggested by the stored north-side
+ // photograph. These are decorative dark insets, not navigable openings; the
+ // mapped edge, bay count and elevations are not a surveyed facade drawing.
+ const rearArch=[],rearFrame=[],rearVents=[];
+ const rearEdge=23,rearLength=harbourCityEdgeOutward(SITE.localRing,rearEdge).length;
+ function rearPoint(t,y,off=.085){return point(SITE,rearEdge,t,y,off);}
+ for(let i=0;i<9;i++){
+  const t=(i+.5)/9,width=2.5,r=width/2,bottom=1.55,spring=4.85,dt=r/rearLength,positions=[];
+  const triangle=(a,b,c)=>positions.push(...a,...b,...c);
+  const l=rearPoint(t-dt,bottom),rr=rearPoint(t+dt,bottom),sl=rearPoint(t-dt,spring),sr=rearPoint(t+dt,spring),mid=rearPoint(t,spring);
+  triangle(l,rr,sr);triangle(l,sr,sl);
+  for(let j=0;j<12;j++){const a=j*Math.PI/12,b=(j+1)*Math.PI/12;
+   triangle(mid,rearPoint(t+Math.cos(a)*dt,spring+r*Math.sin(a)),rearPoint(t+Math.cos(b)*dt,spring+r*Math.sin(b)));
+   beam(rearFrame,rearPoint(t+Math.cos(a)*dt,spring+r*Math.sin(a),.16),rearPoint(t+Math.cos(b)*dt,spring+r*Math.sin(b),.16),.10,.10);
+  }
+  for(const u of [-dt,dt])beam(rearFrame,rearPoint(t+u,bottom,.16),rearPoint(t+u,spring,.16),.10,.10);
+  edgeBox(rearFrame,SITE,rearEdge,t,bottom-.08,.16,width+.28,.16,.22);
+  for(const shift of [-.28,.28])edgeBox(rearVents,SITE,rearEdge,t+shift/rearLength,7.35,.15,.27,.33,.14);
+  const g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.Float32BufferAttribute(positions,3));g.computeVertexNormals();rearArch.push(g);
+ }
+ merged(group,rearArch,mat.glass,'Government House north verandah arched insets');
+ merged(group,rearFrame,mat.stone,'Government House north verandah arch surrounds',false);
+ merged(group,rearVents,mat.deep,'Government House north verandah parapet vents',false);
  const vertex=new THREE.MeshStandardMaterial({vertexColors:true,side:THREE.DoubleSide,roughness:.9});
  meshStore(group,walls,vertex,'Government House two-storey plaster elevations');meshStore(group,foundations,vertex,'Government House terrain-following foundation');merged(group,foundationJoints,mat.stone,'Government House foundation masonry courses',false);
  merged(group,windows,mat.glass,'Government House sash windows');merged(group,loggias,mat.deep,'Government House recessed upper verandah openings');merged(group,frames,mat.trim,'Government House sash frames and glazing bars');merged(group,cornice,mat.stone,'Government House plinth and layered eaves');
