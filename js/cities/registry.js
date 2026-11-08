@@ -2,16 +2,6 @@
 // once it is picked.
 export const CITIES = [
   {
-    id: 'newyork',
-    taxiStyle: 'nyc-medallion',
-    name: 'New York',
-    short: 'NYC',
-    badge: 'Full detail',
-    tagline: 'Manhattan, 125th St to the Battery',
-    description: 'The original city: every real block, landmark, subway entrance and avenue signal from NYC Open Data and OpenStreetMap.',
-    load: () => import('./newyork/index.js')
-  },
-  {
     id: 'hongkong',
     taxiStyle: 'hk-urban',
     name: '香港 Hong Kong',

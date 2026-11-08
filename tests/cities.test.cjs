@@ -7,13 +7,13 @@ const read = (path) => readFileSync(join(__dirname, '..', path), 'utf8');
 let registry;
 test.before(async () => { registry = await import('../js/cities/registry.js'); });
 
-test('the registry offers at least New York and a second city, with unique ids', () => {
+test('the registry offers Hong Kong and Grid City, with unique ids', () => {
   const { CITIES } = registry;
   assert.ok(CITIES.length >= 2);
   const ids = CITIES.map((city) => city.id);
   assert.equal(new Set(ids).size, ids.length);
-  assert.ok(ids.includes('newyork'));
-  assert.ok(ids.some((id) => id !== 'newyork'), 'there is a selectable city other than New York');
+  assert.deepEqual(ids, ['hongkong', 'grid']);
+  assert.equal(registry.getCity('newyork'), null);
   for (const city of CITIES) {
     assert.ok(city.name, `${city.id} has a name`);
     assert.ok(city.tagline, `${city.id} has a tagline`);
