@@ -1,0 +1,7 @@
+const {test}=require('node:test'),assert=require('node:assert/strict');
+test('new hillside grading ranges keep sampled roads untouched and track at ground level',async()=>{
+ const {PEAK_TRAM_GRADE_PATHS:paths,peakTramLoopGrade:grade}=await import('../js/cities/hongkong/peak-tram-loop-grading-site.js'),{hongKongTerrainHeight:g}=await import('../js/cities/hongkong/terrain.js'),{fullRoadSurfaceAt:road}=await import('../js/cities/hongkong/full-meta.js'),{buildPeakTramLoopGrading}=await import('../js/cities/hongkong/peak-tram-loop-grading.js'),T=await import('three/webgpu');let checked=0;
+ for(const path of paths){for(let i=1;i<path.length;i++){const a=path[i-1],b=path[i],dx=b.x-a.x,dz=b.z-a.z,l=Math.hypot(dx,dz),nx=-dz/l,nz=dx/l;for(let t=0;t<=1;t+=.25){const x=a.x+dx*t,z=a.z+dz*t,y=a.y+(b.y-a.y)*t;for(let o=-16;o<=16;o+=.5){const X=x+nx*o,Z=z+nz*o,r=road(X,Z,.2,g(X,Z));assert.equal(r,null,`road ${r?.way.id} near s ${a.s} offset ${o}`);}assert.ok(grade(x,z)<=Math.min(g(x,z),y-.32)+.03);checked++;}}}
+ assert.ok(checked>500);const root=new T.Group(),result=buildPeakTramLoopGrading(root),ray=new T.Raycaster();root.updateMatrixWorld(true);
+ for(const path of paths)for(let i=3;i<path.length-3;i+=5){let p=path[i];ray.set(new T.Vector3(p.x,500,p.z),new T.Vector3(0,-1,0));let hits=ray.intersectObject(result.mesh);assert.ok(hits.length,`grade mesh hole at ${p.s}`);assert.ok(Math.abs(hits[0].point.y-(grade(p.x,p.z)-.08))<.15,`mesh mismatch at ${p.s}`);}
+});

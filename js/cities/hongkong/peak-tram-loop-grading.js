@@ -6,8 +6,10 @@ import {peakTramLoopGrade} from './peak-tram-loop-grading-site.js';
 // so grading follows the unchanged DTM at the outer edge rather than a trench wall.
 export function buildPeakTramLoopGrading(scene){
  const positions=[],normals=[],cache=new Map();
- for(let i=0;i<triangles.length;i+=2){
-  const x=triangles[i],z=triangles[i+1],key=`${x},${z}`;let v=cache.get(key);
+ // Shapely emits counter-clockwise X/Z polygons, which face down in Three.js.
+ // Reverse each triangle so the authored upward normals are not flipped on backfaces.
+ for(let i=0;i<triangles.length;i+=6)for(const j of [0,4,2]){
+  const x=triangles[i+j],z=triangles[i+j+1],key=`${x},${z}`;let v=cache.get(key);
   if(!v){const y=peakTramLoopGrade(x,z)-.08,e=.5;
    const nx=peakTramLoopGrade(x-e,z)-peakTramLoopGrade(x+e,z),nz=peakTramLoopGrade(x,z-e)-peakTramLoopGrade(x,z+e),len=Math.hypot(nx,2*e,nz);
    v=[y,nx/len,2*e/len,nz/len];cache.set(key,v);}
