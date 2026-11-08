@@ -31,6 +31,7 @@ import { bryantParkLawn } from './landmarks.js';
 // Spawn on 5th Ave at 37th St, facing south down the avenue toward the Empire State Building (34th St)
 const SPAWN_Z = streetZ(37);
 const groundCollider = { type: 'ground' };
+export const DRONE_MAX_ALTITUDE_METRES = 1000;
 
 const CAR_DRIVE = {
   speed: 200 / 3.6, reverseSpeed: 10.5, acceleration: 4.5,
@@ -370,7 +371,7 @@ class ThirdPersonControllerManager {
     this.resetInput();
     if (!Number.isFinite(heading)) heading = ent.heading;
     const heli = this.activeMode === 'helicopter';
-    const altitude = heli ? Math.max(0.25, Math.min(380, savedAltitude ?? Math.max(92, ent.position.y))) : 0;
+    const altitude = heli ? Math.max(0.25, Math.min(DRONE_MAX_ALTITUDE_METRES, savedAltitude ?? Math.max(92, ent.position.y))) : 0;
     const referenceY = savedAltitude ?? ent.position.y;
     const destination = this.findTeleportPosition(x, z, heading, altitude, referenceY);
     if (destination) {
@@ -1347,7 +1348,8 @@ class ThirdPersonControllerManager {
     if (h.position.y < 0.25) {
       this.reportCollision(h, groundCollider, 'ground', h.position.x, 0.25, h.position.z, 0, 1, 0, -h.verticalSpeed);
     }
-    h.position.y = Math.max(0.25, Math.min(380, h.position.y));
+    h.position.y = Math.max(0.25, Math.min(DRONE_MAX_ALTITUDE_METRES, h.position.y));
+    if ((h.position.y >= DRONE_MAX_ALTITUDE_METRES && h.verticalSpeed > 0) || (h.position.y <= 0.25 && h.verticalSpeed < 0)) h.verticalSpeed = 0;
     this.resolveHorizontalCollision(h.position, h.collisionRadius ?? DRONE_COLLISION_RADIUS, null, h);
 
     const targetPitch = (h.speed / maxHorizSpeed) * 0.32;

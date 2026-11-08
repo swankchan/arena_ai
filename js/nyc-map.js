@@ -702,6 +702,7 @@ class NYCMapSystem {
       const ent = this.controllerManager.getActiveEntity();
       this.viewCenterX = ent.position.x;
       this.viewCenterZ = ent.position.z;
+      this.viewZoom = 0.75; // Reopen on the surrounding streets rather than the previous atlas zoom.
       this.resizeFullCanvas();
       this.renderFullMap();
     }

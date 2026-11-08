@@ -66,6 +66,8 @@ const RADAR_SCALE = 0.58;
 const MIN_FULL_ZOOM = 0.003;
 const MAX_FULL_ZOOM = 2.2;
 export const HK_FULL_MAP_PLAYER_RADIUS = 30000;
+// Open at neighbourhood scale; the 30 km radius utility and fit-all control remain available.
+export const HK_FULL_MAP_OPEN_RADIUS = 800;
 
 // One world unit is one metre. Fit the shorter viewport axis to a 60 km diameter so the
 // complete 30 km radius around the player remains visible in both landscape and portrait.
@@ -663,7 +665,7 @@ export class HKGMapSystem {
         if (typeof pop.hidePopover === 'function' && pop.matches(':popover-open')) pop.hidePopover();
       }
       this.resizeFullCanvas();
-      this.focusPlayer(HK_FULL_MAP_PLAYER_RADIUS);
+      this.focusPlayer(HK_FULL_MAP_OPEN_RADIUS);
       this.renderFullMap();
     } else {
       this.fullStatic = null;

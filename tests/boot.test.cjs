@@ -30,10 +30,9 @@ test('city module preloads start after the import map and before stylesheets', (
 test('vehicle speed HUD and meter use kilometres per hour', () => {
   const app = readFileSync(join(__dirname, '../js/app.js'), 'utf8');
   assert.match(app, /const kmh = Math\.round\(Math\.abs\(activeEnt\.speed\) \* 3\.6\)/);
-  assert.match(app, /const topSpeedKph = \{ person: 30, car: 200, cyclist: 68, helicopter: 288 \}/);
-  assert.match(app, /kmh \/ \(topSpeedKph\[mode\] \|\| 200\)/);
+  assert.match(app, /gaugeNeedleDegrees\(kmh, SPEED_GAUGE_MAX_KPH\)/);
   assert.doesNotMatch(app, /2\.237|topSpeedMph/);
-  assert.match(html, /<span class="gauge-unit">km\/h<\/span>/);
+  assert.match(html, /<small>km\/h<\/small>/);
 });
 
 test('native module entry and imports share canonical preloaded URLs on GitHub Pages', () => {

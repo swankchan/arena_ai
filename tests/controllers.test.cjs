@@ -742,3 +742,19 @@ test('player clearance respects altitude and permits a ground arrival under an a
   helicopter.position.y = 1;
   assert.notDeepEqual({ ...controller.teleportActiveTo(0, 0) }, { x: 0, z: 0 }, 'a helicopter parked at street level must be avoided');
 });
+
+test('drone can ascend to 1000 metres, stops at the ceiling, descend and restore saved altitude', () => {
+  const { controller, ent } = teleportHarness('helicopter');
+  controller.resolveHorizontalCollision = () => {};
+  ent.position.y = 370; ent.verticalSpeed = 0;
+  controller.keys.up = true;
+  for (let i = 0; i < 2200; i++) controller.updateHelicopter(1 / 60, i / 60);
+  assert.ok(ent.position.y > 380 && ent.position.y <= 1000);
+  for (let i = 2200; i < 3000; i++) controller.updateHelicopter(1 / 60, i / 60);
+  assert.equal(ent.position.y, 1000); assert.equal(ent.verticalSpeed, 0);
+  controller.keys.up = false; controller.keys.down = true;
+  for (let i = 0; i < 60; i++) controller.updateHelicopter(1 / 60, i / 60);
+  assert.ok(ent.position.y < 1000);
+  controller.teleportActiveTo(0, 0, 0, 850); assert.equal(ent.position.y, 850);
+  controller.teleportActiveTo(0, 0, 0, 1200); assert.equal(ent.position.y, 1000);
+});

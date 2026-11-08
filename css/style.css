@@ -1681,3 +1681,28 @@ body.touch-enabled .pop-item { min-height: 44px; }
 [hidden] {
   display: none !important;
 }
+
+/* Analogue instrument cluster: a fixed 0–300 km/h speedometer and a separate
+   world-altitude dial in metres for the drone. Numeric readouts remain legible. */
+.gauge { padding: 10px 12px 8px; }
+.instrument-cluster { display: flex; align-items: flex-start; justify-content: center; gap: 6px; margin-top: 5px; }
+.instrument { width: 116px; flex: 0 1 116px; position: relative; text-align: center; }
+.instrument-altitude { display: none; }
+body[data-mode='helicopter'] .instrument-altitude { display: block; }
+.instrument-face { display: block; width: 100%; height: auto; overflow: visible; }
+.instrument-rim { fill: #1b252d; stroke: #a5b3bb; stroke-width: 2; }
+.instrument-inner { fill: #10171d; stroke: #4a5c64; stroke-width: 1.5; }
+.instrument-ticks line { stroke: #e9eff0; stroke-width: 2.2; }
+.instrument-ticks text { fill: #edf1ef; font: 600 11px system-ui, sans-serif; text-anchor: middle; dominant-baseline: middle; stroke: none; }
+.instrument-needle { fill: #f16d54; transform-origin: 80px 80px; transform: rotate(-130deg); transition: transform .23s linear; }
+.instrument-needle circle { fill: #dbe1df; stroke: #2a3337; stroke-width: 2; }
+.instrument-reading { position: absolute; top: 65%; left: 0; right: 0; display: flex; align-items: baseline; justify-content: center; gap: 3px; color: #f3f5f2; font-size: 15px; font-weight: 700; font-variant-numeric: tabular-nums; line-height: 1; }
+.instrument-reading small { color: #b6c3c5; font-size: 8px; font-weight: 600; }
+.instrument-caption { color: var(--text-3); font-size: 9px; font-weight: 650; letter-spacing: .1em; text-transform: uppercase; margin-top: 1px; }
+@media (max-width: 820px) { .instrument { width: 91px; flex-basis: 91px; } .instrument-reading { font-size: 12px; } }
+/* Touch users also need flight and speed telemetry. Keep the compact instruments
+   with the camera control rather than hiding the gauge on touch devices. */
+body.touch-enabled .gauge { display: block; padding: 7px 9px 5px; }
+body.touch-enabled .instrument { width: 94px; flex-basis: 94px; }
+#hud-speed { font-size: inherit; font-weight: inherit; line-height: inherit; letter-spacing: normal; }
+.instrument-needle { transform-box: view-box; transform-origin: 50% 50%; }

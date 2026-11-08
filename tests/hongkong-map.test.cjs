@@ -14,6 +14,7 @@ let pointInRing;
 let hongKongFitZoom;
 let hongKongRadiusZoom;
 let HK_FULL_MAP_PLAYER_RADIUS;
+let HK_FULL_MAP_OPEN_RADIUS;
 let isHongKongCorePoint;
 let HKGMapSystem;
 let buildTerritoryCoastColliders;
@@ -27,7 +28,7 @@ test.before(async () => {
   ({ default: cfg } = await import('../tools/cities/hongkong/config.mjs'));
   ({ makeFrame } = await import('../tools/geo/frame.mjs'));
   ({ pointInRing } = await import('../tools/geo/geom.mjs'));
-  ({ hongKongFitZoom, hongKongRadiusZoom, HK_FULL_MAP_PLAYER_RADIUS, isHongKongCorePoint, HKGMapSystem } = await import('../js/cities/hongkong/map.js'));
+  ({ hongKongFitZoom, hongKongRadiusZoom, HK_FULL_MAP_PLAYER_RADIUS, HK_FULL_MAP_OPEN_RADIUS, isHongKongCorePoint, HKGMapSystem } = await import('../js/cities/hongkong/map.js'));
   ({ buildTerritoryCoastColliders } = await import('../js/cities/hongkong/coast-colliders.js'));
   ({ colliderContains } = await import('../js/cities/hongkong/colliders.js'));
 });
@@ -45,10 +46,11 @@ test('Hong Kong full-map fit uses the available wide and portrait viewports', ()
   ), 'the tighter fit is larger than the previous padded fit');
 });
 
-test('Hong Kong opens centred on the player with a complete 30 km radius', () => {
+test('Hong Kong opens on the neighbourhood and retains the 30 km radius helper', () => {
   const source = readFileSync(join(__dirname, '../js/cities/hongkong/map.js'), 'utf8');
   assert.equal(HK_FULL_MAP_PLAYER_RADIUS, 30000);
-  assert.match(source, /this\.resizeFullCanvas\(\);\s*this\.focusPlayer\(HK_FULL_MAP_PLAYER_RADIUS\);\s*this\.renderFullMap\(\)/);
+  assert.equal(HK_FULL_MAP_OPEN_RADIUS, 800);
+  assert.match(source, /this\.resizeFullCanvas\(\);\s*this\.focusPlayer\(HK_FULL_MAP_OPEN_RADIUS\);\s*this\.renderFullMap\(\)/);
   const fake = {
     controllerManager: { getActiveEntity: () => ({ position: { x: 1234, z: -5678 } }) },
     fullSize: () => ({ w: 1568, h: 756 })
@@ -59,6 +61,31 @@ test('Hong Kong opens centred on the player with a complete 30 km radius', () =>
   assert.equal(fake.viewZoom, hongKongRadiusZoom(1568, 756));
   assert.equal(Math.min(1568, 756) / (2 * fake.viewZoom), 30000);
   assert.equal(hongKongRadiusZoom(390, 844), 390 / 60000, 'portrait keeps the full radius across its width');
+  HKGMapSystem.prototype.focusPlayer.call(fake, HK_FULL_MAP_OPEN_RADIUS);
+  assert.equal(fake.viewZoom, 756 / 1600);
+  assert.equal(fake.viewCenterX, 1234); assert.equal(fake.viewCenterZ, -5678);
+});
+
+test('opening the Hong Kong map resets a panned overview to the player neighbourhood', () => {
+  const oldDocument = global.document;
+  global.document = { querySelectorAll: () => [] };
+  try {
+    const fake = {
+      modal: { classList: { toggle() {} } },
+      controllerManager: { getActiveEntity: () => ({ position: { x: 5100, z: -3200 } }) },
+      fullSize: () => ({ w: 1200, h: 800 }),
+      resizeFullCanvas() {}, renderFullMap() {},
+      focusPlayer: HKGMapSystem.prototype.focusPlayer,
+      viewCenterX: 0, viewCenterZ: 0, viewZoom: 0.01
+    };
+    HKGMapSystem.prototype.toggleFullMap.call(fake, true);
+    assert.equal(fake.viewCenterX, 5100); assert.equal(fake.viewCenterZ, -3200);
+    assert.equal(fake.viewZoom, 0.5);
+    HKGMapSystem.prototype.toggleFullMap.call(fake, false);
+    fake.viewCenterX = -1; fake.viewZoom = 0.01;
+    HKGMapSystem.prototype.toggleFullMap.call(fake, true);
+    assert.equal(fake.viewCenterX, 5100); assert.equal(fake.viewZoom, 0.5);
+  } finally { global.document = oldDocument; }
 });
 
 test('Hong Kong atlas prevents tiny manual zoom-outs and retains a fit-all command', () => {

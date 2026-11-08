@@ -1,3 +1,4 @@
+import { gaugeNeedleDegrees, SPEED_GAUGE_MAX_KPH, ALTITUDE_GAUGE_MAX_METRES } from './telemetry-gauges.js';
 import * as THREE from 'three/webgpu';
 import { pass, mrt, output, normalView, positionView, metalness, roughness, vec2, smoothstep, velocity, screenUV, screenSize, uniform } from 'three/tsl';
 import { ssr } from 'three/addons/tsl/display/SSRNode.js';
@@ -209,7 +210,8 @@ async function initApp(cityStub) {
   const elMode = document.getElementById('hud-active-mode');
   const elCamera = document.getElementById('hud-active-camera');
   const elSpeed = document.getElementById('hud-speed');
-  const elSpeedMeter = document.getElementById('hud-speed-meter');
+  const elSpeedNeedle = document.getElementById('hud-speed-needle');
+  const elAltitudeNeedle = document.getElementById('hud-altitude-needle');
   const elAltitude = document.getElementById('hud-altitude');
   const elLocation = document.getElementById('hud-location');
   const elControlsHint = document.getElementById('hud-controls-hint');
@@ -230,8 +232,6 @@ async function initApp(cityStub) {
     cyclist: [[['W', 'S'], 'Pedal / Brake'], [['A', 'D'], 'Lean & Turn'], [['Drag'], 'Orbit']],
     helicopter: [[['W', 'S'], 'Pitch'], [['A', 'D'], 'Yaw'], [['Space', 'E'], 'Ascend'], [['Q', 'C'], 'Descend']]
   };
-  // Top speeds in km/h (controllers.js caps them at 8.2, 200 / 3.6, 19 & 52 m/s): full scale of the speed meter
-  const topSpeedKph = { person: 30, car: 200, cyclist: 68, helicopter: 288 };
 
   // Cities may expose only a subset of the cameras (Grid City has no Manhattan scenic rigs).
   const cameraPresets = world.cameraPresets ?? city.cameraPresets ?? null;
@@ -880,17 +880,17 @@ async function initApp(cityStub) {
       fpsTimer = 0;
 
       const activeEnt = controllerManager.getActiveEntity();
-      const mode = controllerManager.activeMode;
       const kmh = Math.round(Math.abs(activeEnt.speed) * 3.6);
-      const altFt = Math.max(0, Math.round(activeEnt.position.y * 3.281));
+      const altitudeMetres = Math.max(0, Math.round(activeEnt.position.y));
 
       if (elFps) {
         elFps.textContent = String(currentFps);
         elFps.className = currentFps >= 50 ? 'fps-ok' : currentFps >= 30 ? 'fps-warn' : 'fps-bad';
       }
       if (elSpeed) elSpeed.textContent = String(kmh);
-      if (elSpeedMeter) elSpeedMeter.style.transform = `scaleX(${Math.min(1, kmh / (topSpeedKph[mode] || 200))})`;
-      if (elAltitude) elAltitude.textContent = altFt.toLocaleString('en-US');
+      if (elSpeedNeedle) elSpeedNeedle.style.transform = `rotate(${gaugeNeedleDegrees(kmh, SPEED_GAUGE_MAX_KPH)}deg)`;
+      if (elAltitudeNeedle) elAltitudeNeedle.style.transform = `rotate(${gaugeNeedleDegrees(altitudeMetres, ALTITUDE_GAUGE_MAX_METRES)}deg)`;
+      if (elAltitude) elAltitude.textContent = altitudeMetres.toLocaleString('en-US');
       // The street corner of the player on the follow cameras, of the camera itself on the scenic ones
       const where = cameraSystem.getActivePreset().category === 'follow' ? activeEnt.position : cameraSystem.currentPos;
       renderLocation(locationLabel(where.x, where.z));

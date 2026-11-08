@@ -114,8 +114,8 @@ function mapHarness() {
   });
   // Exercise the real viewport/input state without drawing the map's geographic layers.
   map.renderFullMap = () => {};
-  map.viewZoom = 1;
   map.toggleFullMap(true);
+  map.viewZoom = 1; // Pan/zoom interaction tests below use one pixel per metre.
   return {
     map, canvas, controls, wrapper, window, document, captured, teleports, toggles, zoomIn, zoomOut, hoverInfo,
     pointer(target, type, id, x = 110, y = 120, pointerType = 'touch', button = 0) {
@@ -203,4 +203,12 @@ test('mouse hover and zoom buttons remain available without a pan', () => {
   assert.equal(h.map.viewZoom, 1.45);
   h.zoomOut.dispatch('click');
   assert.equal(h.map.viewZoom, 1);
+});
+
+test('opening the NYC full map recentres and zooms to nearby streets', () => {
+  const h = mapHarness();
+  h.map.viewCenterX = -4000; h.map.viewCenterZ = -3000; h.map.viewZoom = 0.015;
+  h.map.toggleFullMap(false); h.map.toggleFullMap(true);
+  assert.equal(h.map.viewCenterX, 1000); assert.equal(h.map.viewCenterZ, 2000);
+  assert.equal(h.map.viewZoom, 0.75);
 });

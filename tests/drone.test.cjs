@@ -27,7 +27,7 @@ test('flight speed, collision envelope and audible voice match the faster drone'
   assert.match(controller, /const maxHorizSpeed = 80\.0/);
   assert.match(controller, /collisionRadius: DRONE_COLLISION_RADIUS/);
   assert.match(controller, /h\.collisionRadius \?\? DRONE_COLLISION_RADIUS/);
-  assert.match(app, /helicopter: 288 \}/, '80 m/s is displayed as 288 km/h');
+  assert.match(app, /Math\.abs\(activeEnt\.speed\) \* 3\.6/, '80 m/s is displayed as 288 km/h');
   assert.match(audioSources, /player && entity\.type === 'helicopter' \? 'drone'/);
   assert.match(audioSynth, /'helicopter', 'drone', 'cyclist'/);
   assert.match(audioSynth, /const drone = kind === 'drone'/);
