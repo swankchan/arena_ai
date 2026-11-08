@@ -1,5 +1,7 @@
 # 香港禮賓府（前總督府）
 
+參考圖片、來源及研究筆記存於 [`references/hongkong/government-house/`](../references/hongkong/government-house/README.md)。
+
 此模型是中環香港禮賓府，不是終審法院或山頂舊總督山頂別墅。據[古物古蹟辦事處](https://www.amo.gov.hk/en/historic-buildings/monuments/hong-kong-island/monuments_59/index.html)，建築 1855 年完成，1889 年加東翼，日佔時改建加中央塔，並有日式屋頂。行政長官辦公室[介紹](https://www.ceo.gov.hk/gh/eng/house.html)確認正面朝南。按[政府照片](https://www.gohk.gov.hk/en/spots/spot_detail.php?spot=Government+House)構造淺色灰泥、深色瓦坡屋頂、塔樓、前山牆、上下層窗、內凹露台、花崗石門廊及前方綠屋頂門房；沒有使用照片貼圖。
 
 主樓平面採 [OpenStreetMap way 42258038 v14](https://api.openstreetmap.org/api/0.6/way/42258038/full.json)；雙門房在 [OSM barrier node 1294918105](https://www.openstreetmap.org/node/1294918105) 附近按照片示意，位置和尺寸不是 OSM 所標的門房 footprint，亦未證實該節點正是禮賓府禮儀正門。開啟的鐵閘示意不阻塞現有的道路。OSM 資料 © OpenStreetMap contributors，ODbL 1.0。屋頂分翼、窗、門廊和 25.5 m 塔高依照片估算，並非測量，亦不代表現存每個房間的平面或全部屋頂細節。
