@@ -1,0 +1,11 @@
+const {test}=require('node:test'),assert=require('node:assert/strict');
+test('upper section joins the lower loop and transitions to three and then two rails',async()=>{
+ const THREE=await import('three/webgpu');const {UPPER_LINE_POINTS:p,UPPER_LINE_START:start,UPPER_LINE_END:end,upperLinePoint:point,upperBranchOffset:offset,upperLineCuts:cuts}=await import('../js/cities/hongkong/peak-tram-upper-line-site.js');
+ const {loopPoint}=await import('../js/cities/hongkong/peak-tram-passing-loop-site.js'),{buildPeakTramUpperLine:build}=await import('../js/cities/hongkong/peak-tram-upper-line.js'),{hongKongTerrainHeight:g}=await import('../js/cities/hongkong/terrain.js'),{fullRoadSurfaceAt:road}=await import('../js/cities/hongkong/full-meta.js');
+ const first=loopPoint('A',start);assert.ok(Math.hypot(first.x-p[0].x,first.z-p[0].z)<1e-8);assert.ok(Math.abs(first.y-p[0].y)<1e-8);assert.ok(end>1014&&end<1015);assert.ok(offset(start)>4);assert.equal(offset(700),1.524);assert.equal(offset(850),0);
+ const rects=cuts(),inside=(x,z,r)=>Math.abs((x-r.cx)*r.ux+(z-r.cz)*r.uz)<=r.hx+1e-6&&Math.abs(-(x-r.cx)*r.uz+(z-r.cz)*r.ux)<=r.hz+1e-6;
+ for(let s=start+.1;s<end-.1;s+=.4){let q=point(s);for(let o=-1.35;o<=offset(s)+1.35;o+=.45){let x=q.x+q.nx*o,z=q.z+q.nz*o,h=g(x,z);assert.equal(road(x,z,.5,h),null,`unexpected road at ${s}`);if(h-.08>q.y-.27)assert.ok(rects.some(r=>inside(x,z,r)),`buried track at ${s} offset ${o}`);}}
+ const r=build(new THREE.Group());assert.ok(r.stats.peakTramUpperLineSections>150);for(const n of ['Peak Tram upper line rails','Peak Tram upper line sleepers','Peak Tram upper line bed','Peak Tram upper line retaining faces','Peak Tram upper line piers'])assert.ok(r.group.getObjectByName(n),n);
+ for(const c of r.colliders)for(let x=c.minX-.5;x<=c.maxX+.5;x+=.25)for(let z=c.minZ-.5;z<=c.maxZ+.5;z+=.25)assert.equal(road(x,z,0,g(x,z)),null,'support intersects a road');
+});
+test('upper terrain cut, model and support colliders are connected to world',()=>{const fs=require('node:fs');assert.match(fs.readFileSync('js/cities/hongkong/full-world.js','utf8'),/\.\.\.upperLineCuts\(\)/);const s=fs.readFileSync('js/cities/hongkong/simple-world.js','utf8');assert.match(s,/buildPeakTramUpperLine\(scene\)/);assert.match(s,/\.\.\.peakTramUpperLine\.colliders/);});
