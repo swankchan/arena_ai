@@ -999,15 +999,13 @@
 - **道路、街燈及地面**：精確建築 ring 和 **14 × 5.2 m** 照片導向入口雨篷均以全港道路中心線及 `width/2+0.35 m` 重掃，center／corridor 均為 **0**；clearance 後街燈在兩個範圍亦為 **0**。因此不搬路、不改標線／信號、不搬燈，也不搬歪建築。DTM 採樣形成的施工平台為 **5.164158550106379 m**，是可重算場景 datum，不是工程標高；ground query、道路剖面、碰撞及模型 base 一致。
 - **驗證**：`tests/sheraton-hotel.test.cjs` 覆蓋精確來源、無高度tag的誠實處理、上層體量 containment、入口／J4、道路／街燈、DTM、立面／標誌／泳池及整合。Node geometry smoke 為 **32 meshes／54,059 triangles／114 colliders／0 non-finite vertices**，主入口地面碰撞命中 **0**；沒有打包外部照片。
 
-## 港青酒店 The Salisbury–YMCA of Hong Kong `HK-TST-YMCA`：雙圓角塔樓（2026-11-06）
+## 港青酒店 The Salisbury–YMCA of Hong Kong `HK-TST-YMCA`
 
-- **身份與精確來源**：梳士巴利道41號，使用官方名稱 **The Salisbury – YMCA of Hong Kong／港青酒店**，不是另一機構「中華基督教青年會」的物業，也不誤用其他 YMCA 酒店。目前 OSM way **152073872 v5**（source timestamp **2026-07-29T06:24:03Z**）保存完整13個獨立頂點、節點及tags；ring 面積 **2739.7279235477326 m²**。現名、舊名、Wikidata及地址均保留。
-- **高度與體量口径**：OSM `height=15／building:levels=4` 作為來源裙樓標籤保存；附近沒有可當成雙塔精確依據的獨立 building/part ways。兩座上塔 **68／61 m**、中央連接體 **43 m** 全部是照片導向場景體量，不是官方高度。輔助歷史資料的「1989年重建為16層」只作交叉參考，沒有變成虛構的精確樓高或兩個 OSM footprints。
-- **照片導向細節**：官方 YMCA 頁確認身份及地址，另查看 Oyster 等外形參考圖。精確深灰裙樓上有小方窗、地面玻璃、紅色 YMCA 三角標誌及「THE SALISBURY · YMCA OF HONG KONG」字樣；兩座不等高白色圓角塔樓由較低中央體連接。每塔24段圓角 ring、逐窗格玻璃、窗框及連續繞角白色橫帶均為實際幾何，日間不是一張貼圖，夜間只有有限客房及入口暖光。
-- **上層 containment**：兩塔寬18 m、深23 m、圓角4.2 m，中央連接體20 × 22 m；所有上層邊界逐段取樣均在精確裙樓 ring 內。上層 position、尺寸及高度明確標為 photo-derived，沒有假稱來自 OSM。
-- **入口與道路**：主入口採最接近已命名 Salisbury Road 車路的長向 source edge **9**，有玻璃門、金屬雨篷、柱、暖色 downlights 及字牌；不是虛構 OSM door node。精確建築和 **12 × 3.0 m** 雨篷 clearance ring 的全港道路中心線／`width/2+0.35 m` 掃描均為 **0**，clearance 後街燈亦為 **0**，所以不搬路、不改標線／信號或搬燈。
-- **地面與碰撞**：模型及地面查詢共用 **5 m** DTM採樣施工平台，這不是已核實工程標高；外部地形不變。主入口有真實開口，地面碰撞命中 **0**；兩塔、中央體、裙樓及雨篷柱的碰撞使用同一 base。
-- **驗證**：`tests/salisbury-ymca.test.cjs` 覆蓋來源、官方機構身份、雙塔／中央體 containment、入口方向、道路／街燈、DTM、紅色標誌／圓角橫帶及整合。Node geometry smoke 為 **29 meshes／94,765 triangles／124 colliders／0 non-finite vertices**；沒有打包外部照片。
+- 地址梳士巴利道 41 號；[相片、原始來源與授權備註](../references/hongkong/salisbury-ymca/README.md)。OSM way 152073872 v5 提供 13 個頂點的地盤輪廓，標籤 `height=15`、4 層；不是完整塔樓測量圖。
+- 參照多角度照片重做深炭灰小磚裙樓、較淺暖灰色上層、深色立面區、圓角窗、窗框與細分格。照片有較淺舊外牆及較深版本，拍攝日期未確定；本模型採用深色版本。瓷磚及色彩是自行繪製的近似，非真實物料規格。
+- 兩翼分別約 **55／53 m**、12／11 排上層窗，中間較低連接體約 44 m，作場景估算，並非實測。兩翼 **20 × 29 m**，連接體 **26 × 10 m**；內縮連接體留出花園。平台花園有鋪面、欄杆、植物、木條 pergola 和帆形頂篷；實際位置與細節按照片推算。
+- 梳士巴利道及中間道兩側示意玻璃入口，入口位置及尺寸不是 OSM door node。道路中心及寬度走廊對地盤及主入口篷檢查無交叉，已清理路燈無落入範圍；無需挪路。平整地盤使用 5 m DTM 採樣高度，並非已核實工程標高。
+- 客房窗、入口燈及招牌以 NodeMaterial 接入日夜 uniform；個別亮窗、燈光位置為示意。模型加入獨立匯出清單，普通 JSON 不保留動態 TSL；TSL JSON 仍非原生 Three.js Editor 直接載入格式。測試包含有限幾何、道路、地台、碰撞、匯出與節點序列化，並不等於遊戲 WebGPU 日夜目視或連續駕駛驗證。
 
 ## 九龍香格里拉 Kowloon Shangri-La, Hong Kong `HK-TST-KSL`：三面凸窗塔樓（2026-11-06）
 
@@ -1203,7 +1201,7 @@
 - `sheraton-hotel-architecture.js`：喜來登精確OSM podium、照片導向上層長板、Nathan Road入口／J4區分、無高度tag口径及官方泳池資料。
 - `sheraton-hotel-world.js`：喜來登混凝土客房格網、S徽章／字樣刀片牆、入口雨篷、Level 18泳池／三個Jacuzzis、日夜材質、碰撞及stats。
 - `salisbury-ymca-architecture.js`：港青酒店精確OSM裙樓、照片導向雙圓角塔樓／中央體、Salisbury Road入口及來源口径。
-- `salisbury-ymca-world.js`：港青深灰裙樓、紅色YMCA標誌、雙不等高白色圓角塔樓、連續橫帶、入口、日夜材質、碰撞及stats。
+- `salisbury-ymca-world.js`：港青深灰瓷磚裙樓、暖灰圓角雙翼、平台花園、入口、日夜材質、碰撞及stats。
 - `kowloon-shangri-la-architecture.js`：九龍香格里拉精確OSM裙樓、照片導向內退塔樓、兩類入口、原始到達道路及來源口径。
 - `kowloon-shangri-la-world.js`：九龍香格里拉深色裙樓、金色字牌、三面凸窗格網、有蓋落客區、道路portals、日夜材質、碰撞及stats。
 - `gateway-tower-one-world.js`：港威大廈一座的來源口径、辦公courses、入口、日夜材質、碰撞及stats。

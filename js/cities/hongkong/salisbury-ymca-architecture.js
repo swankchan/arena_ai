@@ -13,8 +13,8 @@ export const SALISBURY_OSM_SOURCE = tstHotelOsmSource({ id: 152073872, version: 
 
 export const SALISBURY_PODIUM_HEIGHT = 15;
 export const SALISBURY_OSM_LEVELS = 4;
-export const SALISBURY_TOWER_MODEL_HEIGHTS = Object.freeze([68, 61]);
-export const SALISBURY_TOWER_VISIBLE_ROWS = Object.freeze([16, 14]);
+export const SALISBURY_TOWER_MODEL_HEIGHTS = Object.freeze([55, 53]);
+export const SALISBURY_TOWER_VISIBLE_ROWS = Object.freeze([12, 11]);
 export const SALISBURY_SITE = makeTstHotelSite('salisburyYMCA', '港青酒店 The Salisbury – YMCA of Hong Kong', 'The Salisbury – YMCA of Hong Kong', SALISBURY_OSM_SOURCE, SALISBURY_PODIUM_HEIGHT, SALISBURY_OSM_LEVELS);
 export const SALISBURY_GROUND_SITES = Object.freeze([SALISBURY_SITE]);
 export const SALISBURY_GROUND_RINGS = Object.freeze([SALISBURY_SITE.ring]);
@@ -36,11 +36,11 @@ function photoTowerSite(key, name, localRing, height) {
     ring: null, bounds: null, ringArea: null, photoDirected: true, localRing, height,
     evidence: 'Photo-derived upper massing contained by the exact OSM podium; no separate OSM tower/part way or surveyed height is claimed.' });
 }
-export const SALISBURY_TOWER_SITES = Object.freeze([-19, 19].map((x, index) => photoTowerSite(
+export const SALISBURY_TOWER_SITES = Object.freeze([-22, 22].map((x, index) => photoTowerSite(
   `salisburyTower${index + 1}`, `The Salisbury photo-derived rounded tower ${index + 1}`,
-  salisburyRoundedRectangle(x, 0, 18, 23, 4.2, 5), SALISBURY_TOWER_MODEL_HEIGHTS[index])));
-export const SALISBURY_CONNECTOR_LOCAL_RING = Object.freeze([-10, -11, 10, -11, 10, 11, -10, 11, -10, -11]);
-export const SALISBURY_CONNECTOR_HEIGHT = 43;
+  salisburyRoundedRectangle(x, 0, 20, 29, 4.2, 5), SALISBURY_TOWER_MODEL_HEIGHTS[index])));
+export const SALISBURY_CONNECTOR_LOCAL_RING = Object.freeze([-13, -14, 13, -14, 13, -4, -13, -4, -13, -14]);
+export const SALISBURY_CONNECTOR_HEIGHT = 44;
 export const SALISBURY_CONNECTOR_SITE = photoTowerSite('salisburyCentralConnector', 'The Salisbury lower central connector', SALISBURY_CONNECTOR_LOCAL_RING, SALISBURY_CONNECTOR_HEIGHT);
 
 export const SALISBURY_MAIN_ENTRANCE = harbourCityEdgeFrame(SALISBURY_SITE, 9,
@@ -65,7 +65,7 @@ export const SALISBURY_RESEARCH_SOURCES = Object.freeze([
   Object.freeze({ url: 'https://www.ymcahk.org.hk/thesalisbury/en/accommodation/index.html', publisher: 'The Salisbury – YMCA of Hong Kong official site', evidence: 'Official current hotel identity in Tsim Sha Tsui, Victoria Harbour setting and YMCA of Hong Kong operator. This is not confused with the separate Chinese YMCA of Hong Kong organisation.' }),
   Object.freeze({ url: 'https://www.ymcahk.org.hk/main/en/about_us/location/index.html', publisher: 'YMCA of Hong Kong official location page', evidence: 'Official headquarters and The Salisbury hotel services at 41 Salisbury Road, Tsimshatsui, Kowloon.' }),
   Object.freeze({ url: 'https://www.oyster.com/hong-kong/hotels/the-salisbury-ymca-of-hong-kong/', publisher: 'Oyster — The Salisbury exterior reference', evidence: 'Supplementary reviewed exterior photographs direct the red YMCA emblem, two unequal rounded towers, lower central connector, square windows and continuous curved horizontal window bands. Images are visual direction only and are not redistributed or measured.' }),
-  Object.freeze({ url: 'https://hotelthesalisburyymcaofhongkong.all-hotels.com/', publisher: 'The Salisbury exterior photograph set', evidence: 'Clearer exterior photos show a predominantly dark grey tiled podium and light grey upper wings, rounded corners, dark inset panels and red YMCA emblem. The existing model is provisional and its pale podium requires rebuilding. Colours and materials are photographic interpretations, not measured specifications.' }),
+  Object.freeze({ url: 'https://hotelthesalisburyymcaofhongkong.all-hotels.com/', publisher: 'The Salisbury exterior photograph set', evidence: 'Clearer exterior photos show a predominantly dark grey tiled podium and light grey upper wings, rounded corners, dark inset panels and red YMCA emblem. The dark-podium reconstruction follows these images; a lighter finish appears in other undated views. Colours and materials are photographic interpretations, not measured specifications.' }),
   Object.freeze({ url: 'https://en.wikipedia.org/wiki/YMCA_of_Hong_Kong', publisher: 'Secondary history cross-check', evidence: 'Auxiliary account says the Salisbury was rebuilt in July 1989 as a 16-storey building. This is not treated as a surveyed height or proof of separate OSM tower footprints; the two scene tower heights remain explicitly photo-derived.' }),
   Object.freeze({ url: 'https://www.openstreetmap.org/api/0.6/way/152073872/full.json', publisher: 'OpenStreetMap contributors', evidence: 'Current way 152073872 v5 supplies the exact 13-vertex ring, height=15 and building:levels=4 plus current and former names. Overpass checks found no separate tower building/part ways, so upper volumes are photo-derived rather than falsely OSM-certified.' }),
 ]);

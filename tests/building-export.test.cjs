@@ -29,7 +29,7 @@ test('catalogue is searchable, unique, and selects only registered models', asyn
 test('selected authored buildings round trip without starting the city and keep distinct model geometry', async () => {
   const THREE = await import('three/webgpu');
   const { createBuildingExport } = await import('../js/exports/building-export.js');
-  for (const id of ['wanchai-tower', 'revenue-tower', 'immigration-tower', 'standard-chartered', 'times-square']) {
+  for (const id of ['wanchai-tower', 'revenue-tower', 'immigration-tower', 'standard-chartered', 'times-square', 'salisbury-ymca']) {
     const data = await createBuildingExport(id);
     assert.ok(data.geometries.length > 0, id);
     assert.ok(data.materials.every(m => !m.type.includes('NodeMaterial')), id);
@@ -86,4 +86,19 @@ test('Sheraton TSL export includes actual facade, room and lamp nodes', async ()
   assert.ok(materials.get(windows.material).inputNodes.colorNode);
   assert.ok(json.nodes.some(n => n.type === 'AttributeNode' && n._attributeName === 'aLit'));
   assert.ok(json.nodes.some(n => n.type === 'UniformNode' && n.value === 1.4));
+});
+
+
+test('Salisbury export serializes real node materials for illuminated windows and signage', async () => {
+  const { createBuildingExport } = await import('../js/exports/building-export.js');
+  const json = await createBuildingExport('salisbury-ymca', {tsl: true});
+  const materials = new Map(json.materials.map(m => [m.uuid, m]));
+  const objects = []; const visit = o => {objects.push(o); for (const child of o.children || []) visit(child);}; visit(json.object);
+  for (const name of ['Tower 1 individual square and curved-corner windows', 'Warm Salisbury entrance downlights', 'Red YMCA emblem and The Salisbury identity on the dark podium']) {
+    const object = objects.find(o => o.name === name); assert.ok(object, name);
+    const mat = materials.get(object.material); assert.equal(mat.type, 'MeshStandardNodeMaterial', name);
+    assert.ok(mat.inputNodes?.emissiveNode, name);
+  }
+  assert.ok(json.nodes.some(n => n.type === 'UniformNode' && n.value === 1.4));
+  assert.ok(json.geometries.some(g => g.data?.attributes?.aLit?.array?.some(v => v > 0)));
 });

@@ -89,6 +89,7 @@ export const EXPORT_BUILDINGS = [
   { id: "clock-tower", name: "尖沙咀鐘樓 — Clock Tower", load: () => import('../cities/hongkong/clock-tower-world.js'), build: 'buildClockTower', options: meta => ({ groundOffset: meta.clockTowerPadHeight }) },
   { id: "peninsula-hotel", name: "半島酒店 — Peninsula Hotel", load: () => import('../cities/hongkong/peninsula-hotel-world.js'), build: 'buildPeninsulaHotel', options: meta => ({ groundOffset: meta.peninsulaPadHeight }) },
   { id: "sheraton-hotel", name: "喜來登酒店 — Sheraton Hotel", load: () => import('../cities/hongkong/sheraton-hotel-world.js'), build: 'buildSheratonHotel', options: meta => ({ groundOffset: meta.sheratonPadHeight }) },
+  { id: "salisbury-ymca", name: "港青酒店 — The Salisbury YMCA", load: () => import('../cities/hongkong/salisbury-ymca-world.js'), build: 'buildSalisburyYMCA', options: meta => ({ groundOffset: meta.salisburyPadHeight }) },
   { id: "kowloon-shangri-la", name: "九龍香格里拉酒店 — Kowloon Shangri La", load: () => import('../cities/hongkong/kowloon-shangri-la-world.js'), build: 'buildKowloonShangriLa', options: meta => ({ groundOffset: meta.kowloonShangriLaPadHeight }) },
   { id: "hong-kong-park", name: "香港公園 — Hong Kong Park", load: () => import('../cities/hongkong/hong-kong-park-world.js'), build: 'buildHongKongPark', options: meta => ({}) },
   { id: "kowloon-park", name: "九龍公園 — Kowloon Park", load: () => import('../cities/hongkong/kowloon-park-world.js'), build: 'buildKowloonPark', options: meta => ({}) },

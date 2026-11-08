@@ -55,13 +55,13 @@ test('The Salisbury preserves exact current OSM way 152073872 v5, names and 15 m
 
 test('official identity is YMCA of Hong Kong and auxiliary 16-storey history is not a surveyed tower height', () => {
   assert.match(salisbury.SALISBURY_SITE.name, /The Salisbury/);
-  assert.deepEqual(salisbury.SALISBURY_TOWER_MODEL_HEIGHTS, [68, 61]); assert.deepEqual(salisbury.SALISBURY_TOWER_VISIBLE_ROWS, [16, 14]);
+  assert.deepEqual(salisbury.SALISBURY_TOWER_MODEL_HEIGHTS, [55, 53]); assert.deepEqual(salisbury.SALISBURY_TOWER_VISIBLE_ROWS, [12, 11]);
   assert.ok(salisbury.SALISBURY_RESEARCH_SOURCES.some((s) => /ymcahk\.org\.hk/.test(s.url) && /not confused with the separate Chinese YMCA/.test(s.evidence)));
   assert.ok(salisbury.SALISBURY_RESEARCH_SOURCES.some((s) => /wikipedia/.test(s.url) && /not treated as a surveyed height/.test(s.evidence)));
 });
 
 test('two unequal rounded towers and lower connector are photo-derived and contained by the exact podium', () => {
-  assert.equal(salisbury.SALISBURY_TOWER_SITES.length, 2); assert.equal(salisbury.SALISBURY_CONNECTOR_HEIGHT, 43);
+  assert.equal(salisbury.SALISBURY_TOWER_SITES.length, 2); assert.equal(salisbury.SALISBURY_CONNECTOR_HEIGHT, 44);
   for (const site of [...salisbury.SALISBURY_TOWER_SITES, salisbury.SALISBURY_CONNECTOR_SITE]) {
     assert.equal(site.photoDirected, true); assert.equal(site.osmId, null); assert.equal(site.source, null); assert.match(site.evidence, /no separate OSM tower\/part way/);
     for (let edge = 0; edge < site.localRing.length / 2 - 1; edge++) for (let sample = 0; sample <= 20; sample++) {
@@ -103,13 +103,9 @@ test('The Salisbury has a traceable DTM pad and unchanged outside terrain', () =
   const x = s.x - 100, z = s.z + 95; assert.equal(terrain.hongKongTerrainHeight(x, z), terrain.rawHongKongTerrainHeight(x, z));
 });
 
-test('world authors the photo-reviewed pale precast podium, red YMCA identity, banded towers and entrance', () => {
+test('world authors charcoal tiled podium, contrasting wings and terrace', () => {
   const world = fs.readFileSync(path.join(root, 'js/cities/hongkong/salisbury-ymca-world.js'), 'utf8');
-  for (const pattern of [/light warm-grey precast Salisbury podium/, /Small square Salisbury podium windows/, /White podium window surrounds/, /dark blue-grey shopfront piers/, /dark shopfront fascia band/, /Red YMCA emblem/, /two unequal Salisbury towers/, /continuous rounded white horizontal window bands/, /curved-corner windows/, /Lower central connector/, /Warm Salisbury entrance downlights/, /SALISBURY_TOWER_MODEL_HEIGHTS/, /salisburyTerrainHeightAt/]) assert.match(world, pattern);
-  assert.doesNotMatch(world, /image-search|\.jpg|\.png/);
-  // The older model is provisional and needs correction against the archived photographs.
-  assert.doesNotMatch(world, /Photo-derived white rounded Salisbury tower/);
-  assert.match(world, /roughness: 0\.62/);
+  for (const pattern of [/Charcoal tiled YMCA podium/, /Charcoal podium glazed bands/, /charcoal accent panels/, /rounded tiled floor bands/, /Terrace tensile sail canopy/, /Podium garden wooden pergola slats/, /Red YMCA emblem/, /Warm Salisbury entrance downlights/, /MeshStandardNodeMaterial/, /nightAmount/, /salisburyTerrainHeightAt/]) assert.match(world, pattern);
 });
 
 test('The Salisbury is integrated into world, ground, road profiles, map and runtime entry', () => {
@@ -127,7 +123,7 @@ test('all Salisbury mesh geometry contains finite positions and bounding boxes',
   try {
     const THREE = await import('three/webgpu');
     const {buildSalisburyYMCA} = await import('../js/cities/hongkong/salisbury-ymca-world.js');
-    const {root} = buildSalisburyYMCA(new THREE.Scene());
+    const {root, colliders} = buildSalisburyYMCA(new THREE.Scene(), {groundOffset: 5});
     root.traverse(o => {
       if (!o.isMesh) return;
       const pos = o.geometry.getAttribute('position');
@@ -135,5 +131,22 @@ test('all Salisbury mesh geometry contains finite positions and bounding boxes',
       o.geometry.computeBoundingBox();
       for (const v of [...o.geometry.boundingBox.min.toArray(), ...o.geometry.boundingBox.max.toArray()]) assert.ok(Number.isFinite(v), o.name);
     });
+    // Probe the centre 3.2 m of each entrance at pedestrian height against
+    // the actual oriented collision boxes (a sampling test, not a walk-through).
+    for (const edge of [3, 9]) {
+      const ring = salisbury.SALISBURY_SITE.localRing, i = edge * 2;
+      const dx = ring[i + 2] - ring[i], dz = ring[i + 3] - ring[i + 1], len = Math.hypot(dx, dz);
+      for (let along = -1.6; along <= 1.6; along += .4) {
+        const p = salisbury.salisburyLocalToWorld(salisbury.SALISBURY_SITE,
+          (ring[i] + ring[i + 2]) / 2 + dx / len * along,
+          (ring[i + 1] + ring[i + 3]) / 2 + dz / len * along);
+        const hits = colliders.filter(c => {
+          if (c.minY > 6.5 || c.maxY < 6.5) return false;
+          const x = p.x - c.obb.cx, z = p.z - c.obb.cz;
+          return Math.abs(x * c.obb.cs - z * c.obb.sn) < c.obb.hx && Math.abs(x * c.obb.sn + z * c.obb.cs) < c.obb.hz;
+        });
+        assert.equal(hits.length, 0, `entrance edge ${edge}, offset ${along}`);
+      }
+    }
   } finally { global.document = previous; }
 });
