@@ -1,0 +1,7 @@
+# 灣仔政府大樓 / Wanchai Tower
+
+Photo-directed exterior at 12 Harbour Road, based on the saved research in `references/hongkong/wanchai-tower/`. The OSM v14 ring is used for the footprint (© OpenStreetMap contributors, ODbL); CTBUH gives 136.5 m and 32 storeys, while OSM tags 137 m and 33 levels. A continuous base samples local DTM (5 m at the tower centre); this is not a surveyed construction datum.
+
+The rendered exterior interprets the two long facades' pale solid piers and twelve bands of narrow recessed windows, the dark transfer band and upper blue-grey curtain-wall grid. It includes two estimated projecting glazed entrance pavilions, dark portals, bilingual wall lettering, stepped approaches, handrails, tactile bands and emissive night windows/entrance lights. Pane distribution, dimensions, glass colour, position of lights, and stairs are approximations rather than measured plans. Entrances are closed: interiors and the full surrounding forecourts, landscaping, side access and bridge connections have not been modelled.
+
+A 1 m local road grid with 0.2 m road-query margin checks the tower colliders and estimated step footprints against mapped roads; half-metre approach samples also check the neighbouring Immigration and Revenue Towers, and source street-lamp poles. These are discrete tests, not proof of continuous clearance or surveyed positions. Stair heights are selectable for pedestrians only and do not replace a road surface. No in-game day/night visual or driving inspection has yet been performed.
