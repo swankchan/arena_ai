@@ -1,6 +1,6 @@
 # Former Bowen stop to Magazine Gap Road
 
-The scene's Kennedy/MacDonnell approach track now extends from the former Bowen Road stop node (s≈319.9 m) to s≈359.8 m, stopping before the unresolved Brewin Path conflict. It includes estimated rails, sleepers, terrain cut and retaining walls. It follows the existing trial profile, not surveyed railway levels.
+The scene's Kennedy/MacDonnell approach track now extends from the former Bowen Road stop node (s≈319.9 m) through s≈359.8 m; the later Brewin Path section is described in `docs/peak-tram-brewin-path.md`. It includes estimated rails, sleepers, terrain cut and retaining walls. It follows the existing trial profile, not surveyed railway levels.
 
 At the road-covered core of Magazine Gap Road (road ribbons 2062/5701), a depressed masonry barrel vault and jambs sit below the unchanged road surface. The road is skewed, so only about 6 m of the central track corridor fits wholly under the sampled ribbon; the rest of the portal, the skewed series of arches described in [Checkerboard Hill's 2011 account](https://www.checkerboardhill.com/2011/02/the-peak-tram-trainspotters-edition/), exterior masonry and parapet are **not reconstructed**. Internal arch-stone strips suggest ribs but do not establish the real arch geometry. This is a scene-fit approximation, not a verified historical bridge.
 

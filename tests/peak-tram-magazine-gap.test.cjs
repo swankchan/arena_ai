@@ -8,4 +8,4 @@ test('Magazine Gap Road arch and track remain below sampled road surfaces',async
  }}
  const r=build(new THREE.Group());assert.ok(r.stats.peakTramMagazineGapArchSegments>=3);for(const n of ['Magazine Gap masonry barrel vault','Magazine Gap stone bridge jambs','Magazine Gap arch voussoirs'])assert.ok(r.group.getObjectByName(n));
 });
-test('track stops before the unresolved Brewin Path conflict',async()=>{const {KENNEDY_APPROACH_POINTS:p}=await import('../js/cities/hongkong/peak-tram-kennedy-approach-site.js');assert.ok(p.at(-1).s>359&&p.at(-1).s<361);});
+test('track reaches the next mapped node beyond Brewin Path',async()=>{const {KENNEDY_APPROACH_POINTS:p}=await import('../js/cities/hongkong/peak-tram-kennedy-approach-site.js');assert.equal(p.at(-1).id,'n26412146');});

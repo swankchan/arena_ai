@@ -12,7 +12,11 @@ import { HK_FULL_ROADS as source } from '../../hk-full-roads-data.js';
 // Gloucester Road service ribbon next to the OSM HF95 staircase (way 148858993).
 // The default inferred width overlaps the footbridge stairs; keep both traffic
 // lanes on the original centreline and reduce 8.4 to 7.0 m (not surveyed kerbs).
+// Brewin Path OSM way 156335538 is a narrow hillside access way; the 8.5 m
+// generated ribbon overlaps the Peak Tram. Keep its exact centreline, two-way
+// topology and both lanes, but use an estimated 4.8 m ribbon (not a survey).
 const corrections = new Map([
+  [39703, {width: 4.8, name: '蒲魯賢徑', originalWidth: 8.5, lanes: 2, original: [-436.5,829.7,-374.4,822.8,-368,823.3,-352.3,827.2,-337.8,837.9,-329.2,838.3,-321.3,833.2,-319.8,830.7,-319.1,819.8,-324.8,807.6,-331.4,802.2,-334.5,795.4,-333.6,788.8,-330.6,784.5]}],
   [8995, { width: 7.0, name: '告士打道', originalWidth: 8.4, lanes: 2, original: [1381,307.8,1288.2,316.1,1253.3,315.8] }],
   [44961, { width: 7.6, name: '', originalWidth: 8.4, lanes: 2, original: [10.5, -194, 44.2, -172, 44.2, -167.8, 28, -141.4] }],
   [17569, { width: 11.2, original: [-292.7, -164.2, -217.5, -61.3] }],

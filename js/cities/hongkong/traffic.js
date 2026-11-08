@@ -16,7 +16,7 @@ import {
 } from '../../actor-models.js';
 import { DEFAULT_TAXI_STYLE, getTaxiStyle } from '../../taxi-styles.js';
 import { buildCircularTurn, buildCubicTurn, buildCubicBetween, buildSemicircularUturn, samplePlannedTurn, wrapTrafficAngle } from './traffic-geometry.js';
-import { buildTrafficRouteGeometry } from './traffic-paths.js';
+import { buildTrafficRouteGeometry, trafficLaneOffset, trafficRoadPermits } from './traffic-paths.js';
 import { roadRibbonHeightAtSegment } from './road-elevation.js';
 
 // Hong Kong road traffic. Cars follow the generated drivable graph, keep left, and are restaged around the player when
@@ -107,13 +107,13 @@ export function createHongKongTraffic(scene, { getFocus, taxiStyle, getGroundHei
 
   const drivable = [];
   for (let i = 0; i < graph.length; i++) {
-    if (onLand[i] && graph[i][3] >= 7.4 && total[i] >= 100) drivable.push(i);
+    if (onLand[i] && trafficRoadPermits(routes[i],graph[i][3],true) && total[i] >= 100) drivable.push(i);
   }
 
   function laneSample(link, travelS, dir, isBus = false) {
     const pathS = dir > 0 ? travelS : total[link] - travelS;
     const p = samplePath(paths[link], lengths[link], pathS);
-    const laneOffset = Math.min(4.2, Math.max(1.7, (routes[link]?.laneWidth ?? graph[link][3]) * 0.23)) * (isBus ? 1.12 : 1);
+    const laneOffset = trafficLaneOffset(routes[link]?.laneWidth ?? graph[link][3],isBus);
     const dx = p.dx * dir, dz = p.dz * dir;
     return { x: p.x + p.dz * dir * laneOffset, z: p.z - p.dx * dir * laneOffset,
       dx, dz, heading: Math.atan2(dx, dz) };
@@ -145,7 +145,7 @@ export function createHongKongTraffic(scene, { getFocus, taxiStyle, getGroundHei
   function planNext(vehicle, isBus) {
     const link = vehicle.link, dir = vehicle.dir;
     const node = dir > 0 ? graph[link][1] : graph[link][0];
-    const available = (outgoing[node] || []).filter((option) => onLand[option.link] && graph[option.link][3] >= (isBus ? 7.4 : 5.2) && total[option.link] > 4);
+    const available = (outgoing[node] || []).filter((option) => onLand[option.link] && trafficRoadPermits(routes[option.link],graph[option.link][3],isBus) && total[option.link] > 4);
     const options = available.length ? available : [{ link, dir: -dir }];
     const currentTravelS = getTravelS(vehicle);
     const fromPoint = laneSample(link, total[link], dir, isBus);

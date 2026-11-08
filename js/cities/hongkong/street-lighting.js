@@ -117,7 +117,7 @@ export function createHongKongStreetLighting(root, { lamps = HK_STREET_LIGHTS.la
     let bucket = buckets.get(key);
     if (!bucket) buckets.set(key, (bucket = { key, lamps: [], minX: Infinity, maxX: -Infinity, minZ: Infinity, maxZ: -Infinity }));
     const crossing = crossingSurfaceAt(x, z, 1);
-    const baseY = override ? override[3] / 100 : (crossing?.kind === 'bridge' ? crossing.height : surfaceRoadHeight(x, z));
+    const baseY = !railAdjustment && override ? override[3] / 100 : (crossing?.kind === 'bridge' ? crossing.height : surfaceRoadHeight(x, z));
     if (crossing?.kind === 'bridge') bridgeMatched++;
     bucket.lamps.push([x, z, heading, arms, baseY]);
     bucket.minX = Math.min(bucket.minX, x - 2.6); bucket.maxX = Math.max(bucket.maxX, x + 2.6);

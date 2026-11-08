@@ -4,7 +4,7 @@ import {hongKongTerrainHeight} from './terrain.js';
 // Experimental vertical alignment, not surveyed. Extends beyond MacDonnell stop to the next mapped node.
 const route=PEAK_TRAM_PROFILE.routes.A;
 const begin=route.findIndex(p=>p.id===KENNEDY_BRIDGE_POINTS.at(-1).id);
-const end=route.findIndex(p=>p.id==='e13329898979-26412146-20-39');
+const end=route.findIndex(p=>p.id==='n26412146');
 if(begin<0||end<=begin)throw Error('Kennedy approach endpoints missing');
 export const KENNEDY_APPROACH_POINTS=Object.freeze(route.slice(begin,end+1));
 // Approximate platform footprint at the uphill end of the current approach.

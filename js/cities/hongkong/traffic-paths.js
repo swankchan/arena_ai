@@ -96,6 +96,15 @@ export function buildTrafficRouteGeometry(graph, nodes) {
   }
   return { paths, routes };
 }
+// Narrow authored ribbons need a smaller lane-centre offset. The generic 1.7 m
+// minimum would put traffic outside a 4.8 m road. Buses must not be routed there.
+export function trafficLaneOffset(width,isBus=false){
+ return width<5.2 ? width*.23 : Math.min(4.2,Math.max(1.7,width*.23))*(isBus?1.12:1);
+}
+export function trafficRoadPermits(route,graphWidth,isBus=false){
+ const width=route?.laneWidth??graphWidth;
+ return isBus ? width>=7.4 : width>=5.2 || (route?.laneWidth!=null && width>=4.8);
+}
 export function buildTrafficPaths(graph, nodes) {
   return buildTrafficRouteGeometry(graph, nodes).paths;
 }
