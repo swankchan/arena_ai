@@ -1,4 +1,4 @@
-import { buildHongKongWorld } from './world.js';
+import { buildHongKongWorldAsync } from './world.js';
 import { createHongKongTraffic } from './traffic.js';
 import { createHongKongCrowd } from './crowd.js';
 import { createHongKongHarbour } from './harbour.js';
@@ -33,10 +33,10 @@ export const city = {
   ],
   defaultMode: 'car',
 
-  build({ scene, markInit, setStatus }) {
+  async build({ scene, markInit, setStatus }) {
     setStatus('Building Hong Kong’s terrain-following road map...');
 
-    const world = buildHongKongWorld(scene, { setStatus });
+    const world = await buildHongKongWorldAsync(scene, { setStatus });
     markInit?.('world');
 
     // The traffic restaging halo follows the camera. CameraSystem is created after build(), so the focus is a mutable

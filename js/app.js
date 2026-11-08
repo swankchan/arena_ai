@@ -66,11 +66,15 @@ async function initApp(cityStub) {
   const loadingStatus = document.getElementById('loading-status');
   const loadingTrack = loadingOverlay ? loadingOverlay.querySelector('.loader-track') : null;
   const loadingFill = document.getElementById('loading-progress');
-  // The loading bar sweeps while the city is being built (the main thread is busy) and fills as the shaders compile
+  // Only shader compilation has a known job count; other phases remain indeterminate.
   const setLoadingProgress = (p) => {
     if (!loadingFill) return;
     if (loadingTrack) loadingTrack.classList.remove('is-indeterminate');
     loadingFill.style.transform = `scaleX(${Math.min(1, Math.max(0, p))})`;
+  };
+  const setLoadingIndeterminate = () => {
+    if (loadingTrack) loadingTrack.classList.add('is-indeterminate');
+    if (loadingFill) loadingFill.style.transform = '';
   };
   const setStatus = (text) => {
     if (loadingStatus) loadingStatus.textContent = text;
@@ -112,6 +116,8 @@ async function initApp(cityStub) {
   const world = await city.build({ scene, renderer, lightingSystem, markInit, setStatus });
   markInit('world');
 
+  setStatus('Preparing controls and scene…');
+  await new Promise((resolve) => setTimeout(resolve, 0));
   const colliders = world.colliders ?? [];
   const dynamicRoots = [];
 
@@ -714,7 +720,8 @@ async function initApp(cityStub) {
 
   // The loading screen stays up while the shaders compile (precompileShaders() & the warm-up frame, see the loop) and
   // until the first frame is on screen
-  setStatus('Compiling Shaders & Render Pipelines...');
+  setStatus('Preparing shader compilation…');
+  await new Promise((resolve) => setTimeout(resolve, 0));
 
   // Compile shaders behind the loading screen. Overlapping compileAsync() jobs keep compilation moving
   // while individual jobs yield to the browser.
@@ -774,13 +781,17 @@ async function initApp(cityStub) {
     };
     let next = 0;
     let done = 0;
+    if (jobs.length) {
+      setLoadingProgress(0);
+      setStatus(`Shader jobs processed: 0 / ${jobs.length}`);
+    }
     const worker = async () => {
       while (next < jobs.length) {
         const job = jobs[next++];
         for (const object of job) await compile(object);
         done++;
         if (loadingStatus) {
-          loadingStatus.textContent = `Compiling Shaders & Render Pipelines... ${Math.round((done / jobs.length) * 100)}%`;
+          loadingStatus.textContent = `Shader jobs processed: ${done} / ${jobs.length} (${Math.round((done / jobs.length) * 100)}%)`;
         }
         setLoadingProgress(done / jobs.length);
       }
@@ -793,6 +804,9 @@ async function initApp(cityStub) {
 
   await precompileShaders();
   markInit('compile');
+  setLoadingIndeterminate();
+  setStatus('Preparing first frame and waiting for GPU…');
+  await new Promise((resolve) => setTimeout(resolve, 0));
 
   // 8. Animation Loop
   let lastTime = performance.now();

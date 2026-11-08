@@ -51,13 +51,24 @@ async function selectCity(cityId) {
   if (!city || launching) return;
   launching = true;
   setPickerStatus(`Loading ${city.name}…`);
+  const overlay = document.getElementById('loading-overlay');
+  const start = document.getElementById('start-overlay');
+  const status = document.getElementById('loading-status');
+  if (status) status.textContent = 'Loading city runtime…';
+  overlay?.querySelector('.loader-track')?.classList.add('is-indeterminate');
+  overlay?.classList.remove('hidden');
+  start?.classList.add('hidden');
   try {
+    // Allow the loading screen to paint before fetching/parsing the large runtime.
+    await new Promise((resolve) => requestAnimationFrame(() => setTimeout(resolve, 0)));
     appPromise ??= import('./app.runtime.js');
     const app = await appPromise;
     await app.startCity(cityId);
   } catch (error) {
     console.error('[boot]', error);
     appPromise = null;
+    overlay?.classList.add('hidden');
+    start?.classList.remove('hidden');
     setPickerStatus(`Could not load ${city.name}. Reload and try again; check the browser console if the problem continues.`, true);
   } finally {
     launching = false;

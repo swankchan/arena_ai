@@ -16,7 +16,7 @@ import { AREA_LABELS } from './meta.js';
 import { buildFullHongKongWorld, FULL_WORLD_HEIGHT } from './full-world.js';
 import { isDetailedCore, isTerritoryLand, isTerritoryRoad } from './full-meta.js';
 import { createHongKongTrafficAids } from './traffic-aids.js';
-import { buildSimpleHongKongWorld } from './simple-world.js';
+import { buildSimpleHongKongWorld, buildSimpleHongKongWorldAsync } from './simple-world.js';
 import { cityHallGenericLotConflict } from './city-hall-architecture.js';
 import { centralLibraryGenericLotConflict } from './central-library-architecture.js';
 import {
@@ -322,6 +322,10 @@ function createNeonSigns(root, signs) {
 
 export function buildHongKongWorld(scene, options = {}) {
   return buildSimpleHongKongWorld(scene, options);
+}
+
+export function buildHongKongWorldAsync(scene, options = {}) {
+  return buildSimpleHongKongWorldAsync(scene, options);
 }
 
 // Kept as the legacy detailed presentation; the default Hong Kong experience now uses the unified terrain map above.
