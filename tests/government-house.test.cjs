@@ -6,6 +6,13 @@ test('mapped building, entrance, tower, roofs and gate lodges',()=>{
  b.group.updateMatrixWorld(true);for(let i=0;i<s.localRing.length;i+=2){let v=new T.Vector3(s.localRing[i],0,s.localRing[i+1]).applyMatrix4(b.group.matrixWorld);assert.ok(Math.abs(v.x-s.ring[i])<1e-7);assert.ok(Math.abs(v.z-s.ring[i+1])<1e-7);}
  for(const c of b.colliders){assert.ok(c.minY<c.maxY);for(const key of ['minX','maxX','minZ','maxZ','minY','maxY'])assert.ok(Number.isFinite(c[key]));}
 });
+test('tower has arched insets and diamond grilles on every face',()=>{
+ const b=M.buildGovernmentHouse(new T.Group());
+ for(const name of ['Government House arched tower window insets','Government House arched tower window surrounds','Government House tower diamond grilles']){
+  const mesh=b.group.getObjectByName(name);assert.ok(mesh,name);const pos=mesh.geometry.getAttribute('position');assert.ok(pos.count>100,name);for(const value of pos.array)assert.ok(Number.isFinite(value));
+  mesh.geometry.computeBoundingBox();const box=mesh.geometry.boundingBox;assert.ok(box.min.x<14.4&&box.max.x>21.6,name);assert.ok(box.min.z<-12.6&&box.max.z> -5.4,name);
+ }
+});
 test('nearby sampled road surfaces do not intersect colliders at vehicle height',()=>{
  const b=M.buildGovernmentHouse(new T.Group()),s=A.GOVERNMENT_HOUSE_SITE;let count=0,hits=0;
  for(let x=Math.floor(s.bounds.minX)-30;x<=s.bounds.maxX+30;x++)for(let z=Math.floor(s.bounds.minZ)-30;z<=s.bounds.maxZ+75;z++){

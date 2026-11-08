@@ -62,13 +62,38 @@ export function buildGovernmentHouse(scene) {
  for(const [cx,cz,w,d] of [[18,-5.18,5.8,.65],[18,-12.82,5.8,.65],[14.18,-9,.65,5.8],[21.82,-9,.65,5.8]])box(details,[cx,20.3,cz],[w,.5,d]);
  merged(group,details,mat.plaster,'Government House central landmark tower and balcony');
  for(const [name,x,z,w,d,y,rise] of [['tower',18,-9,9.1,9.1,24,1.5],['cupola',-24,-10,4.2,4.2,12.4,.8]]){const m=new THREE.Mesh(hipRoof(x,z,w,d,y,rise),mat.roof);m.name=`Government House ${name} tiled roof`;group.add(m);}
- const tw=[],tf=[];
- for(const side of [-1,1]){
-  for(const z of [-7.2,-10.8]){box(tw,[18+side*3.68,21.4,z],[.1,1.6,1.1]);for(const zz of [-.4,0,.4])box(tf,[18+side*3.76,21.4,z+zz],[.1,1.6,.06]);}
-  for(const x of [16.3,19.7]){box(tw,[x,21.4,-9+side*3.68],[1.1,1.6,.1]);for(const xx of [-.4,0,.4])box(tf,[x+xx,21.4,-9+side*3.76],[.06,1.6,.1]);}
+ // Tower details follow the preserved reference photograph: small arched
+ // openings below the projecting crown and a larger latticed arched window.
+ // They are surface insets on a solid, non-enterable tower, not real openings.
+ const tw=[],tf=[],grilles=[];
+ function towerArch(face,u,y,width,height,lattice=false){
+  const radius=width/2,spring=height-radius,shape=new THREE.Shape();
+  shape.moveTo(-radius,0);shape.lineTo(radius,0);shape.lineTo(radius,spring);
+  shape.absarc(0,spring,radius,0,Math.PI,false);shape.lineTo(-radius,0);
+  const geometry=new THREE.ShapeGeometry(shape,12),side=face[1];
+  const at=(uu,v)=>face[0]==='z'?[18+u+uu,y+v,-9+side*3.68]:[18+side*3.68,y+v,-9-u-uu];
+  if(face[0]==='x')geometry.rotateY(Math.PI/2);
+  geometry.translate(...at(0,0));tw.push(geometry);
+  for(const uu of [-radius,radius])beam(tf,at(uu,0),at(uu,spring),.075,.075);
+  beam(tf,at(-radius,0),at(radius,0),.075,.075);
+  for(let i=0;i<12;i++){const a=i*Math.PI/12,b=(i+1)*Math.PI/12;beam(tf,at(radius*Math.cos(a),spring+radius*Math.sin(a)),at(radius*Math.cos(b),spring+radius*Math.sin(b)),.075,.075);}
+  if(lattice){
+   // Diamond grilles are clipped to the rectangular part of each window.
+   for(const direction of [-1,1])for(let offset=-height;offset<width+height;offset+=.34){
+    const candidates=[];for(const xx of [0,width]){const yy=direction*xx+offset;if(yy>=0&&yy<=spring)candidates.push([xx,yy]);}
+    for(const yy of [0,spring]){const xx=(yy-offset)/direction;if(xx>0&&xx<width)candidates.push([xx,yy]);}
+    if(candidates.length>=2){const p=candidates[0],q=candidates[1];beam(grilles,at(p[0]-radius,p[1]),at(q[0]-radius,q[1]),.035,.035);}
+   }
+  }else beam(tf,at(0,.05),at(0,spring),.045,.045);
  }
- box(tw,[18,13.5,-5.28],[2,6,.1]);for(let i=-4;i<=4;i++){box(tf,[18+i*.22,13.5,-5.18],[.045,5.8,.07]);box(tf,[18,13.5+i*.55,-5.18],[2,.045,.07]);}
- merged(group,tw,mat.glass,'Government House tower windows');merged(group,tf,mat.trim,'Government House tower window lattice');
+ for(const face of [['z',-1],['z',1],['x',-1],['x',1]]){
+  for(const u of [-1.15,0,1.15])towerArch(face,u,18.5,.62,1.45);
+  towerArch(face,0,21.05,1.65,1.25,true);
+  towerArch(face,0,12.0,2.0,3.8,true);
+ }
+ merged(group,tw,mat.glass,'Government House arched tower window insets');
+ merged(group,tf,mat.trim,'Government House arched tower window surrounds',false);
+ merged(group,grilles,mat.stone,'Government House tower diamond grilles',false);
  box(porch,[1,4.05,9.2],[12,.45,5.5]);for(const x of [-5,7])for(const z of [7.2,11.7]){box(porch,[x,2,z],[.68,4,.68]);const w=harbourCityLocalToWorld(SITE,x,z),foot=Math.min(-.15,hongKongTerrainHeight(w.x,w.z)-base-.15);box(porch,[x,(foot+.28)/2,z],[1,.28-foot,1]);colliders.push(harbourCityLocalCollider(SITE,x,z,1,1,base+foot,base+4.3));}
  merged(group,porch,mat.stone,'Government House granite carriage porch');
  const entry=[],ef=[];box(entry,[1,1.8,6.48],[5.2,3.6,.12]);for(const x of [-1.6,1,3.6])box(ef,[x,1.8,6.58],[.16,3.65,.16]);for(const y of [.12,3.65])box(ef,[1,y,6.58],[5.4,.16,.16]);merged(group,entry,mat.deep,'Government House south entrance glazing');merged(group,ef,mat.stone,'Government House granite entrance surround');
