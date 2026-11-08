@@ -5,7 +5,7 @@ import {authoredLocalToWorld, authoredWorldToLocal, projectHongKongLonLat} from 
 import {hongKongTerrainHeight} from './terrain.js';
 import {fullRoadSurfaceAt} from './full-meta.js';
 import {harbourCityLocalCollider} from './harbour-city-architecture.js';
-import {store,quad,meshStore,beam,merged} from './harbour-city-world-utils.js';
+import {store,quad,meshStore,beam,box,sphere,merged} from './harbour-city-world-utils.js';
 
 export const MURRAY_TREE_WORLD=Object.freeze(projectHongKongLonLat(TREE.lon,TREE.lat));
 export const MURRAY_TREE_LOCAL=Object.freeze(authoredWorldToLocal(SITE,...MURRAY_TREE_WORLD));
@@ -14,7 +14,7 @@ const {x:TX,z:TZ}=MURRAY_TREE_LOCAL;
 export function buildMurrayCourtyard(root,datum,colliders){
  const ground=(x,z)=>{const p=authoredLocalToWorld(SITE,x,z);return hongKongTerrainHeight(p.x,p.z)-datum;};
  const base=ground(TX,TZ),roadFree=(x,z,margin=0)=>{const p=authoredLocalToWorld(SITE,x,z);return !fullRoadSurfaceAt(p.x,p.z,margin,ground(x,z)+datum);};
- const paving=store(),planter=store(),soil=store(),trunk=[],foliage=[],blossoms=[];
+ const paving=store(),planter=store(),soil=store(),trunk=[],foliage=[],blossoms=[],beds=[],hedges=[];
  let cells=0;
  // Gently terrain-following paving links the arcade edge to the mapped tree. Road ribbons are
  // excluded including a safety margin. The cells' shared height function avoids visual steps.
@@ -44,7 +44,19 @@ export function buildMurrayCourtyard(root,datum,colliders){
  }
  const crown=new THREE.SphereGeometry(1,14,9);crown.scale(3.4,2.1,3.1);crown.translate(TX,base+14.4,TZ);foliage.push(crown);
  merged(root,trunk,bark,'The Murray mapped Cassia tree trunk and branches');merged(root,foliage,leaf,'The Murray Cassia green canopy');merged(root,blossoms,flower,'The Murray Cassia illustrative blossoms',false);
+ // Small planted forecourt beds are an interpretation of the landscaped podium,
+ // not surveyed planting locations. Exclude road corridors and the arrival path.
+ let gardenBeds=0;
+ const bedMat=new THREE.MeshStandardMaterial({color:0x6e7068,roughness:.92});
+ const hedgeMat=new THREE.MeshStandardMaterial({color:0x405f45,roughness:.98});
+ for(const [x,z] of [[19,-20],[23,-20],[31,-20],[33,-6],[19,-6]]){
+  if(![[-1.4,-.75],[-1.4,.75],[1.4,-.75],[1.4,.75],[0,0]].every(([dx,dz])=>roadFree(x+dx,z+dz,1.5)))continue;
+  const h=ground(x,z);box(beds,[x,h+.20,z],[2.5,.4,1.2]);
+  for(let j=-2;j<=2;j++)sphere(hedges,[x+j*.42,h+.57,z],.38,9);
+  colliders.push(harbourCityLocalCollider(SITE,x,z,2.5,1.2,datum+h-.1,datum+h+.98));gardenBeds++;
+ }
+ merged(root,beds,bedMat,'The Murray forecourt planted stone beds');merged(root,hedges,hedgeMat,'The Murray forecourt clipped shrubs');
  // The raised planter is a solid obstruction. A slightly inset box approximates its circular edge.
  colliders.push(harbourCityLocalCollider(SITE,TX,TZ,3.5,3.5,datum+base-.3,datum+base+.4));
- return {treeLocal:MURRAY_TREE_LOCAL,treeWorld:MURRAY_TREE_WORLD,cells};
+ return {treeLocal:MURRAY_TREE_LOCAL,treeWorld:MURRAY_TREE_WORLD,cells,gardenBeds};
 }

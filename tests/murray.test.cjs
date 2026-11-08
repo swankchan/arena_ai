@@ -215,3 +215,8 @@ test('curved ramp stays above terrain and joins the adjacent ground at its end',
  }assert.ok(maxUnder<.04,`terrain covers ramp by ${maxUnder}m`);
  let prev=null;for(let x=0;x<=2.4;x+=.1){const p=util.harbourCityLocalToWorld(A.MURRAY_SITE,x,52),ground=terrain.hongKongTerrainHeight(p.x,p.z);for(const c of b.colliders)if(ground+1.75>=c.minY&&ground+.1<=c.maxY)assert.equal(collision.colliderContains(c,p.x,p.z,.48),false,`blocked ground exit ${x}`);if(prev!==null)assert.ok(Math.abs(ground-prev)<.08);prev=ground;}
 });
+test('forecourt planting is present and leaves the tree-side arrival path clear',()=>{
+ assert.equal(b.courtyard.gardenBeds,5);
+ for(const name of ['The Murray forecourt planted stone beds','The Murray forecourt clipped shrubs'])assert.ok(b.group.getObjectByName(name),name);
+ for(let x=12.6;x<=25;x+=.1){const z=-14.5,p=util.harbourCityLocalToWorld(A.MURRAY_SITE,x,z),y=b.groundHeightAt(p.x,p.z,terrain.hongKongTerrainHeight(p.x,p.z),b.datum-5);for(const c of b.colliders)if(y+1.75>=c.minY&&y+.1<=c.maxY)assert.equal(collision.colliderContains(c,p.x,p.z,.48),false,`forecourt path blocked ${x}`);}
+});
