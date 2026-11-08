@@ -8,3 +8,12 @@ test('speedometer and metre altimeter map readings to the printed 260 degree dia
  assert.match(app,/gaugeNeedleDegrees\(kmh, SPEED_GAUGE_MAX_KPH\)/);assert.match(app,/gaugeNeedleDegrees\(altitudeMetres, ALTITUDE_GAUGE_MAX_METRES\)/);
  assert.doesNotMatch(html,/hud-speed-meter/);
 });
+test('instrument backgrounds are see-through and dials are larger without changing their behavior',()=>{
+ const css=fs.readFileSync('css/style.css','utf8');
+ assert.match(css,/\.cluster\.panel\s*\{[^}]*width:\s*320px;[^}]*background:\s*transparent;[^}]*backdrop-filter:\s*none/);
+ assert.match(css,/\.instrument\s*\{\s*width:\s*140px;\s*flex:\s*0 1 140px/);
+ assert.match(css,/\.instrument-inner\s*\{\s*fill:\s*rgba\(16, 23, 29, \.48\)/);
+ assert.match(css,/body\.touch-enabled \.cluster\.panel\s*\{\s*width:\s*266px/);
+ assert.match(css,/body\.touch-enabled \.instrument\s*\{\s*width:\s*113px/);
+ assert.match(css,/max-width:\s*calc\(100vw - 2 \* var\(--edge\)\)/);
+});
