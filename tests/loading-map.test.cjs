@@ -26,3 +26,15 @@ test('the compact map is reproducibly derived from the game road and coastline d
   assert.match(read('tools/graphics/build-loading-map.mjs'), /HK_FULL_ROADS\.roads/);
   assert.match(read('tools/graphics/build-loading-map.mjs'), /HK_FULL_MAP\.land/);
 });
+
+test('the atlas is a decorative full-screen background behind readable loader content', () => {
+  const html = read('index.html');
+  const loader = html.slice(html.indexOf('id="loading-overlay"'), html.indexOf('<!-- 3D WebGPU'));
+  assert.ok(loader.indexOf('class="loader-map"') < loader.indexOf('class="loader"'));
+  assert.match(loader, /class="loader-map" aria-hidden="true"/);
+  const css = read('css/style.css');
+  assert.match(css, /\.loader-map\s*\{\s*position:\s*absolute;\s*inset:\s*0/);
+  assert.match(css, /\.loader-map img\s*\{[^}]*object-fit:\s*cover/);
+  assert.match(css, /\.loader-map::after\s*\{[^}]*radial-gradient/);
+  assert.match(loader, /OpenStreetMap contributors/);
+});
