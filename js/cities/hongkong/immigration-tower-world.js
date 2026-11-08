@@ -3,7 +3,7 @@ import { attribute, color } from 'three/tsl';
 import { IMMIGRATION_TOWER_SITE as site, IMMIGRATION_TOWER_HEIGHT as height } from './immigration-tower-architecture.js';
 import { hongKongTerrainHeight } from './terrain.js';
 import { harbourCityEdgeOutward, harbourCitySegmentCollider, harbourCityLocalToWorld, harbourCityLocalCollider } from './harbour-city-architecture.js';
-import { store, quad, point, edgeBox, meshStore, merged, roofGeometry, nightAmount, hash, box } from './harbour-city-world-utils.js';
+import { store, quad, point, edgeBox, meshStore, merged, roofGeometry, nightAmount, hash, box, beam } from './harbour-city-world-utils.js';
 import { makeCanvasSign } from './tst-hotel-world-utils.js';
 
 // Photo-directed exterior; public bridge and complete interior are not modeled.
@@ -42,6 +42,34 @@ export function buildImmigrationTower(scene){
  merged(group,frames,mainFrame,'Immigration Tower major black frames');
  merged(group,fine,thinFrame,'Immigration Tower fine curtain wall grid',false);
  merged(group,[roofGeometry(site.localRing,height)],mainFrame,'Immigration Tower roof');
+ // Historic Philips rooftop sign: the 2007–2021 skyline rather than the later advertiser.
+ // The metal lattice and letter proportions are photo-estimated, not measured.
+ const roofEdge=8, signWidth=42, signHeight=10, roofFrame=[];
+ const roofLen=harbourCityEdgeOutward(site.localRing,roofEdge).length;
+ const half=signWidth/roofLen/2, left=.5-half, right=.5+half;
+ const roofPoint=(t,y,o)=>point(site,roofEdge,t,y,o);
+ for (const offset of [-.3,-1.7]) {
+  for(const y of [height+.35,height+signHeight]) beam(roofFrame,roofPoint(left,y,offset),roofPoint(right,y,offset),.18);
+  for(let i=0;i<=8;i++){
+   const t=left+(right-left)*i/8;
+   beam(roofFrame,roofPoint(t,height+.35,offset),roofPoint(t,height+signHeight,offset),.16);
+   if(i<8) beam(roofFrame,roofPoint(t,height+.35,offset),roofPoint(left+(right-left)*(i+1)/8,height+signHeight,offset),.09);
+  }
+ }
+ for(let i=0;i<=8;i++) for(const y of [height+.35,height+signHeight]){
+  const t=left+(right-left)*i/8; beam(roofFrame,roofPoint(t,y,-.3),roofPoint(t,y,-1.7),.12);
+ }
+ merged(group,roofFrame,mainFrame,'Immigration Tower rooftop LED steel lattice',false);
+ const roofSign=makeCanvasSign(signWidth,signHeight,(ctx,c)=>{
+  ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillStyle='#3d69df';ctx.font='bold 340px sans-serif';
+  ctx.fillText('PHILIPS',c.width/2,c.height/2,c.width*.96);
+ });
+ const oldRoofMaterial=roofSign.material;
+ roofSign.material=new THREE.MeshStandardNodeMaterial({map:oldRoofMaterial.map,transparent:true,alphaTest:.04,roughness:.6,side:THREE.DoubleSide});
+ oldRoofMaterial.dispose();roofSign.material.emissiveNode=color(0x245bff).mul(nightAmount()).mul(1.25);
+ const roofNormal=harbourCityEdgeOutward(site.localRing,roofEdge);
+ roofSign.position.set(...roofPoint(.5,height+signHeight/2,-.15));roofSign.rotation.y=Math.atan2(roofNormal.nx,roofNormal.nz);
+ roofSign.name='Immigration Tower historical rooftop LED letters';group.add(roofSign);
  // Shallow projecting entry canopy, patterned on the garden-side photograph.
  // Width, depth and supports are estimated and avoid the mapped roadway.
  const canopy=[],canopyColumns=[];
