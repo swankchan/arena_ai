@@ -72,16 +72,38 @@ function buildQueen(feature, group, materials, colliders) {
   colliders.push(majorParkBoxCollider(feature.site.x, feature.site.z, 5, 5, pad, pad + 5.2));
 }
 function buildModelBoatPool(group, materials, colliders) {
-  const feature = VICTORIA_MODEL_BOAT_POOL, { pad } = addMajorParkWater(feature, group, materials, colliders, { depth: .5 });
-  const boats = [], sails = [];
-  for (let i = 0; i < 3; i++) {
-    const x = feature.site.x + (i - 1) * 10, z = feature.site.z + (i % 2 ? 3 : -3);
-    const hull = new THREE.SphereGeometry(1, 12, 8); hull.scale(1.7, .24, .58); hull.translate(x, pad + .16, z); boats.push(hull);
-    beam(boats, [x, pad + .15, z], [x, pad + 1.8, z], .035, .035);
-    const sail = new THREE.BufferGeometry(); sail.setAttribute('position', new THREE.Float32BufferAttribute([x,pad+.45,z, x,pad+1.75,z, x+1.05,pad+.55,z], 3)); sail.computeVertexNormals(); sails.push(sail);
-  }
-  merged(group, boats, materials.white, 'Victoria Park Model Boat Pool three small model sailing boats');
-  merged(group, sails, materials.white, 'Victoria Park Model Boat Pool model sails', false);
+  const feature = VICTORIA_MODEL_BOAT_POOL, { pad } = addMajorParkWater(feature, group, materials, colliders, { shallow: true });
+  // A subtle tiled colour impression under broken reflections, based on contemporary
+  // photographs; this is not a measured mosaic or simulation of moving water.
+  const water = group.getObjectByName(`${feature.name} water surface`);
+  const poolWater = materials.shallowWater.clone();
+  poolWater.color.set(0x73aaa4);
+  const mosaic = positionWorld.x.mul(5.4).sin().mul(positionWorld.z.mul(5.4).sin()).mul(.045);
+  const ripples = positionWorld.x.mul(1.9).add(positionWorld.z.mul(.8)).sin().mul(.055);
+  poolWater.colorNode = materialColor.rgb.mul(mosaic.add(ripples).add(.95));
+  water.material = poolWater;
+  const local = majorParkLocalGroup(feature, group, pad, 'Victoria Park small model boats');
+  const hulls = [], cabin = [], details = [], sail = [];
+  // Small electrically propelled model launch and a sailing model, rather than
+  // three identical oversized white spheres. Their presence is illustrative.
+  const hull = (x, z, length, width) => {
+    const g = new THREE.SphereGeometry(1, 16, 10);
+    g.scale(length * .5, .13, width * .5); g.translate(x, .08, z); hulls.push(g);
+  };
+  hull(-8, -3, 1.4, .42);
+  box(cabin, [-8.1, .27, -3], [.45, .25, .29]);
+  box(details, [-8.1, .42, -3], [.49, .04, .32]);
+  beam(details, [-7.95,.39,-3], [-7.95,.73,-3], .025, .025);
+  hull(8, 3, 1.25, .34);
+  beam(details, [8,.16,3], [8,1.15,3], .025, .025);
+  const cloth = new THREE.BufferGeometry();
+  cloth.setAttribute('position', new THREE.Float32BufferAttribute([8,.23,3, 8,1.10,3, 8.68,.25,3], 3));
+  cloth.computeVertexNormals(); sail.push(cloth);
+  const sailMaterial = new THREE.MeshStandardMaterial({ color: 0xe3e0cf, roughness: .85, side: THREE.DoubleSide });
+  merged(local, hulls, materials.white, 'Victoria Park Model Boat Pool small model hulls');
+  merged(local, cabin, materials.white, 'Victoria Park Model Boat Pool model launch cabin');
+  merged(local, details, materials.dark, 'Victoria Park Model Boat Pool mast and launch fittings');
+  merged(local, sail, sailMaterial, 'Victoria Park Model Boat Pool model sail', false);
 }
 function buildFountainPlaza(feature, group, materials, colliders) {
   const { pad } = majorParkRingSurface(feature, materials.plaza, 'Victoria Park Water Fountain Plaza exact OSM pedestrian terrace', group);
@@ -185,9 +207,16 @@ export function buildVictoriaPark(scene) {
     if (feature.kind === 'playground') addMajorParkPlayground(feature, root, materials, colliders);
   }
   const entrances = addMajorParkEntrances(park, root, materials, colliders), furniture = addMajorParkFurniture(park, root, materials, colliders);
+  // Illuminate from the actual generated path lantern positions, without adding
+  // posts in the water, walking routes or carriageways. Only the nearest two
+  // contribute local light to keep the cost bounded.
+  const poolLights = furniture.lampPositions
+    .map(p => ({...p, distance: Math.hypot(p.x - VICTORIA_MODEL_BOAT_POOL.site.x, p.z - VICTORIA_MODEL_BOAT_POOL.site.z)}))
+    .filter(p => p.distance < 30).sort((a, b) => a.distance - b.distance).slice(0, 2)
+    .map(p => { const light = new THREE.PointLight(0xffd9a5, 0, 22, 2); light.name = 'Victoria model boat pool nearby path lantern light'; light.position.set(p.x, p.y, p.z); root.add(light); return light; });
   const treeSites = createMajorParkTreeSites(park, 175);
   return {
-    root, colliders, treeSites, park, update: bandstand.update, landmarks: [majorParkLandmark(park, 20)], arrivalPoints: majorParkArrivalPoints(park),
+    root, colliders, treeSites, park, update() { bandstand.update(); const glow = THREE.MathUtils.smoothstep(cityUniforms.uInteriorGlow.value, .55, 1.4); for (const light of poolLights) light.intensity = 24 * glow; }, landmarks: [majorParkLandmark(park, 20)], arrivalPoints: majorParkArrivalPoints(park),
     groundHeightAt: (x, z, ground) => majorParkGroundHeightAt(park, x, z, ground),
     stats: {
       victoriaParkSourceWay: park.id, victoriaParkSourceVersion: park.source.version, victoriaParkSiteArea: park.area, victoriaParkOfficialArea: park.officialArea,

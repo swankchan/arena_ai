@@ -334,3 +334,22 @@ test('Victoria model boat pool approximate location stays within park, away from
     for (const other of park.features) if (hard.has(other.kind)) assert.ok(!inside(other.ring, x, z), `${other.name} overlaps pool`);
   }
 });
+
+test('model boat pool has dedicated water and bounded day/night path lighting', async () => {
+  const world = worlds.get(arch.VICTORIA_PARK);
+  const water = world.root.getObjectByName(`${arch.VICTORIA_MODEL_BOAT_POOL.name} water surface`);
+  assert.ok(water?.material.colorNode, 'water should have a dedicated procedural tint');
+  assert.ok(world.root.getObjectByName('Victoria Park Model Boat Pool model launch cabin'));
+  assert.ok(world.root.getObjectByName('Victoria Park Model Boat Pool model sail'));
+  const lights = [];
+  world.root.traverse(o => { if (o.name === 'Victoria model boat pool nearby path lantern light') lights.push(o); });
+  assert.equal(lights.length, 2);
+  const {cityUniforms} = await import('../js/tsl-materials.js');
+  const old = cityUniforms.uInteriorGlow.value;
+  try {
+    cityUniforms.uInteriorGlow.value = 0; world.update();
+    for (const light of lights) assert.equal(light.intensity, 0);
+    cityUniforms.uInteriorGlow.value = 1.4; world.update();
+    for (const light of lights) { assert.equal(light.intensity, 24); assert.ok(!arch.majorParkRoadAt(arch.VICTORIA_PARK, light.position.x, light.position.z, .35)); }
+  } finally { cityUniforms.uInteriorGlow.value = old; world.update(); }
+});

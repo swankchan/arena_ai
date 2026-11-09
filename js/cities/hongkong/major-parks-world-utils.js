@@ -179,6 +179,7 @@ export function addMajorParkEntrances(park, group, materials, colliders) {
 export function addMajorParkFurniture(park, group, materials, colliders) {
   const lamps = [], luminaires = [], benches = [], bins = [];
   let lampCount = 0, benchCount = 0;
+  const lampPositions = [];
   for (const route of park.paths) for (let i = 2; i < route.points.length; i += 2) {
     const ax = route.points[i - 2], az = route.points[i - 1], bx = route.points[i], bz = route.points[i + 1];
     const dx = bx - ax, dz = bz - az, length = Math.hypot(dx, dz); if (length < 1) continue;
@@ -189,7 +190,7 @@ export function addMajorParkFurniture(park, group, materials, colliders) {
       if (majorParkFurnitureConflictAt(park, x, z, .45)) continue;
       const y = pathHeight(park, x, z);
       cylinder(lamps, [x, y + 2.05, z], .075, 4.1, 10); cylinder(lamps, [x, y + .18, z], .16, .36, 10);
-      sphere(luminaires, [x, y + 4.18, z], .19, 10); colliders.push(majorParkBoxCollider(x, z, .24, .24, y, y + 4.1)); lampCount++;
+      sphere(luminaires, [x, y + 4.18, z], .19, 10); colliders.push(majorParkBoxCollider(x, z, .24, .24, y, y + 4.1)); lampPositions.push({x, y: y + 4.18, z}); lampCount++;
     }
     for (let d = 24; d < length; d += 47) {
       const side = (Math.floor(d / 47) + i) % 2 ? 1 : -1, offset = route.width * .5 + 1.65;
@@ -207,7 +208,7 @@ export function addMajorParkFurniture(park, group, materials, colliders) {
   merged(group, luminaires, materials.warmLight, `${park.englishName} warm path lantern globes`, false);
   merged(group, benches, materials.wood, `${park.englishName} path benches`);
   merged(group, bins, materials.dark, `${park.englishName} litter bins`);
-  return { lamps: lampCount, benches: benchCount };
+  return { lamps: lampCount, benches: benchCount, lampPositions };
 }
 export function addMajorParkWater(feature, group, materials, colliders, options = {}) {
   const pad = majorParkPadHeight(feature, .03), bottom = majorParkMinimumTerrain(feature);
