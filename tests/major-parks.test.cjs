@@ -119,7 +119,9 @@ test('ground queries preserve roads, use traceable DTM outside pads and match wa
     if (inside(park.ring, x, z)) assert.equal(arch.majorParkGroundHeightAt(park, x, z, 123), 123);
   }
   const pool = arch.VICTORIA_MODEL_BOAT_POOL;
-  assert.equal(arch.majorParkGroundHeightAt(arch.VICTORIA_PARK, pool.site.x, pool.site.z, 0), arch.majorParkPadHeight(pool) - .5);
+  const waterPoint = arch.majorParkLocalToWorld(pool.site, 8, -3);
+  assert.ok(inside(pool.ring, waterPoint.x, waterPoint.z));
+  assert.equal(arch.majorParkGroundHeightAt(arch.VICTORIA_PARK, waterPoint.x, waterPoint.z, 0), arch.majorParkPadHeight(pool) - .5);
   assert.equal(arch.MAJOR_PARK_BASE_OFFSET, .055); assert.equal(arch.MAJOR_PARK_PATH_OFFSET, .09);
 });
 
@@ -352,4 +354,22 @@ test('model boat pool has dedicated water and bounded day/night path lighting', 
     cityUniforms.uInteriorGlow.value = 1.4; world.update();
     for (const light of lights) { assert.equal(light.intensity, 24); assert.ok(!arch.majorParkRoadAt(arch.VICTORIA_PARK, light.position.x, light.position.z, .35)); }
   } finally { cityUniforms.uInteriorGlow.value = old; world.update(); }
+});
+
+
+test('boat pool provisional finger is dry, paved, connected and avoids roads', () => {
+  const park = arch.VICTORIA_PARK, pool = arch.VICTORIA_MODEL_BOAT_POOL, ring = pool.fingerRing;
+  const world = worlds.get(park); assert.ok(world.root.getObjectByName('Victoria Model Boat Pool provisional paved dividing finger'));
+  let samples = 0;
+  for (let x = pool.bounds.minX; x <= pool.bounds.maxX; x += .75) for (let z = pool.bounds.minZ; z <= pool.bounds.maxZ; z += .75) {
+    if (!inside(ring, x, z)) continue;
+    samples++;
+    assert.ok(!inside(pool.ring, x, z), 'finger intersects water');
+    assert.ok(inside(park.ring, x, z));
+    assert.ok(!arch.majorParkRoadAt(park, x, z, .5));
+    assert.equal(arch.majorParkGroundHeightAt(park, x, z, 0), arch.majorParkPadHeight(pool, .03) + .14);
+    assert.ok(arch.majorParkFurnitureConflictAt(park, x, z));
+  }
+  assert.ok(samples > 40);
+  assert.ok(Math.abs(pool.area - 954) < 1e-6);
 });

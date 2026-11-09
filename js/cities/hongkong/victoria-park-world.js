@@ -75,6 +75,10 @@ function buildModelBoatPool(group, materials, colliders) {
   const feature = VICTORIA_MODEL_BOAT_POOL, { pad } = addMajorParkWater(feature, group, materials, colliders, { shallow: true });
   // A subtle tiled colour impression under broken reflections, based on contemporary
   // photographs; this is not a measured mosaic or simulation of moving water.
+  // Paved promontory projects between the two water areas. Its shape and
+  // orientation are an explicit estimate rather than an engineering plan.
+  const finger = ringShellGeometry(feature.fingerRing, majorParkMinimumTerrain(feature), pad + .14);
+  meshFromGeometry(group, finger, materials.plaza, 'Victoria Model Boat Pool provisional paved dividing finger');
   const water = group.getObjectByName(`${feature.name} water surface`);
   const poolWater = materials.shallowWater.clone();
   poolWater.color.set(0x73aaa4);
