@@ -13,3 +13,10 @@ test('Central approach collision boxes are registered once',()=>{
  const source=require('node:fs').readFileSync('js/cities/hongkong/simple-world.js','utf8');
  assert.equal((source.match(/\.\.\.peakTramCentralApproach\.colliders/g)||[]).length,1);
 });
+test('person near Central station floor is not snapped to an overhead road; cars still use it',async()=>{
+ const {centralPlatformPoint:p,centralPlatformGroundHeight:floor,centralPlatformUnderRoad:under,CENTRAL_PLATFORM_END:end}=await import('../js/cities/hongkong/peak-tram-central-platform-site.js');
+ const {fullRoadSurfaceAt:road}=await import('../js/cities/hongkong/full-meta.js'),{hongKongTerrainHeight:terrain}=await import('../js/cities/hongkong/terrain.js');let checked=0;
+ for(let s=.5;s<end;s+=.5){const q=p(s);for(let o of [-3,0,3]){let x=q.x+q.nx*o,z=q.z+q.nz*o,r=road(x,z,.35,terrain(x,z));if(!r)continue;let y=floor(x,z,null,q.y);assert.notEqual(y,null);assert.equal(under(x,z,'person',y,r.height),true);assert.equal(under(x,z,'person',r.height,r.height),false);assert.equal(under(x,z,'car',y,r.height),false);checked++;}}
+ assert.ok(checked>10);const q=p(1);assert.equal(under(q.x+100,q.z,'person',q.y,q.y+10),false);assert.equal(under(q.x,q.z,'person',NaN,q.y+10),false);
+ const source=require('node:fs').readFileSync('js/cities/hongkong/simple-world.js','utf8');assert.match(source,/!centralPlatformUnderRoad\(x, z, mode, referenceY, road.height\)/);
+});

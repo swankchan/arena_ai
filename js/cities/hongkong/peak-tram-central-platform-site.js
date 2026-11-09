@@ -19,3 +19,12 @@ export function centralPlatformGroundHeight(x,z,current,referenceY){
  const p=centralPlatformPoint(s),y=p.y+(Math.abs(offset)<1.65?-.28:.57);
  return Math.abs(referenceY-y)<2.5?y:current;
 }
+
+// Only a person already near the station floor may select it over a road.
+// In particular, an untagged surface road can still pass overhead here.
+// Other modes and the ordinary road-selection policy remain unchanged.
+export function centralPlatformUnderRoad(x,z,mode,referenceY,roadHeight){
+ if(mode!=='person'||!Number.isFinite(referenceY)||!Number.isFinite(roadHeight))return false;
+ const station=centralPlatformGroundHeight(x,z,null,referenceY);
+ return station!==null && Math.abs(referenceY-station)+0.5<Math.abs(referenceY-roadHeight);
+}

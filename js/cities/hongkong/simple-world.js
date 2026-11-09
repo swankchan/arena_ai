@@ -1,6 +1,6 @@
 import {buildPeakTramCentralApproach} from './peak-tram-central-approach.js';
 import {buildPeakTramCentralPlatform} from './peak-tram-central-platform.js';
-import {centralPlatformGroundHeight} from './peak-tram-central-platform-site.js';
+import {centralPlatformGroundHeight, centralPlatformUnderRoad} from './peak-tram-central-platform-site.js';
 import {buildPeakTramCentralEntrance} from './peak-tram-central-entrance.js';
 import {buildStJohnsBuilding} from './st-johns-building-world.js';
 import { buildHkapa } from './hkapa-world.js';
@@ -388,7 +388,7 @@ function* buildSimpleHongKongWorldSteps(scene) {
     let groundUsesRoad = false;
     if (road) {
       const layered = Boolean(road.flags & 6);
-      if (!layered || Math.abs(road.height - referenceY) <= Math.abs(base - referenceY) + 0.5) { base = road.height; groundUsesRoad = true; }
+      if (!centralPlatformUnderRoad(x, z, mode, referenceY, road.height) && (!layered || Math.abs(road.height - referenceY) <= Math.abs(base - referenceY) + 0.5)) { base = road.height; groundUsesRoad = true; }
     }
     const crossingGround = selectCrossingGround(base, crossingSurfaceAt(x, z), referenceY, WATER_LEVEL);
     const ground = scbEntranceGroundHeight(x, z, crossingGround, standardChartered.groundOffset);
