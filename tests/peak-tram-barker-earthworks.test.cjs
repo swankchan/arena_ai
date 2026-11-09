@@ -8,3 +8,9 @@ test('infill covers the terrain-opening union and leaves road and rail envelopes
  const mesh=result.group.getObjectByName('Plantation Road cutting retaining faces').geometry.attributes.position;
  for(let i=0;i<mesh.count;i++){let x=mesh.getX(i),y=mesh.getY(i),z=mesh.getZ(i),r=road(x,z,0,g(x,z));if(r)assert.ok(y<r.height-.1||y>r.height+4.5);for(let s=1098;s<=1116;s+=.4){let q=p(s);if(Math.hypot(x-q.x,z-q.z)<1.8)assert.ok(y<q.y-.65);}}
 });
+test('opening underside connects downhill terrain without entering sampled road or rail envelopes',async()=>{
+ const T=await import('three/webgpu'),{buildBarkerRoadEarthworks:build,barkerRoadDatum:datum}=await import('../js/cities/hongkong/peak-tram-barker-earthworks.js'),{fullRoadSurfaceAt:road}=await import('../js/cities/hongkong/full-meta.js'),{hongKongTerrainHeight:h}=await import('../js/cities/hongkong/terrain.js'),{barkerStationTrackPoint:p}=await import('../js/cities/hongkong/peak-tram-barker-station-track-site.js');
+ const mesh=build(new T.Group()).group.getObjectByName('Plantation Road below-grade edge fill');assert.ok(mesh);const pos=mesh.geometry.attributes.position;assert.ok(pos.count>0);let sampled=0;
+ for(let i=0;i<pos.count;i+=3){const a=[pos.getX(i),pos.getY(i),pos.getZ(i)],b=[pos.getX(i+1),pos.getY(i+1),pos.getZ(i+1)],c=[pos.getX(i+2),pos.getY(i+2),pos.getZ(i+2)];for(const [u,v] of [[0,0],[1,0],[0,1],[.5,0],[0,.5],[.5,.5],[1/3,1/3]]){const x=a[0]*(1-u-v)+b[0]*u+c[0]*v,y=a[1]*(1-u-v)+b[1]*u+c[1]*v,z=a[2]*(1-u-v)+b[2]*u+c[2]*v;const r=road(x,z,0,h(x,z));if(r)assert.ok(y<r.height-.04,`edge fill enters road ${r.way.id}, clearance ${r.height-y}`);for(let s=1098;s<=1116;s+=.5){const q=p(s);if(Math.hypot(x-q.x,z-q.z)<1.7)assert.ok(y<q.y-.65,'edge fill intersects tram deck');}sampled++;}}
+ assert.ok(sampled>100);
+});

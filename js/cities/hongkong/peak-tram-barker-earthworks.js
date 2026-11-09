@@ -21,7 +21,7 @@ export function barkerRoadDatum(x,z){
 }
 export function buildBarkerRoadEarthworks(scene){
  const group=new THREE.Group();group.name='Barker Road cutting earthworks';scene.add(group);
- const floor=store(),walls=store();
+ const floor=store(),walls=store(),edgeFill=store();
  for(let i=0;i<triangles.length;i+=6){
   const a=[triangles[i],0,triangles[i+1]],b=[triangles[i+2],0,triangles[i+3]],c=[triangles[i+4],0,triangles[i+5]];
   for(const p of [a,b,c])p[1]=barkerRoadDatum(p[0],p[2]);
@@ -33,6 +33,15 @@ export function buildBarkerRoadEarthworks(scene){
   const a=boundary[i-1],b=boundary[i],length=Math.hypot(b[0]-a[0],b[1]-a[1]),n=Math.max(1,Math.ceil(length/.45));
   for(let j=0;j<n;j++){
    const t=j/n,T=(j+1)/n,x=a[0]+(b[0]-a[0])*t,z=a[1]+(b[1]-a[1])*t,X=a[0]+(b[0]-a[0])*T,Z=a[1]+(b[1]-a[1])*T;
+   // Where the original slope falls below the opening floor, close the
+   // exposed underside down to that slope. Unlike the retaining faces this
+   // stays entirely BELOW the road datum, so road mouths remain open.
+   const edgeY=barkerRoadDatum(x,z),edgeEndY=barkerRoadDatum(X,Z);
+   const ground=hongKongTerrainHeight(x,z)-.08,groundEnd=hongKongTerrainHeight(X,Z)-.08;
+   const lower=Math.min(edgeY,ground),lowerEnd=Math.min(edgeEndY,groundEnd);
+   if(edgeY-lower>.01||edgeEndY-lowerEnd>.01){
+    quad(edgeFill,[x,lower,z],[X,lowerEnd,Z],[X,edgeEndY,Z],[x,edgeY,z],[.29,.30,.28]);
+   }
    // Fail open for all road exits: no wall is drawn near a road ribbon.
    let occupied=false;for(const f of [0,.5,1]){let xx=x+(X-x)*f,zz=z+(Z-z)*f;if(fullRoadSurfaceAt(xx,zz,.6,hongKongTerrainHeight(xx,zz)))occupied=true;}
    if(occupied)continue;
@@ -42,6 +51,6 @@ export function buildBarkerRoadEarthworks(scene){
   }
  }
  const stone=new THREE.MeshStandardMaterial({vertexColors:true,roughness:.96,side:THREE.DoubleSide});
- meshStore(group,floor,stone,'Plantation Road opening infill');meshStore(group,walls,stone,'Plantation Road cutting retaining faces');
+ meshStore(group,floor,stone,'Plantation Road opening infill');meshStore(group,walls,stone,'Plantation Road cutting retaining faces');meshStore(group,edgeFill,stone,'Plantation Road below-grade edge fill');
  return {group,stats:{peakTramBarkerCutFaces:wallCount,peakTramBarkerCutTriangles:triangles.length/6}};
 }
