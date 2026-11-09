@@ -2,6 +2,7 @@ import * as THREE from 'three/webgpu';
 import {color} from 'three/tsl';
 import {cityUniforms} from '../../tsl-materials.js';
 import {hongKongTerrainHeight} from './terrain.js';
+import {makeCanvasSign} from './tst-hotel-world-utils.js';
 import {CENTRAL_CONCOURSE as C,centralConcoursePoint as point,centralConcourseHalfWidth as width,centralConcourseCoordinates as coords} from './peak-tram-central-concourse-site.js';
 import {harbourCityLocalCollider} from './harbour-city-architecture.js';
 import {store,quad,meshStore,beam,merged,nightAmount} from './harbour-city-world-utils.js';
@@ -11,7 +12,7 @@ import {store,quad,meshStore,beam,merged,nightAmount} from './harbour-city-world
 export function buildPeakTramCentralConcourse(scene){
  const root=new THREE.Group();root.name='Peak Tram Central inferred concourse';scene.add(root);
  const interiorLights=[];for(let s=8;s<C.length;s+=18){let p=point(s),light=new THREE.PointLight(0xffd8a6,16,17,2);light.position.set(p.x,p.y+2.15,p.z);light.name='Central concourse warm ambient light';root.add(light);interiorLights.push(light);}
- const floors=store(),walls=store(),ceiling=store(),belt=store(),bands=store(),glass=store(),frames=[],lamps=[],rails=[],colliders=[];
+ const floors=store(),walls=store(),ceiling=store(),belt=store(),bands=store(),glass=store(),frames=[],lamps=[],rails=[],queue=[],colliders=[];
  const v=(s,o,h=0)=>{const p=point(s,o);return [p.x,p.y+h,p.z];};
  // Keep the buried lining below terrain rather than slicing a long trench
  // through the forecourt; the actual entrance shaft is cut separately.
@@ -39,9 +40,17 @@ export function buildPeakTramCentralConcourse(scene){
    if(i%2===0){let t=Math.min(b,start+.035);quad(bands,v(start,o0,.022),v(t,o0,.022),v(t,o1,.022),v(start,o1,.022),[.36,.37,.35]);}
   }for(const o of [-1.36,-.06,.06,1.36]){beam(rails,v(start,o,1.05),v(b,o,1.05),.06,.06);quad(glass,v(start,o,.10),v(b,o,.10),v(b,o,1.02),v(start,o,1.02),[.48,.57,.56]);}}
  }
+ // Low-profile queue rails leave a clear central route to the walkways.
+ for(let s=10;s<C.runStart-4;s+=3)for(const o of [-2.8,2.8]){const t=Math.min(s+2.7,C.runStart-3),a=point(s,o),b=point(t,o);beam(queue,v(s,o,.05),v(s,o,.94),.045,.045);beam(queue,v(s,o,.94),v(t,o,.94),.035,.035);const site={x:(a.x+b.x)/2,z:(a.z+b.z)/2,ry:Math.atan2(-(b.z-a.z),b.x-a.x)};colliders.push(harbourCityLocalCollider(site,0,0,t-s,.06,Math.min(a.y,b.y),Math.max(a.y,b.y)+.97));}
  const stone=new THREE.MeshStandardMaterial({vertexColors:true,roughness:.9,side:THREE.DoubleSide}),steel=new THREE.MeshStandardMaterial({color:0x818a88,roughness:.36,metalness:.6});
  const light=new THREE.MeshStandardNodeMaterial({color:0xffe3bc});light.emissiveNode=color(0xffca86).mul(nightAmount()).mul(1.4);
- meshStore(root,floors,stone,'Central concourse floor');meshStore(root,walls,stone,'Central concourse panelled walls');meshStore(root,ceiling,stone,'Central concourse soffit');meshStore(root,belt,stone,'Central paired travellator belts');meshStore(root,bands,stone,'Central travellator tread joints');const glassMat=new THREE.MeshStandardMaterial({vertexColors:true,color:0xc0d0cc,transparent:true,opacity:.27,roughness:.18,metalness:.1,depthWrite:false,side:THREE.DoubleSide});meshStore(root,glass,glassMat,'Central travellator glass balustrades',false);merged(root,frames,steel,'Central concourse structural frames',false);merged(root,rails,steel,'Central travellator handrails',false);merged(root,lamps,light,'Central concourse linear lights',false);
+ meshStore(root,floors,stone,'Central concourse floor');meshStore(root,walls,stone,'Central concourse panelled walls');meshStore(root,ceiling,stone,'Central concourse soffit');meshStore(root,belt,stone,'Central paired travellator belts');meshStore(root,bands,stone,'Central travellator tread joints');const glassMat=new THREE.MeshStandardMaterial({vertexColors:true,color:0xc0d0cc,transparent:true,opacity:.27,roughness:.18,metalness:.1,depthWrite:false,side:THREE.DoubleSide});meshStore(root,glass,glassMat,'Central travellator glass balustrades',false);merged(root,frames,steel,'Central concourse structural frames',false);merged(root,rails,steel,'Central travellator handrails',false);merged(root,queue,steel,'Central concourse queue rails',false);merged(root,lamps,light,'Central concourse linear lights',false);
+ // Abstract original illustrations indicate a heritage display without
+ // republishing the copyrighted videos shown at the real terminus.
+ if(typeof document!=='undefined')for(const [s,year] of [[11,'1888'],[24,'1926'],[37,'1959'],[50,'2022']]){
+  const sign=makeCanvasSign(4.0,1.2,(ctx,c)=>{ctx.fillStyle='#14252d';ctx.fillRect(0,0,c.width,c.height);ctx.fillStyle='#334f55';ctx.fillRect(0,c.height*.62,c.width,c.height*.38);ctx.fillStyle='#e4d6b3';ctx.font=`bold ${Math.floor(c.height*.21)}px sans-serif`;ctx.fillText('PEAK TRAM  '+year,c.width*.07,c.height*.23);ctx.fillStyle='#356a59';ctx.fillRect(c.width*.22,c.height*.39,c.width*.53,c.height*.33);ctx.fillStyle='#99bdba';for(let k=0;k<6;k++)ctx.fillRect(c.width*(.25+k*.075),c.height*.43,c.width*.055,c.height*.15);ctx.fillStyle='#e8c46f';ctx.fillRect(c.width*.22,c.height*.70,c.width*.53,c.height*.025);ctx.fillStyle='#d4ddda';ctx.font=`${Math.floor(c.height*.09)}px sans-serif`;ctx.fillText('A JOURNEY THROUGH HONG KONG',c.width*.07,c.height*.91);},{transparent:false,emissive:true,canvasWidth:1024,canvasHeight:420});
+  const q=point(s,3.96);sign.position.set(q.x,q.y+1.85,q.z);sign.rotation.y=Math.atan2(-C.nx,-C.nz);sign.name=`Central tram heritage display ${year}`;root.add(sign);
+ }
  return {group:root,colliders,stats:{peakTramConcourseLength:C.length,peakTramTravellatorLength:40},update(dt,manager){
   const glow=Math.max(0,Math.min(1,(cityUniforms.uInteriorGlow.value-.55)/.85));for(const light of interiorLights)light.intensity=12+glow*10;
   const person=manager?.activeMode==='person'?manager.entities.person:null;if(!person)return;const q=coords(person.position.x,person.position.z),abs=Math.abs(q.o);if(q.s<C.runStart+.3||q.s>C.length-.3||abs<.16||abs>1.24)return;
