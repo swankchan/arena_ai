@@ -20,3 +20,10 @@ test('person near Central station floor is not snapped to an overhead road; cars
  assert.ok(checked>10);const q=p(1);assert.equal(under(q.x+100,q.z,'person',q.y,q.y+10),false);assert.equal(under(q.x,q.z,'person',NaN,q.y+10),false);
  const source=require('node:fs').readFileSync('js/cities/hongkong/simple-world.js','utf8');assert.match(source,/!centralPlatformUnderRoad\(x, z, mode, referenceY, road.height\)/);
 });
+test('platform floor detailing remains within sampled station and road clearance',async()=>{
+ const T=await import('three/webgpu'),{buildPeakTramCentralPlatform:build}=await import('../js/cities/hongkong/peak-tram-central-platform.js'),{centralPlatformPoint:p,CENTRAL_PLATFORM_END:end,CENTRAL_PLATFORM_HALF_WIDTH:width}=await import('../js/cities/hongkong/peak-tram-central-platform-site.js'),{fullRoadSurfaceAt:road}=await import('../js/cities/hongkong/full-meta.js'),{hongKongTerrainHeight:terrain}=await import('../js/cities/hongkong/terrain.js');
+ const result=build(new T.Group()),a=p(0);for(const name of ['Central platform yellow edge','Central platform tactile guidance line','Central platform floor tile joints','Central platform tactile studs']){
+  let mesh=result.group.getObjectByName(name);assert.ok(mesh,name);const pos=mesh.geometry.attributes.position;let sampled=0;
+  for(let i=0;i<pos.count;i+=Math.max(1,Math.floor(pos.count/600))){const x=pos.getX(i),y=pos.getY(i),z=pos.getZ(i),dx=x-a.x,dz=z-a.z,s=dx*a.ux+dz*a.uz,o=dx*a.nx+dz*a.nz;assert.ok(s>=-.05&&s<=end+.05&&Math.abs(o)<=width+.05,`${name} outside station`);const r=road(x,z,.25,terrain(x,z));if(r){assert.ok(r.height-y>2.5,`${name} hits road ${r.way.id}`);sampled++;}}
+ }
+});

@@ -15,3 +15,7 @@ This audit and image collection do not constitute a finished station. The photo-
 Update: the separately modelled street entrance and simplified sculpture are described in `peak-tram-central-entrance.md`; the relocated platform and connection remain unfinished.
 
 Update: provisional platforms and the static approach to Kennedy bridge now exist; see `peak-tram-central-platform.md`. A usable connection between the street entrance and these platforms remains absent.
+
+## Additional engineering reference
+
+The upgrade engineer [Arup](https://www.arup.com/en-us/projects/peak-tram-upgrade-project/) describes a roughly 40 m inclined moving-walkway link with an aluminium-clad spiral portal roof and skylights, not a straight 97 m ramp. The same page confirms the platform integrates a steep track gradient, automatic platform screen gates and air-conditioning docking; its platform photograph shows grey tiled flooring, tactile guidance and glazed barriers. The engineer's illustrations and photographs are copyrighted; direct source links are recorded in the reference folder rather than redistributing the images. Dimensions, position and heights of the moving walkway cannot be inferred from the illustration alone. The current 97 m scene gap includes an unmodelled waiting area and is not a measured length of the real walkway.
