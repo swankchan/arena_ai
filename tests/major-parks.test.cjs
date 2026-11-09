@@ -395,3 +395,25 @@ test('boat-pool finger grade joins DTM and avoids roads and other facilities at 
     assert.ok(h !== null && Math.abs(positions.getY(i) - h - .008) < .001);
   }
 });
+
+test('Victoria monument approximate Wikipedia location remains on park land and clear of roads', () => {
+  const park = arch.VICTORIA_PARK, f = arch.VICTORIA_QUEEN_STATUE;
+  assert.ok(Math.hypot(f.site.x - 3065.734, f.site.z - 86.926) < .02);
+  for (let x=f.bounds.minX; x<=f.bounds.maxX; x+=.5) for (let z=f.bounds.minZ; z<=f.bounds.maxZ; z+=.5) {
+    if (!inside(f.ring,x,z)) continue;
+    assert.ok(inside(park.ring,x,z)); assert.ok(!arch.majorParkRoadAt(park,x,z,.5));
+    for (const other of park.features) if (other!==f && other.kind!=='woods') assert.ok(!inside(other.ring,x,z), other.name);
+  }
+});
+
+test('Victoria custom shader materials use node-material types instead of leaking lamp emission', () => {
+  const root = worlds.get(arch.VICTORIA_PARK).root;
+  const lamps = root.getObjectByName('Victoria Park warm path lantern globes');
+  assert.ok(lamps?.material.isNodeMaterial && lamps.material.emissiveNode);
+  const water = root.getObjectByName(`${arch.VICTORIA_MODEL_BOAT_POOL.name} water surface`);
+  assert.ok(water?.material.isNodeMaterial && water.material.colorNode);
+  for (const f of arch.VICTORIA_PARK.features.filter(f => ['soccer','tennis'].includes(f.kind))) {
+    const court = root.getObjectByName(`${f.name} exact OSM ${f.kind} surface`);
+    assert.ok(court?.material.isNodeMaterial && court.material.colorNode, f.name);
+  }
+});

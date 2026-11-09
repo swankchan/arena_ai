@@ -92,7 +92,8 @@ function buildModelBoatPool(group, materials, colliders) {
   rampGeometry.computeVertexNormals(); rampGeometry.computeBoundingBox(); rampGeometry.computeBoundingSphere();
   meshFromGeometry(group, rampGeometry, materials.path, 'Victoria Model Boat Pool DTM transition to finger');
   const water = group.getObjectByName(`${feature.name} water surface`);
-  const poolWater = materials.shallowWater.clone();
+  const poolWater = new THREE.MeshStandardNodeMaterial();
+  poolWater.copy(materials.shallowWater);
   poolWater.color.set(0x73aaa4);
   const mosaic = positionWorld.x.mul(5.4).sin().mul(positionWorld.z.mul(5.4).sin()).mul(.045);
   const ripples = positionWorld.x.mul(1.9).add(positionWorld.z.mul(.8)).sin().mul(.055);
@@ -169,7 +170,7 @@ function buildCentreCourt(feature, group, materials, colliders) {
 }
 // Procedural, restrained colour variation: no external texture assets needed.
 function texturedVictoriaMaterial(hex, roughness = .9) {
-  const material = new THREE.MeshStandardMaterial({ color: hex, roughness, metalness: .02 });
+  const material = new THREE.MeshStandardNodeMaterial({ color: hex, roughness, metalness: .02 });
   const grain = positionWorld.x.mul(1.73).sin().mul(positionWorld.z.mul(1.31).sin()).mul(.025).add(.96);
   // Bind the tint to the current material, not a shared constant-node uniform.
   material.colorNode = materialColor.rgb.mul(grain);

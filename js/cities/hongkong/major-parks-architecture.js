@@ -197,7 +197,7 @@ export function victoriaBoatRampHeight(x, z) {
   return natural + (majorParkPadHeight(VICTORIA_MODEL_BOAT_POOL, .03) + .14 - natural) * weight;
 }
 export const VICTORIA_QUEEN_STATUE = addPhotoFeature(VICTORIA_PARK, 'monument', '維多利亞女皇銅像 Statue of Queen Victoria',
-  roundedRectRing(2845, 65, 5.2, 5.2, .35), 'Photo-directed monument position by the principal fountain / lawn approach; bronze statue and stone plinth follow reliable photographs.');
+  roundedRectRing(3065.734, 86.926, 5.2, 5.2, .35), 'Photo-directed monument, with approximate location projected from Wikipedia coordinates 22.281115, 114.189348; pedestal outline and orientation are not surveyed.');
 
 function accessPoint(feature, fromX, fromZ, offset = 3) {
   const nearest = nearestRingPoint(feature.ring, fromX, fromZ);

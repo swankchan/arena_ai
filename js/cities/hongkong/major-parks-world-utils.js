@@ -14,7 +14,7 @@ import { fullRoadSurfaceAt } from './full-meta.js';
 import { surfaceRoadHeight } from './road-elevation.js';
 
 export function createMajorParkMaterials() {
-  const warmLight = new THREE.MeshStandardMaterial({ color: 0xffe2ae, roughness: .42, metalness: .05 });
+  const warmLight = new THREE.MeshStandardNodeMaterial({ color: 0xffe2ae, roughness: .42, metalness: .05 });
   warmLight.emissiveNode = color(1, .69, .32).mul(nightAmount()).mul(1.35);
   return {
     base: new THREE.MeshStandardMaterial({ vertexColors: true, roughness: .98, metalness: 0 }),
