@@ -10,8 +10,14 @@ const centreS=(dock.position.x-origin.x)*origin.ux+(dock.position.z-origin.z)*or
 export function centralPlatformFloor(s,offset) {
  const p=centralPlatformPoint(s),old=p.y+.57;
  const carFloor=dock.position.y+(s-centreS)*Math.tan(dock.pitch)+.75/Math.cos(dock.pitch);
+ // Lift the outer edge where the existing roof allows it; reduce the lift
+ // under the tight Cotton Tree Drive crossing (s 24 to the uphill end). A shallow local
+ // recess there also preserves headroom at the outermost platform edge.
+ const smooth=t=>{t=Math.max(0,Math.min(1,t));return t*t*(3-2*t);};
+ const constraint=smooth((s-14)/11);
+ const outer=old+Math.min(carFloor-old,.34)*(1-constraint)-.08*constraint;
  const blend=Math.max(0,Math.min(1,(CENTRAL_PLATFORM_HALF_WIDTH-Math.abs(offset))/(CENTRAL_PLATFORM_HALF_WIDTH-1.65)));
- return old+(carFloor-old)*blend;
+ return outer+(carFloor-outer)*blend;
 }
 
 export function centralPlatformTerrainCut(){

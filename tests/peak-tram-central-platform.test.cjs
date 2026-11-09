@@ -48,3 +48,9 @@ test('regraded platform mesh follows height queries while keeping sampled roof a
  for(let s=.2;s<end-.2;s+=.4){let q=p(s);for(const o of [-4.8,-4.2,-3.3,-2.4,-1.75,1.75,2.4,3.3,4.2,4.8]){const x=q.x+q.nx*o,z=q.z+q.nz*o,y=floor(s,o);ray.set(new T.Vector3(x,y+2,z),new T.Vector3(0,-1,0));const hit=ray.intersectObject(mesh)[0];assert.ok(hit,`floor hole ${s},${o}`);assert.ok(Math.abs(hit.point.y-y)<.01,`mesh/query mismatch at ${s},${o}`);assert.ok(Math.abs(ground(x,z,null,y)-y)<.01);assert.ok(roof(s,o).y-y>2.4,`sampled roof headroom ${s},${o}`);let r=road(x,z,.35,terrain(x,z));if(r){assert.ok(r.height-y>3.2,`sampled road clearance ${s},${o}`);roads++;}checks++;}}
  assert.ok(checks>700&&roads>200);
 });
+test('platform crossfall is reduced without an abrupt longitudinal rise and roof mesh covers it',async()=>{
+ const T=await import('three/webgpu'),{centralPlatformPoint:p,centralPlatformFloor:f,CENTRAL_PLATFORM_END:end}=await import('../js/cities/hongkong/peak-tram-central-platform-site.js'),{buildPeakTramCentralRoof:build}=await import('../js/cities/hongkong/peak-tram-central-roof.js');
+ let maxCross=0,maxLong=0;for(let s=.1;s<end-.1;s+=.1)for(let o=1.65;o<4.85;o+=.1){maxCross=Math.max(maxCross,Math.abs((f(s,o+.01)-f(s,o))/.01));maxLong=Math.max(maxLong,Math.abs((f(s+.01,o)-f(s,o))/.01));}assert.ok(maxCross<.115,`crossfall ${maxCross}`);assert.ok(maxLong<.35,`longitudinal grade ${maxLong}`);
+ const r=build(new T.Group()),mesh=r.group.getObjectByName('Central platform fitted roof'),ray=new T.Raycaster();r.group.updateMatrixWorld(true);let min=Infinity;
+ for(let s=.25;s<end-.25;s+=.5)for(const o of [-4.85,-4,-3,-2,-1.75,1.75,2,3,4,4.85]){const q=p(s),x=q.x+q.nx*o,z=q.z+q.nz*o,y=f(s,o);ray.set(new T.Vector3(x,y+.01,z),new T.Vector3(0,1,0));const hit=ray.intersectObject(mesh)[0];assert.ok(hit,`roof missing at ${s},${o}`);min=Math.min(min,hit.point.y-y);}assert.ok(min>2.45,`roof/floor headroom ${min}`);
+});
