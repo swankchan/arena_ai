@@ -1,3 +1,4 @@
+import {centralGradeRects} from './peak-tram-central-earthworks-site.js';
 import {centralLiftTerrainCut} from './peak-tram-central-concourse-site.js';
 import {centralApproachCuts} from './peak-tram-central-approach-site.js';
 import {centralPlatformTerrainCut} from './peak-tram-central-platform-site.js';
@@ -397,7 +398,7 @@ function* createTerrainChunksSteps(root, includeCore) {
   }
   const chunkRects = new Map();
   // The Murray exists only in unified mode, not the legacy detailed builder.
-  for (const rect of includeCore ? [...TUNNEL_OPENING_RECTS, murrayLobbyTerrainCut(), peakUpperStationTerrainCut(), centralPlatformTerrainCut(), centralLiftTerrainCut(), ...centralApproachCuts(), ...kennedyApproachCuts(), ...peakPassingLoopCuts(), ...upperLineCuts(), ...barkerApproachCuts(), ...summitApproachCuts(), ...barkerStationTrackCuts(), ...loopGradeRects()] : TUNNEL_OPENING_RECTS) {
+  for (const rect of includeCore ? [...TUNNEL_OPENING_RECTS, murrayLobbyTerrainCut(), peakUpperStationTerrainCut(), centralPlatformTerrainCut(), centralLiftTerrainCut(), ...centralGradeRects(), ...centralApproachCuts(), ...kennedyApproachCuts(), ...peakPassingLoopCuts(), ...upperLineCuts(), ...barkerApproachCuts(), ...summitApproachCuts(), ...barkerStationTrackCuts(), ...loopGradeRects()] : TUNNEL_OPENING_RECTS) {
     const minCol = Math.floor(rect.minX / TERRAIN_CHUNK), maxCol = Math.floor(rect.maxX / TERRAIN_CHUNK);
     const minRow = Math.floor(rect.minZ / TERRAIN_CHUNK), maxRow = Math.floor(rect.maxZ / TERRAIN_CHUNK);
     for (let row = minRow; row <= maxRow; row++) for (let col = minCol; col <= maxCol; col++) {

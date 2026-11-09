@@ -1,3 +1,5 @@
+import {buildCentralApproachEarthworks} from './peak-tram-central-earthworks.js';
+import {centralApproachGrade} from './peak-tram-central-earthworks-site.js';
 import {buildPeakTramCentralRoof} from './peak-tram-central-roof.js';
 import {buildPeakTramCentralConcourse} from './peak-tram-central-concourse.js';
 import {centralConcourseGroundHeight,centralConcourseUnderRoad} from './peak-tram-central-concourse-site.js';
@@ -202,6 +204,7 @@ function* buildSimpleHongKongWorldSteps(scene) {
   const centralConcourse = buildPeakTramCentralConcourse(scene);
   const centralLift = buildCentralLift(scene);
   const peakTramCentralApproach = buildPeakTramCentralApproach(scene);
+  const centralEarthworks = buildCentralApproachEarthworks(scene);
   const peakTramKennedyBridge = buildPeakTramKennedyBridge(scene);
   const peakTramKennedyApproach = buildPeakTramKennedyApproach(scene);
   const peakTramMacDonnell = buildMacDonnellStation(scene);
@@ -389,8 +392,8 @@ function* buildSimpleHongKongWorldSteps(scene) {
   function getGroundHeight(x, z, mode, referenceY = 0) {
     if (mode === 'helicopter') return 0;
     let base = WATER_LEVEL;
-    if (isTerritoryLand(x, z)) base = peakTramLoopGrade(x, z, hongKongTerrainHeight(x, z)) + FULL_WORLD_HEIGHT.land;
-    if (territoryParkAt(x, z)) base = peakTramLoopGrade(x, z, hongKongTerrainHeight(x, z)) + FULL_WORLD_HEIGHT.park;
+    if (isTerritoryLand(x, z)) base = centralApproachGrade(x, z, peakTramLoopGrade(x, z, hongKongTerrainHeight(x, z))) + FULL_WORLD_HEIGHT.land;
+    if (territoryParkAt(x, z)) base = centralApproachGrade(x, z, peakTramLoopGrade(x, z, hongKongTerrainHeight(x, z))) + FULL_WORLD_HEIGHT.park;
     if (mode === 'person') { base = centralPlatformGroundHeight(x, z, base, referenceY); base = centralConcourseGroundHeight(x, z, base, referenceY); }
     const road = fullRoadSurfaceAt(x, z, 0.35, referenceY);
     let groundUsesRoad = false;
@@ -531,7 +534,7 @@ function* buildSimpleHongKongWorldSteps(scene) {
     ...obrienFootbridge.stats,
     ...windsorHouse.stats,
     ...sogo.stats,
-    ...governmentHouse.stats, ...peakTower.stats, ...stJohns.stats, ...peakTramCentralEntrance.stats, ...peakTramCentralPlatform.stats, peakTramCentralRoofPanels: centralPlatformRoof.panels, ...centralConcourse.stats, ...peakTramCentralApproach.stats, ...peakTramKennedyBridge.stats, ...peakTramKennedyApproach.stats, ...peakTramMacDonnell.stats, ...peakTramMacDonnellBridge.stats, ...peakTramMagazineGapBridge.stats, ...peakTramMayRoadBridge.stats, ...peakTramMayRoadStation.stats, ...peakTramPassingLoop.stats, ...peakTramUpperLine.stats, ...peakTramBarkerApproach.stats, ...peakTramSummitApproach.stats, ...peakTramBarkerStationTrack.stats, ...peakTramBarkerStation.stats, ...peakTramBarkerEarthworks.stats, ...peakTramBarkerAbutments.stats, ...peakTramLoopGrading.stats, ...murray.stats,
+    ...governmentHouse.stats, ...peakTower.stats, ...stJohns.stats, ...peakTramCentralEntrance.stats, ...peakTramCentralPlatform.stats, peakTramCentralRoofPanels: centralPlatformRoof.panels, ...centralConcourse.stats, ...peakTramCentralApproach.stats, ...centralEarthworks.stats, ...peakTramKennedyBridge.stats, ...peakTramKennedyApproach.stats, ...peakTramMacDonnell.stats, ...peakTramMacDonnellBridge.stats, ...peakTramMagazineGapBridge.stats, ...peakTramMayRoadBridge.stats, ...peakTramMayRoadStation.stats, ...peakTramPassingLoop.stats, ...peakTramUpperLine.stats, ...peakTramBarkerApproach.stats, ...peakTramSummitApproach.stats, ...peakTramBarkerStationTrack.stats, ...peakTramBarkerStation.stats, ...peakTramBarkerEarthworks.stats, ...peakTramBarkerAbutments.stats, ...peakTramLoopGrading.stats, ...murray.stats,
     ...blueHouse.stats,
     ...hkapa.stats,
     ...jardineHouse.stats,
