@@ -1,5 +1,6 @@
 import * as THREE from 'three/webgpu';
 import { materialColor, positionWorld } from 'three/tsl';
+import {cityUniforms} from '../../tsl-materials.js';
 import {
   VICTORIA_PARK, VICTORIA_MODEL_BOAT_POOL, VICTORIA_QUEEN_STATUE,
   majorParkFeature, majorParkGroundHeightAt, majorParkMinimumTerrain, majorParkPadHeight,
@@ -14,26 +15,45 @@ import {
 import { merged, box, beam, cylinder, sphere } from './harbour-city-world-utils.js';
 import { ringShellGeometry, meshFromGeometry } from './tst-hotel-world-utils.js';
 
+// Photo-directed interpretation of the tensile-roof pavilion photographed in 2009.
+// Exact canopy form, orientation and elevations are estimated within the OSM roof ring.
 function buildBandstand(feature, group, materials, colliders) {
-  majorParkRingSurface(feature, materials.stone, 'Victoria Park Bandstand exact OSM stone terrace', group);
-  const pad = majorParkPadHeight(feature), local = majorParkLocalGroup(feature, group, pad, 'Victoria Park Bandstand open octagonal music pavilion');
-  const stone = [], columns = [], rails = [], roofs = [];
-  cylinder(stone, [0, .22, 0], 8.1, .44, 16); cylinder(stone, [0, .53, 0], 7.5, .18, 16);
-  for (let i = 0; i < 12; i++) {
-    const a = i / 12 * Math.PI * 2, b = (i + 1) / 12 * Math.PI * 2, x = Math.cos(a) * 6.5, z = Math.sin(a) * 6.5;
-    cylinder(columns, [x, 2.8, z], .16, 4.6, 12);
-    beam(rails, [x, 1.25, z], [Math.cos(b) * 6.5, 1.25, Math.sin(b) * 6.5], .075, .075);
-    for (let k = 1; k < 5; k++) {
-      const t = k / 5; beam(rails, [x * (1 - t) + Math.cos(b) * 6.5 * t, .65, z * (1 - t) + Math.sin(b) * 6.5 * t], [x * (1 - t) + Math.cos(b) * 6.5 * t, 1.25, z * (1 - t) + Math.sin(b) * 6.5 * t], .045, .045);
+  const {pad}=majorParkRingSurface(feature, materials.plaza, 'Victoria Park Bandstand OSM terrace', group);
+  const local=majorParkLocalGroup(feature,group,pad,'Victoria Park Bandstand tensile canopy and open stage');
+  const ring=feature.site.localRing, n=ring.length/2-1, radii=12, roofVertices=[], seams=[], posts=[], cables=[], masonry=[], joints=[], stage=[], fixtures=[], lenses=[];
+  const ringPoint=(i,t)=>{const x=ring[2*(i%n)]*.92*t,z=ring[2*(i%n)+1]*.92*t;return [x,z];};
+  const roofY=(x,z)=>4.05+3.65*Math.max(Math.exp(-((x-3.2)**2+z*z)/10),Math.exp(-((x+3.2)**2+z*z)/10));
+  const vertex=(i,t)=>{const [x,z]=ringPoint(i,t);return [x,roofY(x,z),z];};
+  for(let i=0;i<n;i++){
+    for(let j=0;j<radii;j++){
+      const a=vertex(i,j/radii),b=vertex(i+1,j/radii),c=vertex(i+1,(j+1)/radii),d=vertex(i,(j+1)/radii);
+      for(const p of [a,c,b,a,d,c])roofVertices.push(...p);
     }
-    const world = majorParkLocalToWorld(feature.site, x, z); colliders.push(majorParkBoxCollider(world.x, world.z, .4, .4, pad, pad + 5.1));
+    // Slim stitched seams follow the curved membrane rather than spanning the interior.
+    for(let j=1;j<radii;j++){const a=vertex(i,j/radii),b=vertex(i,(j+1)/radii);a[1]+=.012;b[1]+=.012;beam(seams,a,b,.018,.018);}
   }
-  const roof = new THREE.ConeGeometry(8.2, 2.6, 12); roof.translate(0, 5.7, 0); roofs.push(roof);
-  const lantern = new THREE.ConeGeometry(2.2, 1.8, 12); lantern.translate(0, 7.7, 0); roofs.push(lantern);
-  merged(local, stone, materials.stone, 'Victoria Park Bandstand circular stepped stone stage');
-  merged(local, columns, materials.white, 'Victoria Park Bandstand twelve white columns');
-  merged(local, rails, materials.white, 'Victoria Park Bandstand balustrades');
-  merged(local, roofs, materials.darkStone, 'Victoria Park Bandstand dark pitched roof and roof lantern');
+  const geo=new THREE.BufferGeometry();geo.setAttribute('position',new THREE.Float32BufferAttribute(roofVertices,3));const roofNormals=[];for(let i=0;i<roofVertices.length;i+=3){const x=roofVertices[i],z=roofVertices[i+2],e=.025,nx=roofY(x-e,z)-roofY(x+e,z),nz=roofY(x,z-e)-roofY(x,z+e),len=Math.hypot(nx,2*e,nz);roofNormals.push(nx/len,2*e/len,nz/len);}geo.setAttribute('normal',new THREE.Float32BufferAttribute(roofNormals,3));geo.computeBoundingBox();geo.computeBoundingSphere();
+  const membrane=new THREE.MeshStandardMaterial({color:0xd5d8d3,roughness:.82,side:THREE.DoubleSide});
+  const roof=new THREE.Mesh(geo,membrane);roof.name='Victoria Park Bandstand twin-peak tensile fabric roof';roof.castShadow=true;roof.receiveShadow=true;local.add(roof);
+  // Offset stone backdrop, a low stage and two shallow entrance steps.
+  box(stage,[0,.17,2.55],[10.2,.34,4.2]);box(stage,[0,.08,.24],[10,.16,.55]);
+  box(masonry,[0,2.0,4.48],[10.2,3.7,.40]);
+  for(let row=0;row<8;row++){const y=.38+row*.43;beam(joints,[-5.1,y,4.26],[5.1,y,4.26],.022,.022);for(let x=-5.1+(row%2)*.35;x<5.1;x+=.70)beam(joints,[x,y,4.25],[x,y+.40,4.25],.018,.018);}
+  const wallCentre=majorParkLocalToWorld(feature.site,0,4.48);colliders.push(majorParkBoxCollider(wallCentre.x,wallCentre.z,10.2,.4,pad,pad+3.85,feature.site.ry));
+  for(const i of [1,4,7,10]){const [x,z]=ringPoint(i,.80),y=roofY(x,z);beam(posts,[x,.10,z],[x,y,z],.16,.16);const w=majorParkLocalToWorld(feature.site,x,z);colliders.push(majorParkBoxCollider(w.x,w.z,.28,.28,pad,pad+y));}
+  for(const x of [-3.2,3.2]){const y=roofY(x,0);beam(posts,[x,y-.1,0],[x,y+.55,0],.10,.10);for(const side of [-1,1])beam(cables,[x,y+.5,0],[x+side*2.4,4.2,side*4.6],.025,.025);}
+  for(const x of [-3.2,3.2]){box(fixtures,[x,3.8,.3],[.9,.18,.5]);box(lenses,[x,3.69,.3],[.64,.04,.30]);}
+  const stone=new THREE.MeshStandardMaterial({color:0x777e78,roughness:.96});
+  merged(local,stage,materials.darkStone,'Victoria Park Bandstand raised dark stage and steps');
+  merged(local,masonry,stone,'Victoria Park Bandstand stone backdrop');
+  merged(local,joints,materials.darkStone,'Victoria Park Bandstand masonry joints',false);
+  merged(local,posts,materials.silver,'Victoria Park Bandstand support masts');
+  merged(local,cables,materials.silver,'Victoria Park Bandstand tension cables',false);
+  merged(local,seams,materials.stone,'Victoria Park Bandstand membrane seams',false);
+  merged(local,fixtures,materials.dark,'Victoria Park Bandstand lighting housings');
+  merged(local,lenses,materials.warmLight,'Victoria Park Bandstand night lamp lenses',false);
+  const lights=[];for(const x of [-3.2,3.2]){const light=new THREE.PointLight(0xffd29a,0,13,2);light.position.set(x,3.6,1.2);local.add(light);lights.push(light);}
+  return {update(){const glow=THREE.MathUtils.smoothstep(cityUniforms.uInteriorGlow.value,.55,1.4);for(const light of lights)light.intensity=18*glow;}};
 }
 function buildQueen(feature, group, materials, colliders) {
   majorParkRingSurface(feature, materials.stone, 'Queen Victoria monument exact stone forecourt', group);
@@ -156,7 +176,7 @@ export function buildVictoriaPark(scene) {
   majorParkRingSurface(majorParkFeature(park, 'centralLawn'), materials.centralLawn, 'Victoria Park Central Lawn exact OSM grass terrace', root);
   buildFountainPlaza(majorParkFeature(park, 'fountainPlaza'), root, materials, colliders);
   buildModelBoatPool(root, materials, colliders); buildQueen(VICTORIA_QUEEN_STATUE, root, materials, colliders);
-  buildBandstand(majorParkFeature(park, 'bandstand'), root, materials, colliders);
+  const bandstand=buildBandstand(majorParkFeature(park, 'bandstand'), root, materials, colliders);
   buildCentreCourt(majorParkFeature(park, 'centreCourt'), root, materials, colliders);
   buildPoolBuilding(majorParkFeature(park, 'poolBuilding'), root, materials, colliders);
   let courts = 0;
@@ -167,7 +187,7 @@ export function buildVictoriaPark(scene) {
   const entrances = addMajorParkEntrances(park, root, materials, colliders), furniture = addMajorParkFurniture(park, root, materials, colliders);
   const treeSites = createMajorParkTreeSites(park, 175);
   return {
-    root, colliders, treeSites, park, landmarks: [majorParkLandmark(park, 20)], arrivalPoints: majorParkArrivalPoints(park),
+    root, colliders, treeSites, park, update: bandstand.update, landmarks: [majorParkLandmark(park, 20)], arrivalPoints: majorParkArrivalPoints(park),
     groundHeightAt: (x, z, ground) => majorParkGroundHeightAt(park, x, z, ground),
     stats: {
       victoriaParkSourceWay: park.id, victoriaParkSourceVersion: park.source.version, victoriaParkSiteArea: park.area, victoriaParkOfficialArea: park.officialArea,
