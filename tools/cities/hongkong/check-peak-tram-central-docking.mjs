@@ -1,5 +1,5 @@
 import {centralTrialDocking} from '../../../js/cities/hongkong/peak-tram-central-docking.js';
-import {PEAK_TRAM_CAR, PEAK_TRAM_DOOR_OFFSETS} from '../../../js/cities/hongkong/peak-tram-car.js';
+import {PEAK_TRAM_CAR, PEAK_TRAM_DOOR_OFFSETS, createPeakTramCar} from '../../../js/cities/hongkong/peak-tram-car.js';
 import {centralPlatformPoint, centralPlatformFloor, CENTRAL_PLATFORM_END} from '../../../js/cities/hongkong/peak-tram-central-platform-site.js';
 import {fullRoadSurfaceAt} from '../../../js/cities/hongkong/full-meta.js';
 import {hongKongTerrainHeight} from '../../../js/cities/hongkong/terrain.js';
@@ -29,6 +29,11 @@ export function checkCentralDocking() {
   if(r)minTrialRoadGap=Math.min(minTrialRoadGap,r.height-floor);
   trialSamples++;
  }
- return {measuredLength,doorStations,thresholds,minRoofClearance,roofSamples,trialLevelFloor:{minTrialHeadroom,minTrialRoadGap,trialSamples}};
+ // Include the visual door-frame protrusions, not just the nominal body width.
+ // This is static local-axis geometry, not a moving car's swept clearance.
+ const car=createPeakTramCar();let maxVisualHalfWidth=0;
+ car.traverse(mesh=>{if(mesh.isMesh){mesh.geometry.computeBoundingBox();const b=mesh.geometry.boundingBox;maxVisualHalfWidth=Math.max(maxVisualHalfWidth,Math.abs(b.min.z),Math.abs(b.max.z));}});
+ const nominalVisualEdgeClearance=1.65-maxVisualHalfWidth;
+ return {measuredLength,doorStations,thresholds,minRoofClearance,roofSamples,maxVisualHalfWidth,nominalVisualEdgeClearance,trialLevelFloor:{minTrialHeadroom,minTrialRoadGap,trialSamples}};
 }
 if (process.argv[1] && import.meta.url===new URL(`file://${process.argv[1]}`).href) console.log(JSON.stringify(checkCentralDocking(),null,2));
