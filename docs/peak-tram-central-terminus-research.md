@@ -13,3 +13,5 @@ The unsurveyed joint profile currently starts at x=-105.43, z=523.83, rail y=39.
 This audit and image collection do not constitute a finished station. The photo-directed architecture, sculpture, walkable platform, night lighting, road and terrain junctions, and complete-game visual and vehicle testing remain to be built. The user's requirement that track be above its local ground surface still applies; overhead roads and covered station structures are separate layers, not a reason to bury the track in terrain.
 
 Update: the separately modelled street entrance and simplified sculpture are described in `peak-tram-central-entrance.md`; the relocated platform and connection remain unfinished.
+
+Update: provisional platforms and the static approach to Kennedy bridge now exist; see `peak-tram-central-platform.md`. A usable connection between the street entrance and these platforms remains absent.
