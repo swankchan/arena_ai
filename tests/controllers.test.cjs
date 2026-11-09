@@ -253,6 +253,7 @@ test('camera drone accelerates to the faster 288 km/h simulation limit', () => {
     tiltPivot: { rotation: { x: 0, z: 0 }, position: { y: 0 } }
   };
   controller.entities = { helicopter: drone };
+  controller.world = { getDroneGroundHeight: () => 0 };
   controller.resolveHorizontalCollision = () => {};
   controller.keys.forward = true;
   for (let i = 0; i < 300; i++) controller.updateHelicopter(1 / 60, i / 60);
@@ -757,4 +758,30 @@ test('drone can ascend to 1000 metres, stops at the ceiling, descend and restore
   assert.ok(ent.position.y < 1000);
   controller.teleportActiveTo(0, 0, 0, 850); assert.equal(ent.position.y, 850);
   controller.teleportActiveTo(0, 0, 0, 1200); assert.equal(ent.position.y, 1000);
+});
+
+test('drone descending over hills stops at local ground rather than sea level', () => {
+  const { controller, ent } = teleportHarness('helicopter');
+  controller.getDroneGroundHeight = () => 75;
+  controller.resolveHorizontalCollision = () => {};
+  ent.position.y = 80; ent.verticalSpeed = -12; controller.keys.down = true;
+  for (let i=0;i<120;i++) controller.updateHelicopter(1/60,i/60);
+  assert.ok(Math.abs(ent.position.y-75.25)<1e-9); assert.equal(ent.verticalSpeed,0);
+});
+
+test('drone checks the swept path and rotor footprint for rising terrain', () => {
+  const { controller, ent } = teleportHarness('helicopter');
+  controller.getDroneGroundHeight = (x,z) => (z > 3 && z < 5 ? 30 : (x > .25 && z > 6 ? 35 : 0));
+  controller.resolveHorizontalCollision = () => {};
+  ent.position.x=0; ent.position.z=0; ent.position.y=10; ent.heading=0; ent.speed=80; ent.verticalSpeed=0;
+  controller.keys.forward=true;
+  controller.updateHelicopter(.1,0);
+  assert.ok(ent.position.y>=35.25, `${ent.position.y} must clear the terrain and rotor footprint`);
+});
+
+test('restoring a drone below terrain raises it before testing teleport collisions', () => {
+  const { controller, ent } = teleportHarness('helicopter');
+  controller.getDroneGroundHeight=()=>120;
+  controller.teleportActiveTo(10,10,0,5);
+  assert.equal(ent.position.y,120.25);
 });

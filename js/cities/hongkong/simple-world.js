@@ -637,6 +637,14 @@ function* buildSimpleHongKongWorldSteps(scene) {
     isPointOnLand,
     isPointOnSidewalk,
     getGroundHeight,
+    // Terrain remains the minimum even when the closest drivable road is a tunnel.
+    getDroneGroundHeight(x, z) {
+      const terrain = isTerritoryLand(x, z) ? hongKongTerrainHeight(x, z) + FULL_WORLD_HEIGHT.land : WATER_LEVEL;
+      const road = fullRoadSurfaceAt(x, z, .35, 1000);
+      let floor = Math.max(terrain, road?.height ?? WATER_LEVEL);
+      for (const park of [hongKongPark, kowloonPark, victoriaPark]) floor = Math.max(floor, park.groundHeightAt(x, z, floor));
+      return floor;
+    },
     update(dt, elapsed, context) {
       murray.lift.update(dt, context.controllerManager);
       centralLift.update(dt, context.controllerManager);

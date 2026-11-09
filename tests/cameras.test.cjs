@@ -251,3 +251,17 @@ test('chase and action cameras follow a car below sea level inside a tunnel', ()
     assert.ok(h.camera.camera.target.y < -18, `${preset} looks at the underground car`);
   }
 });
+
+test('drone chase and action cameras follow vertical ascent and descent without lag', () => {
+  for (const preset of ['chase','action']) {
+    const entity = {position:new Vector3(0,50,0),heading:0,speed:0,type:'helicopter',chaseDistance:1.7,chaseHeight:.45,cameraTargetOffset:new Vector3(0,.06,0)};
+    const h=cameraHarness(entity); h.camera.setCameraPreset(preset,true);
+    for(let i=0;i<8;i++)h.camera.update(1/60,i/60);
+    const relativeCamera=h.camera.currentPos.y-entity.position.y, relativeTarget=h.camera.currentLookAt.y-entity.position.y;
+    for (const delta of [5,-12,8]) {
+      entity.position.y += delta; h.camera.update(1/60,1);
+      close(h.camera.currentPos.y-entity.position.y,relativeCamera);
+      close(h.camera.currentLookAt.y-entity.position.y,relativeTarget);
+    }
+  }
+});

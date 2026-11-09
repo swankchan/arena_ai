@@ -149,7 +149,8 @@ export const city = {
       player: {
         bounds: world.bounds,
         isPointOnSidewalk: world.isPointOnSidewalk,
-        getGroundHeight: world.getGroundHeight
+        getGroundHeight: world.getGroundHeight,
+        getDroneGroundHeight: world.getDroneGroundHeight
       },
 
       spawn(mode) {

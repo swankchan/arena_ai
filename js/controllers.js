@@ -378,7 +378,7 @@ class ThirdPersonControllerManager {
       ent.position.x = destination.x;
       ent.position.z = destination.z;
       ent.heading = heading;
-      ent.position.y = heli ? altitude : this.getGroundHeight(destination.x, destination.z, this.activeMode, referenceY);
+      ent.position.y = heli ? destination.altitude : this.getGroundHeight(destination.x, destination.z, this.activeMode, referenceY);
     }
     ent.speed = 0;
     if (this.activeMode === 'person') {
@@ -442,7 +442,8 @@ class ThirdPersonControllerManager {
     };
     const clear = (p) => {
       if (!p) return false;
-      const baseY = heli ? altitude : this.getGroundHeight(p.x, p.z, this.activeMode, referenceY);
+      const baseY = heli ? Math.max(altitude, this.getDroneFootprintGround(p.x, p.z, radius) + 0.25) : this.getGroundHeight(p.x, p.z, this.activeMode, referenceY);
+      if (heli) p.altitude = baseY;
       // Keep other player models out of both the arrival and its default chase view. A corridor also prevents a
       // parked car between camera and character from hiding the character even when the camera itself is outside it.
       const viewTop = baseY + Math.max(body[entity.type][1], cameraUp);
@@ -920,6 +921,21 @@ class ThirdPersonControllerManager {
     return 0.0;
   }
 
+  // The aircraft floor is the real local surface, never a fixed sea-level plane.
+  getDroneGroundHeight(x, z) {
+    const height = this.world?.getDroneGroundHeight
+      ? this.world.getDroneGroundHeight(x, z)
+      : this.getGroundHeight(x, z, 'car', DRONE_MAX_ALTITUDE_METRES);
+    return Number.isFinite(height) ? Math.max(0, height) : 0;
+  }
+
+  getDroneFootprintGround(x, z, radius) {
+    let floor = this.getDroneGroundHeight(x, z);
+    for (const [dx, dz] of [[radius,0],[-radius,0],[0,radius],[0,-radius]])
+      floor = Math.max(floor, this.getDroneGroundHeight(x + dx, z + dz));
+    return floor;
+  }
+
   // Static colliders within `r` of (x, z), kept in their original order and indexed once into 48 m cells.
   nearColliders(x, z, r) {
     const CELL = 48;
@@ -1341,16 +1357,26 @@ class ThirdPersonControllerManager {
 
     h.heading += yawInput * 1.65 * dt;
 
+    const oldX = h.position.x, oldZ = h.position.z;
     h.position.x += Math.sin(h.heading) * h.speed * dt;
     h.position.z += Math.cos(h.heading) * h.speed * dt;
     h.position.y += h.verticalSpeed * dt;
 
-    if (h.position.y < 0.25) {
-      this.reportCollision(h, groundCollider, 'ground', h.position.x, 0.25, h.position.z, 0, 1, 0, -h.verticalSpeed);
-    }
-    h.position.y = Math.max(0.25, Math.min(DRONE_MAX_ALTITUDE_METRES, h.position.y));
-    if ((h.position.y >= DRONE_MAX_ALTITUDE_METRES && h.verticalSpeed > 0) || (h.position.y <= 0.25 && h.verticalSpeed < 0)) h.verticalSpeed = 0;
     this.resolveHorizontalCollision(h.position, h.collisionRadius ?? DRONE_COLLISION_RADIUS, null, h);
+    // Sample the swept centreline as well as the final rotor footprint. This prevents
+    // a fast low pass from stepping over a hill between frames; it is not a mesh sweep.
+    const radius = h.collisionRadius ?? DRONE_COLLISION_RADIUS;
+    const steps = Math.max(1, Math.ceil(Math.hypot(h.position.x - oldX, h.position.z - oldZ) / 2));
+    let floor = 0;
+    for (let i = 0; i <= steps; i++) {
+      const t = i / steps, x = oldX + (h.position.x - oldX) * t, z = oldZ + (h.position.z - oldZ) * t;
+      floor = Math.max(floor, this.getDroneGroundHeight(x, z));
+    }
+    floor = Math.max(floor, this.getDroneFootprintGround(h.position.x, h.position.z, radius));
+    const minimum = floor + .25;
+    if (h.position.y < minimum) this.reportCollision(h, groundCollider, 'ground', h.position.x, floor, h.position.z, 0, 1, 0, Math.max(0, -h.verticalSpeed));
+    h.position.y = Math.max(minimum, Math.min(DRONE_MAX_ALTITUDE_METRES, h.position.y));
+    if ((h.position.y >= DRONE_MAX_ALTITUDE_METRES && h.verticalSpeed > 0) || (h.position.y <= minimum && h.verticalSpeed < 0)) h.verticalSpeed = 0;
 
     const targetPitch = (h.speed / maxHorizSpeed) * 0.32;
     const targetRoll = -yawInput * 0.22;

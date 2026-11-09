@@ -405,7 +405,8 @@ class CameraSystem {
         this.followLookOffset.subVectors(this.currentLookAt, entity.position);
       }
       const k = 1 - Math.exp(-dt * 8.5);
-      this.followBaseY += (entity.position.y - this.followBaseY) * k;
+      if (entity.type === 'helicopter') this.followBaseY = entity.position.y;
+      else this.followBaseY += (entity.position.y - this.followBaseY) * k;
       this.followOffset.lerp(desiredPos.sub(entity.position), k);
       this.followLookOffset.lerp(desiredLook.sub(entity.position), k);
       this.currentPos.set(entity.position.x, this.followBaseY, entity.position.z).add(this.followOffset);

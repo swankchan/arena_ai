@@ -77,3 +77,11 @@ test('created player drone has four animated rotors and a matching close follow 
     assert.ok(rotor.getObjectByName('DroneRotorBlurDisc'));
   }
 });
+
+test('Hong Kong supplies a terrain and road aware drone ground query to the player adapter', () => {
+  const world = read('js/cities/hongkong/simple-world.js');
+  const city = read('js/cities/hongkong/index.js');
+  assert.match(world, /getDroneGroundHeight\(x, z\)/);
+  assert.match(world, /Math\.max\(terrain, road\?\.height/);
+  assert.match(city, /getDroneGroundHeight: world\.getDroneGroundHeight/);
+});
