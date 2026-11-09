@@ -13,6 +13,7 @@ test('profile solver respects bounds and grade, including future constraints',as
 });
 test('experimental scene report flags unknown crossings and rough profile',()=>{
  const report=JSON.parse(execFileSync(process.execPath,['tools/cities/hongkong/check-peak-tram-profile.mjs'],{encoding:'utf8'}));
+ assert.equal(report.lateralProbeMetres,2);
  assert.equal(report.results.length,2);
  for(const r of report.results){assert.equal(r.feasible,true);assert.ok(r.unknownRoadSamples>0);assert.ok(r.constrainedSamples>0);assert.ok(r.maxGradeObserved<=report.maxGrade+1e-9);assert.equal(r.upperRail,395.45);assert.ok(r.maxAdjacentGradeChange>.1);}
  assert.ok(report.limitations.some(s=>s.includes('not actual meshes')));

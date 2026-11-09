@@ -5,6 +5,9 @@ import {hongKongTerrainHeight} from '../../../js/cities/hongkong/terrain.js';
 import {fullRoadSurfaceAt} from '../../../js/cities/hongkong/full-meta.js';
 import {solveProfile} from './peak-tram-profile.mjs';
 
+// Probe 2 m either side of the centreline for nearby road footprints, allowing for
+// track width and a small precautionary margin. This is not a swept vehicle clearance.
+const lateralProbeMetres=2;
 const clearance=6.3, maxGrade=Math.tan(26*Math.PI/180);
 const roadOver=new Set([720,8998,5701,36167,42840]), tramOver=new Set([13131,36109]);
 function audit(branch){
@@ -13,7 +16,7 @@ function audit(branch){
   if(route[i-1].id===PEAK_TRAM_NODES.n11.id) stationStart=s;
   const [x,z]=route[i-1].world,[X,Z]=route[i].world,d=Math.hypot(X-x,Z-z),n=Math.ceil(d/2);
   for(let j=0;j<n;j++){
-   const px=x+(X-x)*j/n,pz=z+(Z-z)*j/n,target=hongKongTerrainHeight(px,pz),road=fullRoadSurfaceAt(px,pz,0,target);
+   const px=x+(X-x)*j/n,pz=z+(Z-z)*j/n,target=hongKongTerrainHeight(px,pz),road=fullRoadSurfaceAt(px,pz,lateralProbeMetres,target);
    const p={s:s+d*j/n,target,roadId:road?.way.id??null};
    if(road && roadOver.has(p.roadId))p.max=road.height-clearance;
    if(road && tramOver.has(p.roadId))p.min=road.height+clearance;
@@ -41,4 +44,4 @@ function audit(branch){
  });
  return {branch,feasible:true,samples:samples.length,constrainedSamples:constrained,unknownRoadSamples:unknown,lowerRail:solved.heights[0],upperRail:solved.heights.at(-1),maxAboveTerrain:maxAbove,maxBelowTerrain:maxBelow,maxGradeObserved,maxAdjacentGradeChange:gradeChange};
 }
-console.log(JSON.stringify({clearanceMetres:clearance,maxGrade,results:['A','B'].map(audit),limitations:['Experimental nearest-road sample constraints; not actual meshes, swept tram clearance, other road levels or continuous intersection tests.','Unknown crossing is unconstrained. Lower station height, grade transitions, earthworks, foundations, structures and access remain unresolved.','Greedy feasible profile is not smooth or a construction design. No runtime scene changes.']},null,2));
+console.log(JSON.stringify({lateralProbeMetres,clearanceMetres:clearance,maxGrade,results:['A','B'].map(audit),limitations:['Experimental nearest-road sample constraints; not actual meshes, swept tram clearance, other road levels or continuous intersection tests.','Unknown crossing is unconstrained. Lower station height, grade transitions, earthworks, foundations, structures and access remain unresolved.','Greedy feasible profile is not smooth or a construction design. No runtime scene changes.']},null,2));
