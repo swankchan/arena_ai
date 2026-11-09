@@ -40,5 +40,5 @@ test('placeholder gate bays follow the tilted trial car door centres, not evenly
  assert.ok(Math.abs(gates[3]-end*7/8)>.8,'old evenly spaced layout was badly misaligned at the uphill end');
 });
 test('trial docking diagnostic exposes threshold gaps rather than claiming step-free boarding',async()=>{
- const {checkCentralDocking}=await import('../tools/cities/hongkong/check-peak-tram-central-docking.mjs'),r=checkCentralDocking();assert.equal(r.thresholds.length,4);assert.ok(r.roofSamples>900);assert.ok(r.minRoofClearance>.35);for(const t of r.thresholds){assert.ok(t.visualFloorAbovePlatform>.2&&t.visualFloorAbovePlatform<.6);assert.ok(t.nominalHorizontalGap>.3);}
+ const {checkCentralDocking}=await import('../tools/cities/hongkong/check-peak-tram-central-docking.mjs'),r=checkCentralDocking();assert.equal(r.thresholds.length,4);assert.ok(r.roofSamples>900);assert.ok(r.minRoofClearance>.35);assert.ok(r.trialLevelFloor.minTrialHeadroom<2.4, 'raising the entire platform to the car floor must not be mistaken for a complete fix');for(const t of r.thresholds){assert.ok(t.visualFloorAbovePlatform>.2&&t.visualFloorAbovePlatform<.6);assert.ok(t.nominalHorizontalGap>.3);}
 });

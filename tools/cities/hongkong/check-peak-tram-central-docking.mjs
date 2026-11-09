@@ -1,6 +1,8 @@
 import {centralTrialDocking} from '../../../js/cities/hongkong/peak-tram-central-docking.js';
 import {PEAK_TRAM_CAR, PEAK_TRAM_DOOR_OFFSETS} from '../../../js/cities/hongkong/peak-tram-car.js';
 import {centralPlatformPoint, CENTRAL_PLATFORM_END} from '../../../js/cities/hongkong/peak-tram-central-platform-site.js';
+import {fullRoadSurfaceAt} from '../../../js/cities/hongkong/full-meta.js';
+import {hongKongTerrainHeight} from '../../../js/cities/hongkong/terrain.js';
 import {centralRoofVertex} from '../../../js/cities/hongkong/peak-tram-central-roof.js';
 
 // A conservative diagnostic for the stationary *visual* car and inferred platform,
@@ -16,6 +18,17 @@ export function checkCentralDocking() {
   const w=world(-PEAK_TRAM_CAR.length/2+i*.1,PEAK_TRAM_CAR.height,z),q=toStation(w);if(q.s<0||q.s>CENTRAL_PLATFORM_END)continue;
   minRoofClearance=Math.min(minRoofClearance,centralRoofVertex(q.s,q.o).y-w.y);roofSamples++;
  }
- return {measuredLength,doorStations,thresholds,minRoofClearance,roofSamples};
+ // A hypothetical single flat-in-car-frame platform would remove this model's
+ // step, but can reduce headroom under the existing fitted roof. It is not applied.
+ const centreAlong=(pose.position.x-a.x)*a.ux+(pose.position.z-a.z)*a.uz;
+ let minTrialHeadroom=Infinity,minTrialRoadGap=Infinity,trialSamples=0;
+ for(let s=0;s<=CENTRAL_PLATFORM_END;s+=.25)for(const offset of [-4.75,-3,-1.8,1.8,3,4.75]){
+  const p=centralPlatformPoint(s),floor=pose.position.y+(s-centreAlong)*Math.tan(pose.pitch)+.75/cp;
+  minTrialHeadroom=Math.min(minTrialHeadroom,centralRoofVertex(s,offset).y-floor);
+  const x=p.x+p.nx*offset,z=p.z+p.nz*offset,r=fullRoadSurfaceAt(x,z,.35,hongKongTerrainHeight(x,z));
+  if(r)minTrialRoadGap=Math.min(minTrialRoadGap,r.height-floor);
+  trialSamples++;
+ }
+ return {measuredLength,doorStations,thresholds,minRoofClearance,roofSamples,trialLevelFloor:{minTrialHeadroom,minTrialRoadGap,trialSamples}};
 }
 if (process.argv[1] && import.meta.url===new URL(`file://${process.argv[1]}`).href) console.log(JSON.stringify(checkCentralDocking(),null,2));
