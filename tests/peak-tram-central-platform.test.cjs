@@ -33,3 +33,12 @@ test('inferred platform edge glazing has four closed placeholder gates per side 
  const gates=result.group.getObjectByName('Central platform closed placeholder gates');assert.ok(gates);const ray=new T.Raycaster();result.group.updateMatrixWorld(true);for(const side of [-1,1])for(const s of openings){const q=p(s);ray.set(new T.Vector3(q.x+q.nx*side*2.4,q.y+1.5,q.z+q.nz*side*2.4),new T.Vector3(-q.nx*side,0,-q.nz*side));ray.far=1.5;assert.equal(ray.intersectObject(glass).length,0,`fixed screen in gate bay ${s}`);assert.ok(ray.intersectObject(gates).length,`closed gate at ${s}`);}
  for(const name of ['Central platform fixed glass screens','Central platform closed placeholder gates','Central platform screen frames']){const pos=result.group.getObjectByName(name).geometry.attributes.position;for(let i=0;i<pos.count;i+=Math.max(1,Math.floor(pos.count/800))){const x=pos.getX(i),y=pos.getY(i),z=pos.getZ(i),r=road(x,z,.25,terrain(x,z));if(r)assert.ok(y<r.height-.35,`${name} overlaps road ${r.way.id}`);}}
 });
+test('placeholder gate bays follow the tilted trial car door centres, not evenly spaced guesses',async()=>{
+ const {centralTrialDocking}=await import('../js/cities/hongkong/peak-tram-central-docking.js'),{CENTRAL_SCREEN_OPENINGS:gates}=await import('../js/cities/hongkong/peak-tram-central-screens.js'),{PEAK_TRAM_CAR,PEAK_TRAM_DOOR_OFFSETS:doors}=await import('../js/cities/hongkong/peak-tram-car.js'),{CENTRAL_PLATFORM_END:end}=await import('../js/cities/hongkong/peak-tram-central-platform-site.js');
+ const trial=centralTrialDocking();assert.ok(trial.measuredLength>PEAK_TRAM_CAR.length);assert.equal(doors.length,4);assert.equal(gates.length,4);
+ for(let i=0;i<4;i++){assert.ok(Math.abs(gates[i]-trial.doorStations[i])<1e-9);assert.ok(gates[i]>.85&&gates[i]<end-.85);if(i)assert.ok(gates[i]-gates[i-1]>1.7);}
+ assert.ok(Math.abs(gates[3]-end*7/8)>.8,'old evenly spaced layout was badly misaligned at the uphill end');
+});
+test('trial docking diagnostic exposes threshold gaps rather than claiming step-free boarding',async()=>{
+ const {checkCentralDocking}=await import('../tools/cities/hongkong/check-peak-tram-central-docking.mjs'),r=checkCentralDocking();assert.equal(r.thresholds.length,4);assert.ok(r.roofSamples>900);assert.ok(r.minRoofClearance>.35);for(const t of r.thresholds){assert.ok(t.visualFloorAbovePlatform>.2&&t.visualFloorAbovePlatform<.6);assert.ok(t.nominalHorizontalGap>.3);}
+});

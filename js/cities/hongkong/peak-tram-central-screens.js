@@ -1,13 +1,15 @@
 import * as THREE from 'three/webgpu';
 import {centralPlatformPoint as point, CENTRAL_PLATFORM_END as END} from './peak-tram-central-platform-site.js';
+import {centralTrialDocking} from './peak-tram-central-docking.js';
 import {harbourCityLocalCollider} from './harbour-city-architecture.js';
 import {store, quad, meshStore, beam, merged} from './harbour-city-world-utils.js';
 
 // Provisional platform-edge glazing: these are NOT operating screen doors.
 // Four 1.7m closed gate bays are distributed along each platform using the visual car's
-// nominal four doors per side. Neither train docking nor dimensions are surveyed.
+// nominal four doors per side and the trial rigid-car pose at chest height.
+// Neither train docking nor dimensions are surveyed.
 export const CENTRAL_SCREEN_OPENING_WIDTH = 1.7;
-export const CENTRAL_SCREEN_OPENINGS = Object.freeze([1,3,5,7].map(n => END*n/8));
+export const CENTRAL_SCREEN_OPENINGS = Object.freeze(centralTrialDocking().doorStations);
 export function centralScreenIsOpening(s) {
   return CENTRAL_SCREEN_OPENINGS.some(c => Math.abs(s-c) < CENTRAL_SCREEN_OPENING_WIDTH/2);
 }

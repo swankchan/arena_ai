@@ -6,6 +6,8 @@ import {box,merged,nightAmount} from './harbour-city-world-utils.js';
 // length is published; all other dimensions and small details are estimates.
 // Local +X is the long axis, y=0 is rail top, and z=0 is track centre.
 export const PEAK_TRAM_CAR=Object.freeze({length:33,width:2.7,height:3.65,gauge:1.524,doorsPerSide:4});
+// Centres of the four visual double-door bays along local X; dimensions inferred.
+export const PEAK_TRAM_DOOR_OFFSETS=Object.freeze([-12.425,-4.275,4.275,12.425]);
 export function createPeakTramCar(){
  const g=new THREE.Group();g.name='Peak Tram sixth generation';
  const green=new THREE.MeshStandardMaterial({color:0x07543e,roughness:.36,metalness:.38});
@@ -35,8 +37,7 @@ export function createPeakTramCar(){
    for(let x=start+.35;x<end;x+=1.32)box(frame,[x,2.32,side*(w/2+.015)],[.055,1.75,.045]);
    box(frame,[mid,1.45,side*(w/2+.015)],[len,.055,.045]);
    // Two double-door sets per section on each side; closed in this static model.
-   for(const fraction of [.25,.75]){
-    const x=start+len*fraction;
+   for(const x of PEAK_TRAM_DOOR_OFFSETS.filter(x=>x>start&&x<end)){
     for(const dx of [-.78,.78])box(frame,[x+dx,2.13,side*(w/2+.10)],[.055,2.12,.06]);
     for(const y of [1.09,3.17])box(frame,[x,y,side*(w/2+.10)],[1.60,.055,.06]);
     box(body,[x,1.19,side*(w/2+.08)],[1.48,.43,.045]);
