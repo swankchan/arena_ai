@@ -3,7 +3,7 @@ import {color} from 'three/tsl';
 import {cityUniforms} from '../../tsl-materials.js';
 import {hongKongTerrainHeight} from './terrain.js';
 import {makeCanvasSign} from './tst-hotel-world-utils.js';
-import {CENTRAL_CONCOURSE as C,centralConcoursePoint as point,centralConcourseHalfWidth as width,centralConcourseCoordinates as coords} from './peak-tram-central-concourse-site.js';
+import {CENTRAL_CONCOURSE as C,centralConcoursePoint as point,centralConcourseHalfWidth as width,centralConcourseCoordinates as coords,centralConcoursePortalApron as apron} from './peak-tram-central-concourse-site.js';
 import {harbourCityLocalCollider} from './harbour-city-architecture.js';
 import {store,quad,meshStore,beam,merged,nightAmount} from './harbour-city-world-utils.js';
 
@@ -42,6 +42,12 @@ export function buildPeakTramCentralConcourse(scene){
    quad(belt,v(start,o0,.018),v(b,o0,.018),v(b,o1,.018),v(start,o1,.018),[.20,.22,.22]);
    quad(treads[lane],v(start,o0,.024),v(b,o0,.024),v(b,o1,.024),v(start,o1,.024),[1,1,1]);
   }for(const o of [-1.36,-.06,.06,1.36]){beam(rails,v(start,o,1.05),v(b,o,1.05),.06,.06);quad(glass,v(start,o,.10),v(b,o,.10),v(b,o,1.02),v(start,o,1.02),[.48,.57,.56]);}}
+ }
+ // Close the small angled portal wedge up to the platform end line.
+ for(let i=0;i<28;i++){
+  const o0=1.4*i/28,o1=1.4*(i+1)/28,a=point(C.length,o0),b=point(C.length,o1),end0=apron(C.length+1e-9,Math.max(o0,1e-6)),end1=apron(C.length+1e-9,o1);
+  const c=end1&&apron(end1.endS,o1),d=end0&&apron(end0.endS,Math.max(o0,1e-6));
+  if(c&&d)quad(floors,[a.x,a.y,a.z],[b.x,b.y,b.z],[c.x,c.y,c.z],[d.x,d.y,d.z],[.34,.35,.33]);
  }
  // Low-profile queue rails leave a clear central route to the walkways.
  for(let s=10;s<C.runStart-4;s+=3)for(const o of [-2.8,2.8]){const t=Math.min(s+2.7,C.runStart-3),a=point(s,o),b=point(t,o);beam(queue,v(s,o,.05),v(s,o,.94),.045,.045);beam(queue,v(s,o,.94),v(t,o,.94),.035,.035);const site={x:(a.x+b.x)/2,z:(a.z+b.z)/2,ry:Math.atan2(-(b.z-a.z),b.x-a.x)};colliders.push(harbourCityLocalCollider(site,0,0,t-s,.06,Math.min(a.y,b.y),Math.max(a.y,b.y)+.97));}

@@ -45,3 +45,10 @@ test('angled portal floor is eased toward regraded platform and mesh follows its
  const model=build(new T.Group()),mesh=model.group.getObjectByName('Central concourse floor'),ray=new T.Raycaster();model.group.updateMatrixWorld(true);
  for(let s=C.length-5.8;s<C.length-.2;s+=.3)for(let o=-w(s)+.3;o<w(s)-.3;o+=.4){const q=p(s,o);ray.set(new T.Vector3(q.x,q.y+1,q.z),new T.Vector3(0,-1,0));let hit=ray.intersectObject(mesh)[0];assert.ok(hit,`portal floor missing at ${s},${o}`);assert.ok(Math.abs(hit.point.y-q.y)<.012);assert.ok(Math.abs(ground(q.x,q.z,null,q.y)-q.y)<1e-6);}
 });
+test('portal apron fills the oblique wedge and joins the platform edge',async()=>{
+ const T=await import('three/webgpu'),{buildPeakTramCentralConcourse:build}=await import('../js/cities/hongkong/peak-tram-central-concourse.js'),{CENTRAL_CONCOURSE:C,centralConcoursePortalApron:apron,centralConcourseGroundHeight:ground}=await import('../js/cities/hongkong/peak-tram-central-concourse-site.js'),{centralPlatformPoint,centralPlatformFloor}=await import('../js/cities/hongkong/peak-tram-central-platform-site.js'),{fullRoadSurfaceAt:road}=await import('../js/cities/hongkong/full-meta.js'),{hongKongTerrainHeight:terrain}=await import('../js/cities/hongkong/terrain.js');
+ const m=build(new T.Group()),floor=m.group.getObjectByName('Central concourse floor'),ray=new T.Raycaster(),start=centralPlatformPoint(0);m.group.updateMatrixWorld(true);
+ for(let o=.1;o<=1.35;o+=.05){let a=apron(C.length+1e-7,o);assert.ok(a);for(const t of [.2,.5,.8]){let q=apron(C.length+(a.endS-C.length)*t,o);assert.ok(q);ray.set(new T.Vector3(q.x,q.y+1,q.z),new T.Vector3(0,-1,0));let hit=ray.intersectObject(floor)[0];assert.ok(hit,`wedge hole at ${o},${t}`);assert.ok(Math.abs(hit.point.y-q.y)<.015);assert.ok(Math.abs(ground(q.x,q.z,null,q.y)-q.y)<.001);let r=road(q.x,q.z,.35,terrain(q.x,q.z));if(r)assert.ok(r.height-q.y>3.2);}
+  const q=apron(a.endS,o),dx=q.x-start.x,dz=q.z-start.z,s=dx*start.ux+dz*start.uz,off=dx*start.nx+dz*start.nz;assert.ok(Math.abs(s)<1e-8);assert.ok(Math.abs(q.y-centralPlatformFloor(0,off))<1e-8);
+ }
+});

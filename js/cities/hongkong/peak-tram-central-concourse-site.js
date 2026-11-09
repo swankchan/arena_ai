@@ -21,8 +21,18 @@ export function centralConcoursePoint(s,offset=0){
  return {x:C.x+C.ux*s+C.nx*offset,z:C.z+C.uz*s+C.nz*offset,y};
 }
 export function centralConcourseCoordinates(x,z){const dx=x-C.x,dz=z-C.z;return {s:dx*C.ux+dz*C.uz,o:dx*C.nx+dz*C.nz};}
+// The angled corridor end crosses the platform's s=0 edge diagonally. A
+// small triangular apron fills the formerly uncovered positive-offset wedge.
+export function centralConcoursePortalApron(s,o){
+ if(o<=0||o>1.4||s<C.length)return null;
+ const p=centralPlatformPoint(0),dot=C.ux*p.ux+C.uz*p.uz,normal=C.nx*p.ux+C.nz*p.uz,extension=-o*normal/dot;
+ if(extension<=0||s>C.length+extension)return null;
+ const start=centralConcoursePoint(C.length,o),x=C.x+C.ux*(C.length+extension)+C.nx*o,z=C.z+C.uz*(C.length+extension)+C.nz*o,dx=x-p.x,dz=z-p.z,platformOffset=dx*p.nx+dz*p.nz;
+ const y=centralPlatformFloor(0,platformOffset),t=(s-C.length)/extension;
+ return {x:C.x+C.ux*s+C.nx*o,z:C.z+C.uz*s+C.nz*o,y:start.y+(y-start.y)*t,endS:C.length+extension};
+}
 export function centralConcourseHalfWidth(s){return s>C.length-6?1.4+2.6*Math.max(0,(C.length-s)/6):4;}
-export function centralConcourseGroundHeight(x,z,current,ref){const {s,o}=centralConcourseCoordinates(x,z);if(s<0||s>C.length||Math.abs(o)>centralConcourseHalfWidth(s))return current;let y=centralConcoursePoint(s,o).y;return Math.abs(ref-y)<1.0?y:current;}
+export function centralConcourseGroundHeight(x,z,current,ref){const {s,o}=centralConcourseCoordinates(x,z);if(s>C.length){const apron=centralConcoursePortalApron(s,o);return apron&&Math.abs(ref-apron.y)<1.0?apron.y:current;}if(s<0||Math.abs(o)>centralConcourseHalfWidth(s))return current;let y=centralConcoursePoint(s,o).y;return Math.abs(ref-y)<1.0?y:current;}
 
 // Entrance lift footprint aligned to the existing .6m paving grid.
 export const CENTRAL_LIFT_LOCAL=Object.freeze({x0:6.6,x1:9.6,z0:-1.4,z1:1.6,x:8.1,z:.1});
