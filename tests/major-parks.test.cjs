@@ -320,3 +320,17 @@ test('tennis markings include singles alleys and correctly bounded service boxes
   assert.ok(Math.abs((b.max.x-b.min.x)-11.02) < .01);
   assert.ok(Math.abs((b.max.z-b.min.z)-23.82) < .01);
 });
+
+test('Victoria model boat pool approximate location stays within park, away from roads and other hard facilities', () => {
+  const park = arch.VICTORIA_PARK, pool = arch.VICTORIA_MODEL_BOAT_POOL;
+  // The published POI positions are not surveys of the outline or centre.
+  assert.ok(Math.hypot(pool.site.x - 2833.856, pool.site.z + 46.398) < .01);
+  assert.ok(!inside(pool.ring, 2890, -135), 'obsolete approximate position must not remain water');
+  const hard = new Set(['bandstand', 'soccer', 'tennis', 'basketball', 'bowls', 'roller', 'handball', 'tableTennis', 'centreCourt', 'poolBuilding', 'sportsCentre', 'playground', 'centralLawn', 'monument']);
+  for (let x = pool.bounds.minX; x <= pool.bounds.maxX; x += 1) for (let z = pool.bounds.minZ; z <= pool.bounds.maxZ; z += 1) {
+    if (!inside(pool.ring, x, z)) continue;
+    assert.ok(inside(park.ring, x, z));
+    assert.ok(!arch.majorParkRoadAt(park, x, z, .5), `road near pool ${x},${z}`);
+    for (const other of park.features) if (hard.has(other.kind)) assert.ok(!inside(other.ring, x, z), `${other.name} overlaps pool`);
+  }
+});

@@ -141,8 +141,8 @@ export const KOWLOON_SCULPTURE_POOL = addPhotoFeature(KOWLOON_PARK, 'sculpturePo
 export const KOWLOON_CHINESE_PAVILION = addPhotoFeature(KOWLOON_PARK, 'pavilion', '中國花園涼亭 Chinese Garden pavilion',
   ellipseRing(1155, -2055, 7, 7, 16), 'Photo-directed pavilion within exact OSM Chinese Garden way 725140779.');
 export const VICTORIA_MODEL_BOAT_POOL = addPhotoFeature(VICTORIA_PARK, 'modelBoatPool', '模型船池 Model Boat Pool',
-  scaleRingToArea(roundedRectRing(2890, -135, 45.55, 22, 7.5, .08), 954),
-  'Photo-directed elongated octagonal pool beside the bandstand area; official LCSD area 954 m² and depth 0.5 m, but no exact OSM water ring was available.', { officialArea: 954, officialDepth: .5 });
+  scaleRingToArea(roundedRectRing(2833.856, -46.398, 45.55, 22, 7.5, .08), 954),
+  'Photo-directed outline, centred near an approximate researched POI (22.282319, 114.187098), near Family Action directions (22.28222, 114.187024); official LCSD area 954 m² and depth 0.5 m, not a surveyed or OSM ring.', { officialArea: 954, officialDepth: .5 });
 export const VICTORIA_QUEEN_STATUE = addPhotoFeature(VICTORIA_PARK, 'monument', '維多利亞女皇銅像 Statue of Queen Victoria',
   roundedRectRing(2845, 65, 5.2, 5.2, .35), 'Photo-directed monument position by the principal fountain / lawn approach; bronze statue and stone plinth follow reliable photographs.');
 
