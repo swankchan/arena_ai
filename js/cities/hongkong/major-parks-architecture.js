@@ -171,6 +171,31 @@ export const VICTORIA_MODEL_BOAT_POOL = addPhotoFeature(VICTORIA_PARK, 'modelBoa
   victoriaBoatFootprint.ring,
   'Photo-directed shape with inferred dividing finger; approximate POI, official LCSD 954 m² and depth 0.5 m; geometry and orientation are not surveyed.',
   { officialArea: 954, officialDepth: .5, fingerRing: victoriaBoatFootprint.finger });
+// A short, scene-estimated grade ties the finger to the surrounding DTM.  Both
+// the rendered mesh and ground queries use these same local coordinates.
+const boatFinger = VICTORIA_MODEL_BOAT_POOL.fingerRing;
+const boatFingerA = {x: boatFinger[0], z: boatFinger[1]};
+const boatFingerB = {x: boatFinger[boatFinger.length - 4], z: boatFinger[boatFinger.length - 3]};
+const boatFingerWidth = Math.hypot(boatFingerA.x - boatFingerB.x, boatFingerA.z - boatFingerB.z);
+export const VICTORIA_BOAT_RAMP = Object.freeze({
+  x: (boatFingerA.x + boatFingerB.x) * .5, z: (boatFingerA.z + boatFingerB.z) * .5,
+  ux: (boatFingerA.x - boatFingerB.x) / boatFingerWidth, uz: (boatFingerA.z - boatFingerB.z) / boatFingerWidth,
+  halfFinger: boatFingerWidth * .5, sideBlend: 2, length: 4
+});
+export function victoriaBoatRampPoint(u, v) {
+  const r = VICTORIA_BOAT_RAMP;
+  return { x: r.x + r.ux * u - r.uz * v, z: r.z + r.uz * u + r.ux * v };
+}
+export function victoriaBoatRampHeight(x, z) {
+  const r = VICTORIA_BOAT_RAMP, dx = x - r.x, dz = z - r.z;
+  const u = dx * r.ux + dz * r.uz, v = -dx * r.uz + dz * r.ux;
+  if (v < -.0005 || v > r.length + .0005 || Math.abs(u) > r.halfFinger + r.sideBlend + .0005) return null;
+  const side = Math.max(0, Math.min(1, (r.halfFinger + r.sideBlend - Math.abs(u)) / r.sideBlend));
+  const along = Math.max(0, Math.min(1, 1 - v / r.length));
+  const weight = side * side * (3 - 2 * side) * along * along * (3 - 2 * along);
+  const natural = hongKongTerrainHeight(x, z) + MAJOR_PARK_BASE_OFFSET;
+  return natural + (majorParkPadHeight(VICTORIA_MODEL_BOAT_POOL, .03) + .14 - natural) * weight;
+}
 export const VICTORIA_QUEEN_STATUE = addPhotoFeature(VICTORIA_PARK, 'monument', '維多利亞女皇銅像 Statue of Queen Victoria',
   roundedRectRing(2845, 65, 5.2, 5.2, .35), 'Photo-directed monument position by the principal fountain / lawn approach; bronze statue and stone plinth follow reliable photographs.');
 
@@ -283,6 +308,7 @@ export function majorParkGroundHeightAt(park, x, z, ground) {
   if (x < b.minX || x > b.maxX || z < b.minZ || z > b.maxZ || !pointInFlatRing(park.ring, x, z)) return ground;
   if (majorParkRoadAt(park, x, z)) return ground;
   if (park === VICTORIA_PARK && pointInFlatRing(VICTORIA_MODEL_BOAT_POOL.fingerRing, x, z)) return majorParkPadHeight(VICTORIA_MODEL_BOAT_POOL, .03) + .14;
+  if (park === VICTORIA_PARK) { const ramp = victoriaBoatRampHeight(x, z); if (ramp !== null) return ramp; }
   for (const feature of park.features) {
     if (!FLAT_FEATURES.has(feature.kind) || !pointInFlatRing(feature.ring, x, z)) continue;
     const pad = majorParkPadHeight(feature);
@@ -295,7 +321,7 @@ const LAMP_OBSTACLES = new Set(['heritage', 'conservatory', 'vantage', 'playgrou
 export function majorParkLampConflictAt(x, z) {
   const park = majorParkAt(x, z);
   if (!park || majorParkRoadAt(park, x, z)) return false;
-  if (park === VICTORIA_PARK && pointInFlatRing(VICTORIA_MODEL_BOAT_POOL.fingerRing, x, z)) return true;
+  if (park === VICTORIA_PARK && (pointInFlatRing(VICTORIA_MODEL_BOAT_POOL.fingerRing, x, z) || victoriaBoatRampHeight(x, z) !== null)) return true;
   for (const feature of park.features) {
     if (!LAMP_OBSTACLES.has(feature.kind)) continue;
     if (pointInFlatRing(feature.ring, x, z) || distanceToRing(feature.ring, x, z) < .55) return true;
@@ -304,7 +330,7 @@ export function majorParkLampConflictAt(x, z) {
 }
 export function majorParkFurnitureConflictAt(park, x, z, margin = .55) {
   if (!pointInFlatRing(park.ring, x, z) || majorParkRoadAt(park, x, z, .35)) return true;
-  if (park === VICTORIA_PARK && pointInFlatRing(VICTORIA_MODEL_BOAT_POOL.fingerRing, x, z)) return true;
+  if (park === VICTORIA_PARK && (pointInFlatRing(VICTORIA_MODEL_BOAT_POOL.fingerRing, x, z) || victoriaBoatRampHeight(x, z) !== null)) return true;
   for (const feature of park.features) {
     if (!LAMP_OBSTACLES.has(feature.kind)) continue;
     if (pointInFlatRing(feature.ring, x, z) || distanceToRing(feature.ring, x, z) < margin) return true;
@@ -315,7 +341,7 @@ const TREE_EXCLUSIONS = new Set(['heritage', 'conservatory', 'vantage', 'playgro
 function hash(a, b, c) { const value = Math.sin(a * 127.1 + b * 311.7 + c * 74.7) * 43758.5453; return value - Math.floor(value); }
 function treeClear(park, x, z, crown = 2.4) {
   if (!pointInFlatRing(park.ring, x, z) || majorParkRoadAt(park, x, z, 1.4) || majorParkPathAt(park, x, z, crown)) return false;
-  if (park === VICTORIA_PARK && (pointInFlatRing(VICTORIA_MODEL_BOAT_POOL.fingerRing, x, z) || distanceToRing(VICTORIA_MODEL_BOAT_POOL.fingerRing, x, z) < crown)) return false;
+  if (park === VICTORIA_PARK && (pointInFlatRing(VICTORIA_MODEL_BOAT_POOL.fingerRing, x, z) || distanceToRing(VICTORIA_MODEL_BOAT_POOL.fingerRing, x, z) < crown || victoriaBoatRampHeight(x, z) !== null)) return false;
   for (const feature of park.features) {
     if (!TREE_EXCLUSIONS.has(feature.kind)) continue;
     if (pointInFlatRing(feature.ring, x, z) || distanceToRing(feature.ring, x, z) < crown) return false;

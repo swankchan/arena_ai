@@ -2,7 +2,7 @@ import * as THREE from 'three/webgpu';
 import { materialColor, positionWorld } from 'three/tsl';
 import {cityUniforms} from '../../tsl-materials.js';
 import {
-  VICTORIA_PARK, VICTORIA_MODEL_BOAT_POOL, VICTORIA_QUEEN_STATUE,
+  VICTORIA_PARK, VICTORIA_MODEL_BOAT_POOL, VICTORIA_QUEEN_STATUE, VICTORIA_BOAT_RAMP, victoriaBoatRampPoint, victoriaBoatRampHeight,
   majorParkFeature, majorParkGroundHeightAt, majorParkMinimumTerrain, majorParkPadHeight,
   majorParkArrivalPoints, createMajorParkTreeSites, majorParkLocalToWorld
 } from './major-parks-architecture.js';
@@ -79,6 +79,18 @@ function buildModelBoatPool(group, materials, colliders) {
   // orientation are an explicit estimate rather than an engineering plan.
   const finger = ringShellGeometry(feature.fingerRing, majorParkMinimumTerrain(feature), pad + .14);
   meshFromGeometry(group, finger, materials.plaza, 'Victoria Model Boat Pool provisional paved dividing finger');
+  const rampVertices = [], ramp = VICTORIA_BOAT_RAMP, width = ramp.halfFinger + ramp.sideBlend;
+  const vertex = (u, v) => { const p = victoriaBoatRampPoint(u, v); return [p.x, victoriaBoatRampHeight(p.x, p.z) + .008, p.z]; };
+  const columns = 24, rows = 12;
+  for (let i = 0; i < columns; i++) for (let j = 0; j < rows; j++) {
+    const u0 = -width + 2 * width * i / columns, u1 = -width + 2 * width * (i + 1) / columns;
+    const v0 = ramp.length * j / rows, v1 = ramp.length * (j + 1) / rows;
+    for (const p of [vertex(u0,v0),vertex(u0,v1),vertex(u1,v0),vertex(u1,v0),vertex(u0,v1),vertex(u1,v1)]) rampVertices.push(...p);
+  }
+  const rampGeometry = new THREE.BufferGeometry();
+  rampGeometry.setAttribute('position', new THREE.Float32BufferAttribute(rampVertices, 3));
+  rampGeometry.computeVertexNormals(); rampGeometry.computeBoundingBox(); rampGeometry.computeBoundingSphere();
+  meshFromGeometry(group, rampGeometry, materials.path, 'Victoria Model Boat Pool DTM transition to finger');
   const water = group.getObjectByName(`${feature.name} water surface`);
   const poolWater = materials.shallowWater.clone();
   poolWater.color.set(0x73aaa4);

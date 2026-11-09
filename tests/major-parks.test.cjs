@@ -373,3 +373,25 @@ test('boat pool provisional finger is dry, paved, connected and avoids roads', (
   assert.ok(samples > 40);
   assert.ok(Math.abs(pool.area - 954) < 1e-6);
 });
+
+test('boat-pool finger grade joins DTM and avoids roads and other facilities at sampled points', () => {
+  const park = arch.VICTORIA_PARK, pool = arch.VICTORIA_MODEL_BOAT_POOL, r = arch.VICTORIA_BOAT_RAMP;
+  const fingerY = arch.majorParkPadHeight(pool, .03) + .14;
+  const width = r.halfFinger + r.sideBlend;
+  for (let u = -width; u <= width + 1e-6; u += .25) for (let v = 0; v <= r.length + 1e-6; v += .25) {
+    const p = arch.victoriaBoatRampPoint(u, v), height = arch.victoriaBoatRampHeight(p.x, p.z);
+    assert.ok(height !== null && Number.isFinite(height));
+    assert.ok(inside(park.ring, p.x, p.z));
+    assert.ok(!arch.majorParkRoadAt(park, p.x, p.z, .5));
+    for (const f of park.features) if (f !== pool && f.kind !== 'woods') assert.ok(!inside(f.ring, p.x, p.z), `${f.name} intersects grade`);
+    assert.ok(Math.abs(arch.majorParkGroundHeightAt(park, p.x, p.z, 0) - height) < 1e-5);
+    if (v === r.length) assert.ok(Math.abs(height - terrain.hongKongTerrainHeight(p.x, p.z) - arch.MAJOR_PARK_BASE_OFFSET) < 1e-6);
+    if (v === 0 && Math.abs(u) < r.halfFinger) assert.ok(Math.abs(height - fingerY) < 1e-6);
+  }
+  const mesh = worlds.get(park).root.getObjectByName('Victoria Model Boat Pool DTM transition to finger');
+  const positions = mesh.geometry.attributes.position;
+  for (let i = 0; i < positions.count; i++) {
+    const h = arch.victoriaBoatRampHeight(positions.getX(i), positions.getZ(i));
+    assert.ok(h !== null && Math.abs(positions.getY(i) - h - .008) < .001);
+  }
+});
