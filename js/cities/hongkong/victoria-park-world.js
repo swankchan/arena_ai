@@ -56,20 +56,40 @@ function buildBandstand(feature, group, materials, colliders) {
   return {update(){const glow=THREE.MathUtils.smoothstep(cityUniforms.uInteriorGlow.value,.55,1.4);for(const light of lights)light.intensity=18*glow;}};
 }
 function buildQueen(feature, group, materials, colliders) {
-  majorParkRingSurface(feature, materials.stone, 'Queen Victoria monument exact stone forecourt', group);
+  majorParkRingSurface(feature, materials.stone, 'Queen Victoria monument provisional stone forecourt', group);
   const pad = majorParkPadHeight(feature), local = majorParkLocalGroup(feature, group, pad, 'Queen Victoria bronze monument and granite pedestal');
-  const stone = [], bronzeParts = [];
-  box(stone, [0, .20, 0], [5.0, .4, 5.0]); box(stone, [0, .65, 0], [4.3, .5, 4.3]); box(stone, [0, 1.65, 0], [2.5, 1.5, 2.5]); box(stone, [0, 2.48, 0], [2.9, .18, 2.9]);
+  const stone = [], joints = [], bronzeParts = [];
+  // The present park monument stands on a tall rectangular stone pedestal, not
+  // a stack of broad ground-level steps. Seven feet is a published approximate
+  // height; width, individual courses and orientation remain photo estimates.
+  box(stone, [0, .81, 0], [3.05, 1.62, 2.80]);
+  box(stone, [0, 1.68, 0], [3.13, .12, 2.88]);
+  box(stone, [0, 1.80, 0], [3.02, .12, 2.77]);
+  box(stone, [0, 1.91, 0], [2.92, .10, 2.68]);
+  box(stone, [0, 2.02, 0], [2.82, .12, 2.58]);
+  box(stone, [0, 2.10, 0], [2.76, .04, 2.52]);
+  // Fine stone joints visible in the photograph, intentionally subdued rather
+  // than black outlines or a guessed inscription.
+  for (const x of [-.52, .52]) for (const z of [-1.401, 1.401])
+    box(joints, [x,.81,z], [.012,1.58,.006]);
+  for (const z of [-.48, .48]) for (const x of [-1.526,1.526])
+    box(joints, [x,.81,z], [.006,1.58,.012]);
   box(bronzeParts, [0, 3.05, 0], [1.35, 1.05, 1.15]);
   sphere(bronzeParts, [0, 4.05, -.05], .52, 16); sphere(bronzeParts, [0, 4.68, -.05], .25, 14);
   beam(bronzeParts, [-.52, 3.95, 0], [-.90, 3.10, .18], .20, .20); beam(bronzeParts, [.52, 3.95, 0], [.90, 3.10, .18], .20, .20);
   for (let i = 0; i < 5; i++) {
     const a = i / 5 * Math.PI * 2; cylinder(bronzeParts, [Math.cos(a) * .20, 4.98, -.05 + Math.sin(a) * .20], .035, .28, 8);
   }
-  const bronze = new THREE.MeshStandardMaterial({ color: 0x41675b, roughness: .56, metalness: .62 });
-  merged(local, stone, materials.stone, 'Queen Victoria monument granite pedestal');
-  merged(local, bronzeParts, bronze, 'Queen Victoria seated bronze figure — recognisable scene interpretation, not a laser-scanned replica');
-  colliders.push(majorParkBoxCollider(feature.site.x, feature.site.z, 5, 5, pad, pad + 5.2));
+  // Figure is still the old crude placeholder and must not be mistaken for a
+  // completed sculpt. Shift it down to sit on the revised pedestal.
+  for (const part of bronzeParts) part.translate(0, -.40, 0);
+  const bronze = new THREE.MeshStandardMaterial({ color: 0x302d29, roughness: .68, metalness: .48 });
+  const granite = new THREE.MeshStandardMaterial({ color: 0x96968d, roughness: .92 });
+  const jointMaterial = new THREE.MeshStandardMaterial({ color: 0x777970, roughness: 1 });
+  merged(local, stone, granite, 'Queen Victoria monument provisional granite pedestal');
+  merged(local, joints, jointMaterial, 'Queen Victoria pedestal fine stone joints', false);
+  merged(local, bronzeParts, bronze, 'Queen Victoria crude placeholder figure — sculpture not yet reconstructed');
+  colliders.push(majorParkBoxCollider(feature.site.x, feature.site.z, 3.13, 2.88, pad, pad + 4.75, feature.site.ry));
 }
 function buildModelBoatPool(group, materials, colliders) {
   const feature = VICTORIA_MODEL_BOAT_POOL, { pad } = addMajorParkWater(feature, group, materials, colliders, { shallow: true });

@@ -417,3 +417,18 @@ test('Victoria custom shader materials use node-material types instead of leakin
     assert.ok(court?.material.isNodeMaterial && court.material.colorNode, f.name);
   }
 });
+
+
+test('Victoria monument pedestal follows the provisional tall granite block and does not claim the figure is finished', () => {
+  const root = worlds.get(arch.VICTORIA_PARK).root;
+  const pedestal = root.getObjectByName('Queen Victoria monument provisional granite pedestal');
+  const joints = root.getObjectByName('Queen Victoria pedestal fine stone joints');
+  const figure = root.getObjectByName('Queen Victoria crude placeholder figure — sculpture not yet reconstructed');
+  assert.ok(pedestal && joints && figure);
+  pedestal.geometry.computeBoundingBox(); figure.geometry.computeBoundingBox();
+  const bounds=pedestal.geometry.boundingBox;
+  assert.ok(Math.abs(bounds.max.y-2.12)<.001 && Math.abs(bounds.min.y)<.001);
+  assert.ok(bounds.max.x-bounds.min.x<3.2 && bounds.max.z-bounds.min.z<3);
+  assert.ok(figure.geometry.boundingBox.min.y>=bounds.max.y-.001);
+  assert.ok(pedestal.material.color.getHex()!==0xffffff && figure.material.color.getHex()!==0x41675b);
+});
