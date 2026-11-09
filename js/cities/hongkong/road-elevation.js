@@ -166,9 +166,28 @@ function addTerrainStations(stations, ax, az, dx, dz, offsetX, offsetZ) {
   addIntersections(x + z, dx + dz, grid.minX + grid.minZ);
 }
 
+// Most of the 77,000 ways are nowhere near an authored construction pad.
+// Cache conservative AABBs once and reject disjoint segments before testing the
+// original ring edges. This does not change the actual intersection maths.
+const roadPadRings = [HSBC_SITE.ring, SCB_SITE.ring, ICC_SITE.ring, AIRSIDE_SITE.ring, LEE_GARDEN_ONE_SITE.ring, ONE_IFC_SITE.ring, CHAMPION_TOWER_SITE.ring, CKC2_SITE.ring, QGO_SITE.ring, CONRAD_SITE.ring, HYSAN_SITE.ring, TWO_TAIKOO_SITE.ring, ...HENDERSON_GROUND_RINGS, ...ONE_EXCHANGE_GROUND_RINGS, ...TWO_EXCHANGE_GROUND_RINGS, ...CFA_GROUND_RINGS, ...HKCEC_GROUND_RINGS, ...TIMES_SQUARE_GROUND_RINGS, ...HARBOUR_CITY_GROUND_RINGS, ...PENINSULA_GROUND_RINGS, ...SHERATON_GROUND_RINGS, ...SALISBURY_GROUND_RINGS, ...KOWLOON_SHANGRI_LA_GROUND_RINGS, ...CGO_GROUND_RINGS, ...THE_ARCH_GROUND_RINGS, ...SORRENTO_GROUND_RINGS].map((ring) => {
+  let minX = Infinity, minZ = Infinity, maxX = -Infinity, maxZ = -Infinity;
+  for (let i = 0; i < ring.length; i += 2) {
+    minX = Math.min(minX, ring[i]); maxX = Math.max(maxX, ring[i]);
+    minZ = Math.min(minZ, ring[i + 1]); maxZ = Math.max(maxZ, ring[i + 1]);
+  }
+  return {ring, minX, minZ, maxX, maxZ};
+});
 function addPadStations(stations, boundaries, ax, az, dx, dz, offsetX, offsetZ) {
   const x = ax + offsetX, z = az + offsetZ;
-  for (const ring of [HSBC_SITE.ring, SCB_SITE.ring, ICC_SITE.ring, AIRSIDE_SITE.ring, LEE_GARDEN_ONE_SITE.ring, ONE_IFC_SITE.ring, CHAMPION_TOWER_SITE.ring, CKC2_SITE.ring, QGO_SITE.ring, CONRAD_SITE.ring, HYSAN_SITE.ring, TWO_TAIKOO_SITE.ring, ...HENDERSON_GROUND_RINGS, ...ONE_EXCHANGE_GROUND_RINGS, ...TWO_EXCHANGE_GROUND_RINGS, ...CFA_GROUND_RINGS, ...HKCEC_GROUND_RINGS, ...TIMES_SQUARE_GROUND_RINGS, ...HARBOUR_CITY_GROUND_RINGS, ...PENINSULA_GROUND_RINGS, ...SHERATON_GROUND_RINGS, ...SALISBURY_GROUND_RINGS, ...KOWLOON_SHANGRI_LA_GROUND_RINGS, ...CGO_GROUND_RINGS, ...THE_ARCH_GROUND_RINGS, ...SORRENTO_GROUND_RINGS]) {
+  const minX = Math.min(x, x + dx), maxX = Math.max(x, x + dx);
+  const minZ = Math.min(z, z + dz), maxZ = Math.max(z, z + dz);
+  // The edge test accepts u within 1e-8 of an endpoint. Expand each
+  // box by a conservative coordinate-scaled tolerance to preserve it.
+  for (const pad of roadPadRings) {
+    const tolerance = 1e-8 * Math.max(1, pad.maxX - pad.minX, pad.maxZ - pad.minZ);
+    if (maxX < pad.minX - tolerance || minX > pad.maxX + tolerance ||
+        maxZ < pad.minZ - tolerance || minZ > pad.maxZ + tolerance) continue;
+    const ring = pad.ring;
     for (let i = 0, j = ring.length - 2; i < ring.length; j = i, i += 2) {
       const px = ring[j], pz = ring[j + 1], ex = ring[i] - px, ez = ring[i + 1] - pz;
       const denominator = dx * ez - dz * ex;
