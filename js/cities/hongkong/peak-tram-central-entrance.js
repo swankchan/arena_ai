@@ -1,5 +1,6 @@
 import * as THREE from 'three/webgpu';
 import {color} from 'three/tsl';
+import {CENTRAL_LIFT_LOCAL as L} from './peak-tram-central-concourse-site.js';
 import {ST_JOHNS_SITE as S} from './st-johns-building-site.js';
 import {authoredLocalToWorld} from './authored-landmark-site.js';
 import {hongKongTerrainHeight} from './terrain.js';
@@ -45,7 +46,7 @@ export function buildPeakTramCentralEntrance(scene){
  for(let z of [-2.9,2.9])beam(barriers,[9,base+1.1,z],[14.4,base+1.1,z],.035,.035);
  // Small red/grey paved approach drapes the terrain rather than moving roads.
  for(let x=15.9;x<27.9;x+=.6)for(let z=-6;z<6;z+=.6){let X=Math.min(x+.6,27.9),Z=Math.min(z+.6,6);let p=(a,b)=>[a,centralEntranceGround(a,b)+.035,b];quad(floor,p(x,z),p(x,Z),p(X,Z),p(X,z),[.45,.30,.27]);}
- for(let x=6.6;x<15.9;x+=.6)for(let z=-5;z<5;z+=.6){let X=Math.min(x+.6,15.9),Z=Math.min(z+.6,5),p=(a,b)=>[a,centralEntranceGround(a,b)+.045,b];quad(hallFloor,p(x,z),p(x,Z),p(X,Z),p(X,z),[.28,.28,.25]);}
+ for(let x=6.6;x<15.9;x+=.6)for(let z=-5;z<5;z+=.6){if(x+.3>L.x0&&x+.3<L.x1&&z+.3>L.z0&&z+.3<L.z1)continue;let X=Math.min(x+.6,15.9),Z=Math.min(z+.6,5),p=(a,b)=>[a,centralEntranceGround(a,b)+.045,b];quad(hallFloor,p(x,z),p(x,Z),p(X,Z),p(X,z),[.28,.28,.25]);}
  const pavement=new THREE.MeshStandardMaterial({vertexColors:true,side:THREE.DoubleSide,roughness:1});meshStore(root,floor,pavement,'Central forecourt red paving',false);meshStore(root,hallFloor,pavement,'Central entrance waiting hall floor',false);
  merged(root,ceiling,dark,'Central entrance ceiling');merged(root,ticket,red,'Central provisional ticket counter');merged(root,walls,stone,'Central station grey stone entrance');merged(root,trim,red,'Central entrance red reveals');merged(root,frames,steel,'Central entrance door frames');merged(root,lights,warm,'Central entrance and waiting room night lights',false);merged(root,barriers,steel,'Central waiting queue rails',false);
  // Canvas label is visual signage, not a substitute for physical door openings.

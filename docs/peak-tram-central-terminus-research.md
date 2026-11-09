@@ -14,7 +14,7 @@ This audit and image collection do not constitute a finished station. The photo-
 
 Update: the separately modelled street entrance and simplified sculpture are described in `peak-tram-central-entrance.md`; the relocated platform and connection remain unfinished.
 
-Update: provisional platforms and the static approach to Kennedy bridge now exist; see `peak-tram-central-platform.md`. A usable connection between the street entrance and these platforms remains absent.
+Update: provisional platforms and the static approach to Kennedy bridge now exist; see `peak-tram-central-platform.md`. A later inferred lift and concourse link now connects the entrance and platforms in the model; it has not been verified in the complete game.
 
 ## Additional engineering reference
 

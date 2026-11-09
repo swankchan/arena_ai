@@ -1,3 +1,6 @@
+import {buildPeakTramCentralConcourse} from './peak-tram-central-concourse.js';
+import {centralConcourseGroundHeight,centralConcourseUnderRoad} from './peak-tram-central-concourse-site.js';
+import {buildCentralLift} from './peak-tram-central-lift.js';
 import {buildPeakTramCentralApproach} from './peak-tram-central-approach.js';
 import {buildPeakTramCentralPlatform} from './peak-tram-central-platform.js';
 import {centralPlatformGroundHeight, centralPlatformUnderRoad} from './peak-tram-central-platform-site.js';
@@ -194,6 +197,8 @@ function* buildSimpleHongKongWorldSteps(scene) {
   const stJohns = buildStJohnsBuilding(scene);
   const peakTramCentralEntrance = buildPeakTramCentralEntrance(scene);
   const peakTramCentralPlatform = buildPeakTramCentralPlatform(scene);
+  const centralConcourse = buildPeakTramCentralConcourse(scene);
+  const centralLift = buildCentralLift(scene);
   const peakTramCentralApproach = buildPeakTramCentralApproach(scene);
   const peakTramKennedyBridge = buildPeakTramKennedyBridge(scene);
   const peakTramKennedyApproach = buildPeakTramKennedyApproach(scene);
@@ -383,12 +388,12 @@ function* buildSimpleHongKongWorldSteps(scene) {
     let base = WATER_LEVEL;
     if (isTerritoryLand(x, z)) base = peakTramLoopGrade(x, z, hongKongTerrainHeight(x, z)) + FULL_WORLD_HEIGHT.land;
     if (territoryParkAt(x, z)) base = peakTramLoopGrade(x, z, hongKongTerrainHeight(x, z)) + FULL_WORLD_HEIGHT.park;
-    if (mode === 'person') base = centralPlatformGroundHeight(x, z, base, referenceY);
+    if (mode === 'person') { base = centralPlatformGroundHeight(x, z, base, referenceY); base = centralConcourseGroundHeight(x, z, base, referenceY); }
     const road = fullRoadSurfaceAt(x, z, 0.35, referenceY);
     let groundUsesRoad = false;
     if (road) {
       const layered = Boolean(road.flags & 6);
-      if (!centralPlatformUnderRoad(x, z, mode, referenceY, road.height) && (!layered || Math.abs(road.height - referenceY) <= Math.abs(base - referenceY) + 0.5)) { base = road.height; groundUsesRoad = true; }
+      if (!centralPlatformUnderRoad(x, z, mode, referenceY, road.height) && !centralConcourseUnderRoad(x, z, mode, referenceY, road.height) && (!layered || Math.abs(road.height - referenceY) <= Math.abs(base - referenceY) + 0.5)) { base = road.height; groundUsesRoad = true; }
     }
     const crossingGround = selectCrossingGround(base, crossingSurfaceAt(x, z), referenceY, WATER_LEVEL);
     const ground = scbEntranceGroundHeight(x, z, crossingGround, standardChartered.groundOffset);
@@ -503,7 +508,8 @@ function* buildSimpleHongKongWorldSteps(scene) {
     if (mode !== 'person') return finalSurface;
     const bridgeSurface = obrienFootbridge.groundHeightAt(x,z,finalSurface,referenceY);
     const immigrationSurface = immigrationTower.groundHeightAt(x,z,bridgeSurface,referenceY);
-    return !groundUsesRoad ? wanchaiTower.groundHeightAt(x,z,immigrationSurface,referenceY) : immigrationSurface;
+    const otherGround = !groundUsesRoad ? wanchaiTower.groundHeightAt(x,z,immigrationSurface,referenceY) : immigrationSurface;
+    return centralLift.groundHeightAt(x,z,otherGround,referenceY);
   }
 
   const stats = {
@@ -522,7 +528,7 @@ function* buildSimpleHongKongWorldSteps(scene) {
     ...obrienFootbridge.stats,
     ...windsorHouse.stats,
     ...sogo.stats,
-    ...governmentHouse.stats, ...peakTower.stats, ...stJohns.stats, ...peakTramCentralEntrance.stats, ...peakTramCentralPlatform.stats, ...peakTramCentralApproach.stats, ...peakTramKennedyBridge.stats, ...peakTramKennedyApproach.stats, ...peakTramMacDonnell.stats, ...peakTramMacDonnellBridge.stats, ...peakTramMagazineGapBridge.stats, ...peakTramMayRoadBridge.stats, ...peakTramMayRoadStation.stats, ...peakTramPassingLoop.stats, ...peakTramUpperLine.stats, ...peakTramBarkerApproach.stats, ...peakTramSummitApproach.stats, ...peakTramBarkerStationTrack.stats, ...peakTramBarkerStation.stats, ...peakTramBarkerEarthworks.stats, ...peakTramBarkerAbutments.stats, ...peakTramLoopGrading.stats, ...murray.stats,
+    ...governmentHouse.stats, ...peakTower.stats, ...stJohns.stats, ...peakTramCentralEntrance.stats, ...peakTramCentralPlatform.stats, ...centralConcourse.stats, ...peakTramCentralApproach.stats, ...peakTramKennedyBridge.stats, ...peakTramKennedyApproach.stats, ...peakTramMacDonnell.stats, ...peakTramMacDonnellBridge.stats, ...peakTramMagazineGapBridge.stats, ...peakTramMayRoadBridge.stats, ...peakTramMayRoadStation.stats, ...peakTramPassingLoop.stats, ...peakTramUpperLine.stats, ...peakTramBarkerApproach.stats, ...peakTramSummitApproach.stats, ...peakTramBarkerStationTrack.stats, ...peakTramBarkerStation.stats, ...peakTramBarkerEarthworks.stats, ...peakTramBarkerAbutments.stats, ...peakTramLoopGrading.stats, ...murray.stats,
     ...blueHouse.stats,
     ...hkapa.stats,
     ...jardineHouse.stats,
@@ -618,7 +624,7 @@ function* buildSimpleHongKongWorldSteps(scene) {
 
   return {
     root: scene,
-    colliders: [...full.colliders, ...crossings.colliders, ...hsbc.colliders, ...shunTak.colliders, ...chaterGarden.colliders, ...statueSquare.colliders, ...worldWideHouse.colliders, ...entertainmentBuilding.colliders, ...mandarinOriental.colliders, ...princesBuilding.colliders, ...hongKongClub.colliders, ...hangSeng.colliders, ...standardChartered.colliders, ...twoIfc.colliders, ...ifcMall.colliders, ...generalPostOffice.colliders, ...revenueTower.colliders, ...wanchaiTower.colliders, ...immigrationTower.colliders, ...obrienFootbridge.colliders, ...windsorHouse.colliders, ...sogo.colliders, ...governmentHouse.colliders, ...peakTower.colliders, ...stJohns.colliders, ...peakTramCentralEntrance.colliders, ...peakTramCentralPlatform.colliders, ...peakTramCentralApproach.colliders, ...peakTramKennedyBridge.colliders, ...peakTramKennedyApproach.colliders, ...peakTramUpperLine.colliders, ...peakTramBarkerApproach.colliders, ...peakTramSummitApproach.colliders, ...peakTramBarkerStationTrack.colliders, ...peakTramBarkerStation.colliders, ...peakTramBarkerAbutments.colliders, ...murray.colliders, ...blueHouse.colliders, ...hkapa.colliders, ...jardineHouse.colliders, ...icc.colliders, ...bankOfChina.colliders, ...centralPlaza.colliders, ...theCenter.colliders, ...ninaTower.colliders, ...cheungKong.colliders, ...k11Atelier.colliders, ...cullinanI.colliders, ...cullinanII.colliders, ...masterpiece.colliders, ...langhamPlace.colliders, ...summit.colliders, ...hopewell.colliders, ...sunHungKai.colliders, ...twoPacificPlace.colliders, ...airside.colliders, ...leeGardenOne.colliders, ...oneIfc.colliders, ...championTower.colliders, ...ckc2.colliders, ...qgo.colliders, ...centralGovernment.colliders, ...heritage1881.colliders, ...theArch.colliders, ...sorrento.colliders, ...conrad.colliders, ...hysan.colliders, ...twoTaikoo.colliders, ...theHenderson.colliders, ...oneExchange.colliders, ...twoExchange.colliders, ...courtOfFinalAppeal.colliders, ...hkcec.colliders, ...mongKokStadium.colliders, ...hongKongStadium.colliders, ...coliseum.colliders, ...laiYuen.colliders, ...queenElizabethStadium.colliders, ...kaiTakStadium.colliders, ...kaiTakArena.colliders, ...kaiTakYouth.colliders, ...happyValley.colliders, ...shaTin.colliders, ...oceanPark.colliders, ...timesSquare.colliders, ...oceanTerminal.colliders, ...starHouse.colliders, ...marcoPolo.colliders, ...oceanCentre.colliders, ...princeHotel.colliders, ...gatewayTowerOne.colliders, ...gatewayTowerTwo.colliders, ...gatewayTowerThree.colliders, ...gatewayTowerFive.colliders, ...gatewayTowerSix.colliders, ...pacificClub.colliders, ...spaceMuseum.colliders, ...culturalCentre.colliders, ...cityHall.colliders, ...centralLibrary.colliders, ...clockTower.colliders, ...peninsulaHotel.colliders, ...sheratonHotel.colliders, ...salisburyYMCA.colliders, ...kowloonShangriLa.colliders, ...tstWaterfrontRailing.colliders, ...hongKongPark.colliders, ...kowloonPark.colliders, ...victoriaPark.colliders, ...airport.colliders],
+    colliders: [...full.colliders, ...crossings.colliders, ...hsbc.colliders, ...shunTak.colliders, ...chaterGarden.colliders, ...statueSquare.colliders, ...worldWideHouse.colliders, ...entertainmentBuilding.colliders, ...mandarinOriental.colliders, ...princesBuilding.colliders, ...hongKongClub.colliders, ...hangSeng.colliders, ...standardChartered.colliders, ...twoIfc.colliders, ...ifcMall.colliders, ...generalPostOffice.colliders, ...revenueTower.colliders, ...wanchaiTower.colliders, ...immigrationTower.colliders, ...obrienFootbridge.colliders, ...windsorHouse.colliders, ...sogo.colliders, ...governmentHouse.colliders, ...peakTower.colliders, ...stJohns.colliders, ...peakTramCentralEntrance.colliders, ...peakTramCentralPlatform.colliders, ...centralConcourse.colliders, ...centralLift.colliders, ...peakTramCentralApproach.colliders, ...peakTramKennedyBridge.colliders, ...peakTramKennedyApproach.colliders, ...peakTramUpperLine.colliders, ...peakTramBarkerApproach.colliders, ...peakTramSummitApproach.colliders, ...peakTramBarkerStationTrack.colliders, ...peakTramBarkerStation.colliders, ...peakTramBarkerAbutments.colliders, ...murray.colliders, ...blueHouse.colliders, ...hkapa.colliders, ...jardineHouse.colliders, ...icc.colliders, ...bankOfChina.colliders, ...centralPlaza.colliders, ...theCenter.colliders, ...ninaTower.colliders, ...cheungKong.colliders, ...k11Atelier.colliders, ...cullinanI.colliders, ...cullinanII.colliders, ...masterpiece.colliders, ...langhamPlace.colliders, ...summit.colliders, ...hopewell.colliders, ...sunHungKai.colliders, ...twoPacificPlace.colliders, ...airside.colliders, ...leeGardenOne.colliders, ...oneIfc.colliders, ...championTower.colliders, ...ckc2.colliders, ...qgo.colliders, ...centralGovernment.colliders, ...heritage1881.colliders, ...theArch.colliders, ...sorrento.colliders, ...conrad.colliders, ...hysan.colliders, ...twoTaikoo.colliders, ...theHenderson.colliders, ...oneExchange.colliders, ...twoExchange.colliders, ...courtOfFinalAppeal.colliders, ...hkcec.colliders, ...mongKokStadium.colliders, ...hongKongStadium.colliders, ...coliseum.colliders, ...laiYuen.colliders, ...queenElizabethStadium.colliders, ...kaiTakStadium.colliders, ...kaiTakArena.colliders, ...kaiTakYouth.colliders, ...happyValley.colliders, ...shaTin.colliders, ...oceanPark.colliders, ...timesSquare.colliders, ...oceanTerminal.colliders, ...starHouse.colliders, ...marcoPolo.colliders, ...oceanCentre.colliders, ...princeHotel.colliders, ...gatewayTowerOne.colliders, ...gatewayTowerTwo.colliders, ...gatewayTowerThree.colliders, ...gatewayTowerFive.colliders, ...gatewayTowerSix.colliders, ...pacificClub.colliders, ...spaceMuseum.colliders, ...culturalCentre.colliders, ...cityHall.colliders, ...centralLibrary.colliders, ...clockTower.colliders, ...peninsulaHotel.colliders, ...sheratonHotel.colliders, ...salisburyYMCA.colliders, ...kowloonShangriLa.colliders, ...tstWaterfrontRailing.colliders, ...hongKongPark.colliders, ...kowloonPark.colliders, ...victoriaPark.colliders, ...airport.colliders],
     bounds: full.bounds,
     stats,
     personSpawn: { ...SPAWN.person },
@@ -627,6 +633,8 @@ function* buildSimpleHongKongWorldSteps(scene) {
     getGroundHeight,
     update(dt, elapsed, context) {
       murray.lift.update(dt, context.controllerManager);
+      centralLift.update(dt, context.controllerManager);
+      centralConcourse.update(dt, context.controllerManager);
       crossings.update?.(context);
       centralPlaza.update?.(dt, elapsed, context);
       theCenter.update?.(dt, elapsed, context);

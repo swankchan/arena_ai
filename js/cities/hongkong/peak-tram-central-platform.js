@@ -37,6 +37,8 @@ export function buildPeakTramCentralPlatform(scene){
  for(const [p,uphill] of [[P[0],false],[P.at(-1),true]]){
   const q=uphill?P.at(-2):P[1],dx=(uphill?p.x-q.x:q.x-p.x),dz=(uphill?p.z-q.z:q.z-p.z),l=Math.hypot(dx,dz),nx=-dz/l,nz=dx/l;
   for(let o=-W;o<W;o+=.35){let n=Math.min(W,o+.35);if(uphill&&o<1.65&&n> -1.65)continue;
+   // Passage opening at the lower side-platform end, matching the inferred concourse.
+   if(!uphill&&o>=1.75&&n<=W+.001)continue;
    const point=(v)=>[p.x+nx*v,p.y+(Math.abs(v)<1.65?-.28:.57),p.z+nz*v],a=point(o),b=point(n),top=v=>{let t=hongKongTerrainHeight(v[0],v[2])-.08,r=fullRoadSurfaceAt(v[0],v[2],.5,t);return Math.max(v[1],Math.min(t,r?r.height-.65:Infinity));},A=top(a),B=top(b);
    if(A>a[1]||B>b[1])quad(wall,a,b,[b[0],B,b[2]],[a[0],A,a[2]],[.35,.37,.36]);
   }
