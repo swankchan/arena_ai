@@ -1,3 +1,4 @@
+import {buildCentralPlatformScreens} from './peak-tram-central-screens.js';
 import * as THREE from 'three/webgpu';
 import {color} from 'three/tsl';
 import {CENTRAL_PLATFORM_POINTS as P,CENTRAL_PLATFORM_HALF_WIDTH as W} from './peak-tram-central-platform-site.js';
@@ -46,5 +47,6 @@ export function buildPeakTramCentralPlatform(scene){
  const metal=new THREE.MeshStandardMaterial({color:0x969b96,roughness:.38,metalness:.65}),wood=new THREE.MeshStandardMaterial({color:0x555149,roughness:.9}),stone=new THREE.MeshStandardMaterial({vertexColors:true,roughness:.92,side:THREE.DoubleSide});
  const lamp=new THREE.MeshStandardNodeMaterial({color:0xf3e0bf});lamp.emissiveNode=color(0xffd18b).mul(nightAmount()).mul(1.3);
  merged(group,rail,metal,'Central platform twin rails');merged(group,ties,wood,'Central platform sleepers');meshStore(group,bed,stone,'Central platform track bed');meshStore(group,platform,stone,'Central boarding and alighting platforms');meshStore(group,safety,stone,'Central platform yellow edge');meshStore(group,marking,stone,'Central platform tactile guidance line');meshStore(group,joints,stone,'Central platform floor tile joints');merged(group,tactile,metal,'Central platform tactile studs',false);meshStore(group,wall,stone,'Central platform terrain retaining faces');merged(group,lights,lamp,'Central platform linear night lights',false);
- return {group,colliders:[],stats:{peakTramCentralPlatformLength:P.at(-1).s,peakTramCentralPlatformSections:P.length-1}};
+ const screens=buildCentralPlatformScreens(group);
+ return {group,colliders:screens.colliders,stats:{peakTramCentralPlatformLength:P.at(-1).s,peakTramCentralPlatformSections:P.length-1,...screens.stats}};
 }
