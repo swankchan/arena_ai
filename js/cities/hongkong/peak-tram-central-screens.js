@@ -1,5 +1,5 @@
 import * as THREE from 'three/webgpu';
-import {centralPlatformPoint as point, CENTRAL_PLATFORM_END as END} from './peak-tram-central-platform-site.js';
+import {centralPlatformPoint as point, CENTRAL_PLATFORM_END as END,centralPlatformFloor} from './peak-tram-central-platform-site.js';
 import {centralTrialDocking} from './peak-tram-central-docking.js';
 import {harbourCityLocalCollider} from './harbour-city-architecture.js';
 import {store, quad, meshStore, beam, merged} from './harbour-city-world-utils.js';
@@ -16,7 +16,7 @@ export function centralScreenIsOpening(s) {
 export function buildCentralPlatformScreens(scene) {
   const group = new THREE.Group(); group.name = 'Central inferred platform edge glazing'; scene.add(group);
   const glass = store(), gates = store(), frames = [], colliders = [];
-  const at = (s,side,h) => {const p=point(s);return [p.x+p.nx*side*1.72,p.y+.57+h,p.z+p.nz*side*1.72];};
+  const at = (s,side,h) => {const p=point(s);return [p.x+p.nx*side*1.72,centralPlatformFloor(s,side*1.72)+h,p.z+p.nz*side*1.72];};
   const breaks = [0,END];
   for(const c of CENTRAL_SCREEN_OPENINGS) breaks.push(c-CENTRAL_SCREEN_OPENING_WIDTH/2,c+CENTRAL_SCREEN_OPENING_WIDTH/2);
   for(let s=0;s<END;s+=.5) breaks.push(s);

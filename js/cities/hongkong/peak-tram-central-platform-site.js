@@ -1,14 +1,19 @@
-import {PEAK_TRAM_PROFILE} from './peak-tram-profile-data.js';
-// Provisional platform under the Cotton Tree Drive viaduct, following the
-// unsurveyed shared profile from its OSM stop to the first bridge node.
-const route=PEAK_TRAM_PROFILE.routes.A;
-export const CENTRAL_PLATFORM_START=0;
-export const CENTRAL_PLATFORM_END=route.find(p=>p.id==='n2525250108').s;
-export const CENTRAL_PLATFORM_POINTS=Object.freeze(route.filter(p=>p.s<=CENTRAL_PLATFORM_END));
-export const CENTRAL_PLATFORM_HALF_WIDTH=4.9;
-export function centralPlatformPoint(s){
- s=Math.max(0,Math.min(CENTRAL_PLATFORM_END,s));let i=route.findIndex(p=>p.s>=s);i=Math.max(1,i);let a=route[i-1],b=route[i],t=(s-a.s)/(b.s-a.s),dx=b.x-a.x,dz=b.z-a.z,l=Math.hypot(dx,dz);return {s,x:a.x+dx*t,z:a.z+dz*t,y:a.y+(b.y-a.y)*t,ux:dx/l,uz:dz/l,nx:-dz/l,nz:dx/l};
+import {CENTRAL_PLATFORM_END, CENTRAL_PLATFORM_HALF_WIDTH, centralPlatformPoint} from './peak-tram-central-profile.js';
+import {centralTrialDocking} from './peak-tram-central-docking.js';
+export {CENTRAL_PLATFORM_START,CENTRAL_PLATFORM_END,CENTRAL_PLATFORM_POINTS,CENTRAL_PLATFORM_HALF_WIDTH,centralPlatformPoint} from './peak-tram-central-profile.js';
+
+// Trial regrade: blend the rigid visual car's floor plane at the platform edge
+// back to the existing outer edge. This is a visual/gameplay approximation, not
+// a wheelchair design, measured railway profile or verified boarding interface.
+const dock=centralTrialDocking().pose,origin=centralPlatformPoint(0);
+const centreS=(dock.position.x-origin.x)*origin.ux+(dock.position.z-origin.z)*origin.uz;
+export function centralPlatformFloor(s,offset) {
+ const p=centralPlatformPoint(s),old=p.y+.57;
+ const carFloor=dock.position.y+(s-centreS)*Math.tan(dock.pitch)+.75/Math.cos(dock.pitch);
+ const blend=Math.max(0,Math.min(1,(CENTRAL_PLATFORM_HALF_WIDTH-Math.abs(offset))/(CENTRAL_PLATFORM_HALF_WIDTH-1.65)));
+ return old+(carFloor-old)*blend;
 }
+
 export function centralPlatformTerrainCut(){
  const a=centralPlatformPoint(0),b=centralPlatformPoint(CENTRAL_PLATFORM_END),dx=b.x-a.x,dz=b.z-a.z,l=Math.hypot(dx,dz),ux=dx/l,uz=dz/l,hx=l/2,hz=CENTRAL_PLATFORM_HALF_WIDTH,cx=(a.x+b.x)/2,cz=(a.z+b.z)/2,ex=Math.abs(ux)*hx+Math.abs(uz)*hz,ez=Math.abs(uz)*hx+Math.abs(ux)*hz;
  return {cx,cz,ux,uz,hx,hz,minX:cx-ex,maxX:cx+ex,minZ:cz-ez,maxZ:cz+ez,routeId:'peak-tram-central-platform'};
@@ -16,7 +21,7 @@ export function centralPlatformTerrainCut(){
 export function centralPlatformGroundHeight(x,z,current,referenceY){
  const a=centralPlatformPoint(0),dx=x-a.x,dz=z-a.z,s=dx*a.ux+dz*a.uz,offset=dx*a.nx+dz*a.nz;
  if(s<0||s>CENTRAL_PLATFORM_END||Math.abs(offset)>CENTRAL_PLATFORM_HALF_WIDTH)return current;
- const p=centralPlatformPoint(s),y=p.y+(Math.abs(offset)<1.65?-.28:.57);
+ const p=centralPlatformPoint(s),y=Math.abs(offset)<1.65?p.y-.28:centralPlatformFloor(s,offset);
  return Math.abs(referenceY-y)<2.5?y:current;
 }
 

@@ -1,4 +1,4 @@
-import {CENTRAL_PLATFORM_POINTS as points, centralPlatformPoint} from './peak-tram-central-platform-site.js';
+import {CENTRAL_PLATFORM_POINTS as points, centralPlatformPoint} from './peak-tram-central-profile.js';
 import {PEAK_TRAM_CAR, PEAK_TRAM_DOOR_OFFSETS} from './peak-tram-car.js';
 import {measurePeakTramRoute, peakTramCarPose} from './peak-tram-motion.js';
 

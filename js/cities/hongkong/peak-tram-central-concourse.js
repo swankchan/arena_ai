@@ -20,7 +20,10 @@ export function buildPeakTramCentralConcourse(scene){
  const n=Math.ceil(C.length/.8);
  for(let i=0;i<n;i++){
   const a=C.length*i/n,b=C.length*(i+1)/n,wa=width(a),wb=width(b);
-  if(a>=1.6)quad(floors,v(a,-wa),v(b,-wb),v(b,wb),v(a,wa),[.34,.35,.33]);
+  if(a>=1.6){const slices=b>C.length-7?16:1;for(let j=0;j<slices;j++){
+   const t0=-1+2*j/slices,t1=-1+2*(j+1)/slices;
+   quad(floors,v(a,wa*t0),v(b,wb*t0),v(b,wb*t1),v(a,wa*t1),[.34,.35,.33]);
+  }}
   // Faceted, shallow twisting canopy inspired by the portal structure in
   // Arup's photo; opaque because this inferred section sits below terrain.
   if(a>=2.4)for(let j=0;j<4;j++){let t0=-1+j*.5,t1=t0+.5,h=t=>3.45+.28*(1-Math.abs(t));const shade=j===1||j===2?.57:.50;
@@ -58,7 +61,7 @@ export function buildPeakTramCentralConcourse(scene){
   const elapsed=Math.min(.1,Math.max(0,Number.isFinite(dt)?dt:0));for(let i=0;i<2;i++)treadTextures[i].offset.y=((treadTextures[i].offset.y+(i===0?1:-1)*elapsed*.55*4)%1+1)%1;
   const glow=Math.max(0,Math.min(1,(cityUniforms.uInteriorGlow.value-.55)/.85));for(const light of interiorLights)light.intensity=12+glow*10;
   const person=manager?.activeMode==='person'?manager.entities.person:null;if(!person)return;const q=coords(person.position.x,person.position.z),abs=Math.abs(q.o);if(q.s<C.runStart+.3||q.s>C.length-.3||abs<.16||abs>1.24)return;
-  const y=point(q.s).y;if(Math.abs(person.position.y-y)>.25)return;const step=Math.min(.05,Math.max(0,Number.isFinite(dt)?dt:0))*.55*(q.o>0?1:-1),next=Math.max(C.runStart+.3,Math.min(C.length-.3,q.s+step)),delta=next-q.s;
-  person.position.x+=C.ux*delta;person.position.z+=C.uz*delta;person.position.y=point(next).y;if(person.mesh)person.mesh.position.copy(person.position);
+  const y=point(q.s,q.o).y;if(Math.abs(person.position.y-y)>.25)return;const step=Math.min(.05,Math.max(0,Number.isFinite(dt)?dt:0))*.55*(q.o>0?1:-1),next=Math.max(C.runStart+.3,Math.min(C.length-.3,q.s+step)),delta=next-q.s;
+  person.position.x+=C.ux*delta;person.position.z+=C.uz*delta;person.position.y=point(next,q.o).y;if(person.mesh)person.mesh.position.copy(person.position);
  }};
 }
