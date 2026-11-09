@@ -1,5 +1,5 @@
 import { HK_TERRAIN } from '../../hk-terrain-data.js';
-import { HSBC_SITE, pointInFlatRing } from './hsbc-headquarters-architecture.js';
+import { HSBC_SITE, pointInFlatRing as originalPointInFlatRing } from './hsbc-headquarters-architecture.js';
 import { SCB_SITE, SCB_STAIR_BOTTOM_WORLD } from './standard-chartered-architecture.js';
 import { TWO_IFC_SITE } from './two-ifc-architecture.js';
 import { ICC_SITE } from './icc-architecture.js';
@@ -65,6 +65,23 @@ import { CITY_HALL_GROUND_SITES, cityHallTerrainHeightAt } from './city-hall-arc
 import { CENTRAL_LIBRARY_GROUND_SITES, centralLibraryTerrainHeightAt } from './central-library-architecture.js';
 import { HKAPA_GROUND_SITES, hkapaTerrainHeightAt } from './hkapa-architecture.js';
 import { authoredHighestRawDatum } from './authored-landmark-site.js';
+
+// These authored terrain rings are static. Reject distant queries by their exact
+// bounds before invoking the same polygon test; preserve boundary semantics.
+const terrainRingBounds = new WeakMap();
+function pointInFlatRing(ring, x, z) {
+  let b = terrainRingBounds.get(ring);
+  if (!b) {
+    b = {minX: Infinity, maxX: -Infinity, minZ: Infinity, maxZ: -Infinity};
+    for (let i = 0; i + 1 < ring.length; i += 2) {
+      b.minX = Math.min(b.minX, ring[i]); b.maxX = Math.max(b.maxX, ring[i]);
+      b.minZ = Math.min(b.minZ, ring[i + 1]); b.maxZ = Math.max(b.maxZ, ring[i + 1]);
+    }
+    terrainRingBounds.set(ring, b);
+  }
+  if (x < b.minX || x > b.maxX || z < b.minZ || z > b.maxZ) return false;
+  return originalPointInFlatRing(ring, x, z);
+}
 
 function decodeBytes(base64) {
   const binary = atob(base64);
