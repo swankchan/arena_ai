@@ -17,7 +17,7 @@ export function barkerRoadDatum(x,z){
   if(d<best){best=d;height=roadRibbonHeightAtSegment(36109,i,t);}
  }
  const r=fullRoadSurfaceAt(x,z,.15,hongKongTerrainHeight(x,z));
- return Math.min(height,r?.height??Infinity)-.12;
+ return Math.min(height,r?.height??Infinity)-.25;
 }
 export function buildBarkerRoadEarthworks(scene){
  const group=new THREE.Group();group.name='Barker Road cutting earthworks';scene.add(group);

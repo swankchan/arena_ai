@@ -14,3 +14,15 @@ test('opening underside connects downhill terrain without entering sampled road 
  for(let i=0;i<pos.count;i+=3){const a=[pos.getX(i),pos.getY(i),pos.getZ(i)],b=[pos.getX(i+1),pos.getY(i+1),pos.getZ(i+1)],c=[pos.getX(i+2),pos.getY(i+2),pos.getZ(i+2)];for(const [u,v] of [[0,0],[1,0],[0,1],[.5,0],[0,.5],[.5,.5],[1/3,1/3]]){const x=a[0]*(1-u-v)+b[0]*u+c[0]*v,y=a[1]*(1-u-v)+b[1]*u+c[1]*v,z=a[2]*(1-u-v)+b[2]*u+c[2]*v;const r=road(x,z,0,h(x,z));if(r)assert.ok(y<r.height-.04,`edge fill enters road ${r.way.id}, clearance ${r.height-y}`);for(let s=1098;s<=1116;s+=.5){const q=p(s);if(Math.hypot(x-q.x,z-q.z)<1.7)assert.ok(y<q.y-.65,'edge fill intersects tram deck');}sampled++;}}
  assert.ok(sampled>100);
 });
+test('opening fill triangle edges and interiors stay below sampled junction road surfaces',async()=>{
+ const {BARKER_OPENING_TRIANGLES:tri}=await import('../js/cities/hongkong/peak-tram-barker-cut-data.js'),{barkerRoadDatum:datum}=await import('../js/cities/hongkong/peak-tram-barker-earthworks.js'),{fullRoadSurfaceAt:road}=await import('../js/cities/hongkong/full-meta.js'),{hongKongTerrainHeight:terrain}=await import('../js/cities/hongkong/terrain.js');
+ let sampled=0,minimum=Infinity;
+ for(let i=0;i<tri.length;i+=6){
+  const p=[0,2,4].map(j=>[tri[i+j],tri[i+j+1],datum(tri[i+j],tri[i+j+1])]);
+  for(const [u,v] of [[0,0],[1,0],[0,1],[.5,0],[0,.5],[.5,.5],[1/3,1/3]]){
+   const x=p[0][0]*(1-u-v)+p[1][0]*u+p[2][0]*v,z=p[0][1]*(1-u-v)+p[1][1]*u+p[2][1]*v,y=p[0][2]*(1-u-v)+p[1][2]*u+p[2][2]*v,r=road(x,z,0,terrain(x,z));
+   if(r){const clearance=r.height-y;minimum=Math.min(minimum,clearance);assert.ok(clearance>.08,`road ${r.way.id}: fill clearance ${clearance}`);sampled++;}
+  }
+ }
+ assert.ok(sampled>6000);assert.ok(minimum<.2,'regression samples exercise a tight junction');
+});
