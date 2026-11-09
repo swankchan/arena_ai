@@ -45,9 +45,9 @@ export function buildStJohnsBuilding(scene){
  }
  box(ceiling,[0,B-.13,0],[w-.4,.26,d-.4]);
  // Lobby is set back behind the column line, leaving the street-side open.
- box(base,[0,3.2,0],[w-5,6.4,.18]);
+ box(base,[-4.0,3.2,0],[w-13,6.4,.18]);
  // Recessed lobby glazing divisions and soft light strips under the canopy.
- for(let x=-w/2+3;x<w/2-2;x+=2.7)box(lobbyFrames,[x,3.2,.14],[.055,6.4,.08]);
+ for(let x=-w/2+3;x<5;x+=2.7)box(lobbyFrames,[x,3.2,.14],[.055,6.4,.08]);
  for(const z of [-3,3])box(soffitLights,[0,B-.29,z],[w-5,.035,.10]);
  box(roof,[0,H+.09,0],[w-1.8,.18,d-1.8]);
  for(const x of [-w/2+.8,w/2-.8])box(roof,[x,H+.35,0],[.12,.55,d-1.5]);
