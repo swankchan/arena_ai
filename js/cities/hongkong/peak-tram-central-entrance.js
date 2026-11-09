@@ -16,7 +16,7 @@ export function buildPeakTramCentralEntrance(scene){
  const stone=new THREE.MeshStandardMaterial({color:0x646b69,roughness:.94}),edge=new THREE.MeshStandardMaterial({color:0x9aaba9,roughness:.78}),red=new THREE.MeshStandardMaterial({color:0x8c3931,roughness:.8}),dark=new THREE.MeshStandardMaterial({color:0x21282a,roughness:.73}),steel=new THREE.MeshStandardMaterial({color:0xa4aaa5,metalness:.7,roughness:.3});
  const warm=new THREE.MeshStandardNodeMaterial({color:0xf2c685});warm.emissiveNode=color(0xffc270).mul(nightAmount()).mul(1.5);
  const bronze=new THREE.MeshStandardMaterial({color:0x12191a,metalness:.72,roughness:.34});
- const walls=[],trim=[],frames=[],lights=[],barriers=[],floor=store(),hallFloor=store();
+ const walls=[],trim=[],frames=[],lights=[],barriers=[],ceiling=[],ticket=[],floor=store(),hallFloor=store();
  // Oval shallow reflective pool, with its high rim clear of the sampled road.
  const water=new THREE.Mesh(new THREE.CircleGeometry(1,80),new THREE.MeshStandardMaterial({color:0x141e20,roughness:.13,metalness:.48}));water.rotation.x=-Math.PI/2;water.scale.set(3.0,3.9,1);water.position.set(cx,y+.09,cz);water.name='Eye of Infinity reflecting pool';root.add(water);
  const rim=new THREE.Mesh(new THREE.RingGeometry(.94,1,80),edge);rim.rotation.x=-Math.PI/2;rim.scale.set(3.35,4.25,1);rim.position.set(cx,y+.11,cz);rim.name='Reflecting pool stone rim';root.add(rim);
@@ -34,6 +34,12 @@ export function buildPeakTramCentralEntrance(scene){
  // Recessed red reveals and an open, unconnected waiting hall. The platform
  // connection is intentionally not represented as completed or walkable.
  for(const z of [-5.25,5.25]){box(walls,[10.9,base+2.0,z],[8.8,4,.25]);colliders.push(harbourCityLocalCollider(S,10.9,z,8.8,.25,base,base+4));box(trim,[15.05,base+1.8,z*.72],[.12,3.6,.25]);}
+ box(ceiling,[10.95,base+4.08,0],[9.1,.16,10.25]);
+ // An estimated ticket desk leaves the centre path open; the larger waiting
+ // hall and its actual circulation still require a surveyed site fit.
+ box(ticket,[8.1,base+.63,-3.65],[1.0,1.26,2.0]);
+ colliders.push(harbourCityLocalCollider(S,8.1,-3.65,1.0,2.0,base,base+1.26));
+ box(lights,[8.1,base+1.30,-3.65],[1.04,.06,2.04]);
  box(lights,[10.9,base+3.86,-2],[7.5,.08,.10]);box(lights,[10.9,base+3.86,2],[7.5,.08,.10]);
  for(let x=9;x<14;x+=1.8)for(const z of [-2.9,2.9]){cylinder(barriers,[x,base+.55,z],.038,1.1,8);}
  for(let z of [-2.9,2.9])beam(barriers,[9,base+1.1,z],[14.4,base+1.1,z],.035,.035);
@@ -41,7 +47,7 @@ export function buildPeakTramCentralEntrance(scene){
  for(let x=15.9;x<27.9;x+=.6)for(let z=-6;z<6;z+=.6){let X=Math.min(x+.6,27.9),Z=Math.min(z+.6,6);let p=(a,b)=>[a,centralEntranceGround(a,b)+.035,b];quad(floor,p(x,z),p(x,Z),p(X,Z),p(X,z),[.45,.30,.27]);}
  for(let x=6.6;x<15.9;x+=.6)for(let z=-5;z<5;z+=.6){let X=Math.min(x+.6,15.9),Z=Math.min(z+.6,5),p=(a,b)=>[a,centralEntranceGround(a,b)+.045,b];quad(hallFloor,p(x,z),p(x,Z),p(X,Z),p(X,z),[.28,.28,.25]);}
  const pavement=new THREE.MeshStandardMaterial({vertexColors:true,side:THREE.DoubleSide,roughness:1});meshStore(root,floor,pavement,'Central forecourt red paving',false);meshStore(root,hallFloor,pavement,'Central entrance waiting hall floor',false);
- merged(root,walls,stone,'Central station grey stone entrance');merged(root,trim,red,'Central entrance red reveals');merged(root,frames,steel,'Central entrance door frames');merged(root,lights,warm,'Central entrance and waiting room night lights',false);merged(root,barriers,steel,'Central waiting queue rails',false);
+ merged(root,ceiling,dark,'Central entrance ceiling');merged(root,ticket,red,'Central provisional ticket counter');merged(root,walls,stone,'Central station grey stone entrance');merged(root,trim,red,'Central entrance red reveals');merged(root,frames,steel,'Central entrance door frames');merged(root,lights,warm,'Central entrance and waiting room night lights',false);merged(root,barriers,steel,'Central waiting queue rails',false);
  // Canvas label is visual signage, not a substitute for physical door openings.
  if(typeof document!=='undefined'){const c=document.createElement('canvas');c.width=1024;c.height=192;const ctx=c.getContext('2d');if(ctx){ctx.fillStyle='#5c6665';ctx.fillRect(0,0,1024,192);ctx.fillStyle='#eee3c9';ctx.textAlign='center';ctx.font='bold 65px serif';ctx.fillText('THE PEAK TRAM   山頂纜車',512,123);const t=new THREE.CanvasTexture(c);t.colorSpace=THREE.SRGBColorSpace;const m=new THREE.MeshStandardMaterial({map:t,side:THREE.DoubleSide,roughness:.9});const sign=new THREE.Mesh(new THREE.PlaneGeometry(7.5,1.4),m);sign.rotation.y=Math.PI/2;sign.position.set(15.84,base+4.18,0);sign.name='The Peak Tram entrance sign';root.add(sign);}}
  return {group:root,colliders,stats:{peakTramCentralEntrance:1,peakTramEyeLightPoints:440}};
