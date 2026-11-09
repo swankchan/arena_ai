@@ -1,0 +1,5 @@
+# St John's Building references
+
+`st-johns-2009.jpg`: [St. John's Building 2009](https://commons.wikimedia.org/wiki/File:St._John%27s_Building_2009.jpg), Wikipedia user -Wpcpey / Wing1990hk, 25 June 2009, [CC BY 3.0](https://creativecommons.org/licenses/by/3.0/); original retrieved via image search, no modifications. The tram entrance predates its 2022 renovation; use the [2022 entrance photo](../peak-tram/central-terminus/README.md) for the current base.
+
+[Architectural close-up](https://www.dchamberlinarchitect.com/travel-asia-china-hong%20kong-hong%20kong%20island-ST%20JOHNS%20BUILDING.htm): rounded dark window frames, textured silver-grey panels and visible panel joints. [Building owner](https://www.hshgroup.com/our-businesses/commercial-properties/st-johns-building) gives 1983 and 21-storey office tower; [LegCo/Peak Tram upgrade project](https://www.legco.gov.hk/yr17-18/chinese/panels/edev/papers/edev20180625cb4-1292-1-ec.pdf) describes 22 storeys. Floor counts differ depending on whether the ground level is counted.
