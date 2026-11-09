@@ -180,7 +180,7 @@ const boatFingerWidth = Math.hypot(boatFingerA.x - boatFingerB.x, boatFingerA.z 
 export const VICTORIA_BOAT_RAMP = Object.freeze({
   x: (boatFingerA.x + boatFingerB.x) * .5, z: (boatFingerA.z + boatFingerB.z) * .5,
   ux: (boatFingerA.x - boatFingerB.x) / boatFingerWidth, uz: (boatFingerA.z - boatFingerB.z) / boatFingerWidth,
-  halfFinger: boatFingerWidth * .5, sideBlend: 2, length: 4
+  halfFinger: boatFingerWidth * .5, sideBlend: 3, length: 8
 });
 export function victoriaBoatRampPoint(u, v) {
   const r = VICTORIA_BOAT_RAMP;

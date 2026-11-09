@@ -2,8 +2,8 @@
   "entry": "js/app.js",
   "bundle": "js/app.runtime.js",
   "builder": "esbuild 0.28.2",
-  "sourceHash": "32aa82c5bb6405b08b0ed638adb8e79e0497e1a7c46b70f88904ed3c614617eb",
-  "bundleHash": "76de79bb2ca9a9461001a892bf78b0d1a49787d1d9dfb7322273612c42865b84",
+  "sourceHash": "7ee2af359b1df7abff7fc6f04aa568822abc9dc2653719a406fb5038e452b027",
+  "bundleHash": "8cff02f09178fedfa1fb3e26fff2e3385568df1b08b47360c147f917a4f45e59",
   "bundleBytes": 34619402,
   "externalImports": [],
   "inputs": [
