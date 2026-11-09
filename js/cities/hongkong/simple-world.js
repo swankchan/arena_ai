@@ -1,3 +1,4 @@
+import {buildPeakTramCentralRoof} from './peak-tram-central-roof.js';
 import {buildPeakTramCentralConcourse} from './peak-tram-central-concourse.js';
 import {centralConcourseGroundHeight,centralConcourseUnderRoad} from './peak-tram-central-concourse-site.js';
 import {buildCentralLift} from './peak-tram-central-lift.js';
@@ -197,6 +198,7 @@ function* buildSimpleHongKongWorldSteps(scene) {
   const stJohns = buildStJohnsBuilding(scene);
   const peakTramCentralEntrance = buildPeakTramCentralEntrance(scene);
   const peakTramCentralPlatform = buildPeakTramCentralPlatform(scene);
+  const centralPlatformRoof = buildPeakTramCentralRoof(scene);
   const centralConcourse = buildPeakTramCentralConcourse(scene);
   const centralLift = buildCentralLift(scene);
   const peakTramCentralApproach = buildPeakTramCentralApproach(scene);
@@ -528,7 +530,7 @@ function* buildSimpleHongKongWorldSteps(scene) {
     ...obrienFootbridge.stats,
     ...windsorHouse.stats,
     ...sogo.stats,
-    ...governmentHouse.stats, ...peakTower.stats, ...stJohns.stats, ...peakTramCentralEntrance.stats, ...peakTramCentralPlatform.stats, ...centralConcourse.stats, ...peakTramCentralApproach.stats, ...peakTramKennedyBridge.stats, ...peakTramKennedyApproach.stats, ...peakTramMacDonnell.stats, ...peakTramMacDonnellBridge.stats, ...peakTramMagazineGapBridge.stats, ...peakTramMayRoadBridge.stats, ...peakTramMayRoadStation.stats, ...peakTramPassingLoop.stats, ...peakTramUpperLine.stats, ...peakTramBarkerApproach.stats, ...peakTramSummitApproach.stats, ...peakTramBarkerStationTrack.stats, ...peakTramBarkerStation.stats, ...peakTramBarkerEarthworks.stats, ...peakTramBarkerAbutments.stats, ...peakTramLoopGrading.stats, ...murray.stats,
+    ...governmentHouse.stats, ...peakTower.stats, ...stJohns.stats, ...peakTramCentralEntrance.stats, ...peakTramCentralPlatform.stats, peakTramCentralRoofPanels: centralPlatformRoof.panels, ...centralConcourse.stats, ...peakTramCentralApproach.stats, ...peakTramKennedyBridge.stats, ...peakTramKennedyApproach.stats, ...peakTramMacDonnell.stats, ...peakTramMacDonnellBridge.stats, ...peakTramMagazineGapBridge.stats, ...peakTramMayRoadBridge.stats, ...peakTramMayRoadStation.stats, ...peakTramPassingLoop.stats, ...peakTramUpperLine.stats, ...peakTramBarkerApproach.stats, ...peakTramSummitApproach.stats, ...peakTramBarkerStationTrack.stats, ...peakTramBarkerStation.stats, ...peakTramBarkerEarthworks.stats, ...peakTramBarkerAbutments.stats, ...peakTramLoopGrading.stats, ...murray.stats,
     ...blueHouse.stats,
     ...hkapa.stats,
     ...jardineHouse.stats,
@@ -635,6 +637,7 @@ function* buildSimpleHongKongWorldSteps(scene) {
       murray.lift.update(dt, context.controllerManager);
       centralLift.update(dt, context.controllerManager);
       centralConcourse.update(dt, context.controllerManager);
+      centralPlatformRoof.update();
       crossings.update?.(context);
       centralPlaza.update?.(dt, elapsed, context);
       theCenter.update?.(dt, elapsed, context);
