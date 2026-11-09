@@ -9,3 +9,7 @@ test('Central platform under Cotton Tree Drive clears sampled road and exposes t
 test('Central approach connects platform to Kennedy bridge, with sampled road-safe supports',async()=>{
  const T=await import('three/webgpu'),{CENTRAL_APPROACH_POINTS:p}=await import('../js/cities/hongkong/peak-tram-central-approach-site.js'),{buildPeakTramCentralApproach:build}=await import('../js/cities/hongkong/peak-tram-central-approach.js'),{CENTRAL_PLATFORM_END:end}=await import('../js/cities/hongkong/peak-tram-central-platform-site.js'),{KENNEDY_BRIDGE_POINTS:k}=await import('../js/cities/hongkong/peak-tram-kennedy-bridge.js'),{fullRoadSurfaceAt:r}=await import('../js/cities/hongkong/full-meta.js'),{hongKongTerrainHeight:g}=await import('../js/cities/hongkong/terrain.js');assert.equal(p[0].s,end);assert.equal(p.at(-1).id,k[0].id);let result=build(new T.Group());assert.ok(result.stats.peakTramCentralApproachSections>20);for(const c of result.colliders)for(let x=c.minX-.2;x<=c.maxX+.2;x+=.2)for(let z=c.minZ-.2;z<=c.maxZ+.2;z+=.2){let v=r(x,z,.2,g(x,z));if(v)assert.ok(c.maxY<v.height-.2||c.minY>v.height+4.5,`support in road ${v.way.id}`);}
 });
+test('Central approach collision boxes are registered once',()=>{
+ const source=require('node:fs').readFileSync('js/cities/hongkong/simple-world.js','utf8');
+ assert.equal((source.match(/\.\.\.peakTramCentralApproach\.colliders/g)||[]).length,1);
+});
