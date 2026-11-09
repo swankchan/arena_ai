@@ -118,3 +118,45 @@ test('car following ignores opposite directions, other links and distant leaders
   updateFollowCaps(distant);
   assert.equal(distant[0].followCap, Infinity);
 });
+
+const { updateJunctionYieldCaps } = loadModule(
+  readFileSync(join(__dirname, '../js/cities/hongkong/collision.js'), 'utf8'),
+  { imports: { '../../vehicle-physics.js': physics } }
+);
+
+test('crossing traffic yields deterministically to one vehicle instead of both entering', () => {
+  const a = vehicle({kind:'car',index:0,x:0,z:-12,heading:0,link:1,speed:8,y:0});
+  const b = vehicle({kind:'car',index:1,x:-12,z:0,heading:Math.PI/2,link:2,speed:8,y:0});
+  updateJunctionYieldCaps([a,b]);
+  assert.equal(a.followCap, Infinity);
+  assert.ok(Number.isFinite(b.followCap)); assert.ok(b.yieldDistance > 0 && b.yieldDistance < 12);
+  a.followCap=b.followCap=Infinity; a.yieldDistance=b.yieldDistance=Infinity;
+  updateJunctionYieldCaps([b,a]);
+  assert.equal(a.followCap, Infinity); assert.ok(Number.isFinite(b.followCap));
+});
+
+test('cars on separated road levels or parallel routes do not yield as if intersecting', () => {
+  const a = vehicle({kind:'car',index:0,x:0,z:-10,heading:0,link:1,speed:10,y:0});
+  const bridge = vehicle({kind:'car',index:1,x:-10,z:0,heading:Math.PI/2,link:2,speed:10,y:8});
+  updateJunctionYieldCaps([a,bridge]); assert.equal(a.followCap,Infinity); assert.equal(bridge.followCap,Infinity);
+  bridge.y=0; bridge.heading=0; updateJunctionYieldCaps([a,bridge]);
+  assert.equal(a.followCap,Infinity); assert.equal(bridge.followCap,Infinity);
+});
+
+test('a vehicle already in the junction has priority over an approaching vehicle', () => {
+  const a = vehicle({kind:'car',index:0,x:0,z:-10,heading:0,link:1,speed:8,y:0});
+  const b = vehicle({kind:'car',index:1,x:-1,z:0,heading:Math.PI/2,link:2,speed:4,y:0});
+  updateJunctionYieldCaps([a,b]); assert.ok(Number.isFinite(a.followCap)); assert.equal(b.followCap,Infinity);
+});
+
+test('traffic collision respects bridge height but works on elevated roads', () => {
+  const a = vehicle({z:0,y:40,speed:5}), b = vehicle({z:3,y:55,speed:5});
+  collideTraffic([a,b],1/60); assert.equal(a.z,0); assert.equal(b.z,3);
+  b.y=40; collideTraffic([a,b],1/60); assert.ok(b.z-a.z>3);
+  const v=vehicle({z:0,y:50,speed:10}), player=playerCar(0,3.2); player.position.y=50;
+  collidePlayer([v],1/60,{activeMode:'car',getActiveEntity:()=>player});
+  assert.ok(player.position.z>3.2, 'traffic contacts player at the same elevated road height');
+  const other=playerCar(0,3.2);other.position.y=65; const v2=vehicle({z:0,y:50,speed:10});
+  collidePlayer([v2],1/60,{activeMode:'car',getActiveEntity:()=>other});
+  assert.equal(other.position.z,3.2,'do not collide with player on a different level');
+});

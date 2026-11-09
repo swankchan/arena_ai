@@ -1,6 +1,6 @@
 import * as THREE from 'three/webgpu';
 import { GEO } from '../../hk-geodata.js';
-import { updateFollowCaps, collideTraffic, collidePlayer } from './collision.js';
+import { updateFollowCaps, updateJunctionYieldCaps, collideTraffic, collidePlayer } from './collision.js';
 import { isTrafficPathOnLand } from './meta.js';
 import {
   BODY_SPECS,
@@ -518,7 +518,10 @@ export function createHongKongTraffic(scene, { getFocus, taxiStyle, getGroundHei
     vehicle.brake = want < vehicle.speed - 0.2 ? 1 : 0;
     const response = want < vehicle.speed ? 4.5 : 1.5;
     vehicle.speed += (want - vehicle.speed) * (1 - Math.exp(-dt * response));
-    const step = vehicle.speed * dt;
+    let step = vehicle.speed * dt;
+    if (Number.isFinite(vehicle.yieldDistance) && step > vehicle.yieldDistance) {
+      step = vehicle.yieldDistance; vehicle.speed = 0; vehicle.brake = 1;
+    }
     let p = null;
 
     if (vehicle.turnActive && vehicle.turn) {
@@ -722,8 +725,10 @@ export function createHongKongTraffic(scene, { getFocus, taxiStyle, getGroundHei
     for (const v of all) {
       if (Math.abs(v.x - f.x) <= restageRadius && Math.abs(v.z - f.z) <= restageRadius) near.push(v);
       v.followCap = Infinity;
+      v.yieldDistance = Infinity;
     }
     updateFollowCaps(near);
+    updateJunctionYieldCaps(near);
     for (let i = 0; i < cars.length; i++) advance(cars[i], dt, false);
     for (let i = 0; i < buses.length; i++) advance(buses[i], dt, true);
     collideTraffic(near, dt);

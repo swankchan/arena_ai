@@ -79,11 +79,44 @@ export function updateFollowCaps(vehicles) {
   }
 }
 
+// Conservative local intersection courtesy: on different links, detect projected
+// crossing paths and let one vehicle clear first. This is not a traffic-signal
+// or full route reservation system; separated vertical levels are ignored.
+export function updateJunctionYieldCaps(vehicles) {
+  const cross = (ax, az, bx, bz) => ax * bz - az * bx;
+  const stableId = v => (v.kind === 'bus' ? 100000 : 0) + (v.index ?? 0);
+  for (let i = 0; i < vehicles.length; i++) for (let j = i + 1; j < vehicles.length; j++) {
+    const a = vehicles[i], b = vehicles[j];
+    if (a.link === b.link || Math.abs((a.y ?? 0) - (b.y ?? 0)) > 3) continue;
+    const dx = b.x - a.x, dz = b.z - a.z;
+    if (Math.abs(dx) > 48 || Math.abs(dz) > 48) continue;
+    const ax = Math.sin(a.heading), az = Math.cos(a.heading), bx = Math.sin(b.heading), bz = Math.cos(b.heading);
+    const denom = cross(ax, az, bx, bz);
+    if (Math.abs(denom) < .3) continue; // parallel or gently merging: same-link following handles the common case
+    const da = cross(dx, dz, bx, bz) / denom, db = cross(dx, dz, ax, az) / denom;
+    if (da < -a.halfL || db < -b.halfL || da > 35 || db > 35) continue;
+    const ta = Math.max(0, da - a.halfL) / Math.max(4, a.speed);
+    const tb = Math.max(0, db - b.halfL) / Math.max(4, b.speed);
+    if (Math.abs(ta - tb) > 2.5 || Math.min(ta, tb) > 4) continue;
+    const aIn = da <= a.halfL + 1, bIn = db <= b.halfL + 1;
+    let winner;
+    if (aIn !== bIn) winner = aIn ? a : b;
+    else if (Math.abs(ta - tb) > .8) winner = ta < tb ? a : b;
+    else winner = stableId(a) <= stableId(b) ? a : b;
+    const loser = winner === a ? b : a, distance = winner === a ? db : da;
+    // One metre buffer to the conflict point plus the vehicle's front half.
+    const stopDistance = Math.max(0, distance - loser.halfL - 1.5);
+    loser.yieldDistance = Math.min(loser.yieldDistance ?? Infinity, stopDistance);
+    loser.followCap = Math.min(loser.followCap, Math.sqrt(2 * FOLLOW_DECEL * stopDistance));
+  }
+}
+
 export function collideTraffic(vehicles, dt) {
   for (let i = 0; i < vehicles.length; i++) {
     const a = vehicles[i];
     for (let j = i + 1; j < vehicles.length; j++) {
       const b = vehicles[j];
+      if (Math.abs((a.y ?? 0) - (b.y ?? 0)) > 3) continue;
       const reach = Math.max(a.halfL, a.halfW) + Math.max(b.halfL, b.halfW) + 1;
       const sweepX = Math.abs((a.x - a.prevX) - (b.x - b.prevX));
       const sweepZ = Math.abs((a.z - a.prevZ) - (b.z - b.prevZ));
@@ -106,7 +139,7 @@ export function collideTraffic(vehicles, dt) {
 export function collidePlayer(vehicles, dt, controllerManager) {
   if (!controllerManager) return;
   const pe = controllerManager.getActiveEntity();
-  if (!pe || controllerManager.activeMode === 'helicopter' || pe.position.y >= 2.6) return;
+  if (!pe || controllerManager.activeMode === 'helicopter') return;
   const mode = controllerManager.activeMode;
   const halfW = mode === 'cyclist' ? 0.35 : mode === 'person' ? 0.32 : 0.86;
   const halfL = mode === 'cyclist' ? 0.85 : mode === 'person' ? 0.32 : 2.18;
@@ -114,6 +147,7 @@ export function collidePlayer(vehicles, dt, controllerManager) {
   const prevPX = pe.prevX ?? pe.position.x, prevPZ = pe.prevZ ?? pe.position.z;
   const playerX = pe.position.x, playerZ = pe.position.z;
   for (const v of vehicles) {
+    if (Math.abs(pe.position.y - (v.y ?? 0)) > 2.6) continue;
     const reach = Math.max(v.halfL, v.halfW) + Math.max(halfL, halfW) + 1;
     const sweepX = Math.abs(playerX - prevPX - (v.x - v.prevX));
     const sweepZ = Math.abs(playerZ - prevPZ - (v.z - v.prevZ));
