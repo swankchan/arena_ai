@@ -383,6 +383,7 @@ function* buildSimpleHongKongWorldSteps(scene) {
     getGroundHeight, getSurfaceHeight: getRoadPaintHeight, surfaceY: FULL_WORLD_HEIGHT.road
   });
 
+  yield 'Finalising Hong Kong world geometry and collision data...';
   const isPointOnLand = (x, z) => isTerritoryLand(x, z) || isTerritoryRoad(x, z, 0.35);
   const isPointOnSidewalk = () => false;
   function getGroundHeight(x, z, mode, referenceY = 0) {

@@ -38,6 +38,8 @@ export const city = {
 
     const world = await buildHongKongWorldAsync(scene, { setStatus });
     markInit?.('world');
+    setStatus('Setting up Hong Kong traffic...');
+    await new Promise(resolve => setTimeout(resolve, 0));
 
     // The traffic restaging halo follows the camera. CameraSystem is created after build(), so the focus is a mutable
     // point that update() keeps in sync.
@@ -45,6 +47,8 @@ export const city = {
     const traffic = createHongKongTraffic(scene, { getFocus: () => focus, taxiStyle: TAXI_STYLE, getGroundHeight: world.getGroundHeight });
     markInit?.('traffic');
 
+    setStatus('Setting up harbour and tram services...');
+    await new Promise(resolve => setTimeout(resolve, 0));
     const harbour = createHongKongHarbour(scene);
     const tramway = createHongKongTramway(scene);
     const crowd = createHongKongCrowd(scene, { getGroundHeight: world.getGroundHeight });

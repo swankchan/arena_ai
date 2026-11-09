@@ -39,3 +39,12 @@ test('terrain and roads report actual processed rows and records as separate pha
   assert.match(app, /setLoadingProgress\(done \/ status\.total\)/);
   assert.match(full, /runLoadingSteps\(buildFullHongKongWorldSteps\(root, options\)\)/);
 });
+
+test('Hong Kong reports separate world-finalisation and traffic stages', () => {
+  const {readFileSync}=require('node:fs');
+  const world=readFileSync('js/cities/hongkong/simple-world.js','utf8');
+  const city=readFileSync('js/cities/hongkong/index.js','utf8');
+  assert.ok(world.indexOf("yield 'Finalising Hong Kong world geometry and collision data...") > world.indexOf('const trafficAids = createHongKongTrafficAids'));
+  assert.ok(city.indexOf("setStatus('Setting up Hong Kong traffic...')") < city.indexOf('const traffic = createHongKongTraffic'));
+  assert.ok(city.indexOf("setStatus('Setting up harbour and tram services...')") > city.indexOf('const traffic = createHongKongTraffic'));
+});
