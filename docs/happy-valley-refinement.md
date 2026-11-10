@@ -213,3 +213,5 @@ The eight new 1.6 m square collider bases are sampled against the venue ring, ma
 [場邊照片](https://dreamstime.com/photos-images/valley-horse-race-track-hong-kong.html)可見近內欄有深色底、橙色直排「200」標誌；現按照片特徵加入雙面示意牌，數字用幾何圖形製作，非直接使用照片。相對位置由目前估算終點沿**模型內欄**逆向量取 200 m，賽馬方向依 [Happy Valley 賽道資料](https://www.amwager.com/amwager-race-track-happy-valley-racecourse/)為順時針；因為舊跑道及終點都未測量，**不代表真實 200 米牌座標或真實賽道距離**。原有未標數字的白柱仍只是暫定裝飾，並非已核實的距離牌。
 
 標誌選址以幾個點避讓球場、場界、看台、隧道和同高道路；測試逐頂點檢查已映射球場／看台和附近道路各層，並以離散內欄長度核對 200 m。這不保證連續淨空或實際位置。局部 WebGL 日夜檢視見 `tests/visual/happy-valley-distance-marker.html`（加 `?night`），未核完整世界／WebGPU，跑道重新定位時要重做標誌。
+
+外牆補段後，對跑道表面、跑道頂欄、外牆基座和外圍欄的每個三角面另取四個內部點，檢查附近所有生成道路層；本次 176,832 個面內樣點沒有同高道路命中。此測試比只看頂點多覆蓋面內位置，但仍是離散抽樣，不能證明整個三角面、行人出入口或車輛掃掠淨空。

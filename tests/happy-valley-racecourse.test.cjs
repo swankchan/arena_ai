@@ -559,3 +559,31 @@ test('illustrative 200 marker is measured on the model rail and clears mapped ob
   }
   assert.ok(tested>100);
 });
+
+test('track and perimeter face interiors clear sampled same-level road ribbons', {timeout:30000}, async () => {
+  // Vertices alone miss a road crossing the interior of a long triangle.
+  // Four barycentric samples per face improve coverage, but are not a
+  // continuous intersection or a swept vehicle envelope.
+  const {roadRibbonHeightAtSegment}=await import('../js/cities/hongkong/road-elevation.js');
+  const y=terrain.HONG_KONG_TERRAIN_META.happyValleyPadHeight;
+  built.group.updateMatrixWorld(true);let samples=0;
+  for(const name of ['HappyValleyTrackSurface','HappyValleyRunningRails','HappyValleyPerimeterWallBase','HappyValleyPerimeterFence']) {
+    const mesh=built.group.getObjectByName(name),pos=mesh.geometry.getAttribute('position'),index=mesh.geometry.index;
+    const vertices=[new THREE.Vector3(),new THREE.Vector3(),new THREE.Vector3()];
+    for(let i=0;i<(index?.count??pos.count);i+=3) {
+      for(let j=0;j<3;j++) vertices[j].fromBufferAttribute(pos,index?index.getX(i+j):i+j).applyMatrix4(mesh.matrixWorld);
+      for(const weights of [[1/3,1/3,1/3],[.6,.2,.2],[.2,.6,.2],[.2,.2,.6]]) {
+        const x=vertices.reduce((s,v,j)=>s+v.x*weights[j],0),z=vertices.reduce((s,v,j)=>s+v.z*weights[j],0);samples++;
+        for(const way of fullMeta.fullRoadWaysNear(x,z,10))for(let k=2;k<way.flat.length;k+=2) {
+          const ax=way.flat[k-2],az=way.flat[k-1],dx=way.flat[k]-ax,dz=way.flat[k+1]-az,l=dx*dx+dz*dz;
+          if(l<.0025)continue;
+          const t=Math.max(0,Math.min(1,((x-ax)*dx+(z-az)*dz)/l)),px=ax+t*dx,pz=az+t*dz;
+          if(Math.hypot(x-px,z-pz)>way.width/2)continue;
+          const h=roadRibbonHeightAtSegment(way.id,k/2-1,t,px,pz);
+          assert.ok(Math.abs(h-y)>=2.5,`${name} face sample intersects road ${way.id}`);
+        }
+      }
+    }
+  }
+  assert.ok(samples>150000);
+});
