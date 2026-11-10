@@ -181,3 +181,9 @@ The eight new 1.6 m square collider bases are sampled against the venue ring, ma
 另一試算用 `node tools/cities/hongkong/build-happy-valley-site-cut-experiment.mjs` 把局部 70 m 原始格網三角形減去 OSM 場界，保留多邊形外的三角片，場界內依靠現有馬場草坪覆蓋；重建輸出在 `tests/visual/happy-valley-site-cut-data.js`，`happy-valley-track-terrain.html?sitecut` 可對照。局部 2,732 個現繪跑道樣點沒有高於跑道的地形命中，截圖亦不再見跑道格網遮擋。但這是測試 fixture，並非完整 terrain chunk 或最終修復。
 
 `node tools/cities/hongkong/check-happy-valley-site-seam.mjs` 沿場界每約 2 m 比較外側未裁 70 m 地形插值與現有平坦草坪：911 點中 866 點高差超過 0.1 m，範圍約 -0.745 至 +6.795 m；附近六條同高道路也碰場界。截圖仍可見天空縫，不能以一道不分道路的垂直牆遮住。這是未裁地形的估算，不含所有道路、隧道裁切或 earthworks；需要設計連續分區過渡並驗證道路、地形查詢及碰撞一致，故未接 runtime。
+
+### 道路淨高及跑道豎向試算（離線，未上線）
+
+平滑候選線在 road 43020 上方的採樣淨高最低約 3.784 m。`check-happy-valley-vertical-fit.mjs` 試算不下挖道路、在候選站點 160–192 將整段跑道抬高 1.8 m，兩邊各以 40 站平滑過渡；最大中心線離散縱坡約 3.33%，12,240 個點中道路高差少於 5 m 的點由 22 減至 0，最低正淨高約 5.584 m。這 5 m 只是比較門檻，**未扣橋面厚度、路面橫坡或車身包絡，更非實測工程淨空**。
+
+抬高後必須處理兩側與球場、看台的落差，不能把跑道當懸空薄片。`check-happy-valley-embankment-experiment.mjs` 只作粗略壓力測試：沿抬升段假設兩側各加 10 m 闊邊坡，與兩個 OSM 球場、兩座看台及場界相交；例如 Happy Valley Stand 輪廓（OSM 494027781）相交約 581 m²。這不代表所有橋／擋土方案都不可行，但證明簡單加闊坡面會破壞現有設施。實際地形、鐵路欄、坡腳、路口、結構和安全均未設計，所以這個豎向方案亦未接遊戲。
