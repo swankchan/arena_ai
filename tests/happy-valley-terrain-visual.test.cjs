@@ -23,10 +23,25 @@ test('local terrain reconstruction exposes track occlusion and compares offline 
 });
 
 
-test('offline polygon site cut snapshot can be reproduced', {timeout:30000}, () => {
- const {execFileSync}=require('node:child_process'),fs=require('node:fs');
+test('offline polygon site cut snapshot reproduces the same covered area', {timeout:30000}, async () => {
+ // Earcut versions can triangulate the same polygon differently. Compare the
+ // actual coverage, not the order of internal diagonals or vertices.
+ const {execFileSync}=require('node:child_process');
+ const clip=(await import('polygon-clipping')).default;
+ const {siteCutTriangles:reference}=await import('./visual/happy-valley-site-cut-data.js');
  const output=execFileSync(process.execPath,['tools/cities/hongkong/build-happy-valley-site-cut-experiment.mjs'],{encoding:'utf8',maxBuffer:1024*1024});
- assert.equal(output,fs.readFileSync('tests/visual/happy-valley-site-cut-data.js','utf8'));
+ const {siteCutTriangles:actual}=await import('data:text/javascript;base64,'+Buffer.from(output).toString('base64'));
+ assert.deepEqual(Object.keys(actual).sort(),Object.keys(reference).sort());
+ const union=tris=>tris.length?clip.union(...tris.map(t=>[[[...t,t[0]]]])):[];
+ const area=multi=>multi.reduce((sum,poly)=>sum+poly.reduce((s,ring,i)=>{
+  let a=0;for(let j=1;j<ring.length;j++)a+=ring[j-1][0]*ring[j][1]-ring[j][0]*ring[j-1][1];
+  return s+(i===0?1:-1)*Math.abs(a)/2;
+ },0),0);
+ for(const key of Object.keys(reference)){
+  const a=union(reference[key]),b=union(actual[key]);
+  const diff=a.length&&b.length?clip.xor(a,b):a.length?a:b;
+  assert.ok(area(diff)<1e-5,`coverage differs at ${key}: ${area(diff)} m²`);
+ }
 });
 
 
