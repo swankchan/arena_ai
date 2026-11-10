@@ -23,6 +23,7 @@ import { fullRoadSurfaceAt } from './full-meta.js';
 import { TERRAIN_TUNNEL_OPENING_RECTS } from './road-elevation.js';
 import { subtractTunnelOpenings } from './tunnel-openings.js';
 import { buildHappyValleyTunnelWalls } from './happy-valley-tunnel-walls.js';
+import { buildHappyValleyWinningPost } from './happy-valley-winning-post.js';
 import { HAPPY_VALLEY_STAND_FOOTPRINTS } from './happy-valley-stand-footprints.js';
 import { HAPPY_VALLEY_REMAINING_PITCH_FOOTPRINTS } from './happy-valley-remaining-pitch-footprints.js';
 import { localRingFromWorld, worldRingFromGeometry } from './authored-landmark-site.js';
@@ -500,6 +501,7 @@ export function buildHappyValleyRacecourse(root, { groundOffset = 0 } = {}) {
   const pavilion = buildHappyValleyPavilion(venue, groundOffset);
   const membersIII = buildHappyValleyMembersIII(venue, groundOffset);
   buildInfield(venue, materials, stats);
+  const winningPost=buildHappyValleyWinningPost(venue);
 
   const colliders = [];
   const push = (x, z, w, d, h, ry = 0) => colliders.push(harbourCityLocalCollider(
@@ -512,6 +514,10 @@ export function buildHappyValleyRacecourse(root, { groundOffset = 0 } = {}) {
   }
 
   colliders.push(...pavilion.colliders, ...membersIII.colliders);
+  // Colliders only at the two feet and central post, not across the open arch.
+  const postCos=Math.cos(winningPost.direction),postSin=Math.sin(winningPost.direction);
+  for(const x of [-3.85,0,3.85]) push(winningPost.position.x+postCos*x,winningPost.position.z-postSin*x,
+    x===0?.65:.85,.65,x===0?4.7:1,winningPost.direction);
   // Keep the established collider order stable for existing entrance checks.
   for (const [t,out] of EXTRA_FLOODLIGHT_POSITIONS) {
     const p=trackPoint(t,out);push(p.x,p.z,1.6,1.6,36);
