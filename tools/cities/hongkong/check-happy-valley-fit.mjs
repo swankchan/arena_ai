@@ -9,7 +9,7 @@ import { HONG_KONG_TERRAIN_META as terrain } from '../../../js/cities/hongkong/t
 import { fullRoadWaysNear } from '../../../js/cities/hongkong/full-meta.js';
 import { roadRibbonHeightAtSegment } from '../../../js/cities/hongkong/road-elevation.js';
 
-const path = new URL('../../data/hongkong/happy-valley-experimental-fit.json',import.meta.url);
+const path = process.argv[2] ?? new URL('../../data/hongkong/happy-valley-experimental-fit.json',import.meta.url);
 const fit=JSON.parse(fs.readFileSync(path)), points=fit.points, projection=makeFrame(cfg.frame);
 const data=JSON.parse(fs.readFileSync(new URL('../../data/hongkong/parks.json',import.meta.url)));
 const pitches=data.elements.filter(e=>e.type==='way' && e.tags?.leisure==='pitch' && e.geometry?.length>=4)
@@ -36,7 +36,7 @@ for(let i=0;i<points.length;i++) {
 const standHits=new Map();
 const cs=Math.cos(site.ry),sn=Math.sin(site.ry), c=terrain.happyValleyPadHeight;
 let sampleCount=0, outside=0, pitch=0, stand=0, sameLevel=0, lessThan5m=0, minClearance=Infinity;
-const obstacles=new Map();
+const obstacles=new Map(),sameLevelRoads=new Map();
 for(let i=0;i<points.length;i++) {
   const p=points[i],before=points[(i+points.length-1)%points.length],after=points[(i+1)%points.length];
   const dx=after[0]-before[0],dz=after[1]-before[1],length=Math.hypot(dx,dz),nx=-dz/length,nz=dx/length;
@@ -58,7 +58,7 @@ for(let i=0;i<points.length;i++) {
       const px=ax+t*vx,pz=az+t*vz;
       if(Math.hypot(X-px,Z-pz)>way.width/2+1)continue;
       const height=roadRibbonHeightAtSegment(way.id,k/2-1,t,px,pz),clearance=c-height;
-      if(Math.abs(clearance)<2.5)same=true;
+      if(Math.abs(clearance)<2.5){same=true;sameLevelRoads.set(way.id,(sameLevelRoads.get(way.id)??0)+1);}
       if(clearance>0 && clearance<5) {
         low=true;minClearance=Math.min(minClearance,clearance);
         obstacles.set(way.id,Math.min(obstacles.get(way.id)??Infinity,clearance));
@@ -69,7 +69,7 @@ for(let i=0;i<points.length;i++) {
   }
 }
 console.log(JSON.stringify({status:fit.status,centrelineMetres:fit.centrelineMetres,sampleCount,outside,pitch,stand,sameLevel,
-  mappedStandsChecked:stands.length,standIds:Object.fromEntries(standHits),
+  mappedStandsChecked:stands.length,standIds:Object.fromEntries(standHits),sameLevelRoadIds:Object.fromEntries(sameLevelRoads),
   minSampledCentrelineRadiusMetres:+minimumCentrelineRadius.toFixed(2),sharpestStation:sharpStation,
   samplesWithRoadUnder5m:lessThan5m,minSampledClearanceMetres:Number.isFinite(minClearance)?+minClearance.toFixed(3):null,
   roadIds:Object.fromEntries([...obstacles].map(([id,v])=>[id,+v.toFixed(3)])),

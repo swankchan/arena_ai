@@ -141,3 +141,9 @@ OSM 馬場 relation 8049451 為場地邊界，不是圍牆測量；照片搜尋�
 跑道欄杆參考 2019 年場邊圖片（例如 https://www.dreamstime.com/photos-images/valley-horse-race-track-hong-kong.html 搜尋結果），照片可見白色頂欄和密集纖柱；舊模型的三條橫欄及每九段才一支柱不相似。現改為白色較闊頂欄、每段一支立柱；精確剖面與間距為估算。原先的道路／球場暫避缺口保留。局部 WebGL 畫面已檢視，未驗完整遊戲或真實馬道線位。
 
 候選線新增三點圓曲率診斷：最小抽樣中心線半徑約 34.45 m（station 35），反映局部彎曲過急或點列不夠平滑；四位小數點位的誤差亦會影響結果。這不是實際馬場半徑或賽道安全標準，但提醒單靠避開足球場的離散樣點不能判定候選線可用。道路 43020 的低淨高點分佈在跨越跑道的兩側，因此單純移動一小處邊線未證能解決；未更改道路坡度或上線候選。
+
+### 跑道平滑試算（仍未上線）
+
+使用 `node tools/cities/hongkong/smooth-happy-valley-fit.mjs` 從 720 點候選線可重現另一個平滑估算：環狀 Gaussian sigma 12 stations；靠兩條同高入場道路的 station 140–270 改用 sigma 3、以 40 stations 漸變，避免較大平滑直接切過道路。新中心線約 1458.24 m，最急的三點抽樣曲率半徑約 51.32 m（原版 34.45 m），不是測量值或安全認證。`node tools/cities/hongkong/check-happy-valley-fit.mjs tools/data/hongkong/happy-valley-experimental-smooth-fit.json` 的 12,240 點中場界外、16 個映射球場、六座看台及同高道路命中均為零；離散不足以證明無碰撞。另用 Shapely 對 15.25 m 緩衝中心折線的多邊形檢查，未見面積交疊或場界外，但緩衝形狀只是離線近似，並非逐三角形及現場淨空保證。
+
+**未上線**：22 個樣點仍在 road 43020 上方少於 5 m，最低約 3.784 m（未減結構厚度）；原有燈柱等亦與候選面重疊。固定場地高度與路面模型並非實測隧道，不能直接認定安全，也不應靠驟降道路製造大坡。`tests/visual/happy-valley-candidate-track.html?smooth` 可查看局部效果與紅色風險位置，該圖不含完整世界地形及車輛。

@@ -1,6 +1,6 @@
 <!doctype html><meta charset="utf-8"><title>Happy Valley candidate track — diagnostic, not runtime</title>
 <style>body{margin:0}aside{position:absolute;top:12px;left:12px;background:#fff;color:#222;padding:10px;font:14px sans-serif;max-width:450px}</style>
-<aside>Experimental candidate — not in the game. Red: sampled same-level road or road below with clearance under 5 m; not a surveyed tunnel or a continuous clearance test.</aside>
+<aside id="label">Experimental candidate — not in the game. Red: sampled same-level road or road below with clearance under 5 m; not a surveyed tunnel or a continuous clearance test.</aside>
 <script type="importmap">{"imports":{"three":"../../vendor/three/build/three.webgpu.js","three/webgpu":"../../vendor/three/build/three.webgpu.js","three/tsl":"../../vendor/three/build/three.tsl.js","three/addons/":"../../vendor/three/examples/jsm/"}}</script>
 <script type="module">
 import * as THREE from 'three/webgpu';
@@ -9,7 +9,10 @@ import {HAPPY_VALLEY_SITE as site} from '../../js/cities/hongkong/happy-valley-r
 import {fullRoadWaysNear} from '../../js/cities/hongkong/full-meta.js';
 import {roadRibbonHeightAtSegment} from '../../js/cities/hongkong/road-elevation.js';
 import {HONG_KONG_TERRAIN_META as terrain} from '../../js/cities/hongkong/terrain.js';
-const fit=await (await fetch('../../tools/data/hongkong/happy-valley-experimental-fit.json')).json();
+const smooth=new URLSearchParams(location.search).has('smooth');
+const filename=smooth?'happy-valley-experimental-smooth-fit.json':'happy-valley-experimental-fit.json';
+if(smooth) document.querySelector('#label').prepend('SMOOTHED FIT — ');
+const fit=await (await fetch('../../tools/data/hongkong/'+filename)).json();
 if(fit.status!=='experimental-not-used-in-runtime'||fit.points.length!==720)throw new Error('Unexpected candidate');
 const scene=new THREE.Scene();scene.background=new THREE.Color(0xadc5d1);
 const venue=buildHappyValleyRacecourse(scene,{groundOffset:terrain.happyValleyPadHeight});
