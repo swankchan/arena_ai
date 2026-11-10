@@ -41,10 +41,10 @@ test('the course keeps its published record', () => {
   assert.equal(built.stats.happyValleyOpened, '1846-12-17');
   assert.equal(built.stats.happyValleyTrackWidth, 30.5);
   assert.equal(built.stats.happyValleyPublishedLap, 1417);
-  assert.equal(arch.HAPPY_VALLEY_TRACK_PUBLISHED.straightMetres, 310);
+  assert.equal(arch.HAPPY_VALLEY_TRACK_PUBLISHED.straightMetres, 312);
   assert.deepEqual([...arch.HAPPY_VALLEY_TRACK_PUBLISHED.races], [1000, 1200, 1650, 1800, 2200]);
   assert.equal(arch.HAPPY_VALLEY_NIGHT_RACING_SINCE, 1973);
-  assert.equal(arch.HAPPY_VALLEY_RESEARCH_SOURCES.length, 4);
+  assert.ok(arch.HAPPY_VALLEY_RESEARCH_SOURCES.some((source) => source.url === 'https://racing.hkjc.com/en-us/local/page/racing-course'));
   assert.ok(arch.HAPPY_VALLEY_RESEARCH_SOURCES.some((source) => /1918/.test(source.evidence)), '1918 fire recorded');
   assert.equal(arch.HAPPY_VALLEY_MUSEUM_NODE.id, 12552529862);
 });

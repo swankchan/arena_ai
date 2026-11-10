@@ -4,12 +4,10 @@
 // "跑馬地馬場 Happy Valley Racecourse", multipolygon). Its outer ways form the fence round the whole course,
 // 653 x 378 m, and they follow 黃泥涌道 Wong Nai Chung Road and 禮頓道 / 摩理臣山道 on the landward sides.
 //
-// The racing surface is modelled as a discorectangle of the published dimensions — 310 m straights, a 30.5 m wide
-// grass track, and a 1,417 m A-course lap. Fitting that circuit 1:1 inside the surveyed fence is impossible: the
-// fence clips its south-east corner, so the surface is placed by the fit recorded in HAPPY_VALLEY_TRACK_FIT
-// (scale 0.90, rotation -14°, centre offset -8 / -19 m from the site origin) which keeps at least 8.2 m of apron
-// between the outer running rail and the fence everywhere. The fitted lap is therefore 1,269 m against the
-// published 1,417 m; the shortfall is recorded here rather than hidden, because the boundary itself is the survey.
+// The present procedural track is a provisional 0.90-scale stadium loop; it does not follow a measured rail
+// and still intersects mapped pitches and service roads. Its straight was fitted using a 310 m secondary source.
+// HKJC publishes a 312 m home straight and 30.5 m width for A course; it supplies no track coordinates.
+// A secondary source quotes a 1,417 m lap, without identifying an exact measuring line.
 //
 // Identity from the photographs and the published record: a single 30 m grass track (the 1995 rebuild merged the
 // old outer grass and inner sand tracks), white running rails, a sand-coloured infield with the club's green
@@ -89,12 +87,12 @@ export const HAPPY_VALLEY_PARADE_LOCAL_RING = localRingFromWorld(HAPPY_VALLEY_SI
 
 // The published circuit, from the racecourse record.
 export const HAPPY_VALLEY_TRACK_PUBLISHED = Object.freeze({
-  lapMetres: 1417, widthMetres: 30.5, straightMetres: 310,
+  lapMetres: 1417, widthMetres: 30.5, straightMetres: 312,
   surface: 'grass', races: Object.freeze([1000, 1200, 1650, 1800, 2200]),
 });
 
-// The fit of that circuit inside the surveyed fence. Verified by sampling the outer running rail every degree
-// against the fence ring: 0.90 scale, -14 degrees, centre offset -8 / -19 m, minimum apron 8.2 m, mean apron 39 m.
+// Historical provisional fit, not a measured fence or running rail: 0.90 scale and -14 degrees.
+// The 8.2 m minimum apron is an estimate from discrete samples against the OSM outer boundary.
 export const HAPPY_VALLEY_TRACK_FIT = Object.freeze({
   scale: 0.9, rotation: -14,
   centreX: -8, centreZ: -19,
@@ -147,6 +145,10 @@ export const HAPPY_VALLEY_COLOURS = Object.freeze({
 
 export const HAPPY_VALLEY_RESEARCH_SOURCES = Object.freeze([
   {
+    url: 'https://racing.hkjc.com/en-us/local/page/racing-course',
+    evidence: 'Happy Valley A course: home straight 312 m and width 30.5 m; A+2: 310 m and 28.5 m. No track coordinates are provided.',
+  },
+  {
     url: 'https://zh.wikipedia.org/zh-hk/跑馬地馬場',
     evidence: 'Opened 1846 (first recorded meeting 17 December 1846) on land drained from the Wong Nai Chung '
       + 'marsh; capacity about 20,000; the 1995 rebuild merged the outer grass track and inner sand track into '
@@ -169,8 +171,7 @@ export const HAPPY_VALLEY_RESEARCH_SOURCES = Object.freeze([
   },
 ]);
 
-// The main stand sits on the widest arc of the surveyed fence: rail at t = 0.02, 12 m of apron behind it, then a
-// 191 x 34 m block rotated 83.3 degrees to the rail tangent. Verified to stay inside the fence ring.
+// Shared provisional loop for rendering and diagnostics; this is not a surveyed racecourse alignment.
 export function happyValleyTrackPoint(t, offset = 0) {
   const fit = HAPPY_VALLEY_TRACK_FIT;
   // Arc-length parameterisation of the outer rail: quarter arc, straight,
