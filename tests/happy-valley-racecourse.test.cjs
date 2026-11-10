@@ -319,9 +319,10 @@ test('infield tunnel retaining edges stay outside sampled roadway corridors', as
   assert.ok(wall);assert.ok(built.stats.happyValleyTunnelWallSegments>200);
   built.group.updateMatrixWorld(true);let rays=0;
   for(const road of fullRoadWaysNear(2150,835,130)) {
-    if(![41115,41116,43020].includes(road.id))continue;
     for(let i=2;i<road.flat.length;i+=2){
-      let [ax,az,bx,bz]=road.flat.slice(i-2,i+2),dx=bx-ax,dz=bz-az,L=Math.hypot(dx,dz),nx=dz/L,nz=-dx/L,N=Math.ceil(L);
+      let [ax,az,bx,bz]=road.flat.slice(i-2,i+2),dx=bx-ax,dz=bz-az,L=Math.hypot(dx,dz);
+      if(L<.05)continue;
+      const nx=dz/L,nz=-dx/L,N=Math.ceil(L);
       for(let j=0;j<=N;j++){
         const t=j/N,x=ax+dx*t,z=az+dz*t,y=roadRibbonHeightAtSegment(road.id,i/2-1,t,x,z),half=road.width/2-.15;
         for(const height of [.3,1.4,2.8,4.2]) {
@@ -332,4 +333,13 @@ test('infield tunnel retaining edges stay outside sampled roadway corridors', as
     }
   }
   assert.ok(rays>500);
+});
+
+
+test('retaining-wall edge clipping uses exact opening intersections', async () => {
+  const {happyValleyOutsideOpeningIntervals:outside}=await import('../js/cities/hongkong/happy-valley-tunnel-walls.js');
+  const rect={cx:5,cz:0,ux:1,uz:0,hx:2,hz:1};
+  assert.deepEqual(outside({x:0,z:0},{x:10,z:0},[rect]),[[0,.3],[.7,1]]);
+  assert.deepEqual(outside({x:0,z:2},{x:10,z:2},[rect]),[[0,1]]);
+  assert.deepEqual(outside({x:4,z:0},{x:6,z:0},[rect]),[]);
 });

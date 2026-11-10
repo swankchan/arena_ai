@@ -28,9 +28,30 @@ function projection(way,x,z) {
   }
   return best;
 }
-function insideRect(r,x,z,margin=0) {
-  const dx=x-r.cx,dz=z-r.cz;
-  return Math.abs(dx*r.ux+dz*r.uz)<r.hx+margin && Math.abs(-dx*r.uz+dz*r.ux)<r.hz+margin;
+// Split an edge exactly at every neighbouring rectangle boundary, rather than
+// dropping whole 0.8 m cells at bends. Only the exterior of the union remains.
+export function happyValleyOutsideOpeningIntervals(a,b,rects) {
+  let intervals=[[0,1]];
+  for(const r of rects) {
+    let lo=0,hi=1;
+    for(const [nx,nz,limit] of [[r.ux,r.uz,r.hx],[-r.ux,-r.uz,r.hx],[-r.uz,r.ux,r.hz],[r.uz,-r.ux,r.hz]]) {
+      const d0=nx*(a.x-r.cx)+nz*(a.z-r.cz)-limit;
+      const dv=nx*(b.x-a.x)+nz*(b.z-a.z);
+      if(Math.abs(dv)<1e-10) { if(d0>0) {lo=1;hi=0;break;} continue; }
+      const t=-d0/dv;
+      if(dv>0)hi=Math.min(hi,t);else lo=Math.max(lo,t);
+    }
+    if(lo>=hi || hi<=0 || lo>=1) continue;
+    lo=Math.max(0,lo);hi=Math.min(1,hi);
+    intervals=intervals.flatMap(([x,y])=>hi<=x||lo>=y?[[x,y]]:
+      [...(lo>x?[[x,lo]]:[]),...(hi<y?[[hi,y]]:[])]);
+  }
+  return intervals.filter(([a,b])=>b-a>1e-6);
+}
+function corners(r) {
+  return [[-1,-1],[1,-1],[1,1],[-1,1]].map(([u,v])=>({
+    x:r.cx+r.ux*r.hx*u-r.uz*r.hz*v, z:r.cz+r.uz*r.hx*u+r.ux*r.hz*v,
+  }));
 }
 function local(x,z) {
   const dx=x-site.x,dz=z-site.z,c=Math.cos(site.ry),s=Math.sin(site.ry);
@@ -40,24 +61,27 @@ export function buildHappyValleyTunnelWalls(parent,groundOffset) {
   if(own.length!==ids.size) return {mesh:null,segments:0};
   const walls=store();let segments=0;
   for(const r of opening) {
-    const id=Number(r.routeId.split(':')[1]),way=own.find(w=>w.id===id);
-    const N=Math.max(1,Math.ceil(2*r.hx/.8));
-    for(const side of [-1,1]) for(let i=0;i<N;i++) {
-      const world=t=>({x:r.cx+r.ux*(2*t-1)*r.hx-r.uz*side*r.hz,z:r.cz+r.uz*(2*t-1)*r.hx+r.ux*side*r.hz});
-      const a=world(i/N),b=world((i+1)/N),m=world((i+.5)/N);
-      // Omit interior union boundaries and all places where a different road
-      // approaches the wall, including a different-height layer.
-      if(![a,b,m].every(p=>pointInFlatRing(site.ring,p.x,p.z)))continue;
-      if(opening.some(o=>o!==r && insideRect(o,m.x,m.z,.04)))continue;
-      if([a,b,m].some(p=>roads.some(other=>other.id!==id && projection(other,p.x,p.z)?.distance<other.width/2+.8)))continue;
-      const pa=projection(way,a.x,a.z),pb=projection(way,b.x,b.z);
-      if(!pa||!pb)continue;
-      const ya=roadRibbonHeightAtSegment(id,pa.index,pa.t,pa.x,pa.z)-groundOffset-.12;
-      const yb=roadRibbonHeightAtSegment(id,pb.index,pb.t,pb.x,pb.z)-groundOffset-.12;
-      const top=-.03;
-      if(ya>=top && yb>=top)continue;
-      const [ax,az]=local(a.x,a.z),[bx,bz]=local(b.x,b.z);
-      quad(walls,[ax,Math.min(ya,top),az],[bx,Math.min(yb,top),bz],[bx,top,bz],[ax,top,az],[.54,.55,.53]);segments++;
+    const id=Number(r.routeId.split(':')[1]),way=own.find(w=>w.id===id), vertices=corners(r);
+    for(let edge=0;edge<4;edge++) {
+      const p=vertices[edge],q=vertices[(edge+1)%4],lerp=t=>({x:p.x+(q.x-p.x)*t,z:p.z+(q.z-p.z)*t});
+      for(const [from,to] of happyValleyOutsideOpeningIntervals(p,q,opening.filter(o=>o!==r))) {
+        const len=Math.hypot(q.x-p.x,q.z-p.z)*(to-from),N=Math.max(1,Math.ceil(len/.5));
+        for(let i=0;i<N;i++) {
+          const a=lerp(from+(to-from)*i/N),b=lerp(from+(to-from)*(i+1)/N),m=lerp(from+(to-from)*(i+.5)/N);
+          if(![a,b,m].every(p=>pointInFlatRing(site.ring,p.x,p.z)))continue;
+          // Never build across any mapped road, even if the road is on a
+          // different elevation layer; this also keeps both mouths open.
+          if([a,b,m].some(p=>roads.some(other=>projection(other,p.x,p.z)?.distance<other.width/2+.65)))continue;
+          const pa=projection(way,a.x,a.z),pb=projection(way,b.x,b.z);
+          if(!pa||!pb)continue;
+          const ya=roadRibbonHeightAtSegment(id,pa.index,pa.t,pa.x,pa.z)-groundOffset-.12;
+          const yb=roadRibbonHeightAtSegment(id,pb.index,pb.t,pb.x,pb.z)-groundOffset-.12;
+          const top=-.03;
+          if(ya>=top && yb>=top)continue;
+          const [ax,az]=local(a.x,a.z),[bx,bz]=local(b.x,b.z);
+          quad(walls,[ax,Math.min(ya,top),az],[bx,Math.min(yb,top),bz],[bx,top,bz],[ax,top,az],[.54,.55,.53]);segments++;
+        }
+      }
     }
   }
   const material=new THREE.MeshStandardMaterial({color:0xaaa99f,roughness:.9,side:THREE.DoubleSide});
