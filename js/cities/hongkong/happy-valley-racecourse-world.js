@@ -391,7 +391,7 @@ function buildGrounds(group, materials, stats, groundOffset) {
     const p = trackPoint(t, out);
     cylinder(masts, [p.x, 17, p.z], 0.42, 34, 8);
     // Modular banks on a crossbar, facing the track/infield rather than
-    // identical blank blocks. Lamp count and six locations remain estimates.
+    // identical blank blocks. Lamp count and locations remain estimates.
     const target=trackPoint(t,-HAPPY_VALLEY_TRACK.width-6);
     // A bounded, downward-facing local light provides a modest night wash on
     // actual geometry, unlike the emissive faces alone. No dynamic shadows.
