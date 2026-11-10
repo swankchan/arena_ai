@@ -13,6 +13,8 @@ test('experimental fit stays offline and exposes tunnel clearance risk', () => {
   assert.equal(report.outside,0); assert.equal(report.pitch,0); assert.equal(report.stand,0);
   assert.equal(report.mappedStandsChecked,6); assert.deepEqual(report.standIds,{});
   assert.equal(report.sameLevel,0);
+  assert.ok(report.minSampledCentrelineRadiusMetres>0 && report.minSampledCentrelineRadiusMetres<40);
+  assert.ok(Number.isInteger(report.sharpestStation));
   assert.ok(report.samplesWithRoadUnder5m>0, 'the remaining tunnel risk must not be lost');
   assert.ok(report.minSampledClearanceMetres<4.5);
   assert.ok(report.roadIds['43020']<4.5);

@@ -21,6 +21,18 @@ const stands=JSON.parse(fs.readFileSync(new URL('../../data/hongkong/landmarks.j
   .filter(e=>e.type==='way' && standIds.has(e.id) && e.geometry?.length>=4)
   .map(e=>({id:e.id,ring:e.geometry.flatMap(({lon,lat})=>projection.toWorld(lon,lat))}));
 if(stands.length!==standIds.size) throw new Error('Missing mapped Happy Valley stand footprint');
+// Local circumradius is a diagnostic of the sampled polyline, not a measured
+// or certified racing radius. Rounded input points can exaggerate curvature.
+let minimumCentrelineRadius=Infinity, sharpStation=null;
+for(let i=0;i<points.length;i++) {
+  const a=points[(i+points.length-1)%points.length],b=points[i],c=points[(i+1)%points.length];
+  const ux=b[0]-a[0],uz=b[1]-a[1],vx=c[0]-b[0],vz=c[1]-b[1];
+  const u=Math.hypot(ux,uz),v=Math.hypot(vx,vz),chord=Math.hypot(c[0]-a[0],c[1]-a[1]);
+  const cross=Math.abs(ux*vz-uz*vx);
+  if(cross<1e-8)continue;
+  const radius=u*v*chord/(2*cross);
+  if(radius<minimumCentrelineRadius){minimumCentrelineRadius=radius;sharpStation=i;}
+}
 const standHits=new Map();
 const cs=Math.cos(site.ry),sn=Math.sin(site.ry), c=terrain.happyValleyPadHeight;
 let sampleCount=0, outside=0, pitch=0, stand=0, sameLevel=0, lessThan5m=0, minClearance=Infinity;
@@ -58,6 +70,7 @@ for(let i=0;i<points.length;i++) {
 }
 console.log(JSON.stringify({status:fit.status,centrelineMetres:fit.centrelineMetres,sampleCount,outside,pitch,stand,sameLevel,
   mappedStandsChecked:stands.length,standIds:Object.fromEntries(standHits),
+  minSampledCentrelineRadiusMetres:+minimumCentrelineRadius.toFixed(2),sharpestStation:sharpStation,
   samplesWithRoadUnder5m:lessThan5m,minSampledClearanceMetres:Number.isFinite(minClearance)?+minClearance.toFixed(3):null,
   roadIds:Object.fromEntries([...obstacles].map(([id,v])=>[id,+v.toFixed(3)])),
-  caveat:'Discrete model samples, nearest height at road centreline; not continuous clearance, actual tunnel geometry, real track or surveyed heights.'},null,2));
+  caveat:'Discrete model samples and three-point curvature; nearest height at road centreline; not continuous clearance, actual tunnel geometry, real track or surveyed heights.'},null,2));
