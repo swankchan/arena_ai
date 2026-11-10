@@ -24,6 +24,7 @@ import { TERRAIN_TUNNEL_OPENING_RECTS } from './road-elevation.js';
 import { subtractTunnelOpenings } from './tunnel-openings.js';
 import { buildHappyValleyTunnelWalls } from './happy-valley-tunnel-walls.js';
 import { HAPPY_VALLEY_STAND_FOOTPRINTS } from './happy-valley-stand-footprints.js';
+import { HAPPY_VALLEY_REMAINING_PITCH_FOOTPRINTS } from './happy-valley-remaining-pitch-footprints.js';
 import { localRingFromWorld, worldRingFromGeometry } from './authored-landmark-site.js';
 import { pointInFlatRing } from './landmark-site.js';
 
@@ -106,6 +107,20 @@ const PITCH_PROTECTION_RECTS=HAPPY_VALLEY_PITCHES.filter(p=>[563648704,563648705
   const ex=Math.abs(ux)*hx+Math.abs(uz)*hz,ez=Math.abs(uz)*hx+Math.abs(ux)*hz;
   return {cx,cz,ux,uz,hx,hz,minX:cx-ex,maxX:cx+ex,minZ:cz-ez,maxZ:cz+ez};
 });
+const REMAINING_PITCH_RINGS=HAPPY_VALLEY_REMAINING_PITCH_FOOTPRINTS.map(p=>
+  localRingFromWorld(HAPPY_VALLEY_SITE,worldRingFromGeometry(p.geometry)));
+function inRemainingPitch(point,margin=0) {
+  return REMAINING_PITCH_RINGS.some(ring=>{
+    if(pointInFlatRing(ring,point.x,point.z))return true;
+    for(let i=0;i+3<ring.length;i+=2) {
+      const x=ring[i],z=ring[i+1],dx=ring[i+2]-x,dz=ring[i+3]-z,l=dx*dx+dz*dz;
+      if(l<1e-8)continue;
+      const t=Math.max(0,Math.min(1,((point.x-x)*dx+(point.z-z)*dz)/l));
+      if(Math.hypot(point.x-x-t*dx,point.z-z-t*dz)<margin)return true;
+    }
+    return false;
+  });
+}
 function inProtectedPitch(point,margin=0) {
   const s=HAPPY_VALLEY_SITE,c=Math.cos(s.ry),sn=Math.sin(s.ry);
   const x=s.x+c*point.x+sn*point.z,z=s.z-sn*point.x+c*point.z;
@@ -196,7 +211,7 @@ function buildCourse(group, materials, stats, groundOffset) {
   for (let metre = 200; metre < HAPPY_VALLEY_TRACK.lapMetres; metre += 200) {
     const t = metre / HAPPY_VALLEY_TRACK.lapMetres;
     const p = trackPoint(t, -HAPPY_VALLEY_TRACK.width - 1.2);
-    if (inProtectedPitch(p,1) || trackRoadConflict(p,groundOffset,1.2)) continue;
+    if (inProtectedPitch(p,1) || inRemainingPitch(p,1) || trackRoadConflict(p,groundOffset,1.2)) continue;
     cylinder(distancePoles, [p.x, 0.9, p.z], 0.09, 1.8, 6);
   }
   cutRacecourseTunnelOpenings(meshStore(course, band, materials.grass, 'HappyValleyTrackSurface', false),

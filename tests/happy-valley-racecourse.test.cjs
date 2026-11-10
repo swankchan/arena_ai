@@ -437,3 +437,20 @@ test('track terrain diagnostic makes coarse-mesh overlap visible until resolved'
   assert.ok(report.maxTerrainAboveTrackMetres>1);
   assert.match(report.caveat,/not raycasts/);
 });
+
+test('distance markers do not intrude into mapped but unbuilt pitches', async () => {
+  const {HAPPY_VALLEY_REMAINING_PITCH_FOOTPRINTS}=await import('../js/cities/hongkong/happy-valley-remaining-pitch-footprints.js');
+  const {worldRingFromGeometry}=await import('../js/cities/hongkong/authored-landmark-site.js');
+  const sources=JSON.parse(fs.readFileSync('tools/data/hongkong/parks.json')).elements;
+  assert.equal(HAPPY_VALLEY_REMAINING_PITCH_FOOTPRINTS.length,6);
+  const rings=HAPPY_VALLEY_REMAINING_PITCH_FOOTPRINTS.map(p=>{
+    assert.deepEqual(p.geometry,sources.find(e=>e.id===p.id).geometry);
+    return {id:p.id,ring:worldRingFromGeometry(p.geometry)};
+  });
+  built.group.updateMatrixWorld(true);
+  const mesh=built.group.getObjectByName('HappyValleyDistancePoles'),pos=mesh.geometry.getAttribute('position'),v=new THREE.Vector3();
+  for(let i=0;i<pos.count;i++) {
+    v.fromBufferAttribute(pos,i).applyMatrix4(mesh.matrixWorld);
+    for(const pitch of rings)assert.ok(!ringUtils.pointInFlatRing(pitch.ring,v.x,v.z),`distance marker in pitch ${pitch.id}`);
+  }
+});
