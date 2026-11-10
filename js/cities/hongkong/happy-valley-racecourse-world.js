@@ -23,6 +23,9 @@ import { fullRoadSurfaceAt } from './full-meta.js';
 import { TERRAIN_TUNNEL_OPENING_RECTS } from './road-elevation.js';
 import { subtractTunnelOpenings } from './tunnel-openings.js';
 import { buildHappyValleyTunnelWalls } from './happy-valley-tunnel-walls.js';
+import { HAPPY_VALLEY_STAND_FOOTPRINTS } from './happy-valley-stand-footprints.js';
+import { localRingFromWorld, worldRingFromGeometry } from './authored-landmark-site.js';
+import { pointInFlatRing } from './landmark-site.js';
 
 const C = HAPPY_VALLEY_COLOURS;
 const DEG = Math.PI / 180;
@@ -359,7 +362,20 @@ function buildGrounds(group, materials, stats, groundOffset) {
   // The OSM boundary is not a surveyed fence. Preserve existing placeholder
   // openings and cut additional temporary gaps at same-level road ribbons.
   const ringCount = ring.length / 2;
-  let roadFenceGaps = 0, entranceFenceGaps = 0;
+  let roadFenceGaps = 0, entranceFenceGaps = 0, standFenceGaps = 0;
+  const standRings = HAPPY_VALLEY_STAND_FOOTPRINTS.map(p=>localRingFromWorld(site,worldRingFromGeometry(p.geometry)));
+  // With 2 m max segments, testing endpoints and midpoint with a 0.7 m
+  // buffer conservatively avoids crossing or touching mapped footprints.
+  const nearStand = p => standRings.some(ring=>{
+    if(pointInFlatRing(ring,p.x,p.z))return true;
+    for(let i=0;i+3<ring.length;i+=2) {
+      const ax=ring[i],az=ring[i+1],dx=ring[i+2]-ax,dz=ring[i+3]-az,l=dx*dx+dz*dz;
+      if(l<1e-8)continue;
+      const t=Math.max(0,Math.min(1,((p.x-ax)*dx+(p.z-az)*dz)/l));
+      if(Math.hypot(p.x-ax-t*dx,p.z-az-t*dz)<.7)return true;
+    }
+    return false;
+  });
   const doors = [[HAPPY_VALLEY_PAVILION,HAPPY_VALLEY_PAVILION_ENTRANCE],
     [HAPPY_VALLEY_MEMBERS_III,HAPPY_VALLEY_MEMBERS_III_ENTRANCE]].map(([building,entry]) => ({
       ...harbourCityEdgeFrame(building,entry.edge,'Provisional entrance','Estimated street-side opening',entry.centre),
@@ -382,6 +398,7 @@ function buildGrounds(group, materials, stats, groundOffset) {
       const point = t => ({x:ax+(bx-ax)*t,z:az+(bz-az)*t});
       const a=point(j/steps), b=point((j+1)/steps), mid=point((j+.5)/steps);
       if ([a,mid,b].some(nearDoor)) { entranceFenceGaps++; continue; }
+      if ([a,mid,b].some(nearStand)) { standFenceGaps++; continue; }
       if ([a,mid,b].some(p => trackRoadConflict(p,groundOffset,1.2))) { roadFenceGaps++; continue; }
       // A low masonry plinth and open metal infill make the site edge legible.
       // Appearance is an estimate: the OSM relation is not a surveyed wall.
@@ -397,6 +414,7 @@ function buildGrounds(group, materials, stats, groundOffset) {
   }
   stats.happyValleyRoadFenceGaps = roadFenceGaps;
   stats.happyValleyEntranceFenceGaps = entranceFenceGaps;
+  stats.happyValleyStandFenceGaps = standFenceGaps;
   merged(grounds, masts, materials.standShade, 'HappyValleyFloodlightMasts');
   merged(grounds, heads, materials.standShade, 'HappyValleyFloodlightHeads');
   merged(grounds, lampFrames, materials.glass, 'HappyValleyFloodlightLampFrames');

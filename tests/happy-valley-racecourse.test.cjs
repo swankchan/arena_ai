@@ -375,3 +375,23 @@ test('track turf renders vertex-colour mowing bands and distance poles clear sam
     assert.ok(!road || Math.abs(road.height-terrain.HONG_KONG_TERRAIN_META.happyValleyPadHeight)>=2.5);
   }
 });
+
+test('perimeter wall and fence clear all six mapped stand footprints', async () => {
+  const {HAPPY_VALLEY_STAND_FOOTPRINTS}=await import('../js/cities/hongkong/happy-valley-stand-footprints.js');
+  const {worldRingFromGeometry}=await import('../js/cities/hongkong/authored-landmark-site.js');
+  const source=JSON.parse(fs.readFileSync('tools/data/hongkong/landmarks.json')).elements;
+  assert.equal(HAPPY_VALLEY_STAND_FOOTPRINTS.length,6);
+  const rings=HAPPY_VALLEY_STAND_FOOTPRINTS.map(stand=>{
+    assert.deepEqual(stand.geometry,source.find(e=>e.id===stand.id).geometry);
+    return {id:stand.id,ring:worldRingFromGeometry(stand.geometry)};
+  });
+  assert.ok(built.stats.happyValleyStandFenceGaps>0);
+  built.group.updateMatrixWorld(true);
+  for(const name of ['HappyValleyPerimeterWallBase','HappyValleyPerimeterFence','HappyValleyPerimeterPickets']) {
+    const mesh=built.group.getObjectByName(name), vertices=mesh.geometry.getAttribute('position'),v=new THREE.Vector3();
+    for(let i=0;i<vertices.count;i++) {
+      v.fromBufferAttribute(vertices,i).applyMatrix4(mesh.matrixWorld);
+      for(const stand of rings) assert.ok(!ringUtils.pointInFlatRing(stand.ring,v.x,v.z),`${name} inside ${stand.id}`);
+    }
+  }
+});
