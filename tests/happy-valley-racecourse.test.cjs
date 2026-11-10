@@ -519,3 +519,43 @@ test('long northern site edges no longer disappear as arbitrary whole-edge gates
     assert.ok(hits>100,`missing perimeter geometry on edge ${index}`);
   }
 });
+
+test('illustrative 200 marker is measured on the model rail and clears mapped obstacles', async () => {
+  const {happyValleyMarkerStation}=await import('../js/cities/hongkong/happy-valley-racecourse-world.js');
+  const {HAPPY_VALLEY_WINNING_POST}=await import('../js/cities/hongkong/happy-valley-winning-post.js');
+  const {HAPPY_VALLEY_REMAINING_PITCH_FOOTPRINTS}=await import('../js/cities/hongkong/happy-valley-remaining-pitch-footprints.js');
+  const {HAPPY_VALLEY_STAND_FOOTPRINTS}=await import('../js/cities/hongkong/happy-valley-stand-footprints.js');
+  const {worldRingFromGeometry}=await import('../js/cities/hongkong/authored-landmark-site.js');
+  const {roadRibbonHeightAtSegment}=await import('../js/cities/hongkong/road-elevation.js');
+  const station=happyValleyMarkerStation(200),finish=HAPPY_VALLEY_WINNING_POST.station,steps=2000;
+  let distance=0,prev=arch.happyValleyTrackPoint(station,-arch.HAPPY_VALLEY_TRACK.width);
+  for(let i=1;i<=steps;i++) {
+    const p=arch.happyValleyTrackPoint(station+(finish-station)*i/steps,-arch.HAPPY_VALLEY_TRACK.width);
+    distance+=Math.hypot(p.x-prev.x,p.z-prev.z);prev=p;
+  }
+  assert.ok(Math.abs(distance-200)<.02,`model distance: ${distance}`);
+  assert.equal(built.stats.happyValley200Marker,true);
+  built.group.updateMatrixWorld(true);
+  const rings=[...HAPPY_VALLEY_REMAINING_PITCH_FOOTPRINTS,...HAPPY_VALLEY_STAND_FOOTPRINTS].map(p=>worldRingFromGeometry(p.geometry));
+  const {HAPPY_VALLEY_PITCHES}=await import('../js/cities/hongkong/happy-valley-pitches-world.js');
+  rings.push(...HAPPY_VALLEY_PITCHES.map(p=>worldRingFromGeometry(p.geometry)));
+  let tested=0;
+  for(const name of ['HappyValley200MarkerBoard','HappyValley200MarkerSupport','HappyValley200MarkerNumerals']) {
+    const mesh=built.group.getObjectByName(name);assert.ok(mesh,name);
+    const vertices=mesh.geometry.getAttribute('position'),v=new THREE.Vector3();
+    for(let i=0;i<vertices.count;i++) {
+      v.fromBufferAttribute(vertices,i).applyMatrix4(mesh.matrixWorld);tested++;
+      assert.ok(ringUtils.pointInFlatRing(site().ring,v.x,v.z));
+      for(const ring of rings) assert.ok(!ringUtils.pointInFlatRing(ring,v.x,v.z),`${name} inside mapped footprint`);
+      for(const way of fullMeta.fullRoadWaysNear(v.x,v.z,10))for(let k=2;k<way.flat.length;k+=2) {
+        const ax=way.flat[k-2],az=way.flat[k-1],dx=way.flat[k]-ax,dz=way.flat[k+1]-az,l=dx*dx+dz*dz;
+        if(l<.0025)continue;
+        const t=Math.max(0,Math.min(1,((v.x-ax)*dx+(v.z-az)*dz)/l)),x=ax+t*dx,z=az+t*dz;
+        if(Math.hypot(v.x-x,v.z-z)>way.width/2)continue;
+        const h=roadRibbonHeightAtSegment(way.id,k/2-1,t,x,z);
+        assert.ok(Math.abs(h-terrain.HONG_KONG_TERRAIN_META.happyValleyPadHeight)>=2.5,`marker intersects road ${way.id}`);
+      }
+    }
+  }
+  assert.ok(tested>100);
+});

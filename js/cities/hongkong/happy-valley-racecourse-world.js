@@ -6,7 +6,7 @@ import * as THREE from 'three/webgpu';
 import { attribute, color } from 'three/tsl';
 import { cityUniforms } from '../../tsl-materials.js';
 import {
-  happyValleyTerrainHeightAt, happyValleyTrackPoint,
+  happyValleyTerrainHeightAt, happyValleyTrackPoint, happyValleyTrackFrame,
   HAPPY_VALLEY_SITE, HAPPY_VALLEY_TRACK, HAPPY_VALLEY_MAIN_STAND, HAPPY_VALLEY_COLOURS,
   HAPPY_VALLEY_CAPACITY, HAPPY_VALLEY_OPENED, HAPPY_VALLEY_PARADE_LOCAL_RING,
 } from './happy-valley-racecourse-architecture.js';
@@ -23,7 +23,7 @@ import { fullRoadSurfaceAt } from './full-meta.js';
 import { TERRAIN_TUNNEL_OPENING_RECTS } from './road-elevation.js';
 import { subtractTunnelOpenings } from './tunnel-openings.js';
 import { buildHappyValleyTunnelWalls } from './happy-valley-tunnel-walls.js';
-import { buildHappyValleyWinningPost } from './happy-valley-winning-post.js';
+import { buildHappyValleyWinningPost, HAPPY_VALLEY_WINNING_POST } from './happy-valley-winning-post.js';
 import { HAPPY_VALLEY_STAND_FOOTPRINTS } from './happy-valley-stand-footprints.js';
 import { HAPPY_VALLEY_REMAINING_PITCH_FOOTPRINTS } from './happy-valley-remaining-pitch-footprints.js';
 import { localRingFromWorld, worldRingFromGeometry } from './authored-landmark-site.js';
@@ -57,6 +57,8 @@ function makeMaterials() {
   decal.colorNode = attribute('color').rgb;
   return {
     seat, decal, floodlight, screenText, screenRed, screenVideo,
+    distanceBoard: new THREE.MeshStandardMaterial({color:0x172521,roughness:.8}),
+    distanceNumeral: new THREE.MeshStandardMaterial({color:0xff8527,roughness:.65,emissive:0x442008}),
     grass: new THREE.MeshStandardNodeMaterial({ vertexColors: true, roughness: 0.95, side: THREE.DoubleSide }),
     grassStripe: new THREE.MeshStandardMaterial({ color: new THREE.Color(...C.grassStripe), roughness: 0.95 }),
     infield: new THREE.MeshStandardMaterial({ color: new THREE.Color(...C.infield), roughness: 0.96 }),
@@ -173,6 +175,53 @@ function trackRoadConflict(point, groundOffset, margin = 1.3) {
   return inTunnelOpening(point,margin) || (!!hit && Math.abs(hit.height - groundOffset) < 2.5);
 }
 
+// Approximate distance measured along the *modelled* inside rail backwards
+// from the equally provisional winning post, not a surveyed course marker.
+export function happyValleyMarkerStation(metres) {
+  const count=7200, step=1/count, offset=-HAPPY_VALLEY_TRACK.width;
+  let previous=trackPoint(HAPPY_VALLEY_WINNING_POST.station,offset), travelled=0;
+  for(let i=1;i<=count;i++) {
+    const point=trackPoint(HAPPY_VALLEY_WINNING_POST.station-i*step,offset);
+    const length=Math.hypot(point.x-previous.x,point.z-previous.z);
+    if(travelled+length>=metres) return HAPPY_VALLEY_WINNING_POST.station-(i-1+(metres-travelled)/length)*step;
+    travelled+=length;previous=point;
+  }
+  return null;
+}
+
+function buildDistanceBoard(course,materials,groundOffset) {
+  const station=happyValleyMarkerStation(200);
+  if(station===null)return false;
+  const frame=happyValleyTrackFrame(station,-HAPPY_VALLEY_TRACK.width-1.5);
+  // Clearance is an estimate: the board is omitted rather than placed into a
+  // mapped pitch, road or tunnel. Future track realignment must relocate it.
+  const probes=[[0,0],[-.5,0],[.5,0],[0,-.4],[0,.4]].map(([x,z])=>({
+    x:frame.x+x*frame.tanX+z*frame.normalX,z:frame.z+x*frame.tanZ+z*frame.normalZ,
+  }));
+  const standRings=HAPPY_VALLEY_STAND_FOOTPRINTS.map(p=>localRingFromWorld(HAPPY_VALLEY_SITE,worldRingFromGeometry(p.geometry)));
+  if(probes.some(p=>!pointInFlatRing(HAPPY_VALLEY_SITE.localRing,p.x,p.z)||
+    standRings.some(ring=>pointInFlatRing(ring,p.x,p.z))||inProtectedPitch(p,1)||
+    inRemainingPitch(p,1)||trackRoadConflict(p,groundOffset,1.4))) return false;
+  const rotation=Math.atan2(-frame.tanZ,frame.tanX),cs=Math.cos(rotation),sn=Math.sin(rotation);
+  const boards=[], supports=[], numerals=[];
+  const place=(x,y,z)=>[frame.x+cs*x+sn*z,y,frame.z-sn*x+cs*z];
+  box(boards,place(0,2.13,0),[.54,1.58,.13],rotation);
+  cylinder(supports,place(0,.69,0),.06,1.38,6);
+  // Simple geometric digits on both faces, inspired by the orange vertical
+  // 200 board in trackside photographs, without using the photograph itself.
+  const digits=[[1,1,0,1,1,0,1],[1,1,1,0,1,1,1],[1,1,1,0,1,1,1]];
+  const pieces=[[-.0,.17,.26,.045],[.13,.085,.045,.17],[.13,-.085,.045,.17],
+    [0,0,.26,.045],[-.13,-.085,.045,.17],[-.13,.085,.045,.17],[0,-.17,.26,.045]];
+  for(const side of [-1,1])for(let digit=0;digit<digits.length;digit++)for(let k=0;k<7;k++) {
+    if(!digits[digit][k])continue;
+    const [x,y,w,h]=pieces[k];box(numerals,place(x*side,2.62-digit*.48+y,side*.071),[w,h,.012],rotation);
+  }
+  merged(course,boards,materials.distanceBoard,'HappyValley200MarkerBoard');
+  merged(course,supports,materials.rail,'HappyValley200MarkerSupport');
+  merged(course,numerals,materials.distanceNumeral,'HappyValley200MarkerNumerals',false);
+  return true;
+}
+
 function buildCourse(group, materials, stats, groundOffset) {
   const course = new THREE.Group(); course.name = 'HappyValleyCourse'; group.add(course);
   const segments = 360;
@@ -218,7 +267,7 @@ function buildCourse(group, materials, stats, groundOffset) {
     quad(infieldStore, [infieldApex.x, -0.02, infieldApex.z], [c0.x, -0.02, c0.z], [c1.x, -0.02, c1.z],
       [infieldApex.x, -0.02, infieldApex.z], C.infield);
   }
-  // Distance poles every 200 m along the inner rail, painted white with black bands.
+  // Unnumbered provisional poles at regular model stations, not surveyed distance signs.
   for (let metre = 200; metre < HAPPY_VALLEY_TRACK.lapMetres; metre += 200) {
     const t = metre / HAPPY_VALLEY_TRACK.lapMetres;
     const p = trackPoint(t, -HAPPY_VALLEY_TRACK.width - 1.2);
@@ -231,6 +280,7 @@ function buildCourse(group, materials, stats, groundOffset) {
   merged(course, rails, materials.rail, 'HappyValleyRunningRails');
   merged(course, posts, materials.rail, 'HappyValleyRunningRailPosts');
   merged(course, distancePoles, materials.rail, 'HappyValleyDistancePoles');
+  stats.happyValley200Marker = buildDistanceBoard(course,materials,groundOffset);
   stats.happyValleyTrackSegments = segments;
   stats.happyValleyRoadRailGaps = roadRailGaps;
   stats.happyValleyPitchRailGaps = pitchRailGaps;

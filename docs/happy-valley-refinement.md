@@ -207,3 +207,9 @@ The eight new 1.6 m square collider bases are sampled against the venue ring, ma
 ### 補回原先整段略過的北面外圍（暫定）
 
 原本以固定節點編號預留「門口」時，把兩段約 34 m 及 188 m 的 OSM 場界整段跳過，即使大部分位置沒有已知出入口。現將這兩段交回與其他外圍相同的 2 m 分段邏輯，按道路、六座已映射看台及兩個估算入口留空，補回其餘低基座和金屬欄；另兩段短的舊預留缺口仍保留。所有外圍牆仍是 **沿場界的估算，不是已測量的真實牆或門位**，亦沒有獨立 collider。自動避讓與逐頂點道路測試不能證明所有行人通道及車輛掃掠安全，完整遊戲與現場外觀仍待核實。
+
+### 跑道 200 米示意牌
+
+[場邊照片](https://dreamstime.com/photos-images/valley-horse-race-track-hong-kong.html)可見近內欄有深色底、橙色直排「200」標誌；現按照片特徵加入雙面示意牌，數字用幾何圖形製作，非直接使用照片。相對位置由目前估算終點沿**模型內欄**逆向量取 200 m，賽馬方向依 [Happy Valley 賽道資料](https://www.amwager.com/amwager-race-track-happy-valley-racecourse/)為順時針；因為舊跑道及終點都未測量，**不代表真實 200 米牌座標或真實賽道距離**。原有未標數字的白柱仍只是暫定裝飾，並非已核實的距離牌。
+
+標誌選址以幾個點避讓球場、場界、看台、隧道和同高道路；測試逐頂點檢查已映射球場／看台和附近道路各層，並以離散內欄長度核對 200 m。這不保證連續淨空或實際位置。局部 WebGL 日夜檢視見 `tests/visual/happy-valley-distance-marker.html`（加 `?night`），未核完整世界／WebGPU，跑道重新定位時要重做標誌。
