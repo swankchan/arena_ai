@@ -63,7 +63,7 @@ export function buildHappyValleyPitches(parent) {
   const artificial = new THREE.MeshStandardMaterial({ color: 0x31673c, roughness: 0.94, side: THREE.DoubleSide, polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -2 });
   const natural = new THREE.MeshStandardMaterial({ color: 0x486f38, roughness: 0.98, side: THREE.DoubleSide, polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -2 });
   const white = new THREE.MeshStandardMaterial({ color: 0xd3d9c7, roughness: 0.88, polygonOffset: true, polygonOffsetFactor: -5, polygonOffsetUnits: -5 });
-  const lineParts = [], goalParts = [], netPositions = [];
+  const lineParts = [], cornerParts = [], centreParts = [], goalParts = [], netPositions = [];
   for (const pitch of HAPPY_VALLEY_PITCHES) {
     const ring = pitch.localRing;
     const surface = new THREE.Mesh(roofGeometry(ring, 0.17), pitch.surface === 'grass' ? natural : artificial);
@@ -75,6 +75,17 @@ export function buildHappyValleyPitches(parent) {
     const u0 = 0.055, u1 = 0.945, v0 = 0.055, v1 = 0.945;
     line(u0,v0,u1,v0); line(u1,v0,u1,v1); line(u1,v1,u0,v1); line(u0,v1,u0,v0);
     line(0.5,v0,0.5,v1);
+    // IFAB's 1 m corner quarter-circles and centre mark; the placement of
+    // the full playing rectangle itself is still inferred within each OSM pitch.
+    const mark=(parts,u1,v1,u2,v2)=>beam(parts,point(u1,v1),point(u2,v2),.055,.1);
+    mark(centreParts,.5,.5-.06/width,.5,.5+.06/width);
+    for(const [end,du] of [[u0,1],[u1,-1]]) for(const [side,dv] of [[v0,1],[v1,-1]]) {
+      for(let i=0;i<8;i++) {
+        const a=i*Math.PI/16,b=(i+1)*Math.PI/16;
+        mark(cornerParts,end+du*Math.cos(a)/length,side+dv*Math.sin(a)/width,
+          end+du*Math.cos(b)/length,side+dv*Math.sin(b)/width);
+      }
+    }
     const centreRadius = Math.min(9.15, length*0.1, width*0.16);
     for (let i=0;i<32;i++) {
       const a0=2*Math.PI*i/32, a1=2*Math.PI*(i+1)/32;
@@ -135,6 +146,8 @@ export function buildHappyValleyPitches(parent) {
   }
   buildCombinedHockeyMarkings(group);
   merged(group, lineParts, white, 'HappyValleyPitchMarkings');
+  merged(group, cornerParts, white, 'HappyValleyPitchCornerArcs');
+  merged(group, centreParts, white, 'HappyValleyPitchCentreMarks');
   merged(group, goalParts, white, 'HappyValleyPitchGoals');
   const netGeometry=new THREE.BufferGeometry();
   netGeometry.setAttribute('position',new THREE.Float32BufferAttribute(netPositions,3));

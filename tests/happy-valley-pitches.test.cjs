@@ -47,7 +47,7 @@ test('selected pitches clear sampled provisional racing band and roads', () => {
 });
 
 test('paint and goal mesh vertices stay inside one of the mapped pitch outlines', () => {
-  for (const name of ['HappyValleyPitchMarkings', 'HappyValleyPitchGoals', 'HappyValleyPitchGoalNets']) {
+  for (const name of ['HappyValleyPitchMarkings', 'HappyValleyPitchCornerArcs', 'HappyValleyPitchCentreMarks', 'HappyValleyPitchGoals', 'HappyValleyPitchGoalNets']) {
     const vertices = built.group.getObjectByName(name).geometry.getAttribute('position');
     for (let i = 0; i < vertices.count; i++) {
       const p = worldPoint({x: vertices.getX(i), z: vertices.getZ(i)});
@@ -108,4 +108,25 @@ test('mapped pitches 2 and 3 clear the rendered provisional track and running ra
     }
   }
   assert.ok(checked>1000);
+});
+
+
+test('inferred football layouts include four corner arcs and a centre mark per pitch', () => {
+  const arcs=built.group.getObjectByName('HappyValleyPitchCornerArcs');
+  const marks=built.group.getObjectByName('HappyValleyPitchCentreMarks');
+  assert.ok(arcs && marks);
+  // beam() merges one box per small arc segment, eight segments per arc.
+  assert.equal(arcs.geometry.getAttribute('position').count,pitches.length*4*8*24);
+  assert.equal(marks.geometry.getAttribute('position').count,pitches.length*24);
+  const p=arcs.geometry.getAttribute('position');
+  for(let pitch=0;pitch<pitches.length;pitch++) {
+    const f=frame(pitches[pitch]);
+    for(let corner=0;corner<4;corner++) {
+      const end=corner<2?.055:.945, side=corner%2?.945:.055;
+      const cx=f.a.x+(f.b.x-f.a.x)*end+(f.c.x-f.a.x)*side;
+      const cz=f.a.z+(f.b.z-f.a.z)*end+(f.c.z-f.a.z)*side;
+      for(let v=(pitch*4+corner)*8*24;v<(pitch*4+corner+1)*8*24;v++)
+        assert.ok(Math.abs(Math.hypot(p.getX(v)-cx,p.getZ(v)-cz)-1)<.09);
+    }
+  }
 });
