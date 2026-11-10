@@ -100,7 +100,7 @@ test('HKCEC photo-directed entrances have correct world frames and open-door col
 
 test('HKCEC world contains authored bird roofs, glass courses, roof garden, entrances and day-night materials', () => {
   const world = fs.readFileSync(path.join(root, 'js/cities/hongkong/hkcec-world.js'), 'utf8');
-  assert.match(world, /ThreeLayerFlyingBirdRoof/); assert.match(world, /mainSpan = Math\.min\(80/); assert.match(world, /\['main', \[\.61/); assert.match(world, /\['left', \[\.72/); assert.match(world, /\['right', \[\.72/);
+  assert.match(world, /ThreeLayerFlyingBirdRoof/); assert.match(world, /centre-40/); assert.match(world, /centre\+40/); assert.match(world, /\['main', \[\.61/); assert.match(world, /\['left', \[\.72/); assert.match(world, /\['right', \[\.72/);
   assert.match(world, /NewWingCurvedHarbourGlassWall/); assert.match(world, /ApartmentsBlueGreenGlass35Courses/); assert.match(world, /HKCEC_APARTMENT_VISUAL_COURSES/);
   assert.match(world, /AtriumNineExposedWhiteArchedTrusses/); assert.match(world, /AtriumRoofGardenTreeCanopies/); assert.match(world, /AtriumRoofGardenBenches/);
   assert.match(world, /ConventionPlazaApartmentsRedEntranceCarpet/); assert.match(world, /會景閣  CONVENTION PLAZA APARTMENTS/); assert.match(world, /香港會議展覽中心  HKCEC/);

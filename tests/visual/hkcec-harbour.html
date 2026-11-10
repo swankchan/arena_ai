@@ -1,0 +1,6 @@
+<!doctype html><meta charset="utf-8"><style>body{margin:0}</style>
+<script type="importmap">{"imports":{"three":"../../vendor/three/build/three.webgpu.js","three/webgpu":"../../vendor/three/build/three.webgpu.js","three/tsl":"../../vendor/three/build/three.tsl.js","three/addons/":"../../vendor/three/examples/jsm/"}}</script>
+<script type="module">
+import * as THREE from 'three/webgpu';import {buildHkcec} from '../../js/cities/hongkong/hkcec-world.js';import {HKCEC_NEW_WING_SITE as s} from '../../js/cities/hongkong/hkcec-architecture.js';import{cityUniforms}from'../../js/tsl-materials.js';
+const night=new URLSearchParams(location.search).has('night'),scene=new THREE.Scene();cityUniforms.uInteriorGlow.value=night?1.4:0;scene.background=new THREE.Color(night?0x18232c:0xb9cdd5);buildHkcec(scene,{groundOffset:5});scene.add(new THREE.HemisphereLight(0xffffff,0x566a58,night?.22:1));let sun=new THREE.DirectionalLight(0xffffff,night?.1:2);sun.position.set(s.x-100,180,s.z-350);scene.add(sun);const camera=new THREE.PerspectiveCamera(42,1.6,.1,2000);camera.position.set(s.x,80,s.z-620);camera.lookAt(s.x,30,s.z);let renderer=new THREE.WebGPURenderer({forceWebGL:true,antialias:true});await renderer.init();renderer.setSize(1280,800);document.body.appendChild(renderer.domElement);renderer.render(scene,camera);window.ready=true;
+</script>

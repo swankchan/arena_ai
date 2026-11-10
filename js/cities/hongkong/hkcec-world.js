@@ -212,41 +212,47 @@ function createOldWingRefinement(materials) {
   return { group, slabCount, railSegments };
 }
 
-function newWingSection(z) {
+// Local X runs roughly north–south along the new wing; local Z runs across
+// the harbour elevation. The vault must span Z, so its arch faces the harbour.
+function newWingSection(x) {
   const ring = HKCEC_NEW_WING_SITE.localRing, bounds = HKCEC_NEW_WING_SITE.localBounds, intersections = [];
-  z = Math.max(bounds.minZ + 1e-6, Math.min(bounds.maxZ - 1e-6, z));
+  x = Math.max(bounds.minX + 1e-6, Math.min(bounds.maxX - 1e-6, x));
   for (let i = 0; i < ring.length - 2; i += 2) {
-    const az = ring[i + 1], bz = ring[i + 3]; if ((az > z) === (bz > z)) continue;
-    const t = (z - az) / (bz - az); intersections.push(lerp(ring[i], ring[i + 2], t));
+    const ax = ring[i], bx = ring[i + 2]; if ((ax > x) === (bx > x)) continue;
+    const t = (x - ax) / (bx - ax); intersections.push(lerp(ring[i + 1], ring[i + 3], t));
   }
   if (intersections.length < 2) return null; intersections.sort((a, b) => a - b); return [intersections[0], intersections.at(-1)];
 }
-function newWingShellRange(z, shell) {
-  const [left, right] = newWingSection(z), width = Math.max(.001, right - left), mainSpan = Math.min(80, width * .82);
-  const mainStart = .5 - mainSpan / width / 2, mainEnd = .5 + mainSpan / width / 2, overlap = Math.min(10, width * .08) / width;
+function newWingShellRange(x, shell) {
+  const section = newWingSection(x); if (!section) return [0,1];
+  const [left, right] = section, width = Math.max(.001, right - left);
+  const b=HKCEC_NEW_WING_SITE.localBounds, centre=(b.minZ+b.maxZ)*.5;
+  const clamp=t=>Math.max(0,Math.min(1,t));
+  const mainStart=clamp((centre-40-left)/width), mainEnd=clamp((centre+40-left)/width);
+  const overlap=8/width;
   if (shell === 'main') return [mainStart, mainEnd];
-  if (shell === 'left') return [0, Math.min(1, mainStart + overlap)];
-  return [Math.max(0, mainEnd - overlap), 1];
+  if (shell === 'left') return [0, clamp(mainStart + overlap)];
+  return [clamp(mainEnd - overlap), 1];
 }
-function newWingShellPoint(z, t, shell) {
-  const section = newWingSection(z); if (!section) return [0, 0, 0]; const [left, right] = section, x = lerp(left, right, t);
-  // The signature roof is a flying wing: the three shells sweep up towards BOTH ends of the long axis and dip in the
-  // middle, so the harbour silhouette lifts at the corners instead of reading as a plain dome.
-  const b = HKCEC_NEW_WING_SITE.localBounds, along = (z - b.minZ) / Math.max(.001, b.maxZ - b.minZ);
+function newWingShellPoint(x, t, shell) {
+  const section = newWingSection(x); if (!section) return [x, 0, 0]; const [left, right] = section, z = lerp(left, right, t);
+  const b = HKCEC_NEW_WING_SITE.localBounds, along = (x - b.minX) / Math.max(.001, b.maxX - b.minX);
   const longitudinal = .90 + .10 * Math.cos(2 * Math.PI * along);
-  const [start, end] = newWingShellRange(z, shell), u = (t - start) / Math.max(.001, end - start);
-  const y = shell === 'main' ? 30 + 24 * longitudinal * Math.pow(Math.max(0, Math.sin(Math.PI * u)), .72)
-    : 27 + 8 * Math.pow(Math.max(0, Math.sin(Math.PI * u)), .8);
+  const centre=(b.minZ+b.maxZ)*.5;
+  const u = shell==='main' ? (z-(centre-40))/80 : shell==='left'
+    ? (z-b.minZ)/Math.max(.001,centre-40-b.minZ+8)
+    : (z-(centre+40-8))/Math.max(.001,b.maxZ-centre-40+8);
+  const y = shell === 'main' ? 30 + 24 * longitudinal * Math.pow(Math.max(0, Math.sin(Math.PI * Math.max(0,Math.min(1,u)))), .72)
+    : 27 + 8 * Math.pow(Math.max(0, Math.sin(Math.PI * Math.max(0,Math.min(1,u)))), .8);
   return [x, Math.min(HKCEC_NEW_WING_HEIGHT - .2, y), z];
 }
 function newWingRoofHeightAt(x, z) {
-  const section = newWingSection(z); if (!section) return 27; const t = (x - section[0]) / Math.max(.001, section[1] - section[0]); let height = 27;
-  for (const shell of ['left', 'main', 'right']) { const [start, end] = newWingShellRange(z, shell); if (t >= start && t <= end) height = Math.max(height, newWingShellPoint(z, t, shell)[1]); }
+  const section = newWingSection(x); if (!section) return 27; const t = (z - section[0]) / Math.max(.001, section[1] - section[0]); let height = 27;
+  for (const shell of ['left', 'main', 'right']) { const [start, end] = newWingShellRange(x, shell); if (t >= start && t <= end) height = Math.max(height, newWingShellPoint(x, t, shell)[1]); }
   return height;
 }
 // The aluminium roof does not stop at the glass line: it cantilevers out over the harbour curtain wall as a
 // projecting eave, which is the sharpest silhouette cue on the seaward elevation.
-const HKCEC_NEW_WING_EAVE_SPRING = 27;
 function createNewWingEave(materials) {
   const group = new THREE.Group(); group.name = 'HKCECNewWingAluminiumCantileveredHarbourEave';
   const store_ = store(), lip = [], soffitStore = store();
@@ -258,22 +264,24 @@ function createNewWingEave(materials) {
     for (let step = 0; step < steps; step++) {
       const t0 = step / steps, t1 = (step + 1) / steps;
       const shade = tint([.80, .82, .79], (hash(edge, step, 7) - .5) * .05);
+      const p0 = pointOnRing(ring, edge, t0, 0), p1 = pointOnRing(ring, edge, t1, 0);
+      const h0 = newWingRoofHeightAt(p0[0], p0[2]), h1 = newWingRoofHeightAt(p1[0], p1[2]);
       for (let k = 0; k < profile.length - 1; k++) {
         const [o0, y0] = profile[k], [o1, y1] = profile[k + 1];
-        quad(store_, pointOnRing(ring, edge, t0, HKCEC_NEW_WING_EAVE_SPRING + y0, o0),
-          pointOnRing(ring, edge, t1, HKCEC_NEW_WING_EAVE_SPRING + y0, o0),
-          pointOnRing(ring, edge, t1, HKCEC_NEW_WING_EAVE_SPRING + y1, o1),
-          pointOnRing(ring, edge, t0, HKCEC_NEW_WING_EAVE_SPRING + y1, o1), shade);
+        quad(store_, pointOnRing(ring, edge, t0, h0 + y0, o0),
+          pointOnRing(ring, edge, t1, h1 + y0, o0),
+          pointOnRing(ring, edge, t1, h1 + y1, o1),
+          pointOnRing(ring, edge, t0, h0 + y1, o1), shade);
         // Underside of the cantilever, in the darker soffit tone so the overhang reads in silhouette.
-        quad(soffitStore, pointOnRing(ring, edge, t0, HKCEC_NEW_WING_EAVE_SPRING - 1.1, 0),
-          pointOnRing(ring, edge, t1, HKCEC_NEW_WING_EAVE_SPRING - 1.1, 0),
-          pointOnRing(ring, edge, t1, HKCEC_NEW_WING_EAVE_SPRING + y1 - .05, o1),
-          pointOnRing(ring, edge, t0, HKCEC_NEW_WING_EAVE_SPRING + y1 - .05, o1), tint([.46, .48, .47], (hash(edge, step, 3) - .5) * .04));
+        quad(soffitStore, pointOnRing(ring, edge, t0, h0 - 1.1, 0),
+          pointOnRing(ring, edge, t1, h1 - 1.1, 0),
+          pointOnRing(ring, edge, t1, h1 + y1 - .05, o1),
+          pointOnRing(ring, edge, t0, h0 + y1 - .05, o1), tint([.46, .48, .47], (hash(edge, step, 3) - .5) * .04));
         panels++;
       }
       const [o, y] = profile.at(-1);
-      beam(lip, pointOnRing(ring, edge, t0, HKCEC_NEW_WING_EAVE_SPRING + y - .16, o),
-        pointOnRing(ring, edge, t1, HKCEC_NEW_WING_EAVE_SPRING + y - .16, o), .30, .34);
+      beam(lip, pointOnRing(ring, edge, t0, h0 + y - .16, o),
+        pointOnRing(ring, edge, t1, h1 + y - .16, o), .30, .34);
     }
   }
   meshStore(group, store_, materials.white, 'NewWingHK-B0088CantileveredEaveUpperSurface');
@@ -285,8 +293,8 @@ function createNewWingEave(materials) {
 function createNewWingRoof(materials) {
   const group = new THREE.Group(); group.name = 'HKCECNewWingThreeLayerFlyingBirdRoof'; const roofStore = store(), seams = [], fascia = [];
   const b = HKCEC_NEW_WING_SITE.localBounds, zs = [];
-  for (let z = b.minZ; z < b.maxZ; z += 3) zs.push(z); for (let i = 1; i < HKCEC_NEW_WING_SITE.localRing.length; i += 2) zs.push(HKCEC_NEW_WING_SITE.localRing[i]); zs.push(b.maxZ);
-  const rows = [...new Set(zs.map((z) => Math.max(b.minZ, Math.min(b.maxZ, z))).sort((a, b) => a - b))];
+  for (let x = b.minX; x < b.maxX; x += 3) zs.push(x); for (let i = 0; i < HKCEC_NEW_WING_SITE.localRing.length; i += 2) zs.push(HKCEC_NEW_WING_SITE.localRing[i]); zs.push(b.maxX);
+  const rows = [...new Set(zs.map((z) => Math.max(b.minX, Math.min(b.maxX, z))).sort((a, b) => a - b))];
   for (const [shell, colour] of [['main', [.61, .65, .65]], ['left', [.72, .75, .73]], ['right', [.72, .75, .73]]]) {
     const segments = shell === 'main' ? 20 : 6;
     for (let row = 0; row < rows.length - 1; row++) for (let j = 0; j < segments; j++) {
@@ -358,7 +366,7 @@ function createNewWingRefinement(materials) {
   }
   const bounds = HKCEC_NEW_WING_SITE.localBounds, stations = 9, segments = 20;
   for (let station = 1; station <= stations; station++) {
-    const z = bounds.minZ + (bounds.maxZ - bounds.minZ) * station / (stations + 1);
+    const z = bounds.minX + (bounds.maxX - bounds.minX) * station / (stations + 1);
     const range = newWingShellRange(z, 'main');
     for (let j = 0; j < segments; j++) {
       const t0 = lerp(range[0], range[1], j / segments), t1 = lerp(range[0], range[1], (j + 1) / segments);

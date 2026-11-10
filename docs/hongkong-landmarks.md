@@ -1222,3 +1222,7 @@
 - 在既有四座與高空會所上加入兩面尺寸不同的弧形突出玻璃窗組及分格；尺寸和位置是示意，不是測繪。住宅及會所玻璃改為雙面、真正 NodeMaterial 和夜間暖光；亮窗分布為模擬，非真實住戶狀況。
 - 既有來源地段、塔樓及地形未移動；道路抽樣最低淨空仍為 6.756 m，DTM 地台為 6.196 m，均非工程標高。原道路／街燈／開口測試仍通過；檢查屬離散抽樣，不代表所有道路或新增弧窗與其他立面之間沒有重疊。
 - 未能進行瀏覽器 WebGPU 目視、夜景亮度或道路駕駛驗證。建築現有基座主要是路面淨空導向的近似模型，不代表已精確重建九龍站及 Elements 裙樓。
+
+### HKCEC New Wing harbour elevation axis correction
+
+The previous isolated harbour view showed the roof as a low, flat-sided drum: its procedural cross-section ran along the local north–south axis, so the intended central arch faced the side rather than Victoria Harbour. The new wing's OSM local +X points roughly harbourward. The roof cross-section now spans local Z and retains an approximately 80 m central span as it meets the curved footprint, instead of shrinking the arch with each horizontal section. The fascia and eave follow that changing roof height rather than cutting across the glazing at a fixed elevation. A saved attributed 2008 harbour photo is listed in `references/hongkong/hkcec/README.md`. A local day/night WebGL view now shows the three arched bays and upper glazing from the harbour; it is not a surveyed roof, full-world WebGPU view, or certification of seam continuity. Central glass and roof edges, exact wing profiles, surroundings, night lighting and real road interfaces still need refinement and in-game validation.

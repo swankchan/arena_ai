@@ -70,3 +70,17 @@ test('HK-B0043 Convention Plaza Apartments reads as projecting silver ribbon cou
   assert.ok(Number.isFinite(box.min.x) && Number.isFinite(box.max.y));
   assert.ok(box.max.y <= h.HKCEC_APARTMENT_HEIGHT + 6, `apartment crown ${box.max.y}`);
 });
+
+test('New Wing tall central arch faces the harbour rather than running across it', () => {
+  const mesh=world.group.getObjectByName('NewWingCurvedHarbourGlassWall');
+  const p=mesh.geometry.getAttribute('position'), b=h.HKCEC_NEW_WING_SITE.localBounds;
+  let tallHarbour=0, nearCentreTop=-Infinity;
+  for(let i=0;i<p.count;i++) {
+    // Local +X points roughly toward the harbour; local Z spans the facade.
+    const x=p.getX(i),y=p.getY(i),z=p.getZ(i);
+    if(x>b.maxX-25 && y>40) tallHarbour++;
+    if(x>b.maxX-25 && Math.abs(z)<12) nearCentreTop=Math.max(nearCentreTop,y);
+  }
+  assert.ok(tallHarbour>15,`tall harbour glass vertices ${tallHarbour}`);
+  assert.ok(nearCentreTop>48,`harbour centre glass height ${nearCentreTop}`);
+});
