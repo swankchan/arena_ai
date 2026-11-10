@@ -16,6 +16,7 @@ import {
 import { harbourCityLocalCollider } from './harbour-city-architecture.js';
 import { buildHappyValleyPitches } from './happy-valley-pitches-world.js';
 import { buildHappyValleyPavilion } from './happy-valley-pavilion-world.js';
+import { fullRoadSurfaceAt } from './full-meta.js';
 
 const C = HAPPY_VALLEY_COLOURS;
 const DEG = Math.PI / 180;
@@ -33,7 +34,7 @@ function makeMaterials() {
   decal.colorNode = attribute('color').rgb;
   return {
     seat, decal,
-    grass: new THREE.MeshStandardMaterial({ color: new THREE.Color(...C.grass), roughness: 0.95 }),
+    grass: new THREE.MeshStandardMaterial({ color: new THREE.Color(...C.grass), roughness: 0.95, side: THREE.DoubleSide }),
     grassStripe: new THREE.MeshStandardMaterial({ color: new THREE.Color(...C.grassStripe), roughness: 0.95 }),
     infield: new THREE.MeshStandardMaterial({ color: new THREE.Color(...C.infield), roughness: 0.96 }),
     paradePath: new THREE.MeshStandardMaterial({ color: 0x884239, roughness: 0.92, polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -2 }),
@@ -57,9 +58,19 @@ function makeMaterials() {
 // Shared with diagnostics, frames and tests: a single closed-loop source of truth.
 const trackPoint = happyValleyTrackPoint;
 
-function buildCourse(group, materials, stats) {
+// Only an approximate same-level road query, not a complete swept collision test.
+// These temporary breaks preserve infield-road access until the mapped track is re-fitted.
+function trackRoadConflict(point, groundOffset, margin = 1.3) {
+  const s = HAPPY_VALLEY_SITE, c = Math.cos(s.ry), sn = Math.sin(s.ry);
+  const x = s.x + c * point.x + sn * point.z, z = s.z - sn * point.x + c * point.z;
+  const hit = fullRoadSurfaceAt(x, z, margin, groundOffset);
+  return !!hit && Math.abs(hit.height - groundOffset) < 2.5;
+}
+
+function buildCourse(group, materials, stats, groundOffset) {
   const course = new THREE.Group(); course.name = 'HappyValleyCourse'; group.add(course);
-  const segments = 120;
+  const segments = 360;
+  let roadRailGaps = 0, roadSurfaceGaps = 0;
   const band = store(), infieldStore = store();
   const infieldApex = { x: HAPPY_VALLEY_TRACK.centreX - 8, z: HAPPY_VALLEY_TRACK.centreZ };
   const rails = [], posts = [], distancePoles = [];
@@ -69,21 +80,31 @@ function buildCourse(group, materials, stats) {
     const inner0 = trackPoint(t0, -HAPPY_VALLEY_TRACK.width), inner1 = trackPoint(t1, -HAPPY_VALLEY_TRACK.width);
     // Mowing stripes alternate every eight segments along the track.
     const tint = Math.floor(i / 8) % 2 ? C.grassStripe : C.grass;
-    quad(band, [outer0.x, 0.1, outer0.z], [outer1.x, 0.1, outer1.z],
-      [inner1.x, 0.1, inner1.z], [inner0.x, 0.1, inner0.z], tint);
-    // Running rails: top rail + two lower rails, with a post every fourth segment.
-    for (const [a, b] of [[outer0, outer1], [inner0, inner1]]) {
-      for (const height of [1.15, 0.82, 0.5]) beam(rails, [a.x, height, a.z], [b.x, height, b.z], 0.13, 0.11);
+    // Split the band into small cells so mapped same-level road ribbons are
+    // not covered by the authored grass. Half-diagonal margin is conservative;
+    // this is still a coarse, temporary cut until the track is realigned.
+    const across = 12, cellWidth = HAPPY_VALLEY_TRACK.width / across;
+    for (let cell = 0; cell < across; cell++) {
+      const o0 = -cell * cellWidth, o1 = -(cell+1) * cellWidth;
+      const mid = trackPoint((t0+t1)/2, (o0+o1)/2);
+      if (trackRoadConflict(mid, groundOffset, 2.7)) { roadSurfaceGaps++; continue; }
+      const a=trackPoint(t0,o0), b=trackPoint(t1,o0), c=trackPoint(t1,o1), d=trackPoint(t0,o1);
+      quad(band, [a.x,0.1,a.z], [b.x,0.1,b.z], [c.x,0.1,c.z], [d.x,0.1,d.z], tint);
     }
-    if (i % 3 === 0) {
-      cylinder(posts, [outer0.x, 0.58, outer0.z], 0.055, 1.16, 5);
-      cylinder(posts, [inner0.x, 0.58, inner0.z], 0.055, 1.16, 5);
+    // Avoid placing a solid rail/post across same-level carriageways. The
+    // resulting gaps are temporary, not a claim about actual access gates.
+    for (const [a, b, offset] of [[outer0, outer1, 0], [inner0, inner1, -HAPPY_VALLEY_TRACK.width]]) {
+      const mid = trackPoint((t0+t1)/2, offset);
+      const blocked = [a, mid, b].some(p => trackRoadConflict(p, groundOffset));
+      if (blocked) { roadRailGaps++; continue; }
+      for (const height of [1.15, 0.82, 0.5]) beam(rails, [a.x, height, a.z], [b.x, height, b.z], 0.13, 0.11);
+      if (i % 9 === 0) cylinder(posts, [a.x, 0.58, a.z], 0.055, 1.16, 5);
     }
     // Infield turf inside the inner running rail (the 1995 rebuild did away with the old inner sand track).
     const c0 = trackPoint(t0, -HAPPY_VALLEY_TRACK.width);
     const c1 = trackPoint(t1, -HAPPY_VALLEY_TRACK.width);
-    quad(infieldStore, [infieldApex.x, 0.08, infieldApex.z], [c0.x, 0.08, c0.z], [c1.x, 0.08, c1.z],
-      [infieldApex.x, 0.08, infieldApex.z], C.infield);
+    quad(infieldStore, [infieldApex.x, -0.02, infieldApex.z], [c0.x, -0.02, c0.z], [c1.x, -0.02, c1.z],
+      [infieldApex.x, -0.02, infieldApex.z], C.infield);
   }
   // Distance poles every 200 m along the inner rail, painted white with black bands.
   for (let metre = 200; metre < HAPPY_VALLEY_TRACK.lapMetres; metre += 200) {
@@ -97,6 +118,8 @@ function buildCourse(group, materials, stats) {
   merged(course, posts, materials.rail, 'HappyValleyRunningRailPosts');
   merged(course, distancePoles, materials.rail, 'HappyValleyDistancePoles');
   stats.happyValleyTrackSegments = segments;
+  stats.happyValleyRoadRailGaps = roadRailGaps;
+  stats.happyValleyRoadSurfaceGaps = roadSurfaceGaps;
   stats.happyValleyDistancePoles = distancePoles.length;
   return course;
 }
@@ -252,7 +275,7 @@ function buildInfield(group, materials, stats) {
 // ---------------------------------------------------------------------------------------------------------------
 // Floodlights, perimeter fence, gates and the service road that rings the course.
 // ---------------------------------------------------------------------------------------------------------------
-function buildGrounds(group, materials, stats) {
+function buildGrounds(group, materials, stats, groundOffset) {
   const grounds = new THREE.Group(); grounds.name = 'HappyValleyGrounds'; group.add(grounds);
   const masts = [], heads = [], fence = [], gates = [];
   const site = HAPPY_VALLEY_SITE;
@@ -263,7 +286,7 @@ function buildGrounds(group, materials, stats) {
     minZ = Math.min(minZ, ring[i + 1]); maxZ = Math.max(maxZ, ring[i + 1]);
   }
   // Provisional lawn follows the mapped OSM site boundary, not a surveyed surface.
-  const apron = new THREE.Mesh(roofGeometry(ring, 0.04), materials.apron);
+  const apron = new THREE.Mesh(roofGeometry(ring, -0.03), materials.apron);
   apron.name = 'HappyValleyGroundApron';
   grounds.add(apron);
   // Six floodlight masts around the course, four on the stand side and two opposite.
@@ -275,16 +298,25 @@ function buildGrounds(group, materials, stats) {
       box(heads, [p.x - 2.2 + lamp * 0.63, 36.4, p.z], [0.5, 0.9, 0.4]);
     }
   }
-  // Placeholder perimeter fence follows the mapped boundary; its real location is unverified.
+  // The OSM boundary is not a surveyed fence. Preserve existing placeholder
+  // openings and cut additional temporary gaps at same-level road ribbons.
   const ringCount = ring.length / 2;
+  let roadFenceGaps = 0;
   for (let i = 0; i < ringCount; i++) {
     const ax = ring[2 * i], az = ring[2 * i + 1];
     const bx = ring[(2 * i + 2) % ring.length], bz = ring[(2 * i + 3) % ring.length];
     const gate = i === 1 || i === 2 || i === 44 || i === 45;
     if (gate) { gates.push({ x: ax, z: az }); continue; }
-    for (const height of [1.9, 1.0]) beam(fence, [ax, height, az], [bx, height, bz], 0.07, 0.07);
-    cylinder(fence, [ax, 1.0, az], 0.08, 2.0, 6);
+    const length = Math.hypot(bx-ax,bz-az), steps = Math.ceil(length / 2);
+    for(let j=0;j<steps;j++) {
+      const point = t => ({x:ax+(bx-ax)*t,z:az+(bz-az)*t});
+      const a=point(j/steps), b=point((j+1)/steps), mid=point((j+.5)/steps);
+      if ([a,mid,b].some(p => trackRoadConflict(p,groundOffset,1.2))) { roadFenceGaps++; continue; }
+      for (const height of [1.9, 1.0]) beam(fence, [a.x,height,a.z], [b.x,height,b.z], .07,.07);
+      if (j%3===0) cylinder(fence,[a.x,1,a.z],.08,2,6);
+    }
   }
+  stats.happyValleyRoadFenceGaps = roadFenceGaps;
   merged(grounds, masts, materials.standShade, 'HappyValleyFloodlightMasts');
   merged(grounds, heads, materials.roof, 'HappyValleyFloodlightHeads');
   merged(grounds, fence, materials.rail, 'HappyValleyPerimeterFence');
@@ -302,8 +334,8 @@ export function buildHappyValleyRacecourse(root, { groundOffset = 0 } = {}) {
   root.add(venue);
   const materials = makeMaterials();
   const stats = {};
-  buildGrounds(venue, materials, stats);
-  buildCourse(venue, materials, stats);
+  buildGrounds(venue, materials, stats, groundOffset);
+  buildCourse(venue, materials, stats, groundOffset);
   buildHappyValleyPitches(venue);
   const pavilion = buildHappyValleyPavilion(venue, groundOffset);
   const { frame } = buildGrandstand(venue, materials, stats);

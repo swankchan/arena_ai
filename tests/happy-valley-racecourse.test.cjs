@@ -239,3 +239,21 @@ test('the rendered site and grandstand collider use the same mapped world frame'
   assert.ok(Math.abs(collider.ry - (site().ry + stand.rotation.y)) < 1e-10);
   assert.ok(collider.maxY > collider.minY);
 });
+
+test('temporary rail and fence gaps avoid sampled same-level road vertices', () => {
+  built.group.updateMatrixWorld(true);
+  assert.ok(built.stats.happyValleyRoadRailGaps > 0);
+  assert.ok(built.stats.happyValleyRoadFenceGaps > 0);
+  assert.ok(built.stats.happyValleyRoadSurfaceGaps > 0);
+  for (const name of ['HappyValleyTrackSurface', 'HappyValleyRunningRails', 'HappyValleyRunningRailPosts', 'HappyValleyPerimeterFence']) {
+    const mesh = built.group.getObjectByName(name);
+    const pos = mesh.geometry.getAttribute('position'), v = new THREE.Vector3();
+    let hits = 0;
+    for (let i = 0; i < pos.count; i++) {
+      v.fromBufferAttribute(pos, i).applyMatrix4(mesh.matrixWorld);
+      const road = fullMeta.fullRoadSurfaceAt(v.x, v.z, 0, terrain.HONG_KONG_TERRAIN_META.happyValleyPadHeight);
+      if (road && Math.abs(road.height - terrain.HONG_KONG_TERRAIN_META.happyValleyPadHeight) < 2.5) hits++;
+    }
+    assert.equal(hits, 0, `${name}: ${hits} vertices on same-level road`);
+  }
+});
