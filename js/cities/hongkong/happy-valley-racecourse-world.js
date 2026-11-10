@@ -417,8 +417,10 @@ function buildGrounds(group, materials, stats, groundOffset) {
       box(lampFaces,[x+sx*.19,y,z+sz*.19],[.46,.4,.04],ry);
     }
   }
-  // The OSM boundary is not a surveyed fence. Preserve existing placeholder
-  // openings and cut additional temporary gaps at same-level road ribbons.
+  // The OSM boundary is not a surveyed fence. Keep the two short legacy
+  // openings, and cut temporary gaps at roads, entrances and stand footprints.
+  // The former index-based 44/45 openings skipped over 220m of boundary;
+  // those long edges now use the same obstacle checks as all other edges.
   const ringCount = ring.length / 2;
   let roadFenceGaps = 0, entranceFenceGaps = 0, standFenceGaps = 0;
   const standRings = HAPPY_VALLEY_STAND_FOOTPRINTS.map(p=>localRingFromWorld(site,worldRingFromGeometry(p.geometry)));
@@ -449,7 +451,7 @@ function buildGrounds(group, materials, stats, groundOffset) {
   for (let i = 0; i < ringCount; i++) {
     const ax = ring[2 * i], az = ring[2 * i + 1];
     const bx = ring[(2 * i + 2) % ring.length], bz = ring[(2 * i + 3) % ring.length];
-    const gate = i === 1 || i === 2 || i === 44 || i === 45;
+    const gate = i === 1 || i === 2;
     if (gate) { gates.push({ x: ax, z: az }); continue; }
     const length = Math.hypot(bx-ax,bz-az), steps = Math.ceil(length / 2);
     for(let j=0;j<steps;j++) {

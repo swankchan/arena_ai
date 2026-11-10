@@ -501,3 +501,21 @@ test('additional provisional floodlight bases clear sampled mapped pitches, stan
     }
   }
 });
+
+test('long northern site edges no longer disappear as arbitrary whole-edge gates', () => {
+  // The old magic indices removed 34m and 188m regardless of access. This
+  // checks visible geometry only; it does not certify actual wall placement.
+  const ring=site().localRing, wall=built.group.getObjectByName('HappyValleyPerimeterWallBase');
+  const vertices=wall.geometry.getAttribute('position');
+  assert.equal(built.stats.happyValleyGates,2);
+  for(const index of [44,45]) {
+    const ax=ring[index*2],az=ring[index*2+1],dx=ring[(index*2+2)%ring.length]-ax,dz=ring[(index*2+3)%ring.length]-az;
+    const len=Math.hypot(dx,dz);let hits=0;
+    // Count the tops of the generated base segments near the long edge.
+    for(let i=0;i<vertices.count;i++) {
+      const x=vertices.getX(i)-ax,z=vertices.getZ(i)-az,t=(x*dx+z*dz)/(len*len);
+      if(t>=0&&t<=1&&Math.abs(x*dz-z*dx)/len<.3) hits++;
+    }
+    assert.ok(hits>100,`missing perimeter geometry on edge ${index}`);
+  }
+});
