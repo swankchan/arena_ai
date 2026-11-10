@@ -480,16 +480,16 @@ test('estimated infield screen has distinct night-emissive information panels', 
   }
 });
 
-test('additional provisional floodlight bases clear sampled mapped pitches, stands and road layers', async () => {
+test('all provisional floodlight bases clear sampled mapped pitches, stands and road layers', async () => {
   const {roadRibbonHeightAtSegment}=await import('../js/cities/hongkong/road-elevation.js');
   const {worldRingFromGeometry}=await import('../js/cities/hongkong/authored-landmark-site.js');
   const park=JSON.parse(fs.readFileSync('tools/data/hongkong/parks.json')).elements;
   const landmarks=JSON.parse(fs.readFileSync('tools/data/hongkong/landmarks.json')).elements;
   const stands=new Set([494027781,1356276114,1356276115,1356276116,1356276117,1356276118]);
   const rings=[arch.HAPPY_VALLEY_PARADE_RING,...park.filter(p=>p.tags?.leisure==='pitch'&&p.geometry).map(p=>worldRingFromGeometry(p.geometry)),...landmarks.filter(p=>stands.has(p.id)).map(p=>worldRingFromGeometry(p.geometry))];
-  const bases=built.colliders.slice(-8);assert.equal(bases.length,8);
-  for(const base of bases)for(const dx of [-.8,0,.8])for(const dz of [-.8,0,.8]) {
-    const x=base.x+dx,z=base.z+dz;
+  const bases=[...built.colliders.slice(0,6),...built.colliders.slice(-8)];assert.equal(bases.length,14);
+  for(const base of bases)for(const dx of [-.8,-.4,0,.4,.8])for(const dz of [-.8,-.4,0,.4,.8]) {
+    const x=base.x+base.obb.cs*dx+base.obb.sn*dz,z=base.z-base.obb.sn*dx+base.obb.cs*dz;
     assert.ok(ringUtils.pointInFlatRing(site().ring,x,z),'outside venue');
     for(const ring of rings)assert.ok(!ringUtils.pointInFlatRing(ring,x,z),'base enters mapped pitch or stand');
     for(const way of fullMeta.fullRoadWaysNear(x,z,10))for(let j=2;j<way.flat.length;j+=2){
@@ -586,4 +586,38 @@ test('track and perimeter face interiors clear sampled same-level road ribbons',
     }
   }
   assert.ok(samples>150000);
+});
+
+test('all provisional floodlight bases avoid both racing bands', async () => {
+  // A plan-view test of the full oriented bases and all 720 tessellated
+  // candidate quads. This does not promote the candidate to the game.
+  const clip=(await import('polygon-clipping')).default;
+  const fit=JSON.parse(fs.readFileSync('tools/data/hongkong/happy-valley-experimental-smooth-fit.json','utf8'));
+  assert.equal(fit.status,'experimental-not-used-in-runtime');
+  const points=fit.points,n=points.length;
+  const edge=(i,side)=>{
+    const p=points[i],a=points[(i+n-1)%n],b=points[(i+1)%n],dx=b[0]-a[0],dz=b[1]-a[1],l=Math.hypot(dx,dz);
+    const q=toWorld(p[0]-dz/l*15.25*side,p[1]+dx/l*15.25*side);return [q.x,q.z];
+  };
+  const quads=points.map((_,i)=>{
+    const next=(i+1)%n,ring=[edge(i,1),edge(next,1),edge(next,-1),edge(i,-1)];ring.push(ring[0]);return [ring];
+  });
+  const oldQuads=Array.from({length:720},(_,i)=>{
+    const ring=[[i/720,0],[(i+1)/720,0],[(i+1)/720,-arch.HAPPY_VALLEY_TRACK.width],[i/720,-arch.HAPPY_VALLEY_TRACK.width]]
+      .map(([t,offset])=>{const p=arch.happyValleyTrackPoint(t,offset),q=toWorld(p.x,p.z);return [q.x,q.z];});
+    ring.push(ring[0]);return [ring];
+  });
+  const bases=[...built.colliders.slice(0,6),...built.colliders.slice(-8)];
+  assert.equal(bases.length,14);
+  const area=multi=>multi.reduce((sum,poly)=>sum+poly.reduce((acc,ring,i)=>{
+    let a=0;for(let k=1;k<ring.length;k++)a+=ring[k-1][0]*ring[k][1]-ring[k][0]*ring[k-1][1];
+    return acc+(i?-1:1)*Math.abs(a)/2;
+  },0),0);
+  for(const [i,base] of bases.entries()) {
+    const {cs,sn,hx,hz}=base.obb;
+    const corners=[[-hx,-hz],[hx,-hz],[hx,hz],[-hx,hz]].map(([x,z])=>[base.x+cs*x+sn*z,base.z-sn*x+cs*z]);
+    corners.push(corners[0]);let overlap=0;
+    for(const quad of [...quads,...oldQuads])overlap+=area(clip.intersection([corners],quad));
+    assert.ok(overlap<1e-5,`mast ${i} overlaps racing band ${overlap} m²`);
+  }
 });

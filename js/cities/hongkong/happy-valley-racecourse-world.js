@@ -31,14 +31,13 @@ import { pointInFlatRing } from './landmark-site.js';
 
 const C = HAPPY_VALLEY_COLOURS;
 const DEG = Math.PI / 180;
-// The two reduced offsets keep the newly continuous-loop mast centres inside
-// the mapped venue, off sampled roads. They are provisional positions, not a
-// survey of the actual floodlight locations.
-const FLOODLIGHT_POSITIONS = [[0.02, 52], [0.14, 5], [0.30, 20], [0.70, 20], [0.86, 10], [0.96, 46]];
-// Additional estimated positions on the old provisional track's outside; these
-// are not surveyed poles and must be reconsidered when the circuit is refit.
-const EXTRA_FLOODLIGHT_POSITIONS = [[.069444,7],[.180556,7],[.263889,12],[.402778,7],
-  [.513889,7],[.597222,7],[.763889,12],[.902778,7]];
+// Provisional, not surveyed. Some masts were moved away from the offline
+// candidate course while keeping their bases clear of mapped pitches, stands,
+// roads and the present course. Light aim still follows the present course.
+// Any final track layout requires a fresh placement and lighting review.
+const FLOODLIGHT_POSITIONS = [[14/720,59], [.14,5], [.30,20], [.70,20], [619/720,-33], [691/720,53]];
+const EXTRA_FLOODLIGHT_POSITIONS = [[40/720,3],[.180556,7],[.263889,12],[290/720,15],
+  [370/720,15],[430/720,3],[549/720,7],[650/720,-33]];
 
 
 function makeMaterials() {
