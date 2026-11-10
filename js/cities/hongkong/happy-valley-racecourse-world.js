@@ -399,7 +399,10 @@ function buildGrounds(group, materials, stats, groundOffset) {
     for(const [aim,strength] of beams) {
       const lamp=new THREE.SpotLight(0xe7f0ff,0,210,1.22,.8,2);
       lamp.name='HappyValleyFloodlightSpot';lamp.position.set(p.x,34,p.z);
-      lamp.target.position.set(p.x+(HAPPY_VALLEY_TRACK.centreX-p.x)*aim,0,p.z+(HAPPY_VALLEY_TRACK.centreZ-p.z)*aim);
+      if(index>=FLOODLIGHT_POSITIONS.length) {
+        const trackTarget=trackPoint(t,-HAPPY_VALLEY_TRACK.width/2);
+        lamp.target.position.set(trackTarget.x,0,trackTarget.z);
+      } else lamp.target.position.set(p.x+(HAPPY_VALLEY_TRACK.centreX-p.x)*aim,0,p.z+(HAPPY_VALLEY_TRACK.centreZ-p.z)*aim);
       lamp.userData.nightIntensity=strength;
       grounds.add(lamp,lamp.target);floodlights.push(lamp);
     }

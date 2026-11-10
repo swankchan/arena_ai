@@ -173,3 +173,5 @@ The eight new 1.6 m square collider bases are sampled against the venue ring, ma
 ### 足球場標線細節
 
 八個現建球場的估算足球線補上中心點及四角 1 m 四分一圓角球弧，依照 [足球場地通用規則](https://www.thefa.com/-/media/files/thefaportal/governance-docs/laws-of-the-game/law-01---the-field-of-play.ashx)，不代表已核實各場的實際線位。場 3 是非標準尺寸、8 是七人場，9／10 是多用途場；實際設施及賽事佈置可能有別。頂點檢查確保線段在已建球場輪廓內；未證所有道路圖層、近景 WebGPU 或實地照片一致。
+
+八支新增推算燈柱的射燈現改為指向同站跑道中心，而非朝橢圓形中心的一個比例點；局部 WebGL 夜景可見更多光落在彎道附近，但仍有明顯亮暗斑，光強及位置並非實測。測試只驗目標點接近舊跑道中心，並未驗完整遊戲的照度或效能。

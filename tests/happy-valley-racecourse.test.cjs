@@ -350,6 +350,16 @@ test('floodlight spots illuminate only at night and when the camera is nearby', 
   try {
     built.group.traverse(o=>{if(o.name==='HappyValleyFloodlightSpot')lights.push(o)});
     assert.equal(lights.length,20); assert.ok(lights.every(l=>l.isSpotLight&&!l.castShadow));
+    // The additional lamps are aimed at the nearby track, not the oval's
+    // distant centre (which puts curved-end hotspots outside the course).
+    for(const light of lights.slice(12)) {
+      let closest=Infinity;
+      for(let i=0;i<1440;i++) {
+        const p=arch.happyValleyTrackPoint(i/1440,-arch.HAPPY_VALLEY_TRACK.width/2);
+        closest=Math.min(closest,Math.hypot(light.target.position.x-p.x,light.target.position.z-p.z));
+      }
+      assert.ok(closest<1,`extra lamp points ${closest}m away from centreline`);
+    }
     const near={cameraSystem:{currentPos:{x:site().x,z:site().z}}},far={cameraSystem:{currentPos:{x:site().x+1200,z:site().z}}};
     cityUniforms.uInteriorGlow.value=0;built.update(near);assert.ok(lights.every(l=>l.intensity===0));
     cityUniforms.uInteriorGlow.value=1.4;built.update(near);assert.ok(lights.every(l=>l.intensity>0));
