@@ -147,3 +147,5 @@ OSM 馬場 relation 8049451 為場地邊界，不是圍牆測量；照片搜尋�
 使用 `node tools/cities/hongkong/smooth-happy-valley-fit.mjs` 從 720 點候選線可重現另一個平滑估算：環狀 Gaussian sigma 12 stations；靠兩條同高入場道路的 station 140–270 改用 sigma 3、以 40 stations 漸變，避免較大平滑直接切過道路。新中心線約 1458.24 m，最急的三點抽樣曲率半徑約 51.32 m（原版 34.45 m），不是測量值或安全認證。`node tools/cities/hongkong/check-happy-valley-fit.mjs tools/data/hongkong/happy-valley-experimental-smooth-fit.json` 的 12,240 點中場界外、16 個映射球場、六座看台及同高道路命中均為零；離散不足以證明無碰撞。另用 Shapely 對 15.25 m 緩衝中心折線的多邊形檢查，未見面積交疊或場界外，但緩衝形狀只是離線近似，並非逐三角形及現場淨空保證。
 
 **未上線**：22 個樣點仍在 road 43020 上方少於 5 m，最低約 3.784 m（未減結構厚度）；原有燈柱等亦與候選面重疊。固定場地高度與路面模型並非實測隧道，不能直接認定安全，也不應靠驟降道路製造大坡。`tests/visual/happy-valley-candidate-track.html?smooth` 可查看局部效果與紅色風險位置，該圖不含完整世界地形及車輛。
+
+`node tools/cities/hongkong/check-happy-valley-band.mjs` 另以 JS `polygon-clipping` 實際檢查平滑候選 720 塊相接跑道四邊形與 16 個球場、六座看台及馬場邊界；交集面積及越界面積皆為 0，並有故意偏移 10 m 的失敗案例驗證檢查確會捉到衝突。它不檢道路、欄杆、非線性段間曲線、真實高程或車身，仍不能解除前述隧道風險或作為上線依據。

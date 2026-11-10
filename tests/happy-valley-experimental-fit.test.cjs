@@ -46,3 +46,19 @@ test('blended smoothing improves estimated curvature but remains offline due to 
     assert.ok(!runtime.includes('happy-valley-experimental-smooth-fit'));
   } finally {fs.rmSync(dir,{recursive:true,force:true});}
 });
+
+test('continuous candidate quads are checked against mapped site, pitches, and stands', () => {
+  const os=require('node:os'),path=require('node:path');
+  const dir=fs.mkdtempSync(path.join(os.tmpdir(),'happy-valley-band-'));
+  try {
+    const command=['tools/cities/hongkong/check-happy-valley-band.mjs'];
+    const report=JSON.parse(execFileSync(process.execPath,command,{encoding:'utf8'}));
+    assert.equal(report.quads,720);assert.equal(report.pitchesChecked,16);assert.equal(report.standsChecked,6);
+    assert.equal(report.outsideSquareMetres,0);assert.deepEqual(report.pitchIntersectionsSquareMetres,{});assert.deepEqual(report.standIntersectionsSquareMetres,{});
+    const fit=JSON.parse(fs.readFileSync('tools/data/hongkong/happy-valley-experimental-smooth-fit.json'));
+    fit.points=fit.points.map(([x,z])=>[x+10,z]);
+    const shifted=path.join(dir,'shifted.json');fs.writeFileSync(shifted,JSON.stringify(fit));
+    const bad=JSON.parse(execFileSync(process.execPath,[...command,shifted],{encoding:'utf8'}));
+    assert.ok(bad.outsideSquareMetres>0);assert.ok(Object.keys(bad.pitchIntersectionsSquareMetres).length>0);
+  } finally {fs.rmSync(dir,{recursive:true,force:true});}
+});
