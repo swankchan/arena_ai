@@ -263,3 +263,24 @@ test('temporary rail and fence gaps avoid sampled same-level road vertices', () 
     assert.equal(hits, 0, `${name}: ${hits} vertices on same-level road`);
   }
 });
+
+test('parade-ring inset has walking width and the detailed edge stays off sampled roads', async () => {
+  const {happyValleyParadeInset}=await import('../js/cities/hongkong/happy-valley-racecourse-world.js');
+  const ring=arch.HAPPY_VALLEY_PARADE_LOCAL_RING, inner=happyValleyParadeInset(ring,3.2);
+  assert.ok(inner.length>=8); assert.deepEqual(inner.slice(0,2),inner.slice(-2));
+  for(let i=0;i<inner.length-2;i+=2) for(let j=0;j<ring.length-2;j+=2) {
+    const dx=ring[j+2]-ring[j], dz=ring[j+3]-ring[j+1];
+    const distance=Math.abs(dx*(inner[i+1]-ring[j+1])-dz*(inner[i]-ring[j]))/Math.hypot(dx,dz);
+    assert.ok(distance>=3.1999,`inset ${distance}`);
+  }
+  built.group.updateMatrixWorld(true);
+  for(const name of ['HappyValleyParadeRingWall','HappyValleyParadeRingPlanters','HappyValleyParadeRingRedFlowers','HappyValleyParadeRingOrangeFlowers']) {
+    const mesh=built.group.getObjectByName(name); assert.ok(mesh,name);
+    const vertices=mesh.geometry.getAttribute('position'), v=new THREE.Vector3();
+    for(let i=0;i<vertices.count;i++) {
+      v.fromBufferAttribute(vertices,i).applyMatrix4(mesh.matrixWorld);
+      const hit=fullMeta.fullRoadSurfaceAt(v.x,v.z,0,terrain.HONG_KONG_TERRAIN_META.happyValleyPadHeight);
+      assert.ok(!hit || Math.abs(hit.height-terrain.HONG_KONG_TERRAIN_META.happyValleyPadHeight)>=2.5,`${name} road ${hit?.way.id}`);
+    }
+  }
+});

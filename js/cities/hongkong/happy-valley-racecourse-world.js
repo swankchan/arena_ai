@@ -10,7 +10,7 @@ import {
   HAPPY_VALLEY_CAPACITY, HAPPY_VALLEY_OPENED, HAPPY_VALLEY_PARADE_LOCAL_RING,
 } from './happy-valley-racecourse-architecture.js';
 import {
-  merged, box, cylinder, beam, store, quad, meshStore, harbourCityPalette, roofGeometry, scaledRing,
+  merged, box, cylinder, beam, store, quad, meshStore, harbourCityPalette, roofGeometry,
 } from './harbour-city-world-utils.js';
 import { harbourCityLocalCollider, harbourCityEdgeFrame } from './harbour-city-architecture.js';
 import { HAPPY_VALLEY_PAVILION, HAPPY_VALLEY_PAVILION_ENTRANCE } from './happy-valley-pavilion-site.js';
@@ -37,7 +37,11 @@ function makeMaterials() {
     grass: new THREE.MeshStandardMaterial({ color: new THREE.Color(...C.grass), roughness: 0.95, side: THREE.DoubleSide }),
     grassStripe: new THREE.MeshStandardMaterial({ color: new THREE.Color(...C.grassStripe), roughness: 0.95 }),
     infield: new THREE.MeshStandardMaterial({ color: new THREE.Color(...C.infield), roughness: 0.96 }),
-    paradePath: new THREE.MeshStandardMaterial({ color: 0x884239, roughness: 0.92, polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -2 }),
+    paradePath: new THREE.MeshStandardMaterial({ color: 0xc96b50, roughness: 0.92, polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -2 }),
+    paradeWall: new THREE.MeshStandardMaterial({ color: 0xc9bba1, roughness: 0.87 }),
+    paradeFoliage: new THREE.MeshStandardMaterial({ color: 0x345d32, roughness: 0.95 }),
+    paradeFlowersRed: new THREE.MeshStandardMaterial({ color: 0xad2520, roughness: 0.9 }),
+    paradeFlowersOrange: new THREE.MeshStandardMaterial({ color: 0xd7772e, roughness: 0.9 }),
     paradeCentre: new THREE.MeshStandardMaterial({ color: 0x316b60, roughness: 0.95, polygonOffset: true, polygonOffsetFactor: -4, polygonOffsetUnits: -4 }),
     sand: new THREE.MeshStandardMaterial({ color: new THREE.Color(...C.sand), roughness: 0.98 }),
     rail: new THREE.MeshStandardMaterial({ color: new THREE.Color(...C.rail), roughness: 0.5, metalness: 0.15 }),
@@ -142,6 +146,31 @@ function standFrame() {
 }
 
 // ---------------------------------------------------------------------------------------------------------------
+// Convex half-plane inset keeps a consistent walking width, unlike scaling the
+// long narrow ring about its centre. For this mapped ring, the intersection
+// is conservative at any non-convex corner; no surveyed path is implied.
+export function happyValleyParadeInset(ring, distance) {
+  let points=[];
+  for(let i=0;i<ring.length-2;i+=2) points.push({x:ring[i],z:ring[i+1]});
+  let area=0;
+  for(let i=0;i<points.length;i++) { const a=points[i],b=points[(i+1)%points.length];area+=a.x*b.z-b.x*a.z; }
+  const sign=Math.sign(area);
+  for(let i=0;i<ring.length-2 && points.length;i+=2) {
+    const ax=ring[i],az=ring[i+1],dx=ring[i+2]-ax,dz=ring[i+3]-az,len=Math.hypot(dx,dz);
+    if(len<1e-6) continue;
+    const d=p=>sign*(dx*(p.z-az)-dz*(p.x-ax))/len-distance;
+    const next=[];
+    for(let j=0;j<points.length;j++) {
+      const a=points[j],b=points[(j+1)%points.length],da=d(a),db=d(b);
+      if(da>=0) next.push(a);
+      if((da>=0)!==(db>=0)) { const t=da/(da-db);next.push({x:a.x+(b.x-a.x)*t,z:a.z+(b.z-a.z)*t}); }
+    }
+    points=next;
+  }
+  if(points.length) points.push(points[0]);
+  return points.flatMap(p=>[p.x,p.z]);
+}
+
 // Infield furniture: the club's branding boards, the big screen facing the stand, and the parade ring.
 // ---------------------------------------------------------------------------------------------------------------
 function buildInfield(group, materials, stats) {
@@ -162,25 +191,38 @@ function buildInfield(group, materials, stats) {
   box(screenParts, [screenAt.x, 6.5, screenAt.z], [26, 11, 1.2], frame.ry);
   box(screenParts, [screenAt.x, 0.9, screenAt.z], [8, 1.8, 3.2], frame.ry);
   box(frames, [screenAt.x, 12.6, screenAt.z], [27.5, 1.4, 1.8], frame.ry);
-  // Mapped paddock footprint. A reddish walking edge and muted green centre
+  // Mapped paddock footprint. A terracotta walking edge and muted green centre
   // recall the paddock photographs, but their widths and the rail are estimates.
   const ring = HAPPY_VALLEY_PARADE_LOCAL_RING;
   const outer = new THREE.Mesh(roofGeometry(ring, 0.14), materials.paradePath);
   outer.name = 'HappyValleyParadeRingSurface'; infield.add(outer);
-  const centre = new THREE.Mesh(roofGeometry(scaledRing(ring, 0.76), 0.155), materials.paradeCentre);
+  const centre = new THREE.Mesh(roofGeometry(happyValleyParadeInset(ring, 3.2), 0.155), materials.paradeCentre);
   centre.name = 'HappyValleyParadeRingCentre'; infield.add(centre);
-  const ringRail = [];
+  const ringRail = [], ringWall = [], foliage = [], redFlowers = [], orangeFlowers = [];
   // Leave a gap at each rounded end for access; actual gate positions are unknown.
   for (let i = 0; i < ring.length - 2; i += 2) {
     if (i === 0 || i === 12) continue;
     const ax = ring[i], az = ring[i + 1], bx = ring[i + 2], bz = ring[i + 3];
-    for (const y of [0.55, 1.05]) beam(ringRail, [ax, y, az], [bx, y, bz], 0.07, 0.07);
+    // The HKJC parade-ring photo shows a cream low wall below the white rail,
+    // with narrow flower planters. Gate locations remain provisional.
+    beam(ringWall, [ax,.43,az], [bx,.43,bz], .18,.58);
+    beam(foliage, [ax,.76,az], [bx,.76,bz], .22,.12);
+    for (const y of [1.05]) beam(ringRail, [ax, y, az], [bx, y, bz], 0.09, 0.09);
+    const flowerCount = Math.max(1, Math.floor(Math.hypot(bx-ax,bz-az)/.55));
+    for (let k=0;k<flowerCount;k++) {
+      const t=(k+.5)/flowerCount, x=ax+(bx-ax)*t,z=az+(bz-az)*t;
+      cylinder(k%3 ? redFlowers : orangeFlowers, [x,.85,z], .095,.13,5);
+    }
     const count = Math.max(1, Math.ceil(Math.hypot(bx - ax, bz - az) / 3));
     for (let k = 0; k < count; k++) {
       const t = k / count;
       cylinder(ringRail, [ax + (bx - ax) * t, 0.55, az + (bz - az) * t], 0.055, 1.1, 6);
     }
   }
+  merged(infield, ringWall, materials.paradeWall, 'HappyValleyParadeRingWall');
+  merged(infield, foliage, materials.paradeFoliage, 'HappyValleyParadeRingPlanters');
+  merged(infield, redFlowers, materials.paradeFlowersRed, 'HappyValleyParadeRingRedFlowers');
+  merged(infield, orangeFlowers, materials.paradeFlowersOrange, 'HappyValleyParadeRingOrangeFlowers');
   merged(infield, ringRail, materials.rail, 'HappyValleyParadeRingRail');
   merged(infield, boards, materials.club, 'HappyValleyInfieldBranding');
   merged(infield, frames, materials.roof, 'HappyValleyScreenFrame');
