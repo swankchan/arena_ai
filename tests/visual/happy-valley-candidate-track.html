@@ -1,0 +1,53 @@
+<!doctype html><meta charset="utf-8"><title>Happy Valley candidate track — diagnostic, not runtime</title>
+<style>body{margin:0}aside{position:absolute;top:12px;left:12px;background:#fff;color:#222;padding:10px;font:14px sans-serif;max-width:450px}</style>
+<aside>Experimental candidate — not in the game. Red: sampled same-level road or road below with clearance under 5 m; not a surveyed tunnel or a continuous clearance test.</aside>
+<script type="importmap">{"imports":{"three":"../../vendor/three/build/three.webgpu.js","three/webgpu":"../../vendor/three/build/three.webgpu.js","three/tsl":"../../vendor/three/build/three.tsl.js","three/addons/":"../../vendor/three/examples/jsm/"}}</script>
+<script type="module">
+import * as THREE from 'three/webgpu';
+import {buildHappyValleyRacecourse} from '../../js/cities/hongkong/happy-valley-racecourse-world.js';
+import {HAPPY_VALLEY_SITE as site} from '../../js/cities/hongkong/happy-valley-racecourse-architecture.js';
+import {fullRoadWaysNear} from '../../js/cities/hongkong/full-meta.js';
+import {roadRibbonHeightAtSegment} from '../../js/cities/hongkong/road-elevation.js';
+import {HONG_KONG_TERRAIN_META as terrain} from '../../js/cities/hongkong/terrain.js';
+const fit=await (await fetch('../../tools/data/hongkong/happy-valley-experimental-fit.json')).json();
+if(fit.status!=='experimental-not-used-in-runtime'||fit.points.length!==720)throw new Error('Unexpected candidate');
+const scene=new THREE.Scene();scene.background=new THREE.Color(0xadc5d1);
+const venue=buildHappyValleyRacecourse(scene,{groundOffset:terrain.happyValleyPadHeight});
+for(const name of ['HappyValleyTrackSurface','HappyValleyRunningRails','HappyValleyRunningRailPosts','HappyValleyDistancePoles']) {
+  const object=venue.group.getObjectByName(name);if(object)object.visible=false;
+}
+const points=fit.points,n=points.length, normal=i=>{
+  const a=points[(i+n-1)%n],b=points[(i+1)%n],dx=b[0]-a[0],dz=b[1]-a[1],len=Math.hypot(dx,dz);
+  return [-dz/len,dx/len];
+};
+const c=Math.cos(site.ry),s=Math.sin(site.ry), world=(x,z)=>[site.x+c*x+s*z,site.z-s*x+c*z];
+function clearance(x,z) {
+  const [X,Z]=world(x,z);let min=Infinity;
+  for(const way of fullRoadWaysNear(X,Z,12)) for(let j=2;j<way.flat.length;j+=2) {
+    const ax=way.flat[j-2],az=way.flat[j-1],dx=way.flat[j]-ax,dz=way.flat[j+1]-az,l=dx*dx+dz*dz;
+    if(l<.0025)continue;
+    const t=Math.max(0,Math.min(1,((X-ax)*dx+(Z-az)*dz)/l)),px=ax+t*dx,pz=az+t*dz;
+    if(Math.hypot(X-px,Z-pz)>way.width/2+1)continue;
+    const diff=terrain.happyValleyPadHeight-roadRibbonHeightAtSegment(way.id,j/2-1,t,px,pz);
+    if(diff > -2.5)min=Math.min(min,diff);
+  }
+  return min;
+}
+const positions=[],colors=[];
+for(let i=0;i<n;i++) {
+  const next=(i+1)%n,a=points[i],b=points[next],u=normal(i),v=normal(next);
+  for(let j=0;j<16;j++) {
+    const d0=15.25-j*30.5/16,d1=15.25-(j+1)*30.5/16;
+    const p=(q,r,d)=>[q[0]+r[0]*d,.14,q[1]+r[1]*d];
+    const p0=p(a,u,d0),p1=p(b,v,d0),p2=p(b,v,d1),p3=p(a,u,d1);
+    const risk=[p0,p1,p2,p3].some(q=>clearance(q[0],q[2])<5);
+    const shade=risk?[.85,.1,.06]:j%2?[.26,.46,.19]:[.29,.50,.21];
+    for(const q of [p0,p1,p2,p0,p2,p3]){positions.push(...q);colors.push(...shade);}
+  }
+}
+const geometry=new THREE.BufferGeometry();geometry.setAttribute('position',new THREE.Float32BufferAttribute(positions,3));geometry.setAttribute('color',new THREE.Float32BufferAttribute(colors,3));geometry.computeVertexNormals();
+const mesh=new THREE.Mesh(geometry,new THREE.MeshStandardNodeMaterial({vertexColors:true,roughness:.95,side:THREE.DoubleSide}));mesh.name='ExperimentalCandidateTrack';venue.group.add(mesh);
+scene.add(new THREE.HemisphereLight(0xffffff,0x566a58,1));const sun=new THREE.DirectionalLight(0xffffff,2);sun.position.set(2200,250,1200);scene.add(sun);
+const camera=new THREE.PerspectiveCamera(45,1.6,.1,2500);camera.position.set(2250,420,1520);camera.lookAt(2335,11,1030);
+const renderer=new THREE.WebGPURenderer({forceWebGL:true,antialias:true});await renderer.init();renderer.setSize(1280,800);document.body.appendChild(renderer.domElement);renderer.render(scene,camera);window.ready=true;
+</script>

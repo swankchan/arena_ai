@@ -17,3 +17,12 @@ test('experimental fit stays offline and exposes tunnel clearance risk', () => {
   assert.ok(report.minSampledClearanceMetres<4.5);
   assert.ok(report.roadIds['43020']<4.5);
 });
+
+test('candidate comparison remains an explicitly offline diagnostic', () => {
+  const html=fs.readFileSync('tests/visual/happy-valley-candidate-track.html','utf8');
+  assert.match(html,/not in the game/i);
+  assert.match(html,/experimental-not-used-in-runtime/);
+  assert.match(html,/roadRibbonHeightAtSegment/);
+  assert.match(html,/clearance\(q\[0\],q\[2\]\)<5/);
+  assert.match(html,/HappyValleyTrackSurface/);
+});
