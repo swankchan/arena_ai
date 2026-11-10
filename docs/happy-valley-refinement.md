@@ -37,3 +37,11 @@
 根據本地 OSM 摘錄，先加入 1、4、5、7、9、10 號六個球場：保留各自 way 輪廓及天然／人造草地標記，繪製足球白線、中央圓及短邊球門。球門及白線是按輪廓推算，非球場測量資料；9、10 號亦有曲棍球用途，現只畫足球線，未補不同用途的標線、圍網、球門網及周邊設備。康文署的[足球場資料](https://www.lcsd.gov.hk/en/facilities/facilitiesbooking/procedure/14day_soccerpitch_balloting.html/1000)可作場地用途參考，OSM 資料 © OpenStreetMap contributors，ODbL 1.0。
 
 這六個場地的輪廓和現有錯位跑道，在每圈 1,440 站、6 個橫向位置沒有採樣重疊；每 2 m 場內格網與 1 m 道路餘量也未見同高道路。這不等於連續幾何淨空或球場真實標高已確認。其他球場仍與錯位馬道相交，沒有硬蓋上去：馬道仍需重新擬合，整個內場尚未完成。畫線和球門的 mesh 頂點已檢查在其一 OSM 球場內，球門位於場地短邊。獨立 WebGL 俯視 fixture `tests/visual/happy-valley-pitches.html` 已檢視；加 polygon offset 減少遠距草地與場線深度衝突，但完整場景的 WebGPU、夜景、地台銜接及行走效果仍未核驗。
+
+## 聯合看台：映射位置及初步立面
+
+[馬會場地指南](https://member.hkjc.com/member/english/about-membership/racecourses-facilities-guide/happy-valley-racecourse.aspx)列出聯合看台、快活看台、三座會員看台和大看台；賽馬博物館屬快活看台二樓，不是遠端獨立方盒。新加的聯合看台使用本地 OSM [way 1356276117](https://www.openstreetmap.org/way/1356276117) 多邊形及 `building:levels=10`。保存 Chong Fat 的 2008 場邊照片及授權資料於 `references/hongkong/happy-valley/`；照片見橫向多層看台、欄杆、深色玻璃及屋簷。
+
+現場景在映射位置增加聯合看台的分段玻璃、水平樓層帶、場向凹入露台、座位、欄杆及夜間發光窗／燈條。36 m 高、樓層間距、開口、欄杆及燈光位置皆推算，並非建築測量；照片是整組看台而非足夠清楚的聯合看台單體施工圖。日夜獨立 WebGL 圖已看過，但造型仍規則、與照片的複雜階梯及接駁不完全相似；地面沒有可用入口，環形 collider 是封閉牆，尚未達完成標準。
+
+外牆 collider 用 OSM polygon 邊線，不使用跨道路的巨大包圍盒；0.5 m 格網對 collider 作同高道路採樣無命中，1,440 × 6 個跑道帶點沒有落入該多邊形，均不是連續碰撞或高程證明。場地邊界後方與地形銜接、真實出入口、完整遊戲 WebGPU 和駕駛仍未驗證。**原來另一端錯放的主看台／會所／博物館佔位仍存在，這次沒有把它改好或冒充已完成整組看台。**

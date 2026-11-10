@@ -1,0 +1,4 @@
+# 跑馬地馬場 references
+
+- `pavilion-stand-chong-fat-2008.jpg` — Chong Fat, 17 November 2008, [HK HappyValleyRaceCourse PavilionStand2.JPG](https://commons.wikimedia.org/wiki/File:HK_HappyValleyRaceCourse_PavilionStand2.JPG). [CC BY-SA 3.0](https://creativecommons.org/licenses/by-sa/3.0/) (also offered under GFDL 1.2+). Resized from the image-search copy. Shows long multi-level stands, dark glazing, projecting horizontal decks and deep roof; photo is historical, not a measured plan or proof of present-day details.
+- [HKJC Happy Valley Racecourse facilities directory](https://member.hkjc.com/member/english/about-membership/racecourses-facilities-guide/happy-valley-racecourse.aspx) identifies Pavilion Stand, Members Stands I–III, Grandstand, Happy Valley Stand and Racing Museum; it does not supply architectural dimensions. The existing OSM `building:levels=10` for Pavilion Stand is not a measured height.

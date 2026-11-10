@@ -15,6 +15,7 @@ import {
 } from './harbour-city-world-utils.js';
 import { harbourCityLocalCollider } from './harbour-city-architecture.js';
 import { buildHappyValleyPitches } from './happy-valley-pitches-world.js';
+import { buildHappyValleyPavilion } from './happy-valley-pavilion-world.js';
 
 const C = HAPPY_VALLEY_COLOURS;
 const DEG = Math.PI / 180;
@@ -304,6 +305,7 @@ export function buildHappyValleyRacecourse(root, { groundOffset = 0 } = {}) {
   buildGrounds(venue, materials, stats);
   buildCourse(venue, materials, stats);
   buildHappyValleyPitches(venue);
+  const pavilion = buildHappyValleyPavilion(venue, groundOffset);
   const { frame } = buildGrandstand(venue, materials, stats);
   buildClubHouse(venue, materials, stats, frame);
   buildInfield(venue, materials, stats);
@@ -329,6 +331,8 @@ export function buildHappyValleyRacecourse(root, { groundOffset = 0 } = {}) {
     const p = trackPoint(t, out);
     push(p.x, p.z, 1.6, 1.6, 36);
   }
+
+  colliders.push(...pavilion.colliders);
 
   const landmarks = [{
     id: 'happy-valley-racecourse', name: '跑馬地馬場 · Happy Valley Racecourse',
