@@ -621,3 +621,54 @@ test('all provisional floodlight bases avoid both racing bands', async () => {
     assert.ok(overlap<1e-5,`mast ${i} overlaps racing band ${overlap} m²`);
   }
 });
+
+test('infield boards clear both race bands, mapped venues and sampled road layers', async () => {
+  const clip=(await import('polygon-clipping')).default;
+  const {worldRingFromGeometry}=await import('../js/cities/hongkong/authored-landmark-site.js');
+  const {HAPPY_VALLEY_PITCHES}=await import('../js/cities/hongkong/happy-valley-pitches-world.js');
+  const {HAPPY_VALLEY_REMAINING_PITCH_FOOTPRINTS}=await import('../js/cities/hongkong/happy-valley-remaining-pitch-footprints.js');
+  const {HAPPY_VALLEY_STAND_FOOTPRINTS}=await import('../js/cities/hongkong/happy-valley-stand-footprints.js');
+  const {roadRibbonHeightAtSegment}=await import('../js/cities/hongkong/road-elevation.js');
+  const fit=JSON.parse(fs.readFileSync('tools/data/hongkong/happy-valley-experimental-smooth-fit.json','utf8'));
+  const points=fit.points,n=points.length;
+  const edge=(i,side)=>{
+    const p=points[i],a=points[(i+n-1)%n],b=points[(i+1)%n],dx=b[0]-a[0],dz=b[1]-a[1],l=Math.hypot(dx,dz);
+    const q=toWorld(p[0]-dz/l*15.25*side,p[1]+dx/l*15.25*side);return [q.x,q.z];
+  };
+  const candidate=points.map((_,i)=>{const next=(i+1)%n,r=[edge(i,1),edge(next,1),edge(next,-1),edge(i,-1)];r.push(r[0]);return [r];});
+  const old=Array.from({length:720},(_,i)=>{
+    const r=[[i/720,0],[(i+1)/720,0],[(i+1)/720,-arch.HAPPY_VALLEY_TRACK.width],[i/720,-arch.HAPPY_VALLEY_TRACK.width]]
+      .map(([t,d])=>{const p=arch.happyValleyTrackPoint(t,d),q=toWorld(p.x,p.z);return [q.x,q.z];});r.push(r[0]);return [r];
+  });
+  const area=multi=>multi.reduce((sum,poly)=>sum+poly.reduce((acc,ring,i)=>{
+    let a=0;for(let k=1;k<ring.length;k++)a+=ring[k-1][0]*ring[k][1]-ring[k][0]*ring[k-1][1];
+    return acc+(i?-1:1)*Math.abs(a)/2;
+  },0),0);
+  const mapped=[...HAPPY_VALLEY_PITCHES,...HAPPY_VALLEY_REMAINING_PITCH_FOOTPRINTS,...HAPPY_VALLEY_STAND_FOOTPRINTS]
+    .map(p=>worldRingFromGeometry(p.geometry)).concat([arch.HAPPY_VALLEY_PARADE_RING])
+    .map(r=>{const q=Array.from({length:r.length/2},(_,i)=>[r[2*i],r[2*i+1]]);if(q[0][0]!==q.at(-1)[0]||q[0][1]!==q.at(-1)[1])q.push(q[0]);return [q];});
+  const mesh=built.group.getObjectByName('HappyValleyInfieldBranding'),pos=mesh.geometry.getAttribute('position');
+  assert.equal(pos.count,72);
+  for(let start=0;start<pos.count;start+=24) {
+    const unique=new Map();for(let i=start;i<start+24;i++) {
+      const p=toWorld(pos.getX(i),pos.getZ(i));unique.set(`${p.x.toFixed(4)},${p.z.toFixed(4)}`,[p.x,p.z]);
+    }
+    const corners=[...unique.values()];assert.equal(corners.length,4);
+    const cx=corners.reduce((a,p)=>a+p[0],0)/4,cz=corners.reduce((a,p)=>a+p[1],0)/4;
+    corners.sort((a,b)=>Math.atan2(a[1]-cz,a[0]-cx)-Math.atan2(b[1]-cz,b[0]-cx));corners.push(corners[0]);
+    for(const shape of [...candidate,...old,...mapped])assert.ok(area(clip.intersection([corners],shape))<1e-5,'board enters racing band or mapped facility');
+    // Traverse the full length at <=0.5m spacing and both sides. Sampling
+    // does not replace continuous road clearance or head-height checks.
+    let lengths=corners.slice(0,4).map((p,i)=>Math.hypot(p[0]-corners[i+1][0],p[1]-corners[i+1][1]));
+    const k=lengths.indexOf(Math.max(...lengths)),a=corners[k],b=corners[(k+1)%4],d=corners[(k+3)%4],steps=Math.ceil(lengths[k]*2);
+    for(let j=0;j<=steps;j++)for(const across of [0,.5,1]) {
+      const u=j/steps,x=a[0]+(b[0]-a[0])*u+(d[0]-a[0])*across,z=a[1]+(b[1]-a[1])*u+(d[1]-a[1])*across;
+      for(const way of fullMeta.fullRoadWaysNear(x,z,10))for(let m=2;m<way.flat.length;m+=2) {
+        const ax=way.flat[m-2],az=way.flat[m-1],dx=way.flat[m]-ax,dz=way.flat[m+1]-az,l=dx*dx+dz*dz;if(l<.0025)continue;
+        const t=Math.max(0,Math.min(1,((x-ax)*dx+(z-az)*dz)/l)),px=ax+t*dx,pz=az+t*dz;
+        if(Math.hypot(x-px,z-pz)>way.width/2+1)continue;
+        assert.ok(Math.abs(roadRibbonHeightAtSegment(way.id,m/2-1,t,px,pz)-terrain.HONG_KONG_TERRAIN_META.happyValleyPadHeight)>=2.5,`board near road ${way.id}`);
+      }
+    }
+  }
+});

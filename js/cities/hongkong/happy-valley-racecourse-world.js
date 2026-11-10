@@ -338,10 +338,11 @@ function buildInfield(group, materials, stats) {
   const boards = [], frames = [], screenParts = [], screenText = [], screenRed = [], screenVideo = [];
   // Green "馬會" branding boards along the far side of the infield, as seen in the race-night photographs.
   // The fourth placeholder board crossed mapped service roads after the loop fix.
-  for (let i = 0; i < 3; i++) {
-    const t = 0.2 + i * 0.06;
-    const p = trackPoint(t, -HAPPY_VALLEY_TRACK.width - 6);
-    const next = trackPoint(t + 0.0005, -HAPPY_VALLEY_TRACK.width - 6);
+  // Small positional adjustments keep these estimated boards outside both
+  // the current course and the offline candidate; not surveyed sign locations.
+  for (const [t,offset] of [[.2,-43],[188/720,-39],[230/720,-37]]) {
+    const p = trackPoint(t, offset);
+    const next = trackPoint(t + 0.0005, offset);
     const ry = Math.atan2(-(next.z - p.z), next.x - p.x);
     box(boards, [p.x, 2.3, p.z], [26, 4.2, 0.5], ry);
   }
