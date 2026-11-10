@@ -144,7 +144,7 @@ test('the provisional course and mapped Pavilion are present without the misplac
   ]) assert.ok(names.includes(name), name);
   for (const name of ['HappyValleyGrandstand', 'HappyValleyClubhouse', 'HappyValleyClubTower', 'HappyValleyClubAndMuseum'])
     assert.ok(!names.includes(name), `${name} was an unmapped placeholder on the wrong side`);
-  assert.equal(built.stats.happyValleyFloodlightMasts, 6);
+  assert.equal(built.stats.happyValleyFloodlightMasts, 14);
   assert.equal(built.stats.happyValleyBrandingBoards, 3);
   assert.ok(!names.includes('HappyValleyInfieldSandRing'), 'do not obscure mapped sports grounds with a speculative sand oval');
 });
@@ -291,9 +291,9 @@ test('racecourse floodlights have discrete night-emissive lamp faces', () => {
   assert.ok(faces?.material.isNodeMaterial && faces.material.emissiveNode);
   assert.ok(frames?.isMesh);
   // Six provisional poles, two rows of eight lamps; BoxGeometry has 24 vertices.
-  assert.equal(faces.geometry.getAttribute('position').count,6*2*8*24);
-  assert.equal(frames.geometry.getAttribute('position').count,6*2*8*24);
-  assert.equal(built.stats.happyValleyFloodlightMasts,6);
+  assert.equal(faces.geometry.getAttribute('position').count,14*2*8*24);
+  assert.equal(frames.geometry.getAttribute('position').count,14*2*8*24);
+  assert.equal(built.stats.happyValleyFloodlightMasts,14);
 });
 
 test('racecourse overlays do not cover generated shallow road-tunnel openings', async () => {
@@ -349,7 +349,7 @@ test('floodlight spots illuminate only at night and when the camera is nearby', 
   const previous=cityUniforms.uInteriorGlow.value,lights=[];
   try {
     built.group.traverse(o=>{if(o.name==='HappyValleyFloodlightSpot')lights.push(o)});
-    assert.equal(lights.length,12); assert.ok(lights.every(l=>l.isSpotLight&&!l.castShadow));
+    assert.equal(lights.length,20); assert.ok(lights.every(l=>l.isSpotLight&&!l.castShadow));
     const near={cameraSystem:{currentPos:{x:site().x,z:site().z}}},far={cameraSystem:{currentPos:{x:site().x+1200,z:site().z}}};
     cityUniforms.uInteriorGlow.value=0;built.update(near);assert.ok(lights.every(l=>l.intensity===0));
     cityUniforms.uInteriorGlow.value=1.4;built.update(near);assert.ok(lights.every(l=>l.intensity>0));
@@ -466,6 +466,28 @@ test('estimated infield screen has distinct night-emissive information panels', 
       v.fromBufferAttribute(vertices,i).applyMatrix4(mesh.matrixWorld);
       const road=fullMeta.fullRoadSurfaceAt(v.x,v.z,0,terrain.HONG_KONG_TERRAIN_META.happyValleyPadHeight);
       assert.ok(!road || Math.abs(road.height-terrain.HONG_KONG_TERRAIN_META.happyValleyPadHeight)>=2.5,`${name} over road`);
+    }
+  }
+});
+
+test('additional provisional floodlight bases clear sampled mapped pitches, stands and road layers', async () => {
+  const {roadRibbonHeightAtSegment}=await import('../js/cities/hongkong/road-elevation.js');
+  const {worldRingFromGeometry}=await import('../js/cities/hongkong/authored-landmark-site.js');
+  const park=JSON.parse(fs.readFileSync('tools/data/hongkong/parks.json')).elements;
+  const landmarks=JSON.parse(fs.readFileSync('tools/data/hongkong/landmarks.json')).elements;
+  const stands=new Set([494027781,1356276114,1356276115,1356276116,1356276117,1356276118]);
+  const rings=[arch.HAPPY_VALLEY_PARADE_RING,...park.filter(p=>p.tags?.leisure==='pitch'&&p.geometry).map(p=>worldRingFromGeometry(p.geometry)),...landmarks.filter(p=>stands.has(p.id)).map(p=>worldRingFromGeometry(p.geometry))];
+  const bases=built.colliders.slice(-8);assert.equal(bases.length,8);
+  for(const base of bases)for(const dx of [-.8,0,.8])for(const dz of [-.8,0,.8]) {
+    const x=base.x+dx,z=base.z+dz;
+    assert.ok(ringUtils.pointInFlatRing(site().ring,x,z),'outside venue');
+    for(const ring of rings)assert.ok(!ringUtils.pointInFlatRing(ring,x,z),'base enters mapped pitch or stand');
+    for(const way of fullMeta.fullRoadWaysNear(x,z,10))for(let j=2;j<way.flat.length;j+=2){
+      const ax=way.flat[j-2],az=way.flat[j-1],vx=way.flat[j]-ax,vz=way.flat[j+1]-az,l=vx*vx+vz*vz;
+      if(l<.0025)continue;const t=Math.max(0,Math.min(1,((x-ax)*vx+(z-az)*vz)/l)),px=ax+t*vx,pz=az+t*vz;
+      if(Math.hypot(x-px,z-pz)>way.width/2+1)continue;
+      const h=roadRibbonHeightAtSegment(way.id,j/2-1,t,px,pz);
+      assert.ok(Math.abs(h-terrain.HONG_KONG_TERRAIN_META.happyValleyPadHeight)>=2.5,`base on road ${way.id}`);
     }
   }
 });

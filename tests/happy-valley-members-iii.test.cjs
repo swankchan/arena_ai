@@ -25,7 +25,7 @@ test('building mesh vertices and wall collider samples avoid same-level roads',(
     v.fromBufferAttribute(p,i).applyMatrix4(mesh.matrixWorld);let hit=road(v.x,v.z,0,ground);count++;
     assert.ok(!hit||Math.abs(hit.height-ground)>=2.5,`${mesh.name} on road ${hit?.way.id}`);
   }});assert.ok(count>10000);
-  const walls=built.colliders.slice(15);assert.equal(walls.length,7);
+  const walls=built.colliders.slice(15,22);assert.equal(walls.length,7);
   for(const c of walls) for(let x=c.minX;x<=c.maxX;x+=.5)for(let z=c.minZ;z<=c.maxZ;z+=.5){
     const dx=x-c.x,dz=z-c.z;if(Math.abs(dx*c.obb.cs-dz*c.obb.sn)>c.obb.hx||Math.abs(dx*c.obb.sn+dz*c.obb.cs)>c.obb.hz)continue;
     let hit=road(x,z,0,ground);assert.ok(!hit||Math.abs(hit.height-ground)>=2.5,`wall crosses road ${hit?.way.id}`);

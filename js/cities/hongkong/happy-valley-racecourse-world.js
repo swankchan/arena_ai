@@ -34,6 +34,10 @@ const DEG = Math.PI / 180;
 // the mapped venue, off sampled roads. They are provisional positions, not a
 // survey of the actual floodlight locations.
 const FLOODLIGHT_POSITIONS = [[0.02, 52], [0.14, 5], [0.30, 20], [0.70, 20], [0.86, 10], [0.96, 46]];
+// Additional estimated positions on the old provisional track's outside; these
+// are not surveyed poles and must be reconsidered when the circuit is refit.
+const EXTRA_FLOODLIGHT_POSITIONS = [[.069444,7],[.180556,7],[.263889,12],[.402778,7],
+  [.513889,7],[.597222,7],[.763889,12],[.902778,7]];
 
 
 function makeMaterials() {
@@ -381,8 +385,9 @@ function buildGrounds(group, materials, stats, groundOffset) {
   apron.name = 'HappyValleyGroundApron';
   cutRacecourseTunnelOpenings(apron);
   grounds.add(apron);
-  // Six floodlight masts around the course, four on the stand side and two opposite.
-  for (const [t, out] of FLOODLIGHT_POSITIONS) {
+  // Original six and additional inferred masts. Extra heads add one modest
+  // local light each, with no shadow maps, to reduce patchy illumination.
+  for (const [index,[t, out]] of [...FLOODLIGHT_POSITIONS,...EXTRA_FLOODLIGHT_POSITIONS].entries()) {
     const p = trackPoint(t, out);
     cylinder(masts, [p.x, 17, p.z], 0.42, 34, 8);
     // Modular banks on a crossbar, facing the track/infield rather than
@@ -390,7 +395,8 @@ function buildGrounds(group, materials, stats, groundOffset) {
     const target=trackPoint(t,-HAPPY_VALLEY_TRACK.width-6);
     // A bounded, downward-facing local light provides a modest night wash on
     // actual geometry, unlike the emissive faces alone. No dynamic shadows.
-    for(const [aim,strength] of [[.2,4400],[.75,9000]]) {
+    const beams=index<FLOODLIGHT_POSITIONS.length?[[.2,4400],[.75,9000]]:[[.35,3800]];
+    for(const [aim,strength] of beams) {
       const lamp=new THREE.SpotLight(0xe7f0ff,0,210,1.22,.8,2);
       lamp.name='HappyValleyFloodlightSpot';lamp.position.set(p.x,34,p.z);
       lamp.target.position.set(p.x+(HAPPY_VALLEY_TRACK.centreX-p.x)*aim,0,p.z+(HAPPY_VALLEY_TRACK.centreZ-p.z)*aim);
@@ -470,7 +476,7 @@ function buildGrounds(group, materials, stats, groundOffset) {
   merged(grounds, wallBase, materials.perimeterBase, 'HappyValleyPerimeterWallBase');
   merged(grounds, fence, materials.perimeterMetal, 'HappyValleyPerimeterFence');
   merged(grounds, fencePickets, materials.perimeterMetal, 'HappyValleyPerimeterPickets');
-  stats.happyValleyFloodlightMasts = 6;
+  stats.happyValleyFloodlightMasts = FLOODLIGHT_POSITIONS.length + EXTRA_FLOODLIGHT_POSITIONS.length;
   stats.happyValleyFloodlightHeight = 36;
   stats.happyValleyGates = gates.length;
   return { grounds, gates, floodlights };
@@ -503,6 +509,10 @@ export function buildHappyValleyRacecourse(root, { groundOffset = 0 } = {}) {
   }
 
   colliders.push(...pavilion.colliders, ...membersIII.colliders);
+  // Keep the established collider order stable for existing entrance checks.
+  for (const [t,out] of EXTRA_FLOODLIGHT_POSITIONS) {
+    const p=trackPoint(t,out);push(p.x,p.z,1.6,1.6,36);
+  }
 
   const landmarks = [{
     id: 'happy-valley-racecourse', name: '跑馬地馬場 · Happy Valley Racecourse',

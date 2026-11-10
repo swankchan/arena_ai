@@ -163,3 +163,9 @@ OSM 馬場 relation 8049451 為場地邊界，不是圍牆測量；照片搜尋�
 ### 內場資訊屏（暫定）
 
 2019 年 Happy Valley 場邊照片顯示內場大屏有深色底、影片區和紅色賠率區（https://www.dreamstime.com/photos-images/valley-horse-race-track-hong-kong.html 的搜尋圖）；舊版是單一刺眼青色矩形。現沿用原估算尺寸及位置，改為面向 Pavilion 一側的深色屏、青色畫面區、紅色區及抽象行列，夜間自發光。行列不是即時資料、文字或真實賠率；位置、比例及朝向未測量，原屏與實驗跑道候選線有衝突，因此不是最終重建。圖層頂點抽樣未命中同高最近道路；局部 WebGL 日／夜畫面已檢，完整遊戲、WebGPU 及連續碰撞未驗。
+
+### Additional provisional course floodlights
+
+Night photographs such as [this Happy Valley racecourse view](https://dreamstime.com/photos-images/racecourse-night-view.html) show a succession of floodlit poles around the course, rather than just six isolated banks. Eight estimated banks have been added alongside the **existing provisional** course; their exact number, height and coordinates are not surveyed. They use the same visible lamp-bank construction and one additional shadowless, distance/night-gated spotlight apiece (20 spotlights total). An isolated WebGL night view shows more pools of illumination, but the result remains visibly uneven and is not a photometric reconstruction. Full-world WebGPU and performance have not been checked.
+
+The eight new 1.6 m square collider bases are sampled against the venue ring, mapped pitch and stand polygons, parade ring and every nearby same-level road segment. This is not a continuous swept clearance or a clearance check of the lamp heads. They follow the old fitted circuit, not the experimental refit: all positions, aim and collisions must be reviewed when that circuit changes. The terrain remains unresolved; a further offline grade trial lowered the target 0.6 m below the pad and cleared all 2,732 sampled track rays, but still produced a conspicuous jagged terrain/apron edge, and some sampled roads lay about 0.625 m above the graded terrain before considering the lawn overlay. It was not applied to runtime.
