@@ -311,3 +311,25 @@ test('racecourse overlays do not cover generated shallow road-tunnel openings', 
   }
   assert.ok(inside>50);
 });
+
+test('infield tunnel retaining edges stay outside sampled roadway corridors', async () => {
+  const {fullRoadWaysNear}=await import('../js/cities/hongkong/full-meta.js');
+  const {roadRibbonHeightAtSegment}=await import('../js/cities/hongkong/road-elevation.js');
+  const wall=built.group.getObjectByName('HappyValleyTunnelRetainingWalls');
+  assert.ok(wall);assert.ok(built.stats.happyValleyTunnelWallSegments>200);
+  built.group.updateMatrixWorld(true);let rays=0;
+  for(const road of fullRoadWaysNear(2150,835,130)) {
+    if(![41115,41116,43020].includes(road.id))continue;
+    for(let i=2;i<road.flat.length;i+=2){
+      let [ax,az,bx,bz]=road.flat.slice(i-2,i+2),dx=bx-ax,dz=bz-az,L=Math.hypot(dx,dz),nx=dz/L,nz=-dx/L,N=Math.ceil(L);
+      for(let j=0;j<=N;j++){
+        const t=j/N,x=ax+dx*t,z=az+dz*t,y=roadRibbonHeightAtSegment(road.id,i/2-1,t,x,z),half=road.width/2-.15;
+        for(const height of [.3,1.4,2.8,4.2]) {
+          const ray=new THREE.Raycaster(new THREE.Vector3(x-nx*half,y+height,z-nz*half),new THREE.Vector3(nx,0,nz),0,2*half);
+          assert.equal(ray.intersectObject(wall).length,0,`wall across road ${road.id}, station ${i/2-1}:${t}, height ${height}`);rays++;
+        }
+      }
+    }
+  }
+  assert.ok(rays>500);
+});

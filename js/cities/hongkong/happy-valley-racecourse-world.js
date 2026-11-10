@@ -21,6 +21,7 @@ import { HAPPY_VALLEY_MEMBERS_III, HAPPY_VALLEY_MEMBERS_III_ENTRANCE } from './h
 import { fullRoadSurfaceAt } from './full-meta.js';
 import { TERRAIN_TUNNEL_OPENING_RECTS } from './road-elevation.js';
 import { subtractTunnelOpenings } from './tunnel-openings.js';
+import { buildHappyValleyTunnelWalls } from './happy-valley-tunnel-walls.js';
 
 const C = HAPPY_VALLEY_COLOURS;
 const DEG = Math.PI / 180;
@@ -365,6 +366,7 @@ export function buildHappyValleyRacecourse(root, { groundOffset = 0 } = {}) {
   const materials = makeMaterials();
   const stats = {};
   buildGrounds(venue, materials, stats, groundOffset);
+  stats.happyValleyTunnelWallSegments = buildHappyValleyTunnelWalls(venue,groundOffset).segments;
   buildCourse(venue, materials, stats, groundOffset);
   buildHappyValleyPitches(venue);
   const pavilion = buildHappyValleyPavilion(venue, groundOffset);
