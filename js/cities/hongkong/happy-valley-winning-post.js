@@ -66,7 +66,7 @@ export function buildHappyValleyWinningPost(parent) {
   shape.lineTo((rx-band)*Math.cos(start),0);
   shape.closePath();
   const gold=new THREE.MeshStandardNodeMaterial({color:0xf7ca13,roughness:.58,metalness:.08});
-  gold.emissiveNode=color(0xe6aa13).mul(nightAmount().mul(.22).add(.18));
+  gold.emissiveNode=color(0xe6aa13).mul(nightAmount().mul(.22).add(.40));
   const arch=new THREE.Mesh(new THREE.ExtrudeGeometry(shape,{depth,bevelEnabled:false,curveSegments:32}),gold);
   arch.position.z=-depth/2;arch.name='HappyValleyWinningPostArch';group.add(arch);
   const tex=letteringTexture();
