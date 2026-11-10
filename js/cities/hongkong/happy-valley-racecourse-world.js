@@ -47,6 +47,8 @@ function makeMaterials() {
     infield: new THREE.MeshStandardMaterial({ color: new THREE.Color(...C.infield), roughness: 0.96 }),
     paradePath: new THREE.MeshStandardMaterial({ color: 0xc96b50, roughness: 0.92, polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -2 }),
     paradeWall: new THREE.MeshStandardMaterial({ color: 0xc9bba1, roughness: 0.87 }),
+    perimeterBase: new THREE.MeshStandardMaterial({ color: 0x999b90, roughness: 0.9 }),
+    perimeterMetal: new THREE.MeshStandardMaterial({ color: 0x52665c, roughness: 0.65, metalness: 0.2 }),
     paradeFoliage: new THREE.MeshStandardMaterial({ color: 0x345d32, roughness: 0.95 }),
     paradeFlowersRed: new THREE.MeshStandardMaterial({ color: 0xad2520, roughness: 0.9 }),
     paradeFlowersOrange: new THREE.MeshStandardMaterial({ color: 0xd7772e, roughness: 0.9 }),
@@ -312,7 +314,7 @@ function buildInfield(group, materials, stats) {
 // ---------------------------------------------------------------------------------------------------------------
 function buildGrounds(group, materials, stats, groundOffset) {
   const grounds = new THREE.Group(); grounds.name = 'HappyValleyGrounds'; group.add(grounds);
-  const masts = [], heads = [], lampFrames = [], lampFaces = [], fence = [], gates = [], floodlights = [];
+  const masts = [], heads = [], lampFrames = [], lampFaces = [], fence = [], wallBase = [], fencePickets = [], gates = [], floodlights = [];
   const site = HAPPY_VALLEY_SITE;
   const ring = site.localRing;
   let minX = Infinity, maxX = -Infinity, minZ = Infinity, maxZ = -Infinity;
@@ -378,8 +380,16 @@ function buildGrounds(group, materials, stats, groundOffset) {
       const a=point(j/steps), b=point((j+1)/steps), mid=point((j+.5)/steps);
       if ([a,mid,b].some(nearDoor)) { entranceFenceGaps++; continue; }
       if ([a,mid,b].some(p => trackRoadConflict(p,groundOffset,1.2))) { roadFenceGaps++; continue; }
-      for (const height of [1.9, 1.0]) beam(fence, [a.x,height,a.z], [b.x,height,b.z], .07,.07);
-      if (j%3===0) cylinder(fence,[a.x,1,a.z],.08,2,6);
+      // A low masonry plinth and open metal infill make the site edge legible.
+      // Appearance is an estimate: the OSM relation is not a surveyed wall.
+      beam(wallBase, [a.x,.23,a.z], [b.x,.23,b.z], .46,.24);
+      for (const height of [.55, 1.85]) beam(fence, [a.x,height,a.z], [b.x,height,b.z], .07,.07);
+      const pickets=Math.max(1,Math.floor(Math.hypot(b.x-a.x,b.z-a.z)/.55));
+      for(let k=0;k<pickets;k++) {
+        const f=(k+.5)/pickets,x=a.x+(b.x-a.x)*f,z=a.z+(b.z-a.z)*f;
+        cylinder(fencePickets,[x,1.2,z],.025,1.3,5);
+      }
+      if (j%3===0) cylinder(fence,[a.x,1.15,a.z],.06,1.5,6);
     }
   }
   stats.happyValleyRoadFenceGaps = roadFenceGaps;
@@ -388,7 +398,9 @@ function buildGrounds(group, materials, stats, groundOffset) {
   merged(grounds, heads, materials.standShade, 'HappyValleyFloodlightHeads');
   merged(grounds, lampFrames, materials.glass, 'HappyValleyFloodlightLampFrames');
   merged(grounds, lampFaces, materials.floodlight, 'HappyValleyFloodlightLampFaces', false);
-  merged(grounds, fence, materials.rail, 'HappyValleyPerimeterFence');
+  merged(grounds, wallBase, materials.perimeterBase, 'HappyValleyPerimeterWallBase');
+  merged(grounds, fence, materials.perimeterMetal, 'HappyValleyPerimeterFence');
+  merged(grounds, fencePickets, materials.perimeterMetal, 'HappyValleyPerimeterPickets');
   stats.happyValleyFloodlightMasts = 6;
   stats.happyValleyFloodlightHeight = 36;
   stats.happyValleyGates = gates.length;

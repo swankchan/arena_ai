@@ -251,7 +251,7 @@ test('temporary rail and fence gaps avoid sampled same-level road vertices', () 
   assert.ok(built.stats.happyValleyRoadRailGaps > 0);
   assert.ok(built.stats.happyValleyRoadFenceGaps > 0);
   assert.ok(built.stats.happyValleyRoadSurfaceGaps > 0);
-  for (const name of ['HappyValleyTrackSurface', 'HappyValleyRunningRails', 'HappyValleyRunningRailPosts', 'HappyValleyPerimeterFence']) {
+  for (const name of ['HappyValleyTrackSurface', 'HappyValleyRunningRails', 'HappyValleyRunningRailPosts', 'HappyValleyPerimeterFence', 'HappyValleyPerimeterWallBase', 'HappyValleyPerimeterPickets']) {
     const mesh = built.group.getObjectByName(name);
     const pos = mesh.geometry.getAttribute('position'), v = new THREE.Vector3();
     let hits = 0;
