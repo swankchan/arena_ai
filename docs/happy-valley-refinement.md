@@ -25,3 +25,9 @@
 重跑診斷：3,600 個帶狀採樣有 1,018 落入八個 OSM 球場輪廓、105 與同高道路重疊，這是採樣數目而非相交面積；修連續性沒有解決錯位。已移除憑空估算的場內巨大橢圓沙圈（並非依據測量的馬匹亮相圈），未有用假圖形冒充內場球場。模型另有亮相圈佔位，位置仍未驗。新參數令兩支燈柱中心落在場地外，已移近外欄並檢查六支中心的 2 m 道路採樣；移除一塊與場內道路衝突的佔位廣告板。這不是燈柱或所有廣告板的真實位置、連續道路淨空或車輛行駛認證。
 
 球場、主看台、賽道、亮相圈和照明仍須對照航空及場邊照片重建；場內地面目前仍是通用草面，並非完成球場。看台和燈柱位置、高度以及地台與相鄰道路的過渡均未測量。尚未進行完整遊戲或 WebGPU 視覺／駕駛測試；道路衝突 TODO 繼續保留。參考：康文署列出 [1–4 號仿真草球場等](https://www.lcsd.gov.hk/en/facilities/facilitiesbooking/procedure/14day_soccerpitch_balloting.html/1000)；[馬會](https://corporate.hkjc.com/en-us/who-we-are/our-history/our-milestones) 指 1973 年開始夜馬。這兩處資料並不提供賽道或燈柱測量。
+
+## 馬匹亮相圈（局部修正）
+
+原有 24 m 圓形沙地及旁邊虛構小看台，置於場地另一端，並非可靠位置。現用本地 OSM 摘錄的 [way 1056788255](https://www.openstreetmap.org/way/1056788255)（`horse_racing=paddock`、名為「馬匹亮相圈」）定位及繪畫輪廓，並移除那座虛構小看台。對照 Getty 的 [2015 場邊照片](https://gettyimages.fr/photos/hong-kong-jockey-club-racing) 及 [2022 照片](https://gettyimages.com/photos/hong-kong-races-happy-valley)，可見深綠地面、紅色步行帶及淺色欄杆；材質色調、步行帶寬度和開口位置仍是推算，OSM 標記 `surface=grass`，不可視為測量圖。香港馬會的[會員設施資料](https://member.hkjc.com/member/english/go-racing/members/members-boxes.aspx)區分多座會員看台，不能以單一小方盒代替。真實看台、圍欄開口、伸縮上蓋及連接入口仍待重建。
+
+回歸檢查來源節點和渲染頂點、沿輪廓每約 1 m 採樣 1 m 路面餘量；未發現同高道路，但不是連續避碰或高程測量。`tests/visual/happy-valley-paddock.html` 的獨立 WebGL 圖可見長形亮相區，尚未包含周邊真實看台；不代表完整世界或 WebGPU 已核驗。現有主看台佔位距 OSM 看台區很遠，位置嚴重錯誤，與此亮相圈尚未接駁；不得視為完工。

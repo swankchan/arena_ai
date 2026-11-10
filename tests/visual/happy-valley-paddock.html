@@ -1,0 +1,12 @@
+<!doctype html><meta charset="utf-8"><style>body{margin:0}</style>
+<script type="importmap">{"imports":{"three":"../../vendor/three/build/three.webgpu.js","three/webgpu":"../../vendor/three/build/three.webgpu.js","three/tsl":"../../vendor/three/build/three.tsl.js","three/addons/":"../../vendor/three/examples/jsm/"}}</script>
+<script type="module">
+import * as THREE from 'three/webgpu';
+import {buildHappyValleyRacecourse} from '../../js/cities/hongkong/happy-valley-racecourse-world.js';
+const scene = new THREE.Scene(); scene.background = new THREE.Color(0xadc5d1);
+buildHappyValleyRacecourse(scene, {groundOffset: 11.33165});
+scene.add(new THREE.HemisphereLight(0xffffff,0x566a58,1));
+const sun=new THREE.DirectionalLight(0xffffff,2);sun.position.set(2200,250,1200);scene.add(sun);
+const camera=new THREE.PerspectiveCamera(45,1.6,.1,2500);camera.position.set(2110,100,1110);camera.lookAt(2168,11,1072);
+const renderer=new THREE.WebGPURenderer({forceWebGL:true,antialias:true});await renderer.init();renderer.setSize(1280,800);document.body.appendChild(renderer.domElement);renderer.render(scene,camera);window.ready=true;
+</script>

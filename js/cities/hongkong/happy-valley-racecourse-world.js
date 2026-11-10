@@ -8,10 +8,10 @@ import { attribute } from 'three/tsl';
 import {
   happyValleyTerrainHeightAt, happyValleyTrackPoint,
   HAPPY_VALLEY_SITE, HAPPY_VALLEY_TRACK, HAPPY_VALLEY_MAIN_STAND, HAPPY_VALLEY_CLUBHOUSE, HAPPY_VALLEY_COLOURS,
-  HAPPY_VALLEY_CAPACITY, HAPPY_VALLEY_OPENED,
+  HAPPY_VALLEY_CAPACITY, HAPPY_VALLEY_OPENED, HAPPY_VALLEY_PARADE_LOCAL_RING,
 } from './happy-valley-racecourse-architecture.js';
 import {
-  merged, box, cylinder, beam, store, quad, meshStore, harbourCityPalette, roofGeometry,
+  merged, box, cylinder, beam, store, quad, meshStore, harbourCityPalette, roofGeometry, scaledRing,
 } from './harbour-city-world-utils.js';
 import { harbourCityLocalCollider } from './harbour-city-architecture.js';
 
@@ -34,6 +34,8 @@ function makeMaterials() {
     grass: new THREE.MeshStandardMaterial({ color: new THREE.Color(...C.grass), roughness: 0.95 }),
     grassStripe: new THREE.MeshStandardMaterial({ color: new THREE.Color(...C.grassStripe), roughness: 0.95 }),
     infield: new THREE.MeshStandardMaterial({ color: new THREE.Color(...C.infield), roughness: 0.96 }),
+    paradePath: new THREE.MeshStandardMaterial({ color: 0x884239, roughness: 0.92 }),
+    paradeCentre: new THREE.MeshStandardMaterial({ color: 0x316b60, roughness: 0.95 }),
     sand: new THREE.MeshStandardMaterial({ color: new THREE.Color(...C.sand), roughness: 0.98 }),
     rail: new THREE.MeshStandardMaterial({ color: new THREE.Color(...C.rail), roughness: 0.5, metalness: 0.15 }),
     stand: new THREE.MeshStandardMaterial({ color: new THREE.Color(...C.standWhite), roughness: 0.62 }),
@@ -216,29 +218,32 @@ function buildInfield(group, materials, stats) {
   box(screenParts, [screenAt.x, 6.5, screenAt.z], [26, 11, 1.2], frame.ry);
   box(screenParts, [screenAt.x, 0.9, screenAt.z], [8, 1.8, 3.2], frame.ry);
   box(frames, [screenAt.x, 12.6, screenAt.z], [27.5, 1.4, 1.8], frame.ry);
-  // Parade ring: a railed oval on the wide apron on the far side of the course, with a covered viewing stand.
-  const ringAt = trackPoint(0.93, 26);
-  const ringNext = trackPoint(0.9305, 26);
-  const ringRy = Math.atan2(-(ringNext.z - ringAt.z), ringNext.x - ringAt.x);
-  const sand = store(), ringRail = [];
-  for (let i = 0; i < 40; i++) {
-    const a0 = (i / 40) * Math.PI * 2, a1 = ((i + 1) / 40) * Math.PI * 2;
-    const r = 12;
-    quad(sand, [ringAt.x, 0.12, ringAt.z],
-      [ringAt.x + Math.cos(a0) * r, 0.12, ringAt.z + Math.sin(a0) * r],
-      [ringAt.x + Math.cos(a1) * r, 0.12, ringAt.z + Math.sin(a1) * r], [ringAt.x, 0.12, ringAt.z], C.sand);
-    beam(ringRail, [ringAt.x + Math.cos(a0) * r, 1.0, ringAt.z + Math.sin(a0) * r],
-      [ringAt.x + Math.cos(a1) * r, 1.0, ringAt.z + Math.sin(a1) * r], 0.06, 0.06);
+  // Mapped paddock footprint. A reddish walking edge and muted green centre
+  // recall the paddock photographs, but their widths and the rail are estimates.
+  const ring = HAPPY_VALLEY_PARADE_LOCAL_RING;
+  const outer = new THREE.Mesh(roofGeometry(ring, 0.14), materials.paradePath);
+  outer.name = 'HappyValleyParadeRingSurface'; infield.add(outer);
+  const centre = new THREE.Mesh(roofGeometry(scaledRing(ring, 0.76), 0.155), materials.paradeCentre);
+  centre.name = 'HappyValleyParadeRingCentre'; infield.add(centre);
+  const ringRail = [];
+  // Leave a gap at each rounded end for access; actual gate positions are unknown.
+  for (let i = 0; i < ring.length - 2; i += 2) {
+    if (i === 0 || i === 12) continue;
+    const ax = ring[i], az = ring[i + 1], bx = ring[i + 2], bz = ring[i + 3];
+    for (const y of [0.55, 1.05]) beam(ringRail, [ax, y, az], [bx, y, bz], 0.07, 0.07);
+    const count = Math.max(1, Math.ceil(Math.hypot(bx - ax, bz - az) / 3));
+    for (let k = 0; k < count; k++) {
+      const t = k / count;
+      cylinder(ringRail, [ax + (bx - ax) * t, 0.55, az + (bz - az) * t], 0.055, 1.1, 6);
+    }
   }
-  box(frames, [ringAt.x, 3.0, ringAt.z - 16], [14, 6, 9], ringRy);
-  meshStore(infield, sand, materials.sand, 'HappyValleyParadeRingSurface', false);
   merged(infield, ringRail, materials.rail, 'HappyValleyParadeRingRail');
   merged(infield, boards, materials.club, 'HappyValleyInfieldBranding');
-  merged(infield, frames, materials.roof, 'HappyValleyParadeViewingStand');
+  merged(infield, frames, materials.roof, 'HappyValleyScreenFrame');
   merged(infield, screenParts.slice(0, 1), materials.screen, 'HappyValleyBigScreen');
   merged(infield, screenParts.slice(1), materials.standShade, 'HappyValleyBigScreenBase');
   stats.happyValleyBrandingBoards = boards.length;
-  stats.happyValleyParadeRingMetres = 2 * Math.PI * 12;
+  stats.happyValleyParadeOsmId = 1056788255;
   return infield;
 }
 

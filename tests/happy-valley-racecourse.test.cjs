@@ -141,7 +141,7 @@ test('the course, stands, clubhouse and museum are all modelled', () => {
     'HappyValleyGrandstandGlazing', 'HappyValleyGrandstandRoof', 'HappyValleyGrandstandColumns',
     'HappyValleyClubAndMuseum', 'HappyValleyClubGlazing', 'HappyValleyClubTower',
     'HappyValleyInfieldBranding', 'HappyValleyBigScreen', 'HappyValleyBigScreenBase',
-    'HappyValleyParadeRingSurface', 'HappyValleyParadeRingRail', 'HappyValleyParadeViewingStand',
+    'HappyValleyParadeRingSurface', 'HappyValleyParadeRingCentre', 'HappyValleyParadeRingRail', 'HappyValleyScreenFrame',
     'HappyValleyFloodlightMasts', 'HappyValleyFloodlightHeads', 'HappyValleyPerimeterFence',
   ]) assert.ok(names.includes(name), name);
   assert.equal(built.stats.happyValleyGrandstandTiers, 12);
@@ -152,14 +152,34 @@ test('the course, stands, clubhouse and museum are all modelled', () => {
   assert.ok(built.stats.happyValleyGrandstandSeats > 3000, `seats ${built.stats.happyValleyGrandstandSeats}`);
 });
 
-test('the parade ring sits on its own apron, clear of the rail and the fence', () => {
-  const ringAt = arch.happyValleyTrackFrame(0.93, 26);
-  const rail = arch.happyValleyTrackFrame(0.93, 0);
-  const distance = Math.hypot(ringAt.x - rail.x, ringAt.z - rail.z);
-  assert.ok(distance > 26 - 4, `parade ring stands ${distance.toFixed(1)} m off the rail`);
-  const world = toWorld(ringAt.x, ringAt.z);
-  assert.ok(ringUtils.pointInFlatRing(site().ring, world.x, world.z));
-  assert.equal(built.stats.happyValleyParadeRingMetres, 2 * Math.PI * 12);
+test('parade ring follows the mapped paddock, not the old speculative circle', () => {
+  assert.equal(arch.HAPPY_VALLEY_PARADE_SOURCE.id, 1056788255);
+  assert.equal(built.stats.happyValleyParadeOsmId, 1056788255);
+  const source = JSON.parse(fs.readFileSync(path.join(root, 'tools/data/hongkong/parks.json')))
+    .elements.find((element) => element.type === 'way' && element.id === 1056788255);
+  assert.deepEqual(arch.HAPPY_VALLEY_PARADE_SOURCE.geometry, source.geometry);
+  let surface;
+  built.group.traverse((node) => { if (node.name === 'HappyValleyParadeRingSurface') surface = node; });
+  assert.ok(surface);
+  const pos = surface.geometry.getAttribute('position');
+  for (let i = 0; i < pos.count; i++) {
+    const localX = pos.getX(i), localZ = pos.getZ(i);
+    const nearest = arch.HAPPY_VALLEY_PARADE_LOCAL_RING.reduce((best, x, j, r) =>
+      j % 2 ? best : Math.min(best, Math.hypot(x - localX, r[j + 1] - localZ)), Infinity);
+    assert.ok(nearest < 0.001, `surface vertex ${i} does not follow OSM`);
+  }
+  const ring = arch.HAPPY_VALLEY_PARADE_RING;
+  for (let i = 0; i < ring.length - 2; i += 2) {
+    const ax = ring[i], az = ring[i + 1], bx = ring[i + 2], bz = ring[i + 3];
+    const steps = Math.ceil(Math.hypot(bx - ax, bz - az));
+    for (let k = 0; k <= steps; k++) {
+      const t = k / steps, x = ax + (bx - ax) * t, z = az + (bz - az) * t;
+      const road = fullMeta.fullRoadSurfaceAt(x, z, 1, terrain.HONG_KONG_TERRAIN_META.happyValleyPadHeight);
+      assert.ok(!road || Math.abs(road.height - terrain.HONG_KONG_TERRAIN_META.happyValleyPadHeight) >= 2.5,
+        `paddock boundary intersects road ${road?.way.id}`);
+    }
+  }
+  assert.ok(!built.group.getObjectByName('HappyValleyParadeViewingStand'), 'invented stand was removed');
 });
 
 test('the built geometry is finite and stands inside the fence', () => {

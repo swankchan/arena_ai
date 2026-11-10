@@ -18,6 +18,7 @@
 // night meetings run here every Wednesday since 1973.
 import {
   makeAuthoredSite, authoredOsmSource, authoredTerrainHeightAt, AUTHORED_OSM_RETRIEVED,
+  worldRingFromGeometry, localRingFromWorld,
 } from './authored-landmark-site.js';
 
 // OSM relation 8049451, outer ways 23766488 + 563842038 + 524353365 + 563648701 (63 ring positions).
@@ -67,6 +68,24 @@ export const HAPPY_VALLEY_SITE = makeAuthoredSite(
     evidence: 'The surveyed fence round the course: the track, infield, stands and parade areas all sit inside it.',
   },
 );
+
+// OSM way 1056788255, tagged horse_racing=paddock / Parade Ring. This
+// mapped outline is a location reference, not a surveyed construction drawing.
+export const HAPPY_VALLEY_PARADE_SOURCE = authoredOsmSource({
+  id: 1056788255,
+  tags: { leisure: 'pitch', horse_racing: 'paddock', sport: 'horse_racing', surface: 'grass', name: '馬匹亮相圈 Parade Ring' },
+  geometry: [
+    {lon:114.1804250,lat:22.2725073},{lon:114.1803876,lat:22.2725081},
+    {lon:114.1803518,lat:22.2724812},{lon:114.1803411,lat:22.2724361},
+    {lon:114.1803602,lat:22.2724006},{lon:114.1808412,lat:22.2719464},
+    {lon:114.1808606,lat:22.2719338},{lon:114.1808904,lat:22.2719341},
+    {lon:114.1809305,lat:22.2719795},{lon:114.1809427,lat:22.2720015},
+    {lon:114.1809374,lat:22.2720314},{lon:114.1804250,lat:22.2725073},
+  ],
+  evidence: 'OSM paddock outline, not a measured layout of the walking path, fences or retractable roof.',
+});
+export const HAPPY_VALLEY_PARADE_RING = worldRingFromGeometry(HAPPY_VALLEY_PARADE_SOURCE.geometry);
+export const HAPPY_VALLEY_PARADE_LOCAL_RING = localRingFromWorld(HAPPY_VALLEY_SITE, HAPPY_VALLEY_PARADE_RING);
 
 // The published circuit, from the racecourse record.
 export const HAPPY_VALLEY_TRACK_PUBLISHED = Object.freeze({
