@@ -42,7 +42,7 @@ function makeMaterials() {
   decal.colorNode = attribute('color').rgb;
   return {
     seat, decal, floodlight,
-    grass: new THREE.MeshStandardMaterial({ color: new THREE.Color(...C.grass), roughness: 0.95, side: THREE.DoubleSide }),
+    grass: new THREE.MeshStandardNodeMaterial({ vertexColors: true, roughness: 0.95, side: THREE.DoubleSide }),
     grassStripe: new THREE.MeshStandardMaterial({ color: new THREE.Color(...C.grassStripe), roughness: 0.95 }),
     infield: new THREE.MeshStandardMaterial({ color: new THREE.Color(...C.infield), roughness: 0.96 }),
     paradePath: new THREE.MeshStandardMaterial({ color: 0xc96b50, roughness: 0.92, polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -2 }),
@@ -155,14 +155,16 @@ function buildCourse(group, materials, stats, groundOffset) {
     const t0 = i / segments, t1 = (i + 1) / segments;
     const outer0 = trackPoint(t0, 0), outer1 = trackPoint(t1, 0);
     const inner0 = trackPoint(t0, -HAPPY_VALLEY_TRACK.width), inner1 = trackPoint(t1, -HAPPY_VALLEY_TRACK.width);
-    // Mowing stripes alternate every eight segments along the track.
-    const tint = Math.floor(i / 8) % 2 ? C.grassStripe : C.grass;
     // Split the band into small cells so mapped same-level road ribbons are
     // not covered by the authored grass. Half-diagonal margin is conservative;
     // this is still a coarse, temporary cut until the track is realigned.
     const across = 12, cellWidth = HAPPY_VALLEY_TRACK.width / across;
     for (let cell = 0; cell < across; cell++) {
       const o0 = -cell * cellWidth, o1 = -(cell+1) * cellWidth;
+      // Subtle longitudinal mowing bands, rather than one flat colour. The
+      // shade is illustrative and does not imply surveyed mowing patterns.
+      const shade = cell % 2 ? .91 : 1;
+      const tint = C.grass.map(channel => channel*shade);
       const mid = trackPoint((t0+t1)/2, (o0+o1)/2);
       if (trackRoadConflict(mid, groundOffset, 2.7)) { roadSurfaceGaps++; continue; }
       const a=trackPoint(t0,o0), b=trackPoint(t1,o0), c=trackPoint(t1,o1), d=trackPoint(t0,o1);
@@ -188,6 +190,7 @@ function buildCourse(group, materials, stats, groundOffset) {
   for (let metre = 200; metre < HAPPY_VALLEY_TRACK.lapMetres; metre += 200) {
     const t = metre / HAPPY_VALLEY_TRACK.lapMetres;
     const p = trackPoint(t, -HAPPY_VALLEY_TRACK.width - 1.2);
+    if (inProtectedPitch(p,1) || trackRoadConflict(p,groundOffset,1.2)) continue;
     cylinder(distancePoles, [p.x, 0.9, p.z], 0.09, 1.8, 6);
   }
   cutRacecourseTunnelOpenings(meshStore(course, band, materials.grass, 'HappyValleyTrackSurface', false),

@@ -358,3 +358,20 @@ test('floodlight spots illuminate only at night and when the camera is nearby', 
   const source=fs.readFileSync(path.join(root,'js/cities/hongkong/simple-world.js'),'utf8');
   assert.match(source,/happyValley\.update\(context\)/);
 });
+
+test('track turf renders vertex-colour mowing bands and distance poles clear sampled roads', () => {
+  const turf=built.group.getObjectByName('HappyValleyTrackSurface');
+  assert.equal(turf.material.vertexColors,true);
+  const colors=turf.geometry.getAttribute('color');
+  const shades=new Set();for(let i=0;i<colors.count;i++) shades.add(colors.getY(i).toFixed(3));
+  assert.ok(shades.size>=2,'mowing colours must survive clipping');
+  built.group.updateMatrixWorld(true);
+  const poles=built.group.getObjectByName('HappyValleyDistancePoles');
+  assert.ok(poles);
+  const v=new THREE.Vector3(), positions=poles.geometry.getAttribute('position');
+  for(let i=0;i<positions.count;i++) {
+    v.fromBufferAttribute(positions,i).applyMatrix4(poles.matrixWorld);
+    const road=fullMeta.fullRoadSurfaceAt(v.x,v.z,0,terrain.HONG_KONG_TERRAIN_META.happyValleyPadHeight);
+    assert.ok(!road || Math.abs(road.height-terrain.HONG_KONG_TERRAIN_META.happyValleyPadHeight)>=2.5);
+  }
+});
