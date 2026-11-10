@@ -395,3 +395,14 @@ test('perimeter wall and fence clear all six mapped stand footprints', async () 
     }
   }
 });
+
+test('running rail uses one broad top member and regularly spaced posts', () => {
+  const rail=built.group.getObjectByName('HappyValleyRunningRails');
+  const posts=built.group.getObjectByName('HappyValleyRunningRailPosts');
+  assert.ok(rail && posts);
+  const positions=rail.geometry.getAttribute('position');
+  let low=Infinity,high=-Infinity;
+  for(let i=0;i<positions.count;i++){low=Math.min(low,positions.getY(i));high=Math.max(high,positions.getY(i));}
+  assert.ok(low>1.0 && high<1.3,`top rail heights ${low}, ${high}`);
+  assert.ok(posts.geometry.getAttribute('position').count > 10000, 'posts should not be 9 segments apart');
+});

@@ -180,8 +180,11 @@ function buildCourse(group, materials, stats, groundOffset) {
       if ([a,mid,b].some(p=>inProtectedPitch(p,1))) { pitchRailGaps++;continue; }
       const blocked = [a, mid, b].some(p => trackRoadConflict(p, groundOffset));
       if (blocked) { roadRailGaps++; continue; }
-      for (const height of [1.15, 0.82, 0.5]) beam(rails, [a.x, height, a.z], [b.x, height, b.z], 0.13, 0.11);
-      if (i % 9 === 0) cylinder(posts, [a.x, 0.58, a.z], 0.055, 1.16, 5);
+      // Reference photos show a broad white top rail on frequent slim posts,
+      // not the three horizontal bars of the earlier placeholder. Actual
+      // post spacing and section sizes are inferred, not surveyed.
+      beam(rails, [a.x,1.15,a.z], [b.x,1.15,b.z], .17,.16);
+      cylinder(posts, [mid.x,.58,mid.z], .045,1.14,6);
     }
     // Infield turf inside the inner running rail (the 1995 rebuild did away with the old inner sand track).
     const c0 = trackPoint(t0, -HAPPY_VALLEY_TRACK.width);
