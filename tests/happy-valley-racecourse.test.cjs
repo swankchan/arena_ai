@@ -284,3 +284,14 @@ test('parade-ring inset has walking width and the detailed edge stays off sample
     }
   }
 });
+
+test('racecourse floodlights have discrete night-emissive lamp faces', () => {
+  const faces=built.group.getObjectByName('HappyValleyFloodlightLampFaces');
+  const frames=built.group.getObjectByName('HappyValleyFloodlightLampFrames');
+  assert.ok(faces?.material.isNodeMaterial && faces.material.emissiveNode);
+  assert.ok(frames?.isMesh);
+  // Six provisional poles, two rows of eight lamps; BoxGeometry has 24 vertices.
+  assert.equal(faces.geometry.getAttribute('position').count,6*2*8*24);
+  assert.equal(frames.geometry.getAttribute('position').count,6*2*8*24);
+  assert.equal(built.stats.happyValleyFloodlightMasts,6);
+});

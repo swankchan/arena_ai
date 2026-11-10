@@ -3,14 +3,14 @@
 // Provisional track and infield, mapped Pavilion Stand and parade ring, and estimated floodlights.
 // The mislocated placeholder stands and museum have been removed pending mapped replacements.
 import * as THREE from 'three/webgpu';
-import { attribute } from 'three/tsl';
+import { attribute, color } from 'three/tsl';
 import {
   happyValleyTerrainHeightAt, happyValleyTrackPoint,
   HAPPY_VALLEY_SITE, HAPPY_VALLEY_TRACK, HAPPY_VALLEY_MAIN_STAND, HAPPY_VALLEY_COLOURS,
   HAPPY_VALLEY_CAPACITY, HAPPY_VALLEY_OPENED, HAPPY_VALLEY_PARADE_LOCAL_RING,
 } from './happy-valley-racecourse-architecture.js';
 import {
-  merged, box, cylinder, beam, store, quad, meshStore, harbourCityPalette, roofGeometry,
+  merged, box, cylinder, beam, store, quad, meshStore, harbourCityPalette, roofGeometry, nightAmount,
 } from './harbour-city-world-utils.js';
 import { harbourCityLocalCollider, harbourCityEdgeFrame } from './harbour-city-architecture.js';
 import { HAPPY_VALLEY_PAVILION, HAPPY_VALLEY_PAVILION_ENTRANCE } from './happy-valley-pavilion-site.js';
@@ -30,10 +30,12 @@ function makeMaterials() {
   const palette = harbourCityPalette();
   const seat = new THREE.MeshStandardNodeMaterial({ vertexColors: true, metalness: 0.05, roughness: 0.7, side: THREE.DoubleSide });
   seat.colorNode = attribute('color').rgb;
+  const floodlight = new THREE.MeshStandardNodeMaterial({ color: 0xbfcbd0, roughness: .35 });
+  floodlight.emissiveNode = color(0xe5f2ff).mul(nightAmount()).mul(2.8);
   const decal = new THREE.MeshStandardNodeMaterial({ vertexColors: true, roughness: 0.85, side: THREE.DoubleSide });
   decal.colorNode = attribute('color').rgb;
   return {
-    seat, decal,
+    seat, decal, floodlight,
     grass: new THREE.MeshStandardMaterial({ color: new THREE.Color(...C.grass), roughness: 0.95, side: THREE.DoubleSide }),
     grassStripe: new THREE.MeshStandardMaterial({ color: new THREE.Color(...C.grassStripe), roughness: 0.95 }),
     infield: new THREE.MeshStandardMaterial({ color: new THREE.Color(...C.infield), roughness: 0.96 }),
@@ -238,7 +240,7 @@ function buildInfield(group, materials, stats) {
 // ---------------------------------------------------------------------------------------------------------------
 function buildGrounds(group, materials, stats, groundOffset) {
   const grounds = new THREE.Group(); grounds.name = 'HappyValleyGrounds'; group.add(grounds);
-  const masts = [], heads = [], fence = [], gates = [];
+  const masts = [], heads = [], lampFrames = [], lampFaces = [], fence = [], gates = [];
   const site = HAPPY_VALLEY_SITE;
   const ring = site.localRing;
   let minX = Infinity, maxX = -Infinity, minZ = Infinity, maxZ = -Infinity;
@@ -254,9 +256,17 @@ function buildGrounds(group, materials, stats, groundOffset) {
   for (const [t, out] of FLOODLIGHT_POSITIONS) {
     const p = trackPoint(t, out);
     cylinder(masts, [p.x, 17, p.z], 0.42, 34, 8);
-    box(heads, [p.x, 34.6, p.z], [5.4, 2.2, 0.8]);
-    for (let lamp = 0; lamp < 8; lamp++) {
-      box(heads, [p.x - 2.2 + lamp * 0.63, 36.4, p.z], [0.5, 0.9, 0.4]);
+    // Modular banks on a crossbar, facing the track/infield rather than
+    // identical blank blocks. Lamp count and six locations remain estimates.
+    const target=trackPoint(t,-HAPPY_VALLEY_TRACK.width-6);
+    const nx=target.x-p.x,nz=target.z-p.z,ry=Math.atan2(nx,nz);
+    const tx=Math.cos(ry),tz=-Math.sin(ry),sx=Math.sin(ry),sz=Math.cos(ry);
+    box(heads,[p.x,34.3,p.z],[5.8,.25,.45],ry);
+    for(let row=0;row<2;row++) for(let lamp=0;lamp<8;lamp++) {
+      const along=(lamp-3.5)*.68,y=34.65+row*.62;
+      const x=p.x+tx*along,z=p.z+tz*along;
+      box(lampFrames,[x,y,z],[.56,.5,.35],ry);
+      box(lampFaces,[x+sx*.19,y,z+sz*.19],[.46,.4,.04],ry);
     }
   }
   // The OSM boundary is not a surveyed fence. Preserve existing placeholder
@@ -289,7 +299,9 @@ function buildGrounds(group, materials, stats, groundOffset) {
   stats.happyValleyRoadFenceGaps = roadFenceGaps;
   stats.happyValleyEntranceFenceGaps = entranceFenceGaps;
   merged(grounds, masts, materials.standShade, 'HappyValleyFloodlightMasts');
-  merged(grounds, heads, materials.roof, 'HappyValleyFloodlightHeads');
+  merged(grounds, heads, materials.standShade, 'HappyValleyFloodlightHeads');
+  merged(grounds, lampFrames, materials.glass, 'HappyValleyFloodlightLampFrames');
+  merged(grounds, lampFaces, materials.floodlight, 'HappyValleyFloodlightLampFaces', false);
   merged(grounds, fence, materials.rail, 'HappyValleyPerimeterFence');
   stats.happyValleyFloodlightMasts = 6;
   stats.happyValleyFloodlightHeight = 36;
