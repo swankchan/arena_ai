@@ -14,8 +14,8 @@ function coarseHeight(x,z) {
  return u+v<=1?a+u*(b-a)+v*(c-a):d*(u+v-1)+b*(1-v)+c*(1-u);
 }
 let min=Infinity,max=-Infinity,significant=0,count=0;const roads=new Map();
-const inset=process.argv.includes('--inset');
-const ring=inset ? JSON.parse(fs.readFileSync(new URL('../../data/hongkong/happy-valley-inset-experiment.json',import.meta.url))).flat() : site.ring;
+const oneMetre=process.argv.includes('--inset1m'), inset=process.argv.includes('--inset') || oneMetre;
+const ring=inset ? JSON.parse(fs.readFileSync(new URL(oneMetre?'../../data/hongkong/happy-valley-inset-1m-experiment.json':'../../data/hongkong/happy-valley-inset-experiment.json',import.meta.url))).flat() : site.ring;
 for(let i=0;i+3<ring.length;i+=2) {
  const x=ring[i],z=ring[i+1],dx=ring[i+2]-x,dz=ring[i+3]-z,len=Math.hypot(dx,dz);
  if(len<.01)continue;
@@ -35,4 +35,4 @@ for(let i=0;i+3<ring.length;i+=2) {
   }
  }
 }
-console.log(JSON.stringify({boundary:inset?'experimental 8m inset':'site',samples:count,over10cm:significant,minMetres:+min.toFixed(3),maxMetres:+max.toFixed(3),sameLevelRoadIds:Object.fromEntries(roads),caveat:'2m boundary samples of unsplit terrain; excludes tunnel cuts, earthworks, road widths at oblique crossings and continuous vehicle sweeps.'},null,2));
+console.log(JSON.stringify({boundary:oneMetre?'experimental 1m inset':inset?'experimental 8m inset':'site',samples:count,over10cm:significant,minMetres:+min.toFixed(3),maxMetres:+max.toFixed(3),sameLevelRoadIds:Object.fromEntries(roads),caveat:'2m boundary samples of unsplit terrain; excludes tunnel cuts, earthworks, road widths at oblique crossings and continuous vehicle sweeps.'},null,2));

@@ -4,6 +4,7 @@
 <script type="importmap">{"imports":{"three":"../../vendor/three/build/three.webgpu.js","three/webgpu":"../../vendor/three/build/three.webgpu.js","three/tsl":"../../vendor/three/build/three.tsl.js","three/addons/":"../../vendor/three/examples/jsm/"}}</script>
 <script type="module">
 import * as THREE from 'three/webgpu';
+import {buildLocalTerrain} from './happy-valley-terrain-fixture.js';
 import {buildHappyValleyRacecourse} from '../../js/cities/hongkong/happy-valley-racecourse-world.js';
 import {HAPPY_VALLEY_SITE as site} from '../../js/cities/hongkong/happy-valley-racecourse-architecture.js';
 import {fullRoadWaysNear} from '../../js/cities/hongkong/full-meta.js';
@@ -15,6 +16,7 @@ if(smooth) document.querySelector('#label').prepend('SMOOTHED FIT — ');
 const fit=await (await fetch('../../tools/data/hongkong/'+filename)).json();
 if(fit.status!=='experimental-not-used-in-runtime'||fit.points.length!==720)throw new Error('Unexpected candidate');
 const scene=new THREE.Scene();scene.background=new THREE.Color(0xadc5d1);
+if(new URLSearchParams(location.search).has('inset1m')){scene.add(buildLocalTerrain({inset1mCut:true}));document.querySelector('#label').append(' Includes an experimental local 1m-inset terrain cut; boundary and roads remain unresolved.');}
 const venue=buildHappyValleyRacecourse(scene,{groundOffset:terrain.happyValleyPadHeight});
 for(const name of ['HappyValleyTrackSurface','HappyValleyRunningRails','HappyValleyRunningRailPosts','HappyValleyDistancePoles']) {
   const object=venue.group.getObjectByName(name);if(object)object.visible=false;

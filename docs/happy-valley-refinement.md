@@ -215,3 +215,11 @@ The eight new 1.6 m square collider bases are sampled against the venue ring, ma
 標誌選址以幾個點避讓球場、場界、看台、隧道和同高道路；測試逐頂點檢查已映射球場／看台和附近道路各層，並以離散內欄長度核對 200 m。這不保證連續淨空或實際位置。局部 WebGL 日夜檢視見 `tests/visual/happy-valley-distance-marker.html`（加 `?night`），未核完整世界／WebGPU，跑道重新定位時要重做標誌。
 
 外牆補段後，對跑道表面、跑道頂欄、外牆基座和外圍欄的每個三角面另取四個內部點，檢查附近所有生成道路層；本次 176,832 個面內樣點沒有同高道路命中。此測試比只看頂點多覆蓋面內位置，但仍是離散抽樣，不能證明整個三角面、行人出入口或車輛掃掠淨空。
+
+### 避球場新線與地面：1 m 內縮試算（未上線）
+
+對較早的平滑新線，現將地形試算由場界內縮 8 m 改為比較 1 m：`python3 tools/cities/hongkong/build-happy-valley-inset-ring-experiment.py 1`，再執行 `node tools/cities/hongkong/build-happy-valley-inset-cut-experiment.mjs --1m > tests/visual/happy-valley-inset-1m-cut-data.js`。此內縮是數學上的臨時假設，不是實際圍牆或土木設計。
+
+新線帶的 720 個平面四邊形與 16 個 OSM 球場及六座看台輪廓交集面積均為零；但舊模型現有附屬物仍撞新線，包括多支燈柱、部分欄牌和 200 米示意牌。局部地形對 3,600 個新線樣點的向下射線，原地形有 1,288 點高出跑道超過 5 cm，1 m 內縮裁切後為零。俯瞰比較可用 `tests/visual/happy-valley-candidate-track.html?smooth&inset1m`；紅色表示道路同高或估算低於 5 m 淨高，並非工程認證。
+
+**這仍不是修好的地面或可上線跑道。** `node tools/cities/hongkong/check-happy-valley-site-seam.mjs --inset1m` 沿邊界 907 個點比較，859 個點高差超過 0.1 m，範圍約 −0.713 至 +6.593 m；五條同高道路靠近。局部圖仍有場邊粗三角形，無法證明道路接縫、地面查詢和完整世界不裂開；候選路線的道路淨高及附屬物衝突也未解決。避免把斷裂或阻路的方案上線，此試算只供進一步修復。
