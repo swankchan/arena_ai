@@ -101,3 +101,9 @@
 ## 夜間射燈外觀
 
 參考場邊[夜賽照片](https://musco.com/project/hong-kong-jockey-club/)中燈柱頂的多個亮燈，把六支臨時柱頂原來的實心長方塊換成兩排獨立燈具、深色框和夜間發亮的燈面，方向朝場地。柱位、數量、燈具排列及運作時間仍是推算，並非實地測繪；此改動只令燈面發光，**不會照亮場地或車身**。日／夜獨立 WebGL 截圖已檢視，完整遊戲、WebGPU 和實際賽事燈光仍未核實。
+
+## 會員看台第三座（獨立重建，仍需核實）
+
+依 OSM way `1356276116` 十層輪廓，於聯合看台旁重建會員看台第三座，代替缺失的空地；模型高度 36 m、各層比例及外牆仍是推算。[馬會設施指南](https://member.hkjc.com/member/english/about-membership/racecourses-facilities-guide/happy-valley-racecourse.aspx)列此座和 Entrance D；[座椅供應商的 2021 照片](https://solidwood.com.hk/projects/happy-valley-racecourse-2f-members-stand-iii-view-stand)顯示 2/F 有多排藍色座椅、白色扶手和灰色踏級。模型在賽道側加入多排座椅與踏級，並按場邊看台照片推算連續樓層帶、玻璃、陽台、頂部遮簷和夜燈；窗戶分格、座椅排數及材質並非完整外立面測量。
+
+入口 D 的精確位置未找到：臨時在街側留約 4.8 m 開口及相應圍欄缺口，不聲稱是真實入口；沒有真實門、樓梯、室內或人行過路系統。對模型 mesh 頂點和碰撞牆 0.5 m 格網檢查，未碰同高道路；對入口前後 4 m 作多點 collider 及多高度射線檢查，未發現臨時圍欄、玻璃及門框阻擋；舊賽道 8,640 點抽樣亦未落在此 footprint。這些不是連續掃掠或工程淨空。獨立 WebGL 日夜視角已檢查；完整世界、WebGPU、夜間實地外觀和遊戲內步行仍未驗證。其他看台、跑道及道路對齊仍未完成。

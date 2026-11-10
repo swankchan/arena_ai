@@ -16,6 +16,8 @@ import { harbourCityLocalCollider, harbourCityEdgeFrame } from './harbour-city-a
 import { HAPPY_VALLEY_PAVILION, HAPPY_VALLEY_PAVILION_ENTRANCE } from './happy-valley-pavilion-site.js';
 import { buildHappyValleyPitches } from './happy-valley-pitches-world.js';
 import { buildHappyValleyPavilion } from './happy-valley-pavilion-world.js';
+import { buildHappyValleyMembersIII } from './happy-valley-members-iii-world.js';
+import { HAPPY_VALLEY_MEMBERS_III, HAPPY_VALLEY_MEMBERS_III_ENTRANCE } from './happy-valley-members-iii-site.js';
 import { fullRoadSurfaceAt } from './full-meta.js';
 
 const C = HAPPY_VALLEY_COLOURS;
@@ -273,13 +275,17 @@ function buildGrounds(group, materials, stats, groundOffset) {
   // openings and cut additional temporary gaps at same-level road ribbons.
   const ringCount = ring.length / 2;
   let roadFenceGaps = 0, entranceFenceGaps = 0;
-  const door = harbourCityEdgeFrame(HAPPY_VALLEY_PAVILION, HAPPY_VALLEY_PAVILION_ENTRANCE.edge,
-    'Provisional Pavilion entrance', 'Estimated street-side opening', HAPPY_VALLEY_PAVILION_ENTRANCE.centre);
+  const doors = [[HAPPY_VALLEY_PAVILION,HAPPY_VALLEY_PAVILION_ENTRANCE],
+    [HAPPY_VALLEY_MEMBERS_III,HAPPY_VALLEY_MEMBERS_III_ENTRANCE]].map(([building,entry]) => ({
+      ...harbourCityEdgeFrame(building,entry.edge,'Provisional entrance','Estimated street-side opening',entry.centre),
+      width:entry.width,
+    }));
   const nearDoor = p => {
     const c=Math.cos(site.ry), sn=Math.sin(site.ry);
-    const dx=site.x+c*p.x+sn*p.z-door.x, dz=site.z-sn*p.x+c*p.z-door.z;
-    return Math.abs(dx*door.nz-dz*door.nx) < HAPPY_VALLEY_PAVILION_ENTRANCE.width/2+1 &&
-      Math.abs(dx*door.nx+dz*door.nz) < 3;
+    return doors.some(door => {
+      const dx=site.x+c*p.x+sn*p.z-door.x, dz=site.z-sn*p.x+c*p.z-door.z;
+      return Math.abs(dx*door.nz-dz*door.nx) < door.width/2+1 && Math.abs(dx*door.nx+dz*door.nz) < 3;
+    });
   };
   for (let i = 0; i < ringCount; i++) {
     const ax = ring[2 * i], az = ring[2 * i + 1];
@@ -321,6 +327,7 @@ export function buildHappyValleyRacecourse(root, { groundOffset = 0 } = {}) {
   buildCourse(venue, materials, stats, groundOffset);
   buildHappyValleyPitches(venue);
   const pavilion = buildHappyValleyPavilion(venue, groundOffset);
+  const membersIII = buildHappyValleyMembersIII(venue, groundOffset);
   buildInfield(venue, materials, stats);
 
   const colliders = [];
@@ -333,7 +340,7 @@ export function buildHappyValleyRacecourse(root, { groundOffset = 0 } = {}) {
     push(p.x, p.z, 1.6, 1.6, 36);
   }
 
-  colliders.push(...pavilion.colliders);
+  colliders.push(...pavilion.colliders, ...membersIII.colliders);
 
   const landmarks = [{
     id: 'happy-valley-racecourse', name: '跑馬地馬場 · Happy Valley Racecourse',

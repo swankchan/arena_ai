@@ -1,0 +1,13 @@
+<!doctype html><meta charset="utf-8"><style>body{margin:0}</style>
+<script type="importmap">{"imports":{"three":"../../vendor/three/build/three.webgpu.js","three/webgpu":"../../vendor/three/build/three.webgpu.js","three/tsl":"../../vendor/three/build/three.tsl.js","three/addons/":"../../vendor/three/examples/jsm/"}}</script>
+<script type="module">
+import * as THREE from 'three/webgpu';
+import {buildHappyValleyRacecourse} from '../../js/cities/hongkong/happy-valley-racecourse-world.js';
+import {cityUniforms} from '../../js/tsl-materials.js';
+const night=new URLSearchParams(location.search).has('night');cityUniforms.uInteriorGlow.value=night?1.4:0;
+const scene=new THREE.Scene();scene.background=new THREE.Color(night?0x17212b:0xb9cdd5);
+buildHappyValleyRacecourse(scene,{groundOffset:11.33165});scene.add(new THREE.HemisphereLight(0xffffff,0x566a58,night?.25:1));
+const sun=new THREE.DirectionalLight(0xffffff,night?.08:2);sun.position.set(2300,180,1050);scene.add(sun);
+const camera=new THREE.PerspectiveCamera(43,1.6,.5,1800);camera.position.set(2215,42,1045);camera.lookAt(2113,25,1014);
+const renderer=new THREE.WebGPURenderer({forceWebGL:true,antialias:true});await renderer.init();renderer.setSize(1280,800);document.body.appendChild(renderer.domElement);renderer.render(scene,camera);window.ready=true;
+</script>

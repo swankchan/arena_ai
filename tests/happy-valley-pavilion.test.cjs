@@ -29,7 +29,7 @@ test('Pavilion Stand uses mapped footprint and the transformed world position', 
 });
 
 test('wall collider footprints avoid sampled same-level roads', () => {
-  const colliders=built.colliders.slice(-9);assert.equal(colliders.length,site.localRing.length/2+1);
+  const colliders=built.colliders.slice(6,15);assert.equal(colliders.length,site.localRing.length/2+1);
   for (const c of colliders) {
     assert.ok(c.minY >= terrain.happyValleyPadHeight);
     for(let x=c.minX;x<=c.maxX;x+=.5) for(let z=c.minZ;z<=c.maxZ;z+=.5) {
