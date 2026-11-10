@@ -432,3 +432,38 @@ test('Victoria monument pedestal follows the provisional tall granite block and 
   assert.ok(figure.geometry.boundingBox.min.y>=bounds.max.y-.001);
   assert.ok(pedestal.material.color.getHex()!==0xffffff && figure.material.color.getHex()!==0x41675b);
 });
+
+test('Victoria swimming pool rooflights and solar modules remain inside the mapped pool outline', () => {
+  const f=arch.majorParkFeature(arch.VICTORIA_PARK,'poolBuilding');
+  const root=worlds.get(arch.VICTORIA_PARK).root;
+  const rooflights=root.getObjectByName('Victoria Park Swimming Pool four circular rooflights');
+  const solar=root.getObjectByName('Victoria Park Swimming Pool rooftop solar arrays');
+  assert.ok(rooflights && solar);
+  assert.ok(root.getObjectByName('Victoria Park Swimming Pool rooflight glazing grid'));
+  const p=new THREE.Vector3();
+  for (const mesh of [rooflights,solar]) {
+    const position=mesh.geometry.getAttribute('position');
+    for(let i=0;i<position.count;i++) {
+      p.fromBufferAttribute(position,i);
+      assert.ok(arch.majorParkPointInRing(f.site.localRing,p.x,p.z),`${mesh.name} (${p.x},${p.z})`);
+    }
+  }
+});
+
+test('Victoria swimming pool glazing follows its ring instead of spanning over tennis courts', () => {
+  const f=arch.majorParkFeature(arch.VICTORIA_PARK,'poolBuilding'), ring=f.ring;
+  const root=worlds.get(arch.VICTORIA_PARK).root;
+  assert.equal(root.getObjectByName('Victoria Park Swimming Pool dark glazed facade bands'),undefined);
+  const mesh=root.getObjectByName('Victoria Park Swimming Pool perimeter glazing');
+  assert.ok(mesh?.material.isNodeMaterial && mesh.material.emissiveNode);
+  const p=mesh.geometry.getAttribute('position');
+  for(let i=0;i<p.count;i++) {
+    const x=p.getX(i),z=p.getZ(i);let distance=Infinity;
+    for(let j=2;j<ring.length;j+=2) {
+      const ax=ring[j-2],az=ring[j-1],dx=ring[j]-ax,dz=ring[j+1]-az;
+      const t=Math.max(0,Math.min(1,((x-ax)*dx+(z-az)*dz)/(dx*dx+dz*dz||1)));
+      distance=Math.min(distance,Math.hypot(x-ax-dx*t,z-az-dz*t));
+    }
+    assert.ok(distance<.09,`window ${i} ${distance} m from the outline`);
+  }
+});

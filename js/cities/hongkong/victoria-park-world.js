@@ -4,7 +4,7 @@ import {cityUniforms} from '../../tsl-materials.js';
 import {
   VICTORIA_PARK, VICTORIA_MODEL_BOAT_POOL, VICTORIA_QUEEN_STATUE, VICTORIA_BOAT_RAMP, victoriaBoatRampPoint, victoriaBoatRampHeight,
   majorParkFeature, majorParkGroundHeightAt, majorParkMinimumTerrain, majorParkPadHeight,
-  majorParkArrivalPoints, createMajorParkTreeSites, majorParkLocalToWorld
+  majorParkArrivalPoints, createMajorParkTreeSites, majorParkLocalToWorld, majorParkPointInRing
 } from './major-parks-architecture.js';
 import {
   createMajorParkMaterials, buildMajorParkBase, buildMajorParkPaths, addMajorParkEntrances,
@@ -199,7 +199,7 @@ function texturedVictoriaMaterial(hex, roughness = .9) {
 function buildPoolBuilding(feature, group, materials, colliders) {
   const pad = majorParkPadHeight(feature), bottom = majorParkMinimumTerrain(feature), wall = 8.2;
   const concrete = texturedVictoriaMaterial(0xa7a79f);
-  const roofMaterial = texturedVictoriaMaterial(0x939c9c, .84);
+  const roofMaterial = texturedVictoriaMaterial(0xb9beb8, .84);
   meshFromGeometry(group, ringShellGeometry(feature.ring, bottom, pad + wall), concrete, 'Victoria Park Swimming Pool exact OSM building mass and DTM foundation');
   // Panel joints follow the actual outline rather than an oversized bounding box.
   const joints = [];
@@ -213,15 +213,70 @@ function buildPoolBuilding(feature, group, materials, colliders) {
   }
   merged(group, joints, materials.darkStone, 'Victoria Park Swimming Pool facade panel joints', false);
   const local = majorParkLocalGroup(feature, group, pad, 'Victoria Park Swimming Pool modern glazing and shaded roof deck');
-  const glass = [], frames = [];
-  for (const z of [-feature.site.d * .43, feature.site.d * .43]) {
-    box(glass, [0, 4.2, z], [feature.site.w * .82, 4.8, .14]);
-    for (let i = 0; i <= 24; i++) box(frames, [-feature.site.w * .41 + i / 24 * feature.site.w * .82, 4.2, z], [.11, 4.9, .18]);
+  // Trace the curved outline: bounding-box window strips used to float across
+  // the adjacent tennis courts. The lower glazing and slab bands follow the
+  // mapped perimeter; their detailed bay divisions are photographic estimates.
+  const glassVertices=[], frames=[], bands=[];
+  let signedArea=0;
+  for(let i=2;i<feature.ring.length;i+=2) signedArea+=feature.ring[i-2]*feature.ring[i+1]-feature.ring[i]*feature.ring[i-1];
+  const outward=signedArea<0?1:-1;
+  for(let i=2;i<feature.ring.length;i+=2) {
+    const ax=feature.ring[i-2],az=feature.ring[i-1],bx=feature.ring[i],bz=feature.ring[i+1],dx=bx-ax,dz=bz-az,len=Math.hypot(dx,dz);
+    if(len<.01)continue;
+    const nx=-dz/len*outward,nz=dx/len*outward;
+    const p=(t,y,o)=>[ax+dx*t+nx*o,pad+y,az+dz*t+nz*o];
+    const steps=Math.max(1,Math.ceil(len/2.8));
+    for(let j=0;j<steps;j++) {
+      const a=p(j/steps,1.45,.08),b=p((j+1)/steps,1.45,.08),c=p((j+1)/steps,5.55,.08),d=p(j/steps,5.55,.08);
+      for(const v of [a,b,c,a,c,d])glassVertices.push(...v);
+      beam(frames,p(j/steps,1.45,.14),p(j/steps,5.55,.14),.07,.07);
+    }
+    for(const y of [1.35,3.5,5.65,7.85]) beam(bands,p(0,y,.12),p(1,y,.12),.16,.22);
   }
-  merged(local, glass, materials.dark, 'Victoria Park Swimming Pool dark glazed facade bands');
-  merged(local, frames, materials.white, 'Victoria Park Swimming Pool white facade mullions');
+  const glassGeo=new THREE.BufferGeometry();glassGeo.setAttribute('position',new THREE.Float32BufferAttribute(glassVertices,3));glassGeo.computeVertexNormals();
+  const facadeGlass=new THREE.MeshStandardNodeMaterial({color:0x354d50,roughness:.35,metalness:.20,side:THREE.DoubleSide});
+  facadeGlass.emissiveNode=materialColor.rgb.mul(cityUniforms.uInteriorGlow).mul(.10);
+  const glassMesh=new THREE.Mesh(glassGeo,facadeGlass);glassMesh.name='Victoria Park Swimming Pool perimeter glazing';glassMesh.castShadow=true;glassMesh.receiveShadow=true;group.add(glassMesh);
+  merged(group, frames, materials.silver, 'Victoria Park Swimming Pool perimeter glazing mullions',false);
+  merged(group, bands, materials.stone, 'Victoria Park Swimming Pool continuous slab bands',false);
   // The OSM pool outline is irregular: its bounding rectangle covers nearby courts.
   meshFromGeometry(group, ringShellGeometry(feature.ring, pad + wall, pad + wall + .5), roofMaterial, 'Victoria Park Swimming Pool shaded flat roof');
+  // Four circular rooflights and two rows of photovoltaics appear in the 2018
+  // aerial. Their placement and radii are inferred within the mapped outline;
+  // the circles are opaque tinted surfaces, not a modelled swimming interior.
+  const skylightGlass = [], skylightFrames = [], panels = [], panelFrames = [];
+  const skylights = [[-40,-20,12],[-12,-20,4],[6,-20,6],[37,-20,12]];
+  for (const [x,z,r] of skylights) {
+    const disc = new THREE.CircleGeometry(r, 48); disc.rotateX(-Math.PI/2); disc.translate(x,wall+.512,z); skylightGlass.push(disc);
+    for (let i=0;i<48;i++) {
+      const a=i*Math.PI/24,b=(i+1)*Math.PI/24;
+      beam(skylightFrames,[x+r*Math.cos(a),wall+.54,z+r*Math.sin(a)],[x+r*Math.cos(b),wall+.54,z+r*Math.sin(b)],.10,.10);
+    }
+    // Chords remain inside each circle; no square grid protrudes beyond its edge.
+    for (let d=-r+1.6;d<r;d+=1.6) {
+      const h=Math.sqrt(Math.max(0,r*r-d*d));
+      beam(skylightFrames,[x+d,wall+.55,z-h],[x+d,wall+.55,z+h],.055,.055);
+      beam(skylightFrames,[x-h,wall+.55,z+d],[x+h,wall+.55,z+d],.055,.055);
+    }
+  }
+  // Small repeated arrays rather than a single blue roof; all modules are
+  // checked against the outline and excluded from the round rooflights.
+  const localRing = feature.site.localRing;
+  for (const z of [-37,-4]) for (let x=-55;x<=53;x+=4.4) {
+    const halfX=1.8, halfZ=1.2;
+    let inside=true;
+    for (const dx of [-halfX,halfX]) for(const dz of [-halfZ,halfZ])
+      if (!majorParkPointInRing(localRing,x+dx,z+dz)) inside=false;
+    if (!inside || skylights.some(([cx,cz,r])=>Math.hypot(x-cx,z-cz)<r+2.2)) continue;
+    box(panels,[x,wall+.56,z],[3.6,.07,2.4]);
+    box(panelFrames,[x,wall+.605,z],[.045,.03,2.35]);
+  }
+  const solar = new THREE.MeshStandardMaterial({color:0x243b49,roughness:.42,metalness:.20});
+  const darkGlass = new THREE.MeshStandardMaterial({color:0x41575b,roughness:.36,metalness:.16});
+  merged(local,skylightGlass,darkGlass,'Victoria Park Swimming Pool four circular rooflights');
+  merged(local,skylightFrames,materials.silver,'Victoria Park Swimming Pool rooflight glazing grid',false);
+  merged(local,panels,solar,'Victoria Park Swimming Pool rooftop solar arrays');
+  merged(local,panelFrames,materials.silver,'Victoria Park Swimming Pool solar module seams',false);
   colliders.push(...majorParkRingColliders(feature.ring, pad, pad + wall, .9));
 }
 
