@@ -428,3 +428,12 @@ test('perimeter vertices clear every nearby same-level road layer', async () => 
   }
   assert.ok(tested>10000);
 });
+
+test('track terrain diagnostic makes coarse-mesh overlap visible until resolved', () => {
+  const {execFileSync}=require('node:child_process');
+  const report=JSON.parse(execFileSync(process.execPath,['tools/cities/hongkong/check-happy-valley-terrain.mjs'],{cwd:root,encoding:'utf8'}));
+  assert.equal(report.samples,3600);
+  assert.ok(report.terrainAboveTrackSamples>0);
+  assert.ok(report.maxTerrainAboveTrackMetres>1);
+  assert.match(report.caveat,/not raycasts/);
+});
