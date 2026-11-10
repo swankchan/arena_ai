@@ -197,3 +197,9 @@ The eight new 1.6 m square collider bases are sampled against the venue ring, ma
 再檢查終點標誌三個碰撞體的 0.2 m 格網，及所有模型頂點附近由場地以下 2.5 m 至以上 8 m 的道路層，未見命中；其保守平面外包矩形亦未碰離線平滑候選線的 720 個跑道四邊形。這只適用目前資料及取樣，不保證車輛掃掠、路面寬度以外的道路結構或日後重擬跑道的淨空。
 
 終點拱門的黃色面加少量自發光作可讀性補償：日／夜隔離場景檢視後，避免背光時變成棕黑色；這不是實測照度或夜間燈具設計。
+
+### 場界內縮裁地形試算（離線，未上線）
+
+嘗試把 OSM 場界向內縮 8 m（Shapely 2.2.0 mitre buffer），只裁減內縮範圍的 70 m 格網三角形，讓裁口仍落在原有草坪內。先運行 `python3 tools/cities/hongkong/build-happy-valley-inset-ring-experiment.py` 再運行 `node tools/cities/hongkong/build-happy-valley-inset-cut-experiment.mjs > tests/visual/happy-valley-inset-cut-data.js` 可重建試算；`tests/visual/happy-valley-track-terrain.html?insetcut` 可與原始場景對照。局部 2,732 個實際繪製的舊跑道取樣點沒有被地形高於 5 cm 遮擋；該視角不再見原本穿過彎道的大塊地形，但場邊仍見粗三角形，**不能代表完整場景沒有裂縫**。
+
+`node tools/cities/hongkong/check-happy-valley-site-seam.mjs --inset` 對內縮邊界作約 2 m 間距的原粗格網高度估算：884 點中 802 點與草坪高差超過 0.1 m，範圍約 −0.483 至 +5.360 m，並有道路 36659、45507、47473 靠近同高交界。這只是假設裁切前的高度比較，不代表實際切口的淨空；fixture 不含完整道路、所有 earthworks 或完整 terrain chunks。內縮 8 m 亦非工程測量、未處理地形與道路的連續銜接及實際車輛通行，因此仍只保留離線試算，沒有接入遊戲。

@@ -16,21 +16,24 @@ test('local terrain reconstruction exposes track occlusion and compares offline 
    if(b&&b.point.y>a.point.y+.05){hits++;max=Math.max(max,b.point.y-a.point.y);}
   }return {count,hits,max};
  }
- const baseline=sample(buildLocalTerrain()),cut=sample(buildLocalTerrain({cutTrack:true})),grade=sample(buildLocalTerrain({grade:true})),siteCut=sample(buildLocalTerrain({siteCut:true}));
+ const baseline=sample(buildLocalTerrain()),cut=sample(buildLocalTerrain({cutTrack:true})),grade=sample(buildLocalTerrain({grade:true})),siteCut=sample(buildLocalTerrain({siteCut:true})),insetCut=sample(buildLocalTerrain({insetCut:true}));
  assert.ok(baseline.count>2000);assert.ok(baseline.hits>300 && baseline.max>2);
- assert.equal(cut.hits,0);assert.ok(grade.hits>0 && grade.hits<20);assert.equal(siteCut.hits,0);
+ assert.equal(cut.hits,0);assert.ok(grade.hits>0 && grade.hits<20);assert.equal(siteCut.hits,0);assert.equal(insetCut.hits,0);
  // Neither experiment proves road/sky/physics safety; neither is runtime.
 });
 
 
-test('offline polygon site cut snapshot reproduces the same covered area', {timeout:30000}, async () => {
+for (const [kind,script,file,exportName] of [
+ ['site','build-happy-valley-site-cut-experiment.mjs','happy-valley-site-cut-data.js','siteCutTriangles'],
+ ['inset','build-happy-valley-inset-cut-experiment.mjs','happy-valley-inset-cut-data.js','insetCutTriangles'],
+]) test(`offline ${kind} polygon cut snapshot reproduces the same covered area`, {timeout:30000}, async () => {
  // Earcut versions can triangulate the same polygon differently. Compare the
  // actual coverage, not the order of internal diagonals or vertices.
  const {execFileSync}=require('node:child_process');
  const clip=(await import('polygon-clipping')).default;
- const {siteCutTriangles:reference}=await import('./visual/happy-valley-site-cut-data.js');
- const output=execFileSync(process.execPath,['tools/cities/hongkong/build-happy-valley-site-cut-experiment.mjs'],{encoding:'utf8',maxBuffer:1024*1024});
- const {siteCutTriangles:actual}=await import('data:text/javascript;base64,'+Buffer.from(output).toString('base64'));
+ const reference=(await import('./visual/'+file))[exportName];
+ const output=execFileSync(process.execPath,['tools/cities/hongkong/'+script],{encoding:'utf8',maxBuffer:1024*1024});
+ const actual=(await import('data:text/javascript;base64,'+Buffer.from(output).toString('base64')))[exportName];
  assert.deepEqual(Object.keys(actual).sort(),Object.keys(reference).sort());
  const union=tris=>tris.length?clip.union(...tris.map(t=>[[[...t,t[0]]]])):[];
  const area=multi=>multi.reduce((sum,poly)=>sum+poly.reduce((s,ring,i)=>{
@@ -47,8 +50,31 @@ test('offline polygon site cut snapshot reproduces the same covered area', {time
 
 test('experimental polygon cut triangles face upward', async () => {
  const {siteCutTriangles}=await import('./visual/happy-valley-site-cut-data.js');
- let count=0;for(const tris of Object.values(siteCutTriangles))for(const [a,b,c] of tris) {
+ const {insetCutTriangles}=await import('./visual/happy-valley-inset-cut-data.js');
+ let count=0;for(const tris of [...Object.values(siteCutTriangles),...Object.values(insetCutTriangles)])for(const [a,b,c] of tris) {
   assert.ok((b[1]-a[1])*(c[0]-a[0])-(b[0]-a[0])*(c[1]-a[1])>0);count++;
  }
  assert.ok(count>100);
+});
+
+test('experimental inset remains inside and approximately 8m from mapped site edge', async () => {
+ const fs=require('node:fs'),clip=(await import('polygon-clipping')).default;
+ const {HAPPY_VALLEY_SITE:site}=await import('../js/cities/hongkong/happy-valley-racecourse-architecture.js');
+ const inset=JSON.parse(fs.readFileSync('tools/data/hongkong/happy-valley-inset-experiment.json','utf8'));
+ const ring=Array.from({length:site.ring.length/2},(_,i)=>[site.ring[2*i],site.ring[2*i+1]]);
+ assert.deepEqual(inset[0],inset[inset.length-1]);
+ const closed=[...ring];if(closed[0][0]!==closed.at(-1)[0]||closed[0][1]!==closed.at(-1)[1])closed.push(closed[0]);
+ assert.equal(clip.difference([[inset]],[[closed]]).length,0);
+ for(let i=0;i+1<inset.length;i++){
+  const [a,b]=[inset[i],inset[i+1]],steps=Math.ceil(Math.hypot(b[0]-a[0],b[1]-a[1])/2);
+  for(let n=0;n<=steps;n++){
+   const x=a[0]+(b[0]-a[0])*n/steps,z=a[1]+(b[1]-a[1])*n/steps;let distance=Infinity;
+   for(let j=0;j+1<closed.length;j++){
+    const [p,q]=[closed[j],closed[j+1]],dx=q[0]-p[0],dz=q[1]-p[1],len=dx*dx+dz*dz;
+    if(!len)continue;const t=Math.max(0,Math.min(1,((x-p[0])*dx+(z-p[1])*dz)/len));
+    distance=Math.min(distance,Math.hypot(x-p[0]-t*dx,z-p[1]-t*dz));
+   }
+   assert.ok(distance>=7.999,`inset too close to site: ${distance}`);
+  }
+ }
 });
