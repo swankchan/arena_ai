@@ -13,7 +13,7 @@ function coarseHeight(x,z) {
  const a=height(0,0),b=height(1,0),c=height(0,1),d=height(1,1);
  return u+v<=1?a+u*(b-a)+v*(c-a):d*(u+v-1)+b*(1-v)+c*(1-u);
 }
-let min=Infinity,max=-Infinity,significant=0,count=0;const roads=new Map();
+let min=Infinity,max=-Infinity,significant=0,count=0,above=0,below=0,belowNearRoad=0,aboveNearRoad=0;const roads=new Map();
 const oneMetre=process.argv.includes('--inset1m'), inset=process.argv.includes('--inset') || oneMetre;
 const ring=inset ? JSON.parse(fs.readFileSync(new URL(oneMetre?'../../data/hongkong/happy-valley-inset-1m-experiment.json':'../../data/hongkong/happy-valley-inset-experiment.json',import.meta.url))).flat() : site.ring;
 for(let i=0;i+3<ring.length;i+=2) {
@@ -25,14 +25,17 @@ for(let i=0;i+3<ring.length;i+=2) {
   if(pointInFlatRing(ring,X+nx*.1,Z+nz*.1)){nx=-nx;nz=-nz;}
   const gap=coarseHeight(X+nx*.1,Z+nz*.1)-(meta.happyValleyPadHeight-.03);
   count++;min=Math.min(min,gap);max=Math.max(max,gap);if(Math.abs(gap)>.1)significant++;
+  if(gap>.1)above++;if(gap<-.1)below++;let roadNearby=false;
   for(const way of fullRoadWaysNear(X,Z,10))for(let j=2;j<way.flat.length;j+=2) {
    const ax=way.flat[j-2],az=way.flat[j-1],vx=way.flat[j]-ax,vz=way.flat[j+1]-az,l=vx*vx+vz*vz;
    if(l<.0025)continue;
    const u=Math.max(0,Math.min(1,((X-ax)*vx+(Z-az)*vz)/l)),px=ax+u*vx,pz=az+u*vz;
    if(Math.hypot(X-px,Z-pz)>way.width/2+1)continue;
-   if(Math.abs(roadRibbonHeightAtSegment(way.id,j/2-1,u,px,pz)-meta.happyValleyPadHeight)<2.5)
-    roads.set(way.id,(roads.get(way.id)??0)+1);
+   if(Math.abs(roadRibbonHeightAtSegment(way.id,j/2-1,u,px,pz)-meta.happyValleyPadHeight)<2.5) {
+    roadNearby=true;roads.set(way.id,(roads.get(way.id)??0)+1);
+   }
   }
+  if(roadNearby&&gap<-.1)belowNearRoad++;if(roadNearby&&gap>.1)aboveNearRoad++;
  }
 }
-console.log(JSON.stringify({boundary:oneMetre?'experimental 1m inset':inset?'experimental 8m inset':'site',samples:count,over10cm:significant,minMetres:+min.toFixed(3),maxMetres:+max.toFixed(3),sameLevelRoadIds:Object.fromEntries(roads),caveat:'2m boundary samples of unsplit terrain; excludes tunnel cuts, earthworks, road widths at oblique crossings and continuous vehicle sweeps.'},null,2));
+console.log(JSON.stringify({boundary:oneMetre?'experimental 1m inset':inset?'experimental 8m inset':'site',samples:count,over10cm:significant,terrainAbovePad:above,terrainBelowPad:below,aboveNearSameLevelRoad:aboveNearRoad,belowNearSameLevelRoad:belowNearRoad,minMetres:+min.toFixed(3),maxMetres:+max.toFixed(3),sameLevelRoadIds:Object.fromEntries(roads),caveat:'2m boundary samples of unsplit terrain; excludes tunnel cuts, earthworks, road widths at oblique crossings and continuous vehicle sweeps.'},null,2));

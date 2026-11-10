@@ -107,3 +107,13 @@ test('candidate fit is hidden by coarse terrain but clears a 1m inset cut in the
  assert.equal(after.hits,0);
  // No claim about the perimeter seam, roads, missing props, physics or runtime.
 });
+
+test('inset seam diagnostic distinguishes high and low steps near roads', {timeout:30000}, () => {
+ const {execFileSync}=require('node:child_process');
+ const report=JSON.parse(execFileSync(process.execPath,['tools/cities/hongkong/check-happy-valley-site-seam.mjs','--inset1m'],{encoding:'utf8'}));
+ assert.equal(report.boundary,'experimental 1m inset');
+ assert.equal(report.terrainAbovePad+report.terrainBelowPad,report.over10cm);
+ assert.ok(report.terrainAbovePad>0 && report.terrainBelowPad>0);
+ assert.ok(report.aboveNearSameLevelRoad>0 && report.belowNearSameLevelRoad>0);
+ assert.match(report.caveat,/excludes tunnel cuts/);
+});
