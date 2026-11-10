@@ -117,7 +117,10 @@ function segmentHit(x, z, way, i) {
   const ax = flat[i - 2], az = flat[i - 1], bx = flat[i], bz = flat[i + 1];
   const dx = bx - ax, dz = bz - az;
   const lengthSq = dx * dx + dz * dz;
-  const t = lengthSq > 0 ? Math.max(0, Math.min(1, ((x - ax) * dx + (z - az) * dz) / lengthSq)) : 0;
+  // Match addRoadQuad: a collapsed segment renders no ribbon and must not
+  // manufacture a circular drivable surface or a zero-heading spawn point.
+  if (lengthSq < 0.05 * 0.05) return null;
+  const t = Math.max(0, Math.min(1, ((x - ax) * dx + (z - az) * dz) / lengthSq));
   const px = ax + dx * t, pz = az + dz * t;
   const length = Math.hypot(dx, dz) || 1;
   const sign = way.dir === -1 ? -1 : 1;
@@ -149,6 +152,7 @@ export function nearestFullRoad(x, z, {
     if (way.width < minWidth || (namedOnly && !way.name) || (excludeCrossings && CROSSING_FLAT_EXCLUSION_IDS.has(way.id))) continue;
     for (let i = 2; i + 1 < way.flat.length; i += 2) {
       const hit = segmentHit(x, z, way, i);
+      if (!hit) continue;
       if (excludeSubmergedTunnels && isSubmergedGenericTunnel(way, hit.x, hit.z)) continue;
       if (hit.distance > radius || (best && hit.distance >= best.distance)) continue;
       best = hit;
@@ -166,6 +170,7 @@ export function fullRoadSurfaceAt(x, z, margin = 0.35, referenceY = 0) {
     if (CROSSING_FLAT_EXCLUSION_IDS.has(way.id)) continue;
     for (let i = 2; i + 1 < way.flat.length; i += 2) {
       const hit = segmentHit(x, z, way, i);
+      if (!hit) continue;
       if (hit.distance > hit.width * 0.5 + margin) continue;
       // A hidden submerged tube may be followed by an entity already at its level, but must not pull surface traffic
       // or pedestrians onto an invisible road above/below the harbour. Explicit sea crossings use their own selector.
@@ -183,6 +188,7 @@ export function nearestFullRoads(x, z, radius = 45) {
     if (!way.name) continue;
     for (let i = 2; i + 1 < way.flat.length; i += 2) {
       const hit = segmentHit(x, z, way, i);
+      if (!hit) continue;
       if (hit.distance > radius) continue;
       const current = best.get(way.name);
       if (!current || hit.distance < current.distance) best.set(way.name, hit);
@@ -210,6 +216,7 @@ export function spawnOnFullRoad(x, z, { minWidth = 8, laneOffset = 2.6, radius =
     if (way.width < minWidth || (!includeGenericTunnels && (way.flags & 4) && !CROSSING_FLAT_EXCLUSION_IDS.has(way.id))) continue;
     for (let i = 2; i + 1 < way.flat.length; i += 2) {
       const candidate = segmentHit(x, z, way, i);
+      if (!candidate) continue;
       if (candidate.distance > radius || isSubmergedGenericTunnel(way, candidate.x, candidate.z)) continue;
       const endpoint = Math.min(candidate.t * candidate.length, (1 - candidate.t) * candidate.length);
       // A five-metre stub or a segment endpoint is a poor place to arrive in a car. Prefer a nearby usable stretch,
