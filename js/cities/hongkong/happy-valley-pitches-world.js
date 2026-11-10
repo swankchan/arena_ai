@@ -64,7 +64,7 @@ export function buildHappyValleyPitches(parent) {
   const artificial = new THREE.MeshStandardMaterial({ color: 0x31673c, roughness: 0.94, side: THREE.DoubleSide, polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -2 });
   const natural = new THREE.MeshStandardMaterial({ color: 0x486f38, roughness: 0.98, side: THREE.DoubleSide, polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -2 });
   const white = new THREE.MeshStandardMaterial({ color: 0xd3d9c7, roughness: 0.88, polygonOffset: true, polygonOffsetFactor: -5, polygonOffsetUnits: -5 });
-  const lineParts = [], goalParts = [];
+  const lineParts = [], goalParts = [], netPositions = [];
   for (const pitch of HAPPY_VALLEY_PITCHES) {
     const ring = pitch.localRing;
     const surface = new THREE.Mesh(roofGeometry(ring, 0.17), pitch.surface === 'grass' ? natural : artificial);
@@ -88,6 +88,24 @@ export function buildHappyValleyPitches(parent) {
       line(end,0.5-penaltyHalf,end+dir*penaltyLength,0.5-penaltyHalf);
       line(end+dir*penaltyLength,0.5-penaltyHalf,end+dir*penaltyLength,0.5+penaltyHalf);
       line(end+dir*penaltyLength,0.5+penaltyHalf,end,0.5+penaltyHalf);
+      // Small-sided fields use scaled-down areas; dimensions remain estimates.
+      const goalAreaDepth = Math.min(5.5,length*.07)/length;
+      const goalAreaHalf = Math.min(9.16,width*.2)/width;
+      line(end, .5-goalAreaHalf,end+dir*goalAreaDepth,.5-goalAreaHalf);
+      line(end+dir*goalAreaDepth,.5-goalAreaHalf,end+dir*goalAreaDepth,.5+goalAreaHalf);
+      line(end+dir*goalAreaDepth,.5+goalAreaHalf,end,.5+goalAreaHalf);
+      const spotDistance=Math.min(11,length*.11), radius=Math.min(9.15,length*.1,width*.16);
+      const spot=end+dir*spotDistance/length;
+      line(spot,.5-.06/width,spot,.5+.06/width);
+      const ratio=(penaltyLength*length-spotDistance)/radius;
+      if(ratio>-1 && ratio<1) {
+        const angle=Math.acos(ratio);
+        for(let i=0;i<16;i++) {
+          const a=-angle+2*angle*i/16,b=-angle+2*angle*(i+1)/16;
+          line(spot+dir*radius*Math.cos(a)/length,.5+radius*Math.sin(a)/width,
+            spot+dir*radius*Math.cos(b)/length,.5+radius*Math.sin(b)/width);
+        }
+      }
       // Goal posts are at the short ends, not along the long touchlines.
       const half = (length > 75 ? 7.32 : 4.8) / (2*width);
       const h = length > 75 ? 2.44 : 2.0;
@@ -95,10 +113,33 @@ export function buildHappyValleyPitches(parent) {
       beam(goalParts, left, [left[0],h+0.17,left[2]], 0.09);
       beam(goalParts, right, [right[0],h+0.17,right[2]], 0.09);
       beam(goalParts, [left[0],h+0.17,left[2]], [right[0],h+0.17,right[2]], 0.09);
+      // Lightweight mesh netting, sloping from crossbar to a rear ground bar.
+      // The depth and grid spacing are illustrative, not an as-built survey.
+      const depth=length>75?1.8:1.2;
+      const behind=end-dir*depth/length;
+      const net=(a,b)=>netPositions.push(...a,...b);
+      const netPoint=(v,y)=>point(end+(behind-end)*(1-y/h),v,.17+y);
+      const steps=Math.ceil((2*half*width)/.45);
+      for(let i=0;i<=steps;i++) {
+        const v=.5-half+2*half*i/steps;
+        net(netPoint(v,h),netPoint(v,0));
+      }
+      for(let i=0;i<=6;i++) {
+        const y=h*i/6;
+        net(netPoint(.5-half,y),netPoint(.5+half,y));
+        for(const v of [.5-half,.5+half]) net(point(end,v,.17+y),netPoint(v,y));
+      }
+      const rearLeft=point(behind,.5-half,.17),rearRight=point(behind,.5+half,.17);
+      beam(goalParts,left,rearLeft,.06); beam(goalParts,right,rearRight,.06);
+      beam(goalParts,rearLeft,rearRight,.06);
     }
   }
   buildCombinedHockeyMarkings(group);
   merged(group, lineParts, white, 'HappyValleyPitchMarkings');
   merged(group, goalParts, white, 'HappyValleyPitchGoals');
+  const netGeometry=new THREE.BufferGeometry();
+  netGeometry.setAttribute('position',new THREE.Float32BufferAttribute(netPositions,3));
+  const net=new THREE.LineSegments(netGeometry,new THREE.LineBasicMaterial({color:0xbac4bb,transparent:true,opacity:.68}));
+  net.name='HappyValleyPitchGoalNets'; group.add(net);
   return group;
 }

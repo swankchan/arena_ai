@@ -47,7 +47,7 @@ test('selected pitches clear sampled provisional racing band and roads', () => {
 });
 
 test('paint and goal mesh vertices stay inside one of the mapped pitch outlines', () => {
-  for (const name of ['HappyValleyPitchMarkings', 'HappyValleyPitchGoals']) {
+  for (const name of ['HappyValleyPitchMarkings', 'HappyValleyPitchGoals', 'HappyValleyPitchGoalNets']) {
     const vertices = built.group.getObjectByName(name).geometry.getAttribute('position');
     for (let i = 0; i < vertices.count; i++) {
       const p = worldPoint({x: vertices.getX(i), z: vertices.getZ(i)});
@@ -73,4 +73,20 @@ test('the inferred full hockey markings span both 9 and 10 without leaving their
     seen.add(hit.id);
   }
   assert.equal(seen.size,2);
+});
+
+
+test('goal netting spans the soccer frame and remains clear of same-level roads', () => {
+  const net=built.group.getObjectByName('HappyValleyPitchGoalNets');
+  assert.ok(net?.isLineSegments);
+  const vertices=net.geometry.getAttribute('position');
+  assert.ok(vertices.count > 700);
+  let minY=Infinity,maxY=-Infinity;
+  for(let i=0;i<vertices.count;i++) {
+    const p=worldPoint({x:vertices.getX(i),z:vertices.getZ(i)});
+    minY=Math.min(minY,vertices.getY(i));maxY=Math.max(maxY,vertices.getY(i));
+    const hit=road(p.x,p.z,.1,terrain.happyValleyPadHeight);
+    assert.ok(!hit || Math.abs(hit.height-terrain.happyValleyPadHeight)>=2.5,`net vertex ${i} on road ${hit?.way.id}`);
+  }
+  assert.ok(Math.abs(minY-.17)<.001); assert.ok(maxY>2.5 && maxY<2.7);
 });
