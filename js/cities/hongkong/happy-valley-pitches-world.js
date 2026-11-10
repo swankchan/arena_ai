@@ -1,0 +1,66 @@
+// Six mapped recreation-ground pitches. The remaining fields overlap the
+// provisional racing circuit and must wait for the circuit's realignment.
+import * as THREE from 'three/webgpu';
+import { HAPPY_VALLEY_SITE } from './happy-valley-racecourse-architecture.js';
+import { HAPPY_VALLEY_PITCH_SOURCES } from './happy-valley-pitches-data.js';
+import { localRingFromWorld, worldRingFromGeometry } from './authored-landmark-site.js';
+import { roofGeometry, merged, beam } from './harbour-city-world-utils.js';
+
+export const HAPPY_VALLEY_PITCHES = HAPPY_VALLEY_PITCH_SOURCES.map((source) => ({
+  ...source, ring: worldRingFromGeometry(source.geometry),
+  localRing: localRingFromWorld(HAPPY_VALLEY_SITE, worldRingFromGeometry(source.geometry)),
+}));
+
+// Mapped corners are nearly rectangular; the longest edge defines the play axis.
+export function happyValleyPitchFrame(pitch) {
+  const ring = pitch.localRing;
+  const points = Array.from({length: 4}, (_, i) => ({ x: ring[2*i], z: ring[2*i+1] }));
+  let longest = 0;
+  for (let i = 1; i < 4; i++) if (Math.hypot(points[(i+1)%4].x-points[i].x, points[(i+1)%4].z-points[i].z) >
+    Math.hypot(points[(longest+1)%4].x-points[longest].x, points[(longest+1)%4].z-points[longest].z)) longest = i;
+  const a = points[longest], b = points[(longest+1)%4], c = points[(longest+3)%4];
+  return { a, b, c, length: Math.hypot(b.x-a.x,b.z-a.z), width: Math.hypot(c.x-a.x,c.z-a.z) };
+}
+
+export function buildHappyValleyPitches(parent) {
+  const group = new THREE.Group(); group.name = 'HappyValleyRecreationPitches'; parent.add(group);
+  const artificial = new THREE.MeshStandardMaterial({ color: 0x31673c, roughness: 0.94, side: THREE.DoubleSide, polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -2 });
+  const natural = new THREE.MeshStandardMaterial({ color: 0x486f38, roughness: 0.98, side: THREE.DoubleSide, polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -2 });
+  const white = new THREE.MeshStandardMaterial({ color: 0xd3d9c7, roughness: 0.88, polygonOffset: true, polygonOffsetFactor: -5, polygonOffsetUnits: -5 });
+  const lineParts = [], goalParts = [];
+  for (const pitch of HAPPY_VALLEY_PITCHES) {
+    const ring = pitch.localRing;
+    const surface = new THREE.Mesh(roofGeometry(ring, 0.17), pitch.surface === 'grass' ? natural : artificial);
+    surface.name = `HappyValleyPitch${pitch.id}`;
+    group.add(surface);
+    const { a, b, c, length, width } = happyValleyPitchFrame(pitch);
+    const point = (u,v,y=0.2) => [a.x+(b.x-a.x)*u+(c.x-a.x)*v, y, a.z+(b.z-a.z)*u+(c.z-a.z)*v];
+    const line = (u1,v1,u2,v2) => beam(lineParts, point(u1,v1), point(u2,v2), 0.055, 0.1);
+    const u0 = 0.055, u1 = 0.945, v0 = 0.055, v1 = 0.945;
+    line(u0,v0,u1,v0); line(u1,v0,u1,v1); line(u1,v1,u0,v1); line(u0,v1,u0,v0);
+    line(0.5,v0,0.5,v1);
+    const centreRadius = Math.min(9.15, length*0.1, width*0.16);
+    for (let i=0;i<32;i++) {
+      const a0=2*Math.PI*i/32, a1=2*Math.PI*(i+1)/32;
+      line(0.5+Math.cos(a0)*centreRadius/length, 0.5+Math.sin(a0)*centreRadius/width,
+        0.5+Math.cos(a1)*centreRadius/length, 0.5+Math.sin(a1)*centreRadius/width);
+    }
+    const penaltyLength = Math.min(16.5, length*0.17)/length;
+    const penaltyHalf = Math.min(20.16, width*0.34)/width;
+    for (const [end, dir] of [[u0,1],[u1,-1]]) {
+      line(end,0.5-penaltyHalf,end+dir*penaltyLength,0.5-penaltyHalf);
+      line(end+dir*penaltyLength,0.5-penaltyHalf,end+dir*penaltyLength,0.5+penaltyHalf);
+      line(end+dir*penaltyLength,0.5+penaltyHalf,end,0.5+penaltyHalf);
+      // Goal posts are at the short ends, not along the long touchlines.
+      const half = (length > 75 ? 7.32 : 4.8) / (2*width);
+      const h = length > 75 ? 2.44 : 2.0;
+      const left = point(end,0.5-half), right = point(end,0.5+half);
+      beam(goalParts, left, [left[0],h+0.17,left[2]], 0.09);
+      beam(goalParts, right, [right[0],h+0.17,right[2]], 0.09);
+      beam(goalParts, [left[0],h+0.17,left[2]], [right[0],h+0.17,right[2]], 0.09);
+    }
+  }
+  merged(group, lineParts, white, 'HappyValleyPitchMarkings');
+  merged(group, goalParts, white, 'HappyValleyPitchGoals');
+  return group;
+}

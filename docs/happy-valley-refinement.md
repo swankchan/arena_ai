@@ -31,3 +31,9 @@
 原有 24 m 圓形沙地及旁邊虛構小看台，置於場地另一端，並非可靠位置。現用本地 OSM 摘錄的 [way 1056788255](https://www.openstreetmap.org/way/1056788255)（`horse_racing=paddock`、名為「馬匹亮相圈」）定位及繪畫輪廓，並移除那座虛構小看台。對照 Getty 的 [2015 場邊照片](https://gettyimages.fr/photos/hong-kong-jockey-club-racing) 及 [2022 照片](https://gettyimages.com/photos/hong-kong-races-happy-valley)，可見深綠地面、紅色步行帶及淺色欄杆；材質色調、步行帶寬度和開口位置仍是推算，OSM 標記 `surface=grass`，不可視為測量圖。香港馬會的[會員設施資料](https://member.hkjc.com/member/english/go-racing/members/members-boxes.aspx)區分多座會員看台，不能以單一小方盒代替。真實看台、圍欄開口、伸縮上蓋及連接入口仍待重建。
 
 回歸檢查來源節點和渲染頂點、沿輪廓每約 1 m 採樣 1 m 路面餘量；未發現同高道路，但不是連續避碰或高程測量。`tests/visual/happy-valley-paddock.html` 的獨立 WebGL 圖可見長形亮相區，尚未包含周邊真實看台；不代表完整世界或 WebGPU 已核驗。現有主看台佔位距 OSM 看台區很遠，位置嚴重錯誤，與此亮相圈尚未接駁；不得視為完工。
+
+## 遊樂場球場（部分）
+
+根據本地 OSM 摘錄，先加入 1、4、5、7、9、10 號六個球場：保留各自 way 輪廓及天然／人造草地標記，繪製足球白線、中央圓及短邊球門。球門及白線是按輪廓推算，非球場測量資料；9、10 號亦有曲棍球用途，現只畫足球線，未補不同用途的標線、圍網、球門網及周邊設備。康文署的[足球場資料](https://www.lcsd.gov.hk/en/facilities/facilitiesbooking/procedure/14day_soccerpitch_balloting.html/1000)可作場地用途參考，OSM 資料 © OpenStreetMap contributors，ODbL 1.0。
+
+這六個場地的輪廓和現有錯位跑道，在每圈 1,440 站、6 個橫向位置沒有採樣重疊；每 2 m 場內格網與 1 m 道路餘量也未見同高道路。這不等於連續幾何淨空或球場真實標高已確認。其他球場仍與錯位馬道相交，沒有硬蓋上去：馬道仍需重新擬合，整個內場尚未完成。畫線和球門的 mesh 頂點已檢查在其一 OSM 球場內，球門位於場地短邊。獨立 WebGL 俯視 fixture `tests/visual/happy-valley-pitches.html` 已檢視；加 polygon offset 減少遠距草地與場線深度衝突，但完整場景的 WebGPU、夜景、地台銜接及行走效果仍未核驗。

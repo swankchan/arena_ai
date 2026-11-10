@@ -14,6 +14,7 @@ import {
   merged, box, cylinder, beam, store, quad, meshStore, harbourCityPalette, roofGeometry, scaledRing,
 } from './harbour-city-world-utils.js';
 import { harbourCityLocalCollider } from './harbour-city-architecture.js';
+import { buildHappyValleyPitches } from './happy-valley-pitches-world.js';
 
 const C = HAPPY_VALLEY_COLOURS;
 const DEG = Math.PI / 180;
@@ -34,8 +35,8 @@ function makeMaterials() {
     grass: new THREE.MeshStandardMaterial({ color: new THREE.Color(...C.grass), roughness: 0.95 }),
     grassStripe: new THREE.MeshStandardMaterial({ color: new THREE.Color(...C.grassStripe), roughness: 0.95 }),
     infield: new THREE.MeshStandardMaterial({ color: new THREE.Color(...C.infield), roughness: 0.96 }),
-    paradePath: new THREE.MeshStandardMaterial({ color: 0x884239, roughness: 0.92 }),
-    paradeCentre: new THREE.MeshStandardMaterial({ color: 0x316b60, roughness: 0.95 }),
+    paradePath: new THREE.MeshStandardMaterial({ color: 0x884239, roughness: 0.92, polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -2 }),
+    paradeCentre: new THREE.MeshStandardMaterial({ color: 0x316b60, roughness: 0.95, polygonOffset: true, polygonOffsetFactor: -4, polygonOffsetUnits: -4 }),
     sand: new THREE.MeshStandardMaterial({ color: new THREE.Color(...C.sand), roughness: 0.98 }),
     rail: new THREE.MeshStandardMaterial({ color: new THREE.Color(...C.rail), roughness: 0.5, metalness: 0.15 }),
     stand: new THREE.MeshStandardMaterial({ color: new THREE.Color(...C.standWhite), roughness: 0.62 }),
@@ -302,6 +303,7 @@ export function buildHappyValleyRacecourse(root, { groundOffset = 0 } = {}) {
   const stats = {};
   buildGrounds(venue, materials, stats);
   buildCourse(venue, materials, stats);
+  buildHappyValleyPitches(venue);
   const { frame } = buildGrandstand(venue, materials, stats);
   buildClubHouse(venue, materials, stats, frame);
   buildInfield(venue, materials, stats);
