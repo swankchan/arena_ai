@@ -1,6 +1,22 @@
 // OSM sports pitch ways from tools/data/hongkong/parks.json; © OpenStreetMap contributors, ODbL 1.0.
-// Partial set pending a validated race-track alignment.
+// Mapped pitches; the provisional course is locally cleared around 2 and 3.
 export const HAPPY_VALLEY_PITCH_SOURCES = Object.freeze([
+  {
+    id: 563648704, name: '2號球場 Pitch 2', surface: 'artificial_turf', sport: 'soccer',
+    geometry: [
+      {lat:22.2731708,lon:114.1823522},{lat:22.2726834,lon:114.1826088},
+      {lat:22.2730379,lon:114.1833952},{lat:22.2735253,lon:114.1831386},
+      {lat:22.2731708,lon:114.1823522},
+    ],
+  },
+  {
+    id: 563648705, name: '3號球場 Pitch 3', surface: 'artificial_turf', sport: 'soccer',
+    geometry: [
+      {lat:22.2726350,lon:114.1826318},{lat:22.2722694,lon:114.1828242},
+      {lat:22.2725965,lon:114.1835500},{lat:22.2729621,lon:114.1833575},
+      {lat:22.2726350,lon:114.1826318},
+    ],
+  },
   {
     "id": 263771944,
     "name": "1號球場 Pitch 1",

@@ -15,7 +15,7 @@ import {
 } from './harbour-city-world-utils.js';
 import { harbourCityLocalCollider, harbourCityEdgeFrame } from './harbour-city-architecture.js';
 import { HAPPY_VALLEY_PAVILION, HAPPY_VALLEY_PAVILION_ENTRANCE } from './happy-valley-pavilion-site.js';
-import { buildHappyValleyPitches } from './happy-valley-pitches-world.js';
+import { buildHappyValleyPitches, HAPPY_VALLEY_PITCHES, happyValleyPitchFrame } from './happy-valley-pitches-world.js';
 import { buildHappyValleyPavilion } from './happy-valley-pavilion-world.js';
 import { buildHappyValleyMembersIII } from './happy-valley-members-iii-world.js';
 import { HAPPY_VALLEY_MEMBERS_III, HAPPY_VALLEY_MEMBERS_III_ENTRANCE } from './happy-valley-members-iii-site.js';
@@ -84,15 +84,40 @@ function inTunnelOpening(point, margin=0) {
     return Math.abs(dx*r.ux+dz*r.uz)<=r.hx+margin && Math.abs(-dx*r.uz+dz*r.ux)<=r.hz+margin;
   });
 }
-function cutRacecourseTunnelOpenings(mesh) {
-  if(!mesh || !SITE_TUNNEL_OPENINGS.length) return;
+// Exact clipped rectangles preserve the mapped pitches rather than drawing
+// the known-wrong provisional course and rails through them. The rectangular
+// clearance is a conservative temporary fit, not a real racecourse gate.
+const PITCH_PROTECTION_RECTS=HAPPY_VALLEY_PITCHES.filter(p=>[563648704,563648705].includes(p.id)).map(pitch=>{
+  const f=happyValleyPitchFrame(pitch),s=HAPPY_VALLEY_SITE,c=Math.cos(s.ry),sn=Math.sin(s.ry);
+  const ux0=(f.b.x-f.a.x)/f.length,uz0=(f.b.z-f.a.z)/f.length;
+  const ux=c*ux0+sn*uz0,uz=-sn*ux0+c*uz0;
+  const world=[];
+  for(let i=0;i<pitch.localRing.length-2;i+=2) {
+    const x=pitch.localRing[i],z=pitch.localRing[i+1];world.push([s.x+c*x+sn*z,s.z-sn*x+c*z]);
+  }
+  const along=world.map(([x,z])=>x*ux+z*uz),across=world.map(([x,z])=>-x*uz+z*ux);
+  const lo=Math.min(...along)-.4,hi=Math.max(...along)+.4,low=Math.min(...across)-.4,high=Math.max(...across)+.4;
+  const A=(lo+hi)/2,B=(low+high)/2,cx=ux*A-uz*B,cz=uz*A+ux*B,hx=(hi-lo)/2,hz=(high-low)/2;
+  const ex=Math.abs(ux)*hx+Math.abs(uz)*hz,ez=Math.abs(uz)*hx+Math.abs(ux)*hz;
+  return {cx,cz,ux,uz,hx,hz,minX:cx-ex,maxX:cx+ex,minZ:cz-ez,maxZ:cz+ez};
+});
+function inProtectedPitch(point,margin=0) {
+  const s=HAPPY_VALLEY_SITE,c=Math.cos(s.ry),sn=Math.sin(s.ry);
+  const x=s.x+c*point.x+sn*point.z,z=s.z-sn*point.x+c*point.z;
+  return PITCH_PROTECTION_RECTS.some(r=>{
+    const dx=x-r.cx,dz=z-r.cz;
+    return Math.abs(dx*r.ux+dz*r.uz)<=r.hx+margin && Math.abs(-dx*r.uz+dz*r.ux)<=r.hz+margin;
+  });
+}
+function cutRacecourseTunnelOpenings(mesh, rects=SITE_TUNNEL_OPENINGS) {
+  if(!mesh || !rects.length) return;
   const original=mesh.geometry, source=original.index?original.toNonIndexed():original;
   const position=source.getAttribute('position'), colour=source.getAttribute('color'), lit=source.getAttribute('aLit');
   const positions=[],colours=[],lights=[],s=HAPPY_VALLEY_SITE,c=Math.cos(s.ry),sn=Math.sin(s.ry);
   for(let i=0;i+2<position.count;i+=3) {
     const triangle=[];
     for(let j=0;j<3;j++) {const x=position.getX(i+j),z=position.getZ(i+j);triangle.push([s.x+c*x+sn*z,s.z-sn*x+c*z]);}
-    for(const poly of subtractTunnelOpenings(triangle,SITE_TUNNEL_OPENINGS)) for(let j=1;j+1<poly.length;j++) {
+    for(const poly of subtractTunnelOpenings(triangle,rects)) for(let j=1;j+1<poly.length;j++) {
       for(const [X,Z] of [poly[0],poly[j],poly[j+1]]) {
         const dx=X-s.x,dz=Z-s.z;
         positions.push(c*dx-sn*dz,position.getY(i),sn*dx+c*dz);
@@ -120,7 +145,7 @@ function trackRoadConflict(point, groundOffset, margin = 1.3) {
 function buildCourse(group, materials, stats, groundOffset) {
   const course = new THREE.Group(); course.name = 'HappyValleyCourse'; group.add(course);
   const segments = 360;
-  let roadRailGaps = 0, roadSurfaceGaps = 0;
+  let roadRailGaps = 0, roadSurfaceGaps = 0, pitchRailGaps = 0;
   const band = store(), infieldStore = store();
   const infieldApex = { x: HAPPY_VALLEY_TRACK.centreX - 8, z: HAPPY_VALLEY_TRACK.centreZ };
   const rails = [], posts = [], distancePoles = [];
@@ -145,6 +170,7 @@ function buildCourse(group, materials, stats, groundOffset) {
     // resulting gaps are temporary, not a claim about actual access gates.
     for (const [a, b, offset] of [[outer0, outer1, 0], [inner0, inner1, -HAPPY_VALLEY_TRACK.width]]) {
       const mid = trackPoint((t0+t1)/2, offset);
+      if ([a,mid,b].some(p=>inProtectedPitch(p,1))) { pitchRailGaps++;continue; }
       const blocked = [a, mid, b].some(p => trackRoadConflict(p, groundOffset));
       if (blocked) { roadRailGaps++; continue; }
       for (const height of [1.15, 0.82, 0.5]) beam(rails, [a.x, height, a.z], [b.x, height, b.z], 0.13, 0.11);
@@ -162,13 +188,15 @@ function buildCourse(group, materials, stats, groundOffset) {
     const p = trackPoint(t, -HAPPY_VALLEY_TRACK.width - 1.2);
     cylinder(distancePoles, [p.x, 0.9, p.z], 0.09, 1.8, 6);
   }
-  cutRacecourseTunnelOpenings(meshStore(course, band, materials.grass, 'HappyValleyTrackSurface', false));
+  cutRacecourseTunnelOpenings(meshStore(course, band, materials.grass, 'HappyValleyTrackSurface', false),
+    [...SITE_TUNNEL_OPENINGS,...PITCH_PROTECTION_RECTS]);
   cutRacecourseTunnelOpenings(meshStore(course, infieldStore, materials.infield, 'HappyValleyInfieldTurf', false));
   merged(course, rails, materials.rail, 'HappyValleyRunningRails');
   merged(course, posts, materials.rail, 'HappyValleyRunningRailPosts');
   merged(course, distancePoles, materials.rail, 'HappyValleyDistancePoles');
   stats.happyValleyTrackSegments = segments;
   stats.happyValleyRoadRailGaps = roadRailGaps;
+  stats.happyValleyPitchRailGaps = pitchRailGaps;
   stats.happyValleyRoadSurfaceGaps = roadSurfaceGaps;
   stats.happyValleyDistancePoles = distancePoles.length;
   return course;

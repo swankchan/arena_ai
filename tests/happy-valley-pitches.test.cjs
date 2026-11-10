@@ -15,9 +15,9 @@ test.before(async () => {
 const worldPoint = (p) => ({ x: arch.HAPPY_VALLEY_SITE.x + Math.cos(arch.HAPPY_VALLEY_SITE.ry) * p.x + Math.sin(arch.HAPPY_VALLEY_SITE.ry) * p.z,
   z: arch.HAPPY_VALLEY_SITE.z - Math.sin(arch.HAPPY_VALLEY_SITE.ry) * p.x + Math.cos(arch.HAPPY_VALLEY_SITE.ry) * p.z });
 
-test('six mapped pitches preserve the OSM way geometry and ground surface', () => {
+test('eight mapped pitches preserve the OSM way geometry and ground surface', () => {
   const sources = JSON.parse(fs.readFileSync('tools/data/hongkong/parks.json')).elements;
-  assert.equal(pitches.length, 6);
+  assert.equal(pitches.length, 8);
   for (const pitch of pitches) {
     const source = sources.find(e => e.type === 'way' && e.id === pitch.id);
     assert.deepEqual(pitch.geometry, source.geometry);
@@ -34,7 +34,7 @@ test('six mapped pitches preserve the OSM way geometry and ground surface', () =
 test('selected pitches clear sampled provisional racing band and roads', () => {
   for (let i = 0; i < 1440; i++) for (const offset of [0,-6,-12,-18,-24,-30.5]) {
     const p = worldPoint(arch.happyValleyTrackPoint(i/1440,offset));
-    for (const pitch of pitches) assert.ok(!ringUtils.pointInFlatRing(pitch.ring,p.x,p.z), `track intersects ${pitch.id}`);
+    for (const pitch of pitches.filter(q=>![563648704,563648705].includes(q.id))) assert.ok(!ringUtils.pointInFlatRing(pitch.ring,p.x,p.z), `track intersects ${pitch.id}`);
   }
   for (const pitch of pitches) {
     const b = ringUtils.flatRingBounds(pitch.ring);
@@ -89,4 +89,23 @@ test('goal netting spans the soccer frame and remains clear of same-level roads'
     assert.ok(!hit || Math.abs(hit.height-terrain.happyValleyPadHeight)>=2.5,`net vertex ${i} on road ${hit?.way.id}`);
   }
   assert.ok(Math.abs(minY-.17)<.001); assert.ok(maxY>2.5 && maxY<2.7);
+});
+
+test('mapped pitches 2 and 3 clear the rendered provisional track and running rails', async () => {
+  const THREE=await import('three/webgpu');
+  built.group.updateMatrixWorld(true);
+  const obstacles=['HappyValleyTrackSurface','HappyValleyRunningRails','HappyValleyRunningRailPosts']
+    .map(name=>built.group.getObjectByName(name));
+  assert.ok(obstacles.every(Boolean));
+  const ray=new THREE.Raycaster();let checked=0;
+  for(const pitch of pitches.filter(p=>[563648704,563648705].includes(p.id))) {
+    const b=ringUtils.flatRingBounds(pitch.ring);
+    for(let x=b.minX;x<=b.maxX;x+=2) for(let z=b.minZ;z<=b.maxZ;z+=2) {
+      if(!ringUtils.pointInFlatRing(pitch.ring,x,z))continue;
+      ray.set(new THREE.Vector3(x,terrain.happyValleyPadHeight+5,z),new THREE.Vector3(0,-1,0));
+      assert.equal(ray.intersectObjects(obstacles).length,0,`obstruction over pitch ${pitch.id} at ${x},${z}`);
+      checked++;
+    }
+  }
+  assert.ok(checked>1000);
 });

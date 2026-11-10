@@ -1,5 +1,4 @@
-// Six mapped recreation-ground pitches. The remaining fields overlap the
-// provisional racing circuit and must wait for the circuit's realignment.
+// Eight mapped recreation-ground pitches. Other fields require racecourse realignment.
 import * as THREE from 'three/webgpu';
 import { HAPPY_VALLEY_SITE } from './happy-valley-racecourse-architecture.js';
 import { HAPPY_VALLEY_PITCH_SOURCES } from './happy-valley-pitches-data.js';
