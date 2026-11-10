@@ -454,3 +454,18 @@ test('distance markers do not intrude into mapped but unbuilt pitches', async ()
     for(const pitch of rings)assert.ok(!ringUtils.pointInFlatRing(pitch.ring,v.x,v.z),`distance marker in pitch ${pitch.id}`);
   }
 });
+
+test('estimated infield screen has distinct night-emissive information panels', () => {
+  built.group.updateMatrixWorld(true);
+  for(const name of ['HappyValleyScreenVideo','HappyValleyScreenOddsPanel','HappyValleyScreenInformation']) {
+    const mesh=built.group.getObjectByName(name);
+    assert.ok(mesh?.material.isNodeMaterial && mesh.material.emissiveNode,`${name} needs a night emissive node`);
+    const vertices=mesh.geometry.getAttribute('position'),v=new THREE.Vector3();
+    assert.ok(vertices.count>0);
+    for(let i=0;i<vertices.count;i++) {
+      v.fromBufferAttribute(vertices,i).applyMatrix4(mesh.matrixWorld);
+      const road=fullMeta.fullRoadSurfaceAt(v.x,v.z,0,terrain.HONG_KONG_TERRAIN_META.happyValleyPadHeight);
+      assert.ok(!road || Math.abs(road.height-terrain.HONG_KONG_TERRAIN_META.happyValleyPadHeight)>=2.5,`${name} over road`);
+    }
+  }
+});

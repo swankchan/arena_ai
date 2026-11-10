@@ -42,10 +42,16 @@ function makeMaterials() {
   seat.colorNode = attribute('color').rgb;
   const floodlight = new THREE.MeshStandardNodeMaterial({ color: 0xbfcbd0, roughness: .35 });
   floodlight.emissiveNode = color(0xe5f2ff).mul(nightAmount()).mul(2.8);
+  const screenText = new THREE.MeshStandardNodeMaterial({color:0xb5d0d1,roughness:.55});
+  screenText.emissiveNode = color(0x8ebfc2).mul(nightAmount().mul(1.2).add(.12));
+  const screenRed = new THREE.MeshStandardNodeMaterial({color:0x6d2223,roughness:.65});
+  screenRed.emissiveNode = color(0x8e161b).mul(nightAmount().mul(.9).add(.08));
+  const screenVideo = new THREE.MeshStandardNodeMaterial({color:0x22434d,roughness:.65});
+  screenVideo.emissiveNode = color(0x3d8888).mul(nightAmount().mul(.7).add(.05));
   const decal = new THREE.MeshStandardNodeMaterial({ vertexColors: true, roughness: 0.85, side: THREE.DoubleSide });
   decal.colorNode = attribute('color').rgb;
   return {
-    seat, decal, floodlight,
+    seat, decal, floodlight, screenText, screenRed, screenVideo,
     grass: new THREE.MeshStandardNodeMaterial({ vertexColors: true, roughness: 0.95, side: THREE.DoubleSide }),
     grassStripe: new THREE.MeshStandardMaterial({ color: new THREE.Color(...C.grassStripe), roughness: 0.95 }),
     infield: new THREE.MeshStandardMaterial({ color: new THREE.Color(...C.infield), roughness: 0.96 }),
@@ -65,7 +71,7 @@ function makeMaterials() {
     apron: new THREE.MeshStandardMaterial({ color: new THREE.Color(...C.apron), roughness: 0.95 }),
     roof: new THREE.MeshStandardMaterial({ color: new THREE.Color(...C.roof), roughness: 0.55 }),
     glass: new THREE.MeshStandardMaterial({ color: new THREE.Color(...C.glass), roughness: 0.22, metalness: 0.45 }),
-    screen: new THREE.MeshStandardMaterial({ color: new THREE.Color(...C.screen), roughness: 0.4, emissive: new THREE.Color(0.05, 0.35, 0.4) }),
+    screen: new THREE.MeshStandardMaterial({ color: 0x182328, roughness: .65 }),
     white: palette.white,
   };
 }
@@ -275,7 +281,7 @@ export function happyValleyParadeInset(ring, distance) {
 // ---------------------------------------------------------------------------------------------------------------
 function buildInfield(group, materials, stats) {
   const infield = new THREE.Group(); infield.name = 'HappyValleyInfield'; group.add(infield);
-  const boards = [], frames = [], screenParts = [];
+  const boards = [], frames = [], screenParts = [], screenText = [], screenRed = [], screenVideo = [];
   // Green "馬會" branding boards along the far side of the infield, as seen in the race-night photographs.
   // The fourth placeholder board crossed mapped service roads after the loop fix.
   for (let i = 0; i < 3; i++) {
@@ -291,6 +297,27 @@ function buildInfield(group, materials, stats) {
   box(screenParts, [screenAt.x, 6.5, screenAt.z], [26, 11, 1.2], frame.ry);
   box(screenParts, [screenAt.x, 0.9, screenAt.z], [8, 1.8, 3.2], frame.ry);
   box(frames, [screenAt.x, 12.6, screenAt.z], [27.5, 1.4, 1.8], frame.ry);
+  // A stand-facing abstract race-information display, based on photographic
+  // references; the former single cyan rectangle was only a placeholder.
+  // The screen position, size and the unreadable information are estimates.
+  const cs=Math.cos(HAPPY_VALLEY_SITE.ry),sn=Math.sin(HAPPY_VALLEY_SITE.ry);
+  const dx=HAPPY_VALLEY_PAVILION.x-HAPPY_VALLEY_SITE.x,dz=HAPPY_VALLEY_PAVILION.z-HAPPY_VALLEY_SITE.z;
+  const standX=cs*dx-sn*dz,standZ=sn*dx+cs*dz;
+  const nx=Math.sin(frame.ry),nz=Math.cos(frame.ry);
+  const face=Math.sign((standX-screenAt.x)*nx+(standZ-screenAt.z)*nz)||1;
+  const sx=Math.cos(frame.ry),sz=-Math.sin(frame.ry);
+  const panel=(parts,x,y,w,h,depth=.04)=>box(parts,
+    [screenAt.x+sx*x+nx*face*(.61+depth/2),y,screenAt.z+sz*x+nz*face*(.61+depth/2)], [w,h,depth],frame.ry);
+  panel(screenVideo,-8.6,6.55,6,8.6);
+  panel(screenRed,8.4,6.55,7,8.6);
+  // Coloured bars suggest a live information table, without invented names,
+  // odds or logos. Kept inside the existing screen footprint.
+  for(let row=0;row<9;row++) {
+    const y=10.15-row*.83;
+    for(let col=0;col<4;col++)panel(screenText,-4.8+col*1.85,y,1.25,.08,.07);
+    for(let col=0;col<3;col++)panel(screenText,5.7+col*1.75,y,1.05,.08,.07);
+  }
+  for(let row=0;row<5;row++)panel(screenText,-8.5,9.2-row*1.2,3.3,.1,.07);
   // Mapped paddock footprint. A terracotta walking edge and muted green centre
   // recall the paddock photographs, but their widths and the rail are estimates.
   const ring = HAPPY_VALLEY_PARADE_LOCAL_RING;
@@ -328,6 +355,9 @@ function buildInfield(group, materials, stats) {
   merged(infield, frames, materials.roof, 'HappyValleyScreenFrame');
   merged(infield, screenParts.slice(0, 1), materials.screen, 'HappyValleyBigScreen');
   merged(infield, screenParts.slice(1), materials.standShade, 'HappyValleyBigScreenBase');
+  merged(infield, screenVideo, materials.screenVideo, 'HappyValleyScreenVideo');
+  merged(infield, screenRed, materials.screenRed, 'HappyValleyScreenOddsPanel');
+  merged(infield, screenText, materials.screenText, 'HappyValleyScreenInformation');
   stats.happyValleyBrandingBoards = boards.length;
   stats.happyValleyParadeOsmId = 1056788255;
   return infield;
