@@ -22,6 +22,43 @@ export function happyValleyPitchFrame(pitch) {
   return { a, b, c, length: Math.hypot(b.x-a.x,b.z-a.z), width: Math.hypot(c.x-a.x,c.z-a.z) };
 }
 
+// The two seven-a-side pitches together form one multi-use hockey area. The
+// marked rectangle and its exact location are inferred, not a surveyed layout.
+export function happyValleyCombinedHockeyFrame() {
+  const nine = HAPPY_VALLEY_PITCHES.find(p => p.id === 680858152).localRing;
+  const ten = HAPPY_VALLEY_PITCHES.find(p => p.id === 680858151).localRing;
+  const a={x:nine[0],z:nine[1]}, b={x:ten[6],z:ten[7]};
+  const c={x:nine[2],z:nine[3]}, d={x:ten[4],z:ten[5]};
+  const ux=b.x-a.x, uz=b.z-a.z, ulen=Math.hypot(ux,uz);
+  const vx=c.x-a.x, vz=c.z-a.z, vlen=Math.hypot(vx,vz);
+  return { centreX:(a.x+b.x+c.x+d.x)/4, centreZ:(a.z+b.z+c.z+d.z)/4,
+    ux:ux/ulen, uz:uz/ulen, vx:vx/vlen, vz:vz/vlen, length:91.4, width:55 };
+}
+
+function buildCombinedHockeyMarkings(group) {
+  const f=happyValleyCombinedHockeyFrame(), parts=[];
+  const point=(u,v)=>[f.centreX+f.ux*u+f.vx*v, .215, f.centreZ+f.uz*u+f.vz*v];
+  const line=(u,v,x,z)=>beam(parts,point(u,v),point(x,z),.035,.075);
+  const halfL=f.length/2, halfW=f.width/2;
+  line(-halfL,-halfW,halfL,-halfW); line(-halfL,halfW,halfL,halfW);
+  for(const u of [-halfL,halfL,0,-halfL+22.9,halfL-22.9]) line(u,-halfW,u,halfW);
+  // Goal circle is two 14.63 m quarter arcs joined by a 3.66 m straight.
+  for(const sign of [-1,1]) {
+    const back=sign*halfL, r=14.63, h=3.66/2;
+    line(back-sign*r,-h,back-sign*r,h);
+    for(const side of [-1,1]) for(let i=0;i<20;i++) {
+      const a=i*Math.PI/40, b=(i+1)*Math.PI/40;
+      line(back-sign*r*Math.cos(a),side*(h+r*Math.sin(a)),
+        back-sign*r*Math.cos(b),side*(h+r*Math.sin(b)));
+    }
+    const u=back-sign*6.4;
+    line(u,-.06,u,.06);
+  }
+  // Contrasting colour is provisional; the mapped surface has multiple uses.
+  const yellow=new THREE.MeshStandardMaterial({color:0xd4bc56,roughness:.88,polygonOffset:true,polygonOffsetFactor:-6,polygonOffsetUnits:-6});
+  merged(group,parts,yellow,'HappyValleyCombinedHockeyMarkings');
+}
+
 export function buildHappyValleyPitches(parent) {
   const group = new THREE.Group(); group.name = 'HappyValleyRecreationPitches'; parent.add(group);
   const artificial = new THREE.MeshStandardMaterial({ color: 0x31673c, roughness: 0.94, side: THREE.DoubleSide, polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -2 });
@@ -60,6 +97,7 @@ export function buildHappyValleyPitches(parent) {
       beam(goalParts, [left[0],h+0.17,left[2]], [right[0],h+0.17,right[2]], 0.09);
     }
   }
+  buildCombinedHockeyMarkings(group);
   merged(group, lineParts, white, 'HappyValleyPitchMarkings');
   merged(group, goalParts, white, 'HappyValleyPitchGoals');
   return group;

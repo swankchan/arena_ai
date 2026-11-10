@@ -57,3 +57,8 @@
 舊的 191 m 大看台、會所、70 m 方塔和獨立博物館都是依舊跑道虛構，位於場地東北側；與 OSM 映射看台群在西南側不符。馬會[設施指南](https://member.hkjc.com/member/english/about-membership/racecourses-facilities-guide/happy-valley-racecourse.aspx)將博物館列在 Stable Building，並非舊佔位的獨立方盒。已移除這四組模型及碰撞盒，保留已映射的聯合看台。這令現場暫時缺少其餘看台，**不是將整組看台完成或重建**；聯合看台入口亦仍未完成。場內螢幕及廣告牌仍為推算，尚未依真實場地重新定位。
 
 舊方塔 collider 的 1 m 格網與同高道路有 35 個抽樣點重疊；移除後這些點未被其餘馬場 collider 擋住。此測試並非連續車身掃掠，不代表完整道路已可行駛。獨立 WebGL 俯視檢查見錯側結構已消失、聯合看台仍在，並明顯可見其餘看台缺失；未在完整場景或 WebGPU 驗證。其餘看台需依 OSM 輪廓和具體照片逐座建造，跑道及道路依舊要重新擬合。
+
+## 9／10 號多用途球場的曲棍球線（推算）
+
+場內告示牌照片（GIGM3 ROZETZE YATO，2020，CC BY-SA 4.0；來源及縮圖見 `references/hongkong/happy-valley/`）把 9、10 號列為人造草足球／曲棍球場；[Dutch Hockey Club 場地指南](https://www.dutchhockeyclub.hk/pitch-finder)亦稱 9+10 是合用的多用途曲棍球場。現保留兩個各自的足球線及球門，並橫跨兩個 OSM 輪廓，在相反軸向加一組推算曲棍球線：包括兩條 22.9 m 線及兩端射門圈。使用 91.4 × 55 m、14.63 m 弧及 3.66 m 直段作比例參考（[球場尺寸說明](https://designdenzi.in/insights/hockey-field-dimensions/)），但場地告示並無實際標線圖：方向、位置及黃線顏色均是估計，未聲稱符合現場或正式比賽認證；活動曲棍球門未加。
+回歸測試各線 mesh 頂點落於兩個 OSM 球場輪廓之一，並確保線跨越兩個輪廓；不等於逐段連續淨空或工程測量。獨立 WebGL 俯視檢查見足球白線與黃色曲棍球線共存；夜間、完整世界、WebGPU 和真實標線尚未驗證。舊跑道及其他未建球場的衝突不受此修正解決。

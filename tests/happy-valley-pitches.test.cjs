@@ -55,3 +55,22 @@ test('paint and goal mesh vertices stay inside one of the mapped pitch outlines'
     }
   }
 });
+
+test('the inferred full hockey markings span both 9 and 10 without leaving their OSM outlines', async () => {
+  const {happyValleyCombinedHockeyFrame} = await import('../js/cities/hongkong/happy-valley-pitches-world.js');
+  const f=happyValleyCombinedHockeyFrame();
+  assert.equal(f.length,91.4); assert.equal(f.width,55);
+  assert.ok(Math.abs(f.ux*f.vx+f.uz*f.vz)<.02, 'the axes are close to orthogonal');
+  const hockey=pitches.filter(p => [680858151,680858152].includes(p.id));
+  const mesh=built.group.getObjectByName('HappyValleyCombinedHockeyMarkings');
+  assert.ok(mesh);
+  const pos=mesh.geometry.getAttribute('position');
+  let seen=new Set();
+  for (let i=0;i<pos.count;i++) {
+    const p=worldPoint({x:pos.getX(i),z:pos.getZ(i)});
+    const hit=hockey.find(pitch => ringUtils.pointInFlatRing(pitch.ring,p.x,p.z));
+    assert.ok(hit, `hockey vertex ${i} is outside the mapped pitches`);
+    seen.add(hit.id);
+  }
+  assert.equal(seen.size,2);
+});
