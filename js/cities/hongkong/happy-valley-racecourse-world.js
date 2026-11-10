@@ -4,6 +4,7 @@
 // The mislocated placeholder stands and museum have been removed pending mapped replacements.
 import * as THREE from 'three/webgpu';
 import { attribute, color } from 'three/tsl';
+import { cityUniforms } from '../../tsl-materials.js';
 import {
   happyValleyTerrainHeightAt, happyValleyTrackPoint,
   HAPPY_VALLEY_SITE, HAPPY_VALLEY_TRACK, HAPPY_VALLEY_MAIN_STAND, HAPPY_VALLEY_COLOURS,
@@ -283,7 +284,7 @@ function buildInfield(group, materials, stats) {
 // ---------------------------------------------------------------------------------------------------------------
 function buildGrounds(group, materials, stats, groundOffset) {
   const grounds = new THREE.Group(); grounds.name = 'HappyValleyGrounds'; group.add(grounds);
-  const masts = [], heads = [], lampFrames = [], lampFaces = [], fence = [], gates = [];
+  const masts = [], heads = [], lampFrames = [], lampFaces = [], fence = [], gates = [], floodlights = [];
   const site = HAPPY_VALLEY_SITE;
   const ring = site.localRing;
   let minX = Infinity, maxX = -Infinity, minZ = Infinity, maxZ = -Infinity;
@@ -303,6 +304,15 @@ function buildGrounds(group, materials, stats, groundOffset) {
     // Modular banks on a crossbar, facing the track/infield rather than
     // identical blank blocks. Lamp count and six locations remain estimates.
     const target=trackPoint(t,-HAPPY_VALLEY_TRACK.width-6);
+    // A bounded, downward-facing local light provides a modest night wash on
+    // actual geometry, unlike the emissive faces alone. No dynamic shadows.
+    for(const [aim,strength] of [[.2,4400],[.75,9000]]) {
+      const lamp=new THREE.SpotLight(0xe7f0ff,0,210,1.22,.8,2);
+      lamp.name='HappyValleyFloodlightSpot';lamp.position.set(p.x,34,p.z);
+      lamp.target.position.set(p.x+(HAPPY_VALLEY_TRACK.centreX-p.x)*aim,0,p.z+(HAPPY_VALLEY_TRACK.centreZ-p.z)*aim);
+      lamp.userData.nightIntensity=strength;
+      grounds.add(lamp,lamp.target);floodlights.push(lamp);
+    }
     const nx=target.x-p.x,nz=target.z-p.z,ry=Math.atan2(nx,nz);
     const tx=Math.cos(ry),tz=-Math.sin(ry),sx=Math.sin(ry),sz=Math.cos(ry);
     box(heads,[p.x,34.3,p.z],[5.8,.25,.45],ry);
@@ -354,7 +364,7 @@ function buildGrounds(group, materials, stats, groundOffset) {
   stats.happyValleyFloodlightMasts = 6;
   stats.happyValleyFloodlightHeight = 36;
   stats.happyValleyGates = gates.length;
-  return { grounds, gates };
+  return { grounds, gates, floodlights };
 }
 
 export function buildHappyValleyRacecourse(root, { groundOffset = 0 } = {}) {
@@ -365,7 +375,7 @@ export function buildHappyValleyRacecourse(root, { groundOffset = 0 } = {}) {
   root.add(venue);
   const materials = makeMaterials();
   const stats = {};
-  buildGrounds(venue, materials, stats, groundOffset);
+  const {floodlights}=buildGrounds(venue, materials, stats, groundOffset);
   stats.happyValleyTunnelWallSegments = buildHappyValleyTunnelWalls(venue,groundOffset).segments;
   buildCourse(venue, materials, stats, groundOffset);
   buildHappyValleyPitches(venue);
@@ -407,6 +417,14 @@ export function buildHappyValleyRacecourse(root, { groundOffset = 0 } = {}) {
 
   return {
     group: venue, colliders, landmarks, stats, groundOffset,
+    update(context) {
+      // Avoid lighting the scene when the camera is far from the racecourse.
+      // Lamps remain present so clustered-light shader topology stays stable.
+      const pos=context?.cameraSystem?.currentPos;
+      const nearby=!pos || Math.hypot(pos.x-HAPPY_VALLEY_SITE.x,pos.z-HAPPY_VALLEY_SITE.z)<900;
+      const strength=nearby?THREE.MathUtils.smoothstep(cityUniforms.uInteriorGlow.value,.55,1.4):0;
+      for(const lamp of floodlights) lamp.intensity=lamp.userData.nightIntensity*strength;
+    },
     groundHeightAt(x, z, fallback) {
       return happyValleyTerrainHeightAt(x, z, fallback, groundOffset);
     },

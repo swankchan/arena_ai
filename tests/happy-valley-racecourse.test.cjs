@@ -343,3 +343,18 @@ test('retaining-wall edge clipping uses exact opening intersections', async () =
   assert.deepEqual(outside({x:0,z:2},{x:10,z:2},[rect]),[[0,1]]);
   assert.deepEqual(outside({x:4,z:0},{x:6,z:0},[rect]),[]);
 });
+
+test('floodlight spots illuminate only at night and when the camera is nearby', async () => {
+  const {cityUniforms}=await import('../js/tsl-materials.js');
+  const previous=cityUniforms.uInteriorGlow.value,lights=[];
+  try {
+    built.group.traverse(o=>{if(o.name==='HappyValleyFloodlightSpot')lights.push(o)});
+    assert.equal(lights.length,12); assert.ok(lights.every(l=>l.isSpotLight&&!l.castShadow));
+    const near={cameraSystem:{currentPos:{x:site().x,z:site().z}}},far={cameraSystem:{currentPos:{x:site().x+1200,z:site().z}}};
+    cityUniforms.uInteriorGlow.value=0;built.update(near);assert.ok(lights.every(l=>l.intensity===0));
+    cityUniforms.uInteriorGlow.value=1.4;built.update(near);assert.ok(lights.every(l=>l.intensity>0));
+    built.update(far);assert.ok(lights.every(l=>l.intensity===0));
+  } finally {cityUniforms.uInteriorGlow.value=previous;built.update();}
+  const source=fs.readFileSync(path.join(root,'js/cities/hongkong/simple-world.js'),'utf8');
+  assert.match(source,/happyValley\.update\(context\)/);
+});

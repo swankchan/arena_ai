@@ -651,6 +651,7 @@ function* buildSimpleHongKongWorldSteps(scene) {
       centralConcourse.update(dt, context.controllerManager);
       centralPlatformRoof.update();
       victoriaPark.update();
+      happyValley.update(context);
       crossings.update?.(context);
       centralPlaza.update?.(dt, elapsed, context);
       theCenter.update?.(dt, elapsed, context);
