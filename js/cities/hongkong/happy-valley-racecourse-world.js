@@ -6,7 +6,7 @@
 import * as THREE from 'three/webgpu';
 import { attribute } from 'three/tsl';
 import {
-  happyValleyTerrainHeightAt,
+  happyValleyTerrainHeightAt, happyValleyTrackPoint,
   HAPPY_VALLEY_SITE, HAPPY_VALLEY_TRACK, HAPPY_VALLEY_MAIN_STAND, HAPPY_VALLEY_CLUBHOUSE, HAPPY_VALLEY_COLOURS,
   HAPPY_VALLEY_CAPACITY, HAPPY_VALLEY_OPENED,
 } from './happy-valley-racecourse-architecture.js';
@@ -17,6 +17,11 @@ import { harbourCityLocalCollider } from './harbour-city-architecture.js';
 
 const C = HAPPY_VALLEY_COLOURS;
 const DEG = Math.PI / 180;
+// The two reduced offsets keep the newly continuous-loop mast centres inside
+// the mapped venue, off sampled roads. They are provisional positions, not a
+// survey of the actual floodlight locations.
+const FLOODLIGHT_POSITIONS = [[0.02, 52], [0.14, 5], [0.30, 20], [0.70, 20], [0.86, 10], [0.96, 46]];
+
 
 function makeMaterials() {
   const palette = harbourCityPalette();
@@ -43,23 +48,15 @@ function makeMaterials() {
 }
 
 // ---------------------------------------------------------------------------------------------------------------
-// The circuit: 30.5 m grass band, white running rails inside and out, sand infield.
+// The provisional circuit: 30.5 m grass band and white running rails.
 // ---------------------------------------------------------------------------------------------------------------
-function trackPoint(t, offset) {
-  const angle = t * Math.PI * 2;
-  const cos = Math.cos(angle), sin = Math.sin(angle);
-  const radius = HAPPY_VALLEY_TRACK.outerRadius + offset;
-  const px = Math.sign(cos || 1) * (HAPPY_VALLEY_TRACK.straight / 2) + cos * radius;
-  const pz = sin * radius;
-  const theta = HAPPY_VALLEY_TRACK.rotation * DEG;
-  const cs = Math.cos(theta), sn = Math.sin(theta);
-  return { x: HAPPY_VALLEY_TRACK.centreX + px * cs - pz * sn, z: HAPPY_VALLEY_TRACK.centreZ + px * sn + pz * cs };
-}
+// Shared with diagnostics, frames and tests: a single closed-loop source of truth.
+const trackPoint = happyValleyTrackPoint;
 
 function buildCourse(group, materials, stats) {
   const course = new THREE.Group(); course.name = 'HappyValleyCourse'; group.add(course);
   const segments = 120;
-  const band = store(), infieldStore = store(), sandStore = store();
+  const band = store(), infieldStore = store();
   const infieldApex = { x: HAPPY_VALLEY_TRACK.centreX - 8, z: HAPPY_VALLEY_TRACK.centreZ };
   const rails = [], posts = [], distancePoles = [];
   for (let i = 0; i < segments; i++) {
@@ -84,16 +81,6 @@ function buildCourse(group, materials, stats) {
     quad(infieldStore, [infieldApex.x, 0.08, infieldApex.z], [c0.x, 0.08, c0.z], [c1.x, 0.08, c1.z],
       [infieldApex.x, 0.08, infieldApex.z], C.infield);
   }
-  // The sand walking ring inside the infield, as the pale oval visible in the aerial photographs.
-  const infieldCentre = { x: HAPPY_VALLEY_TRACK.centreX - 22, z: HAPPY_VALLEY_TRACK.centreZ + 6 };
-  for (let i = 0; i < 36; i++) {
-    const a0 = (i / 36) * Math.PI * 2, a1 = ((i + 1) / 36) * Math.PI * 2;
-    const rx = 58, rz = 36, rxi = 50, rzi = 28;
-    quad(sandStore, [infieldCentre.x + Math.cos(a0) * rx, 0.16, infieldCentre.z + Math.sin(a0) * rz],
-      [infieldCentre.x + Math.cos(a1) * rx, 0.16, infieldCentre.z + Math.sin(a1) * rz],
-      [infieldCentre.x + Math.cos(a1) * rxi, 0.16, infieldCentre.z + Math.sin(a1) * rzi],
-      [infieldCentre.x + Math.cos(a0) * rxi, 0.16, infieldCentre.z + Math.sin(a0) * rzi], C.sand);
-  }
   // Distance poles every 200 m along the inner rail, painted white with black bands.
   for (let metre = 200; metre < HAPPY_VALLEY_TRACK.lapMetres; metre += 200) {
     const t = metre / HAPPY_VALLEY_TRACK.lapMetres;
@@ -102,7 +89,6 @@ function buildCourse(group, materials, stats) {
   }
   meshStore(course, band, materials.grass, 'HappyValleyTrackSurface', false);
   meshStore(course, infieldStore, materials.infield, 'HappyValleyInfieldTurf', false);
-  meshStore(course, sandStore, materials.sand, 'HappyValleyInfieldSandRing', false);
   merged(course, rails, materials.rail, 'HappyValleyRunningRails');
   merged(course, posts, materials.rail, 'HappyValleyRunningRailPosts');
   merged(course, distancePoles, materials.rail, 'HappyValleyDistancePoles');
@@ -216,7 +202,8 @@ function buildInfield(group, materials, stats) {
   const infield = new THREE.Group(); infield.name = 'HappyValleyInfield'; group.add(infield);
   const boards = [], frames = [], screenParts = [];
   // Green "馬會" branding boards along the far side of the infield, as seen in the race-night photographs.
-  for (let i = 0; i < 4; i++) {
+  // The fourth placeholder board crossed mapped service roads after the loop fix.
+  for (let i = 0; i < 3; i++) {
     const t = 0.2 + i * 0.06;
     const p = trackPoint(t, -HAPPY_VALLEY_TRACK.width - 6);
     const next = trackPoint(t + 0.0005, -HAPPY_VALLEY_TRACK.width - 6);
@@ -268,12 +255,12 @@ function buildGrounds(group, materials, stats) {
     minX = Math.min(minX, ring[i]); maxX = Math.max(maxX, ring[i]);
     minZ = Math.min(minZ, ring[i + 1]); maxZ = Math.max(maxZ, ring[i + 1]);
   }
-  // The venue's own ground: lawn filling the surveyed ring, under the track and the apron.
+  // Provisional lawn follows the mapped OSM site boundary, not a surveyed surface.
   const apron = new THREE.Mesh(roofGeometry(ring, 0.04), materials.apron);
   apron.name = 'HappyValleyGroundApron';
   grounds.add(apron);
   // Six floodlight masts around the course, four on the stand side and two opposite.
-  for (const [t, out] of [[0.02, 52], [0.14, 44], [0.30, 20], [0.70, 20], [0.86, 44], [0.96, 46]]) {
+  for (const [t, out] of FLOODLIGHT_POSITIONS) {
     const p = trackPoint(t, out);
     cylinder(masts, [p.x, 17, p.z], 0.42, 34, 8);
     box(heads, [p.x, 34.6, p.z], [5.4, 2.2, 0.8]);
@@ -281,7 +268,7 @@ function buildGrounds(group, materials, stats) {
       box(heads, [p.x - 2.2 + lamp * 0.63, 36.4, p.z], [0.5, 0.9, 0.4]);
     }
   }
-  // Perimeter fence and the ring of service road both follow the surveyed boundary itself.
+  // Placeholder perimeter fence follows the mapped boundary; its real location is unverified.
   const ringCount = ring.length / 2;
   for (let i = 0; i < ringCount; i++) {
     const ax = ring[2 * i], az = ring[2 * i + 1];
@@ -331,7 +318,7 @@ export function buildHappyValleyRacecourse(root, { groundOffset = 0 } = {}) {
   const museum = place(-stand.length / 2 - 20, 2);
   push(museum.x, museum.z, 30, 20, 12.4, frame.ry);
   // Floodlight masts.
-  for (const [t, out] of [[0.02, 52], [0.14, 44], [0.30, 20], [0.70, 20], [0.86, 44], [0.96, 46]]) {
+  for (const [t, out] of FLOODLIGHT_POSITIONS) {
     const p = trackPoint(t, out);
     push(p.x, p.z, 1.6, 1.6, 36);
   }

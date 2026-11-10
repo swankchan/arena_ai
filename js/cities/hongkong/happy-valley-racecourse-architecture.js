@@ -154,11 +154,27 @@ export const HAPPY_VALLEY_RESEARCH_SOURCES = Object.freeze([
 // 191 x 34 m block rotated 83.3 degrees to the rail tangent. Verified to stay inside the fence ring.
 export function happyValleyTrackPoint(t, offset = 0) {
   const fit = HAPPY_VALLEY_TRACK_FIT;
-  const angle = t * Math.PI * 2;
-  const cos = Math.cos(angle), sin = Math.sin(angle);
-  const radius = ((126.815 + 15.25) * fit.scale) + offset;
-  const px = Math.sign(cos || 1) * (fit.straight / 2) + cos * radius;
-  const pz = sin * radius;
+  // Arc-length parameterisation of the outer rail: quarter arc, straight,
+  // half arc, straight, quarter arc. Each inward offset shares these stations,
+  // so both rails and the turf band stay connected at every junction.
+  const outer = (126.815 + 15.25) * fit.scale;
+  const radius = outer + offset, straight = fit.straight;
+  const quarter = Math.PI * outer / 2, half = Math.PI * outer;
+  const perimeter = 2 * straight + 2 * Math.PI * outer;
+  let distance = ((t % 1) + 1) % 1 * perimeter;
+  let px, pz, angle;
+  if (distance < quarter) {
+    angle = distance / outer; px = straight/2 + Math.cos(angle)*radius; pz = Math.sin(angle)*radius;
+  } else if ((distance -= quarter) < straight) {
+    px = straight/2 - distance; pz = radius;
+  } else if ((distance -= straight) < half) {
+    angle = Math.PI/2 + distance/outer; px = -straight/2 + Math.cos(angle)*radius; pz = Math.sin(angle)*radius;
+  } else if ((distance -= half) < straight) {
+    px = -straight/2 + distance; pz = -radius;
+  } else {
+    distance -= straight; angle = 3*Math.PI/2 + distance/outer;
+    px = straight/2 + Math.cos(angle)*radius; pz = Math.sin(angle)*radius;
+  }
   const theta = (fit.rotation * Math.PI) / 180;
   const cs = Math.cos(theta), sn = Math.sin(theta);
   return { x: fit.centreX + px * cs - pz * sn, z: fit.centreZ + px * sn + pz * cs };

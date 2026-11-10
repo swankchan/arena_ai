@@ -76,9 +76,8 @@ test('the fitted circuit is honest about the surveyed boundary', () => {
   assert.ok(minimum >= 8, `minimum apron ${minimum.toFixed(1)} m`);
 });
 
-// TODO: the current sign(cos) parameterisation teleports between the two ends of a straight.
-// Track geometry must be a continuous loop before its road and pitch clearances can be trusted.
-test('the outer rail is a continuous closed loop', { todo: 'Replace discontinuous track parameterisation with the validated realigned loop' }, () => {
+// Continuity alone is not proof that the estimated loop follows the real racing surface.
+test('the outer rail is a continuous closed loop', () => {
   const count = 720;
   let maxStep = 0;
   for (let i = 0; i < count; i++) {
@@ -87,6 +86,32 @@ test('the outer rail is a continuous closed loop', { todo: 'Replace discontinuou
     maxStep = Math.max(maxStep, Math.hypot(b.x - a.x, b.z - a.z));
   }
   assert.ok(maxStep < 5, `adjacent 1/720-lap rail points are ${maxStep.toFixed(2)} m apart`);
+});
+
+test('both rails are continuous at every straight-to-curve join and periodic', () => {
+  const fit = arch.HAPPY_VALLEY_TRACK;
+  const outerRadius = (126.815 + 15.25) * fit.scale;
+  const perimeter = 2 * fit.straight + 2 * Math.PI * outerRadius;
+  const quarter = Math.PI * outerRadius / 2;
+  for (const offset of [0, -8, -16, -24, -fit.width]) {
+    for (const t of [0, quarter / perimeter, (quarter + fit.straight) / perimeter,
+      (3 * quarter + fit.straight) / perimeter, (3 * quarter + 2 * fit.straight) / perimeter, 1]) {
+      const a = arch.happyValleyTrackPoint(t - 1e-8, offset);
+      const b = arch.happyValleyTrackPoint(t + 1e-8, offset);
+      assert.ok(Math.hypot(a.x - b.x, a.z - b.z) < 0.001, `jump at ${t}, offset ${offset}`);
+    }
+    const a = arch.happyValleyTrackPoint(-0.1, offset), b = arch.happyValleyTrackPoint(0.9, offset);
+    assert.ok(Math.hypot(a.x - b.x, a.z - b.z) < 1e-8);
+  }
+});
+
+test('floodlight collider centres remain within the venue and off sampled roads', () => {
+  // Collider order: stand, clubhouse, tower, museum, six masts.
+  for (const collider of built.colliders.slice(4, 10)) {
+    assert.ok(ringUtils.pointInFlatRing(site().ring, collider.x, collider.z));
+    const road = fullMeta.fullRoadSurfaceAt(collider.x, collider.z, 2, terrain.HONG_KONG_TERRAIN_META.happyValleyPadHeight);
+    assert.ok(!road || Math.abs(road.height - terrain.HONG_KONG_TERRAIN_META.happyValleyPadHeight) >= 2.5);
+  }
 });
 
 test('the racing surface never runs over a carriageway', { todo: 'Existing racecourse must be realigned and conflicts resolved' }, () => {
@@ -110,7 +135,7 @@ test('the course, stands, clubhouse and museum are all modelled', () => {
   const names = [];
   built.group.traverse((object) => { if (object.name) names.push(object.name); });
   for (const name of [
-    'HappyValleyCourse', 'HappyValleyTrackSurface', 'HappyValleyInfieldTurf', 'HappyValleyInfieldSandRing',
+    'HappyValleyCourse', 'HappyValleyTrackSurface', 'HappyValleyInfieldTurf',
     'HappyValleyRunningRails', 'HappyValleyRunningRailPosts', 'HappyValleyDistancePoles',
     'HappyValleyGrandstand', 'HappyValleyGrandstandSeats', 'HappyValleyGrandstandStructure',
     'HappyValleyGrandstandGlazing', 'HappyValleyGrandstandRoof', 'HappyValleyGrandstandColumns',
@@ -122,7 +147,8 @@ test('the course, stands, clubhouse and museum are all modelled', () => {
   assert.equal(built.stats.happyValleyGrandstandTiers, 12);
   assert.equal(built.stats.happyValleyGrandstandLength, 191);
   assert.equal(built.stats.happyValleyFloodlightMasts, 6);
-  assert.equal(built.stats.happyValleyBrandingBoards, 4);
+  assert.equal(built.stats.happyValleyBrandingBoards, 3);
+  assert.ok(!names.includes('HappyValleyInfieldSandRing'), 'do not obscure mapped sports grounds with a speculative sand oval');
   assert.ok(built.stats.happyValleyGrandstandSeats > 3000, `seats ${built.stats.happyValleyGrandstandSeats}`);
 });
 
