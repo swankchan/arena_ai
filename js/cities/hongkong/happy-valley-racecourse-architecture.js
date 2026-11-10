@@ -1,7 +1,7 @@
 // HK-B0107: 跑馬地馬場 Happy Valley Racecourse — Hong Kong's first racecourse, opened 1846.
 //
 // The venue footprint is OSM relation 8049451 (`leisure=stadium`, `sport=horse_racing`,
-// "跑馬地馬場 Happy Valley Racecourse", multipolygon). Its outer ways form the fence round the whole course,
+// "跑馬地馬場 Happy Valley Racecourse", multipolygon). Its outer ways trace a mapped venue boundary, not a surveyed fence,
 // 653 x 378 m, and they follow 黃泥涌道 Wong Nai Chung Road and 禮頓道 / 摩理臣山道 on the landward sides.
 //
 // The present procedural track is a provisional 0.90-scale stadium loop; it does not follow a measured rail
@@ -63,7 +63,7 @@ export const HAPPY_VALLEY_SITE = makeAuthoredSite(
   'happyValleyRacecourse', '跑馬地馬場', 'Happy Valley Racecourse', HAPPY_VALLEY_OSM_SOURCE,
   {
     height: 34, levels: null, roadIds: [], role: 'apron',
-    evidence: 'The surveyed fence round the course: the track, infield, stands and parade areas all sit inside it.',
+    evidence: 'OSM venue boundary, not a surveyed fence or a measured running rail.',
   },
 );
 
@@ -85,7 +85,8 @@ export const HAPPY_VALLEY_PARADE_SOURCE = authoredOsmSource({
 export const HAPPY_VALLEY_PARADE_RING = worldRingFromGeometry(HAPPY_VALLEY_PARADE_SOURCE.geometry);
 export const HAPPY_VALLEY_PARADE_LOCAL_RING = localRingFromWorld(HAPPY_VALLEY_SITE, HAPPY_VALLEY_PARADE_RING);
 
-// The published circuit, from the racecourse record.
+// Width and straight from HKJC; lap length is a secondary-source estimate
+// without a specified measurement line and is not an HKJC survey.
 export const HAPPY_VALLEY_TRACK_PUBLISHED = Object.freeze({
   lapMetres: 1417, widthMetres: 30.5, straightMetres: 312,
   surface: 'grass', races: Object.freeze([1000, 1200, 1650, 1800, 2200]),
@@ -156,7 +157,7 @@ export const HAPPY_VALLEY_RESEARCH_SOURCES = Object.freeze([
   },
   {
     url: 'https://www.wpstud.com/translation/racecourse/Happy_Valley.htm',
-    evidence: 'Grass track: 1,417 m lap, 30.5 m wide, 310 m home straight; permanent three-tier stand 1931, '
+    evidence: 'Secondary source quotes a 1,417 m lap without a measurement line and a 310 m straight; HKJC gives 312 m for A course. Permanent three-tier stand 1931, '
       + 'extended to seven tiers in 1957 and again in 1969 — the present grandstand.',
   },
   {
