@@ -29,9 +29,9 @@ test('Pavilion Stand uses mapped footprint and the transformed world position', 
 });
 
 test('wall collider footprints avoid sampled same-level roads', () => {
-  const colliders=built.colliders.slice(-7);assert.equal(colliders.length,site.localRing.length/2-1);
+  const colliders=built.colliders.slice(-9);assert.equal(colliders.length,site.localRing.length/2+1);
   for (const c of colliders) {
-    assert.ok(Math.abs(c.minY-terrain.happyValleyPadHeight)<1e-9);
+    assert.ok(c.minY >= terrain.happyValleyPadHeight);
     for(let x=c.minX;x<=c.maxX;x+=.5) for(let z=c.minZ;z<=c.maxZ;z+=.5) {
       const dx=x-c.x,dz=z-c.z,lx=dx*c.obb.cs-dz*c.obb.sn,lz=dx*c.obb.sn+dz*c.obb.cs;
       if(Math.abs(lx)>c.obb.hx||Math.abs(lz)>c.obb.hz)continue;
@@ -46,5 +46,43 @@ test('the provisional racing band does not sample through the Pavilion footprint
   for(let i=0;i<1440;i++)for(let offset of [0,-6,-12,-18,-24,-30.5]) {
     const q=p(i/1440,offset),x=venue.x+Math.cos(venue.ry)*q.x+Math.sin(venue.ry)*q.z,z=venue.z-Math.sin(venue.ry)*q.x+Math.cos(venue.ry)*q.z;
     assert.ok(!pointInFlatRing(site.ring,x,z));
+  }
+});
+
+
+test('estimated street-side entrance is actually open in geometry, fence and colliders', async () => {
+  const {HAPPY_VALLEY_PAVILION_ENTRANCE:entry}=await import('../js/cities/hongkong/happy-valley-pavilion-site.js');
+  const {harbourCityEdgeFrame}=await import('../js/cities/hongkong/harbour-city-architecture.js');
+  const f=harbourCityEdgeFrame(site,entry.edge,'','',entry.centre), ground=terrain.happyValleyPadHeight;
+  assert.ok(built.stats.happyValleyEntranceFenceGaps>0);
+  assert.ok(built.group.getObjectByName('HappyValleyPavilionEntranceFrame'));
+  assert.ok(built.group.getObjectByName('HappyValleyPavilionEntranceFloor'));
+  // Sample a 3.2 m wide walking corridor through the doorway, on both sides
+  // of the wall, at pedestrian height. This is not a full continuous sweep.
+  for(let lateral=-1.6;lateral<=1.6;lateral+=.2) for(let normal=-2;normal<=2;normal+=.2) {
+    const x=f.x+f.nz*lateral+f.nx*normal,z=f.z-f.nx*lateral+f.nz*normal;
+    for(const c of built.colliders) {
+      if(c.minY>ground+1.5 || c.maxY<ground+1.5) continue;
+      const dx=x-c.x,dz=z-c.z;
+      assert.ok(Math.abs(dx*c.obb.cs-dz*c.obb.sn)>c.obb.hx || Math.abs(dx*c.obb.sn+dz*c.obb.cs)>c.obb.hz,
+        'doorway corridor is blocked by a collider');
+    }
+  }
+  const obstructionNames=['HappyValleyPerimeterFence','HappyValleyPavilionGlazing','HappyValleyPavilionFloorBands',
+    'HappyValleyPavilionMullions','HappyValleyPavilionEntranceFrame'];
+  const obstructionMeshes=obstructionNames.map(name=>built.group.getObjectByName(name));
+  for(const lateral of [-1.5,-1,0,1,1.5]) for(const height of [.3,1,2,3]) {
+    const origin=new THREE.Vector3(f.x+f.nz*lateral+f.nx*2,ground+height,f.z-f.nx*lateral+f.nz*2);
+    const ray=new THREE.Raycaster(origin,new THREE.Vector3(-f.nx,0,-f.nz),0,4);
+    assert.equal(ray.intersectObjects(obstructionMeshes).length,0, 'rendered entrance is obstructed');
+  }
+  for(const name of obstructionNames.slice(0,4)) {
+    const mesh=built.group.getObjectByName(name), p=mesh.geometry.getAttribute('position'), v=new THREE.Vector3();
+    for(let i=0;i<p.count;i++) {
+      v.fromBufferAttribute(p,i).applyMatrix4(mesh.matrixWorld);
+      if(v.y<ground || v.y>ground+3) continue;
+      const dx=v.x-f.x,dz=v.z-f.z, lateral=dx*f.nz-dz*f.nx, normal=dx*f.nx+dz*f.nz;
+      assert.ok(Math.abs(lateral)>1.6 || Math.abs(normal)>1, `${name} vertex blocks entrance`);
+    }
   }
 });

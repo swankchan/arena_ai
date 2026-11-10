@@ -12,7 +12,8 @@ import {
 import {
   merged, box, cylinder, beam, store, quad, meshStore, harbourCityPalette, roofGeometry, scaledRing,
 } from './harbour-city-world-utils.js';
-import { harbourCityLocalCollider } from './harbour-city-architecture.js';
+import { harbourCityLocalCollider, harbourCityEdgeFrame } from './harbour-city-architecture.js';
+import { HAPPY_VALLEY_PAVILION, HAPPY_VALLEY_PAVILION_ENTRANCE } from './happy-valley-pavilion-site.js';
 import { buildHappyValleyPitches } from './happy-valley-pitches-world.js';
 import { buildHappyValleyPavilion } from './happy-valley-pavilion-world.js';
 import { fullRoadSurfaceAt } from './full-meta.js';
@@ -219,7 +220,15 @@ function buildGrounds(group, materials, stats, groundOffset) {
   // The OSM boundary is not a surveyed fence. Preserve existing placeholder
   // openings and cut additional temporary gaps at same-level road ribbons.
   const ringCount = ring.length / 2;
-  let roadFenceGaps = 0;
+  let roadFenceGaps = 0, entranceFenceGaps = 0;
+  const door = harbourCityEdgeFrame(HAPPY_VALLEY_PAVILION, HAPPY_VALLEY_PAVILION_ENTRANCE.edge,
+    'Provisional Pavilion entrance', 'Estimated street-side opening', HAPPY_VALLEY_PAVILION_ENTRANCE.centre);
+  const nearDoor = p => {
+    const c=Math.cos(site.ry), sn=Math.sin(site.ry);
+    const dx=site.x+c*p.x+sn*p.z-door.x, dz=site.z-sn*p.x+c*p.z-door.z;
+    return Math.abs(dx*door.nz-dz*door.nx) < HAPPY_VALLEY_PAVILION_ENTRANCE.width/2+1 &&
+      Math.abs(dx*door.nx+dz*door.nz) < 3;
+  };
   for (let i = 0; i < ringCount; i++) {
     const ax = ring[2 * i], az = ring[2 * i + 1];
     const bx = ring[(2 * i + 2) % ring.length], bz = ring[(2 * i + 3) % ring.length];
@@ -229,12 +238,14 @@ function buildGrounds(group, materials, stats, groundOffset) {
     for(let j=0;j<steps;j++) {
       const point = t => ({x:ax+(bx-ax)*t,z:az+(bz-az)*t});
       const a=point(j/steps), b=point((j+1)/steps), mid=point((j+.5)/steps);
+      if ([a,mid,b].some(nearDoor)) { entranceFenceGaps++; continue; }
       if ([a,mid,b].some(p => trackRoadConflict(p,groundOffset,1.2))) { roadFenceGaps++; continue; }
       for (const height of [1.9, 1.0]) beam(fence, [a.x,height,a.z], [b.x,height,b.z], .07,.07);
       if (j%3===0) cylinder(fence,[a.x,1,a.z],.08,2,6);
     }
   }
   stats.happyValleyRoadFenceGaps = roadFenceGaps;
+  stats.happyValleyEntranceFenceGaps = entranceFenceGaps;
   merged(grounds, masts, materials.standShade, 'HappyValleyFloodlightMasts');
   merged(grounds, heads, materials.roof, 'HappyValleyFloodlightHeads');
   merged(grounds, fence, materials.rail, 'HappyValleyPerimeterFence');

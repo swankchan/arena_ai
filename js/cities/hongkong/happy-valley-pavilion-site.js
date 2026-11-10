@@ -15,3 +15,7 @@ export const HAPPY_VALLEY_PAVILION_SOURCE = authoredOsmSource({
 export const HAPPY_VALLEY_PAVILION = makeAuthoredSite('happyValleyPavilion', '聯合看台', 'Pavilion Stand', HAPPY_VALLEY_PAVILION_SOURCE, {
   levels: 10, height: 36, role: 'grandstand',
 });
+
+// Entrance C serves Pavilion Stand, but no surveyed door position is available.
+// A temporary street-side opening keeps the model passable pending verification.
+export const HAPPY_VALLEY_PAVILION_ENTRANCE = Object.freeze({ edge: 6, centre: .5, width: 4.8, height: 3.25 });
