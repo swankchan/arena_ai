@@ -115,9 +115,9 @@ test('inferred football layouts include four corner arcs and a centre mark per p
   const arcs=built.group.getObjectByName('HappyValleyPitchCornerArcs');
   const marks=built.group.getObjectByName('HappyValleyPitchCentreMarks');
   assert.ok(arcs && marks);
-  // beam() merges one box per small arc segment, eight segments per arc.
-  assert.equal(arcs.geometry.getAttribute('position').count,pitches.length*4*8*24);
-  assert.equal(marks.geometry.getAttribute('position').count,pitches.length*24);
+  // One paint ribbon has two triangles; there are eight segments per arc.
+  assert.equal(arcs.geometry.getAttribute('position').count,pitches.length*4*8*6);
+  assert.equal(marks.geometry.getAttribute('position').count,pitches.length*6);
   const p=arcs.geometry.getAttribute('position');
   for(let pitch=0;pitch<pitches.length;pitch++) {
     const f=frame(pitches[pitch]);
@@ -125,8 +125,19 @@ test('inferred football layouts include four corner arcs and a centre mark per p
       const end=corner<2?.055:.945, side=corner%2?.945:.055;
       const cx=f.a.x+(f.b.x-f.a.x)*end+(f.c.x-f.a.x)*side;
       const cz=f.a.z+(f.b.z-f.a.z)*end+(f.c.z-f.a.z)*side;
-      for(let v=(pitch*4+corner)*8*24;v<(pitch*4+corner+1)*8*24;v++)
+      for(let v=(pitch*4+corner)*8*6;v<(pitch*4+corner+1)*8*6;v++)
         assert.ok(Math.abs(Math.hypot(p.getX(v)-cx,p.getZ(v)-cz)-1)<.09);
     }
   }
+});
+
+
+test('field markings are flat paint ribbons above the pitch, not raised boxes', () => {
+ for(const name of ['HappyValleyPitchMarkings','HappyValleyPitchCornerArcs','HappyValleyPitchCentreMarks','HappyValleyCombinedHockeyMarkings']) {
+  const mesh=built.group.getObjectByName(name),p=mesh.geometry.getAttribute('position');
+  assert.equal(mesh.castShadow,false);
+  let min=Infinity,max=-Infinity;for(let i=0;i<p.count;i++){min=Math.min(min,p.getY(i));max=Math.max(max,p.getY(i));}
+  assert.ok(max-min<1e-5,`${name} should be flat`);
+  assert.ok(min>.17 && max<.23,`${name} close above pitch`);
+ }
 });

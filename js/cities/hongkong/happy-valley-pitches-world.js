@@ -34,10 +34,23 @@ export function happyValleyCombinedHockeyFrame() {
     ux:ux/ulen, uz:uz/ulen, vx:vx/vlen, vz:vz/vlen, length:91.4, width:55 };
 }
 
+// Paint as thin horizontal ribbons, not box beams: a stripe should not look
+// like a raised kerb at pitch level. Small elevation/offset limits z-fighting.
+function paintLine(parts, a, b, width) {
+  const dx=b[0]-a[0],dz=b[2]-a[2],length=Math.hypot(dx,dz);
+  if(length<.001)return;
+  const nx=-dz/length*width/2,nz=dx/length*width/2;
+  const p=[a[0]+nx,a[1],a[2]+nz],q=[b[0]+nx,b[1],b[2]+nz];
+  const r=[b[0]-nx,b[1],b[2]-nz],s=[a[0]-nx,a[1],a[2]-nz];
+  const geometry=new THREE.BufferGeometry();
+  geometry.setAttribute('position',new THREE.Float32BufferAttribute([...p,...q,...r,...p,...r,...s],3));
+  geometry.computeVertexNormals();parts.push(geometry);
+}
+
 function buildCombinedHockeyMarkings(group) {
   const f=happyValleyCombinedHockeyFrame(), parts=[];
   const point=(u,v)=>[f.centreX+f.ux*u+f.vx*v, .215, f.centreZ+f.uz*u+f.vz*v];
-  const line=(u,v,x,z)=>beam(parts,point(u,v),point(x,z),.035,.075);
+  const line=(u,v,x,z)=>paintLine(parts,point(u,v),point(x,z),.075);
   const halfL=f.length/2, halfW=f.width/2;
   line(-halfL,-halfW,halfL,-halfW); line(-halfL,halfW,halfL,halfW);
   for(const u of [-halfL,halfL,0,-halfL+22.9,halfL-22.9]) line(u,-halfW,u,halfW);
@@ -54,15 +67,15 @@ function buildCombinedHockeyMarkings(group) {
     line(u,-.06,u,.06);
   }
   // Contrasting colour is provisional; the mapped surface has multiple uses.
-  const yellow=new THREE.MeshStandardMaterial({color:0xd4bc56,roughness:.88,polygonOffset:true,polygonOffsetFactor:-6,polygonOffsetUnits:-6});
-  merged(group,parts,yellow,'HappyValleyCombinedHockeyMarkings');
+  const yellow=new THREE.MeshStandardMaterial({color:0xd4bc56,roughness:.88,side:THREE.DoubleSide,polygonOffset:true,polygonOffsetFactor:-6,polygonOffsetUnits:-6});
+  merged(group,parts,yellow,'HappyValleyCombinedHockeyMarkings',false);
 }
 
 export function buildHappyValleyPitches(parent) {
   const group = new THREE.Group(); group.name = 'HappyValleyRecreationPitches'; parent.add(group);
   const artificial = new THREE.MeshStandardMaterial({ color: 0x31673c, roughness: 0.94, side: THREE.DoubleSide, polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -2 });
   const natural = new THREE.MeshStandardMaterial({ color: 0x486f38, roughness: 0.98, side: THREE.DoubleSide, polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -2 });
-  const white = new THREE.MeshStandardMaterial({ color: 0xd3d9c7, roughness: 0.88, polygonOffset: true, polygonOffsetFactor: -5, polygonOffsetUnits: -5 });
+  const white = new THREE.MeshStandardMaterial({ color: 0xd3d9c7, roughness: 0.88, side: THREE.DoubleSide, polygonOffset: true, polygonOffsetFactor: -5, polygonOffsetUnits: -5 });
   const lineParts = [], cornerParts = [], centreParts = [], goalParts = [], netPositions = [];
   for (const pitch of HAPPY_VALLEY_PITCHES) {
     const ring = pitch.localRing;
@@ -70,14 +83,14 @@ export function buildHappyValleyPitches(parent) {
     surface.name = `HappyValleyPitch${pitch.id}`;
     group.add(surface);
     const { a, b, c, length, width } = happyValleyPitchFrame(pitch);
-    const point = (u,v,y=0.2) => [a.x+(b.x-a.x)*u+(c.x-a.x)*v, y, a.z+(b.z-a.z)*u+(c.z-a.z)*v];
-    const line = (u1,v1,u2,v2) => beam(lineParts, point(u1,v1), point(u2,v2), 0.055, 0.1);
+    const point = (u,v,y=0.195) => [a.x+(b.x-a.x)*u+(c.x-a.x)*v, y, a.z+(b.z-a.z)*u+(c.z-a.z)*v];
+    const line = (u1,v1,u2,v2) => paintLine(lineParts, point(u1,v1), point(u2,v2), 0.1);
     const u0 = 0.055, u1 = 0.945, v0 = 0.055, v1 = 0.945;
     line(u0,v0,u1,v0); line(u1,v0,u1,v1); line(u1,v1,u0,v1); line(u0,v1,u0,v0);
     line(0.5,v0,0.5,v1);
     // IFAB's 1 m corner quarter-circles and centre mark; the placement of
     // the full playing rectangle itself is still inferred within each OSM pitch.
-    const mark=(parts,u1,v1,u2,v2)=>beam(parts,point(u1,v1),point(u2,v2),.055,.1);
+    const mark=(parts,u1,v1,u2,v2)=>paintLine(parts,point(u1,v1),point(u2,v2),.1);
     mark(centreParts,.5,.5-.06/width,.5,.5+.06/width);
     for(const [end,du] of [[u0,1],[u1,-1]]) for(const [side,dv] of [[v0,1],[v1,-1]]) {
       for(let i=0;i<8;i++) {
@@ -119,7 +132,7 @@ export function buildHappyValleyPitches(parent) {
       // Goal posts are at the short ends, not along the long touchlines.
       const half = (length > 75 ? 7.32 : 4.8) / (2*width);
       const h = length > 75 ? 2.44 : 2.0;
-      const left = point(end,0.5-half), right = point(end,0.5+half);
+      const left = point(end,0.5-half,.17), right = point(end,0.5+half,.17);
       beam(goalParts, left, [left[0],h+0.17,left[2]], 0.09);
       beam(goalParts, right, [right[0],h+0.17,right[2]], 0.09);
       beam(goalParts, [left[0],h+0.17,left[2]], [right[0],h+0.17,right[2]], 0.09);
@@ -145,9 +158,9 @@ export function buildHappyValleyPitches(parent) {
     }
   }
   buildCombinedHockeyMarkings(group);
-  merged(group, lineParts, white, 'HappyValleyPitchMarkings');
-  merged(group, cornerParts, white, 'HappyValleyPitchCornerArcs');
-  merged(group, centreParts, white, 'HappyValleyPitchCentreMarks');
+  merged(group, lineParts, white, 'HappyValleyPitchMarkings',false);
+  merged(group, cornerParts, white, 'HappyValleyPitchCornerArcs',false);
+  merged(group, centreParts, white, 'HappyValleyPitchCentreMarks',false);
   merged(group, goalParts, white, 'HappyValleyPitchGoals');
   const netGeometry=new THREE.BufferGeometry();
   netGeometry.setAttribute('position',new THREE.Float32BufferAttribute(netPositions,3));
