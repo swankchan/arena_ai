@@ -57,7 +57,7 @@ test('constructed academy has separate driveway-clear volumes, facade bracing an
   const {HKAPA_ACADEMIC,HKAPA_THEATRE,HKAPA_WEST,hkapaTerrainHeightAt} = await import('../js/cities/hongkong/hkapa-architecture.js');
   const {pointInFlatRing} = await import('../js/cities/hongkong/landmark-site.js');
   const scene = new THREE.Scene(), model=buildHkapa(scene);
-  assert.equal(model.stats.hkapaSourceWay,117088641); assert.equal(model.stats.hkapaFacadeRows,4); assert.equal(model.stats.hkapaFacadeBays,6);
+  assert.equal(model.stats.hkapaSourceWay,117088641); assert.equal(model.stats.hkapaFacadeRows,4); assert.equal(model.stats.hkapaFacadeBays,6); assert.equal(model.stats.hkapaTwoStoreyBraces,24);
   assert.ok(model.stats.hkapaVertices>3000); assert.equal(model.stats.hkapaNonFinite,0);
   const find = name => { let found; model.root.traverse(o=>{if(o.name===name)found=o});return found; };
   const windows=find('Academic individual lit and unlit glazing');
@@ -91,16 +91,20 @@ test('all academic glazing panels are in front of the bent mapped wall, not hidd
   const scene = new THREE.Scene(), model = buildHkapa(scene); scene.updateMatrixWorld(true);
   const panes = scene.getObjectByName('Academic individual lit and unlit glazing');
   const positions = panes.geometry.getAttribute('position');
-  // Sample off-centre within each panel to avoid the intentional X-brace and limit
-  // the ray to the near face: this cannot accidentally hit the opposite facade.
+  // Multiple near-face samples account for the two-storey X-braces; each pane
+  // must have at least one visible point, without hitting the opposite facade.
   assert.equal(positions.count, 24 * 6);
   for (let j = 0; j < positions.count; j += 6) {
     const point = i => new THREE.Vector3(positions.getX(j+i),positions.getY(j+i),positions.getZ(j+i));
-    const v = point(0).add(point(1).sub(point(0)).multiplyScalar(.25)).add(point(5).sub(point(0)).multiplyScalar(.6));
-    v.y += model.root.position.y;
-    const ray = new THREE.Raycaster(new THREE.Vector3(v.x,v.y,v.z+5),new THREE.Vector3(0,0,-1),0,5.1);
-    const hit = ray.intersectObject(model.root,true)[0];
-    assert.equal(hit?.object, panes, `front panel ${j/6} is occluded by ${hit?.object.name}`);
+    let visible=false, lastHit;
+    for (const u of [.13,.31,.67,.87]) for (const v of [.15,.38,.72,.88]) {
+      const sample = point(0).add(point(1).sub(point(0)).multiplyScalar(u)).add(point(5).sub(point(0)).multiplyScalar(v));
+      sample.y += model.root.position.y;
+      const ray = new THREE.Raycaster(new THREE.Vector3(sample.x,sample.y,sample.z+5),new THREE.Vector3(0,0,-1),0,5.1);
+      lastHit = ray.intersectObject(model.root,true)[0];
+      if (lastHit?.object === panes) visible=true;
+    }
+    assert.ok(visible, `front panel ${j/6} has no visible sample; hit ${lastHit?.object.name}`);
   }
   const atrium = scene.getObjectByName('Street-facing atrium glass above driveway');
   assert.ok(atrium?.material.emissiveNode, 'street-facing atrium needs day/night material');

@@ -62,10 +62,16 @@ export function buildHkapa(scene) {
       const u0=left+bay*step,u1=u0+step;
       const lit=((row*7+bay*11)%7===1 || (row===1&&bay===3))?.55:0;
       quad(panes,fp(u0,y0,.15),fp(u1,y0,.15),fp(u1,y1,.15),fp(u0,y1,.15),[.045,.075,.075],lit);
-      beam(structural,fp(u0,y0,.43),fp(u1,y1,.43),.42,.48);
-      beam(structural,fp(u0,y1,.43),fp(u1,y0,.43),.42,.48);
     }
     facadeBeam(structural,left,right,y0,.4,.37,.48);
+  }
+  // The 2015 street photograph shows one tall X spanning two window rows,
+  // rather than one squat X per row. The horizontal floor line still crosses
+  // the midpoint; the placement is photo-directed, not structural survey.
+  for(let pair=0;pair<2;pair++) for(let bay=0;bay<bays;bay++) {
+    const u0=left+bay*step,u1=u0+step,y0=5.3+pair*8.2,y1=y0+7.5;
+    beam(structural,fp(u0,y0,.43),fp(u1,y1,.43),.42,.48);
+    beam(structural,fp(u0,y1,.43),fp(u1,y0,.43),.42,.48);
   }
   facadeBeam(structural,left,right,21.1,.4,.38,.48);
   for(let i=0;i<=bays;i++)ebox(structural,left+i*step,13.2,.4,.4,16.2,.5);
@@ -115,5 +121,5 @@ export function buildHkapa(scene) {
   }
   root.userData.sourceWay=HKAPA_SITE.osmId; scene.add(root);
   let vertices=0,nonFinite=0;root.traverse(o=>{if(!o.isMesh)return;const a=o.geometry.getAttribute('position');if(a){vertices+=a.count;for(const v of a.array)if(!Number.isFinite(v))nonFinite++;}});
-  return {root,colliders,landmarks:[{id:'hkapa',name:'香港演藝學院',position:{x:HKAPA_SITE.x,y:base,z:HKAPA_SITE.z},radius:90,height:31}],stats:{hkapaSourceWay:117088641,hkapaFacadeBays:bays,hkapaFacadeRows:4,hkapaVertices:vertices,hkapaNonFinite:nonFinite},groundHeightAt:(x,z,g)=>hkapaTerrainHeightAt(x,z,g,base)};
+  return {root,colliders,landmarks:[{id:'hkapa',name:'香港演藝學院',position:{x:HKAPA_SITE.x,y:base,z:HKAPA_SITE.z},radius:90,height:31}],stats:{hkapaSourceWay:117088641,hkapaFacadeBays:bays,hkapaFacadeRows:4,hkapaTwoStoreyBraces:bays*2*2,hkapaVertices:vertices,hkapaNonFinite:nonFinite},groundHeightAt:(x,z,g)=>hkapaTerrainHeightAt(x,z,g,base)};
 }

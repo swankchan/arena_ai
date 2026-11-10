@@ -36,3 +36,7 @@ Automated checks cover finite geometry, road ribbons versus the mapped footprint
 The two source edges of the Gloucester Road elevation are not collinear: the original single-chord placement put every academic window behind the opaque ceramic wall. The follow-up follows each source edge and regression-tests 24 near-face ray hits off the diagonal braces. A street-facing glazed atrium end is added above vehicle height; localized warm wall emission approximates the reference night floodlights.
 
 `tests/visual/hkapa-facade.html` provides isolated day and `?night` views using Three's WebGL fallback. Both were visually checked in headless software Chromium; this is **not** a full game or WebGPU verification. The attempted software WebGPU renderer reported device loss, so the in-game WebGPU, adjacent footbridge and actual terrain transition remain unverified.
+
+### Gloucester Road bracing correction
+
+The saved 2015 Exploringlife photo and a separately inspected more recent street view show X-shaped diagonals extending across two horizontal window courses, not four independent squat Xs. The Gloucester Road lattice now uses two tall Xs per bay across four rows, retaining its dark individually lit glazing, the mapped kink and the clear entrance. Proportions and structural member sizes remain approximate; the roof, adjacent theatre/atrium and other elevations still require closer work. The isolated WebGL comparison shows the pattern but omits the real roadside flyover, trees and context; it is not full-game WebGPU validation.
