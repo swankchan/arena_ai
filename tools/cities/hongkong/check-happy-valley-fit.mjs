@@ -4,7 +4,6 @@ import fs from 'node:fs';
 import { makeFrame } from '../../geo/frame.mjs';
 import cfg from './config.mjs';
 import { HAPPY_VALLEY_SITE as site } from '../../../js/cities/hongkong/happy-valley-racecourse-architecture.js';
-import { HAPPY_VALLEY_PAVILION as pavilion } from '../../../js/cities/hongkong/happy-valley-pavilion-site.js';
 import { pointInFlatRing } from '../../../js/cities/hongkong/landmark-site.js';
 import { HONG_KONG_TERRAIN_META as terrain } from '../../../js/cities/hongkong/terrain.js';
 import { fullRoadWaysNear } from '../../../js/cities/hongkong/full-meta.js';
@@ -16,6 +15,13 @@ const data=JSON.parse(fs.readFileSync(new URL('../../data/hongkong/parks.json',i
 const pitches=data.elements.filter(e=>e.type==='way' && e.tags?.leisure==='pitch' && e.geometry?.length>=4)
   .map(e=>({id:e.id,ring:e.geometry.flatMap(({lon,lat})=>projection.toWorld(lon,lat))}))
   .filter(p=>p.ring.some((v,i)=>!(i%2) && pointInFlatRing(site.ring,v,p.ring[i+1])));
+// Include all six mapped stands, not just the ones already built in runtime.
+const standIds=new Set([494027781,1356276114,1356276115,1356276116,1356276117,1356276118]);
+const stands=JSON.parse(fs.readFileSync(new URL('../../data/hongkong/landmarks.json',import.meta.url))).elements
+  .filter(e=>e.type==='way' && standIds.has(e.id) && e.geometry?.length>=4)
+  .map(e=>({id:e.id,ring:e.geometry.flatMap(({lon,lat})=>projection.toWorld(lon,lat))}));
+if(stands.length!==standIds.size) throw new Error('Missing mapped Happy Valley stand footprint');
+const standHits=new Map();
 const cs=Math.cos(site.ry),sn=Math.sin(site.ry), c=terrain.happyValleyPadHeight;
 let sampleCount=0, outside=0, pitch=0, stand=0, sameLevel=0, lessThan5m=0, minClearance=Infinity;
 const obstacles=new Map();
@@ -27,7 +33,11 @@ for(let i=0;i<points.length;i++) {
     const X=site.x+cs*x+sn*z,Z=site.z-sn*x+cs*z; sampleCount++;
     if(!pointInFlatRing(site.ring,X,Z))outside++;
     if(pitches.some(p=>pointInFlatRing(p.ring,X,Z)))pitch++;
-    if(pointInFlatRing(pavilion.ring,X,Z))stand++;
+    let inStand=false;
+    for(const building of stands) if(pointInFlatRing(building.ring,X,Z)) {
+      inStand=true;standHits.set(building.id,(standHits.get(building.id)??0)+1);
+    }
+    if(inStand)stand++;
     let same=false, low=false;
     for(const way of fullRoadWaysNear(X,Z,12)) for(let k=2;k<way.flat.length;k+=2) {
       const ax=way.flat[k-2],az=way.flat[k-1],bx=way.flat[k],bz=way.flat[k+1],vx=bx-ax,vz=bz-az,len2=vx*vx+vz*vz;
@@ -47,6 +57,7 @@ for(let i=0;i<points.length;i++) {
   }
 }
 console.log(JSON.stringify({status:fit.status,centrelineMetres:fit.centrelineMetres,sampleCount,outside,pitch,stand,sameLevel,
+  mappedStandsChecked:stands.length,standIds:Object.fromEntries(standHits),
   samplesWithRoadUnder5m:lessThan5m,minSampledClearanceMetres:Number.isFinite(minClearance)?+minClearance.toFixed(3):null,
   roadIds:Object.fromEntries([...obstacles].map(([id,v])=>[id,+v.toFixed(3)])),
   caveat:'Discrete model samples, nearest height at road centreline; not continuous clearance, actual tunnel geometry, real track or surveyed heights.'},null,2));

@@ -11,6 +11,7 @@ test('experimental fit stays offline and exposes tunnel clearance risk', () => {
   assert.ok(!runtime.includes('happy-valley-experimental-fit'));
   const report=JSON.parse(execFileSync(process.execPath,['tools/cities/hongkong/check-happy-valley-fit.mjs'],{encoding:'utf8'}));
   assert.equal(report.outside,0); assert.equal(report.pitch,0); assert.equal(report.stand,0);
+  assert.equal(report.mappedStandsChecked,6); assert.deepEqual(report.standIds,{});
   assert.equal(report.sameLevel,0);
   assert.ok(report.samplesWithRoadUnder5m>0, 'the remaining tunnel risk must not be lost');
   assert.ok(report.minSampledClearanceMetres<4.5);
