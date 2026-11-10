@@ -1,13 +1,12 @@
 // HK-B0107: 跑馬地馬場 Happy Valley Racecourse — geometry.
 //
-// Built from HAPPY_VALLEY_TRACK (the 30.5 m grass circuit fitted inside the surveyed fence), the 1969 grandstand
-// on its widest arc, the clubhouse and Racing Museum behind it, the sand-coloured infield with the club's branding
-// boards and the big screen facing the stand, the parade ring, and the floodlights of the Wednesday night meetings.
+// Provisional track and infield, mapped Pavilion Stand and parade ring, and estimated floodlights.
+// The mislocated placeholder stands and museum have been removed pending mapped replacements.
 import * as THREE from 'three/webgpu';
 import { attribute } from 'three/tsl';
 import {
   happyValleyTerrainHeightAt, happyValleyTrackPoint,
-  HAPPY_VALLEY_SITE, HAPPY_VALLEY_TRACK, HAPPY_VALLEY_MAIN_STAND, HAPPY_VALLEY_CLUBHOUSE, HAPPY_VALLEY_COLOURS,
+  HAPPY_VALLEY_SITE, HAPPY_VALLEY_TRACK, HAPPY_VALLEY_MAIN_STAND, HAPPY_VALLEY_COLOURS,
   HAPPY_VALLEY_CAPACITY, HAPPY_VALLEY_OPENED, HAPPY_VALLEY_PARADE_LOCAL_RING,
 } from './happy-valley-racecourse-architecture.js';
 import {
@@ -125,7 +124,7 @@ function buildCourse(group, materials, stats, groundOffset) {
 }
 
 // ---------------------------------------------------------------------------------------------------------------
-// The 1969 grandstand: 12 decks on a white plinth, cantilever roof, clubhouse and Racing Museum behind.
+// Legacy frame retained only for the provisional infield screen orientation.
 // ---------------------------------------------------------------------------------------------------------------
 function standFrame() {
   const stand = HAPPY_VALLEY_MAIN_STAND;
@@ -139,87 +138,6 @@ function standFrame() {
     tanX, tanZ, normalX: tanZ, normalZ: -tanX,
     ry: Math.atan2(-tanZ, tanX),
   };
-}
-
-function buildGrandstand(group, materials, stats) {
-  const stand = HAPPY_VALLEY_MAIN_STAND;
-  const frame = standFrame();
-  const group2 = new THREE.Group();
-  group2.name = 'HappyValleyGrandstand';
-  group2.position.set(stand.centreX, 0, stand.centreZ);
-  group2.rotation.y = frame.ry;
-  group.add(group2);
-  // Inside this group +X runs along the stand and +Z faces the track.
-  const halfLength = stand.length / 2;
-  const halfDepth = stand.depth / 2;
-  const seats = store(), structure = [], glazing = [], roofParts = [], canopyColumns = [];
-  // Plinth and the 12 decks behind it.
-  box(structure, [0, stand.podiumHeight / 2, halfDepth - 4.0], [stand.length, stand.podiumHeight, 8.0]);
-  for (let tier = 0; tier < stand.tiers; tier++) {
-    const z = halfDepth - 4.0 - (tier + 0.5) * stand.tierTread;
-    const y = stand.podiumHeight + tier * stand.tierRise;
-    box(structure, [0, y + stand.tierRise / 2 - 0.08, z], [stand.length, stand.tierRise + 0.16, stand.tierTread + 0.04]);
-    const seatsPerTier = Math.round(stand.length / 0.62);
-    for (let seat = 0; seat < seatsPerTier; seat++) {
-      const x = -halfLength + (seat + 0.5) * (stand.length / seatsPerTier);
-      const tint = Math.floor(seat / 24) % 2 ? C.seat : C.seatAlt;
-      quad(seats, [x - 0.23, y, z + stand.tierTread / 2 - 0.1], [x + 0.23, y, z + stand.tierTread / 2 - 0.1],
-        [x + 0.23, y + 0.34, z + stand.tierTread / 2 - 0.26], [x - 0.23, y + 0.34, z + stand.tierTread / 2 - 0.26], tint);
-    }
-  }
-  // Rear wall, side walls and the glazed concourse behind the seating.
-  const topDeck = stand.podiumHeight + stand.tiers * stand.tierRise;
-  box(structure, [0, (stand.podiumHeight + topDeck) / 2, -halfDepth + 0.5], [stand.length, topDeck - stand.podiumHeight, 1.0]);
-  for (const side of [-1, 1]) {
-    box(structure, [side * (halfLength + 0.5), stand.canopyHeight / 2, 0], [1.0, stand.canopyHeight, stand.depth]);
-  }
-  box(glazing, [0, stand.podiumHeight + 6.5, -halfDepth + 1.2], [stand.length - 6, 11.0, 0.5]);
-  // Cantilever roof over the top decks, with the fascia band and its columns at the back.
-  box(roofParts, [0, stand.canopyHeight, halfDepth - 5.5], [stand.length + 4, 0.9, stand.depth + 3]);
-  box(roofParts, [0, stand.canopyHeight + 1.2, halfDepth + 0.6], [stand.length + 4, 1.6, 0.8]);
-  for (let i = 0; i <= 10; i++) {
-    const x = -halfLength + (i / 10) * stand.length;
-    cylinder(canopyColumns, [x, stand.canopyHeight / 2, -halfDepth + 3.0], 0.32, stand.canopyHeight, 8);
-  }
-  // Betting hall and entrance canopy at ground level.
-  box(structure, [0, 2.4, halfDepth + 1.6], [stand.length - 18, 4.8, 3.2]);
-  meshStore(group2, seats, materials.seat, 'HappyValleyGrandstandSeats');
-  merged(group2, structure, materials.stand, 'HappyValleyGrandstandStructure');
-  merged(group2, glazing, materials.glass, 'HappyValleyGrandstandGlazing');
-  merged(group2, roofParts, materials.roof, 'HappyValleyGrandstandRoof');
-  merged(group2, canopyColumns, materials.standShade, 'HappyValleyGrandstandColumns');
-  stats.happyValleyGrandstandTiers = stand.tiers;
-  stats.happyValleyGrandstandLength = stand.length;
-  stats.happyValleyGrandstandSeats = Math.round(stand.length / 0.62) * stand.tiers;
-  return { group2, frame, topDeck };
-}
-
-// Clubhouse block and the Racing Museum annex, on the club side behind the grandstand.
-function buildClubHouse(group, materials, stats, frame) {
-  const club = new THREE.Group(); club.name = 'HappyValleyClubhouse'; group.add(club);
-  const stand = HAPPY_VALLEY_MAIN_STAND;
-  const place = (along, out) => ({
-    x: stand.centreX + frame.tanX * along + frame.normalX * out,
-    z: stand.centreZ + frame.tanZ * along + frame.normalZ * out,
-  });
-  const parts = [], glazing = [], tower = [];
-  const house = place(0, -26);
-  box(parts, [house.x, HAPPY_VALLEY_CLUBHOUSE.height / 2, house.z],
-    [HAPPY_VALLEY_CLUBHOUSE.length, HAPPY_VALLEY_CLUBHOUSE.height, HAPPY_VALLEY_CLUBHOUSE.depth], frame.ry);
-  box(glazing, [house.x, 15, house.z], [HAPPY_VALLEY_CLUBHOUSE.length - 8, 14, HAPPY_VALLEY_CLUBHOUSE.depth + 0.4], frame.ry);
-  // The club headquarters tower stands beyond the north end of the stand.
-  const towerSite = place(HAPPY_VALLEY_MAIN_STAND.length / 2 + 26, -34);
-  box(tower, [towerSite.x, 32, towerSite.z], [26, 64, 26], frame.ry);
-  box(tower, [towerSite.x, 66, towerSite.z], [20, 6, 20], frame.ry);
-  // Museum annex: a low green-roofed block at the south end of the stand complex.
-  const museum = place(-HAPPY_VALLEY_MAIN_STAND.length / 2 - 20, 2);
-  box(parts, [museum.x, 5.5, museum.z], [30, 11, 20], frame.ry);
-  box(parts, [museum.x, 11.6, museum.z], [32, 1.2, 22], frame.ry);
-  merged(club, parts, materials.club, 'HappyValleyClubAndMuseum');
-  merged(club, glazing, materials.glass, 'HappyValleyClubGlazing');
-  merged(club, tower, materials.stand, 'HappyValleyClubTower');
-  stats.happyValleyClubTowerHeight = 70;
-  return club;
 }
 
 // ---------------------------------------------------------------------------------------------------------------
@@ -338,26 +256,12 @@ export function buildHappyValleyRacecourse(root, { groundOffset = 0 } = {}) {
   buildCourse(venue, materials, stats, groundOffset);
   buildHappyValleyPitches(venue);
   const pavilion = buildHappyValleyPavilion(venue, groundOffset);
-  const { frame } = buildGrandstand(venue, materials, stats);
-  buildClubHouse(venue, materials, stats, frame);
   buildInfield(venue, materials, stats);
 
-  const stand = HAPPY_VALLEY_MAIN_STAND;
   const colliders = [];
   const push = (x, z, w, d, h, ry = 0) => colliders.push(harbourCityLocalCollider(
     HAPPY_VALLEY_SITE, x, z, w, d, groundOffset, groundOffset + h, HAPPY_VALLEY_SITE.ry + ry));
-  // Grandstand, clubhouse, club tower and the museum annex.
-  push(stand.centreX, stand.centreZ, stand.length, stand.depth, stand.canopyHeight + 2.4, frame.ry);
-  const place = (along, out) => ({
-    x: stand.centreX + frame.tanX * along + frame.normalX * out,
-    z: stand.centreZ + frame.tanZ * along + frame.normalZ * out,
-  });
-  const house = place(0, -26);
-  push(house.x, house.z, HAPPY_VALLEY_CLUBHOUSE.length, HAPPY_VALLEY_CLUBHOUSE.depth, HAPPY_VALLEY_CLUBHOUSE.height, frame.ry);
-  const towerSite = place(stand.length / 2 + 26, -34);
-  push(towerSite.x, towerSite.z, 26, 26, 70, frame.ry);
-  const museum = place(-stand.length / 2 - 20, 2);
-  push(museum.x, museum.z, 30, 20, 12.4, frame.ry);
+  // No colliders for the removed, incorrectly located stand/club/museum.
   // Floodlight masts.
   for (const [t, out] of FLOODLIGHT_POSITIONS) {
     const p = trackPoint(t, out);
@@ -369,7 +273,7 @@ export function buildHappyValleyRacecourse(root, { groundOffset = 0 } = {}) {
   const landmarks = [{
     id: 'happy-valley-racecourse', name: '跑馬地馬場 · Happy Valley Racecourse',
     position: { x: HAPPY_VALLEY_SITE.x, y: groundOffset, z: HAPPY_VALLEY_SITE.z },
-    radius: 300, height: 70, components: 4,
+    radius: 300, height: 36, components: 1,
   }];
 
   Object.assign(stats, {

@@ -106,8 +106,8 @@ test('both rails are continuous at every straight-to-curve join and periodic', (
 });
 
 test('floodlight collider centres remain within the venue and off sampled roads', () => {
-  // Collider order: stand, clubhouse, tower, museum, six masts.
-  for (const collider of built.colliders.slice(4, 10)) {
+  // The first six colliders belong to the floodlight masts.
+  for (const collider of built.colliders.slice(0, 6)) {
     assert.ok(ringUtils.pointInFlatRing(site().ring, collider.x, collider.z));
     const road = fullMeta.fullRoadSurfaceAt(collider.x, collider.z, 2, terrain.HONG_KONG_TERRAIN_META.happyValleyPadHeight);
     assert.ok(!road || Math.abs(road.height - terrain.HONG_KONG_TERRAIN_META.happyValleyPadHeight) >= 2.5);
@@ -131,25 +131,22 @@ test('the racing surface never runs over a carriageway', { todo: 'Existing racec
   assert.equal(conflicts, 0, `${conflicts} points of the track sit on a street at grade`);
 });
 
-test('the course, stands, clubhouse and museum are all modelled', () => {
+test('the provisional course and mapped Pavilion are present without the misplaced stands', () => {
   const names = [];
   built.group.traverse((object) => { if (object.name) names.push(object.name); });
   for (const name of [
     'HappyValleyCourse', 'HappyValleyTrackSurface', 'HappyValleyInfieldTurf',
     'HappyValleyRunningRails', 'HappyValleyRunningRailPosts', 'HappyValleyDistancePoles',
-    'HappyValleyGrandstand', 'HappyValleyGrandstandSeats', 'HappyValleyGrandstandStructure',
-    'HappyValleyGrandstandGlazing', 'HappyValleyGrandstandRoof', 'HappyValleyGrandstandColumns',
-    'HappyValleyClubAndMuseum', 'HappyValleyClubGlazing', 'HappyValleyClubTower',
+    'HappyValleyPavilionStand',
     'HappyValleyInfieldBranding', 'HappyValleyBigScreen', 'HappyValleyBigScreenBase',
     'HappyValleyParadeRingSurface', 'HappyValleyParadeRingCentre', 'HappyValleyParadeRingRail', 'HappyValleyScreenFrame',
     'HappyValleyFloodlightMasts', 'HappyValleyFloodlightHeads', 'HappyValleyPerimeterFence',
   ]) assert.ok(names.includes(name), name);
-  assert.equal(built.stats.happyValleyGrandstandTiers, 12);
-  assert.equal(built.stats.happyValleyGrandstandLength, 191);
+  for (const name of ['HappyValleyGrandstand', 'HappyValleyClubhouse', 'HappyValleyClubTower', 'HappyValleyClubAndMuseum'])
+    assert.ok(!names.includes(name), `${name} was an unmapped placeholder on the wrong side`);
   assert.equal(built.stats.happyValleyFloodlightMasts, 6);
   assert.equal(built.stats.happyValleyBrandingBoards, 3);
   assert.ok(!names.includes('HappyValleyInfieldSandRing'), 'do not obscure mapped sports grounds with a speculative sand oval');
-  assert.ok(built.stats.happyValleyGrandstandSeats > 3000, `seats ${built.stats.happyValleyGrandstandSeats}`);
 });
 
 test('parade ring follows the mapped paddock, not the old speculative circle', () => {
@@ -227,17 +224,26 @@ test('the racecourse is wired into the terrain chain and the unified world', () 
   assert.equal(built.landmarks[0].id, 'happy-valley-racecourse');
 });
 
-test('the rendered site and grandstand collider use the same mapped world frame', () => {
-  built.group.updateMatrixWorld(true);
-  assert.equal(built.group.rotation.y, site().ry);
-  const stand = built.group.getObjectByName('HappyValleyGrandstand');
-  const worldPosition = stand.getWorldPosition(new THREE.Vector3());
-  const expected = toWorld(arch.HAPPY_VALLEY_MAIN_STAND.centreX, arch.HAPPY_VALLEY_MAIN_STAND.centreZ);
-  assert.ok(Math.hypot(worldPosition.x-expected.x, worldPosition.z-expected.z) < 1e-5);
-  const collider = built.colliders.find(c => Math.hypot(c.x-expected.x,c.z-expected.z) < 1e-5 && c.w === arch.HAPPY_VALLEY_MAIN_STAND.length);
-  assert.ok(collider, 'stand collider at rendered centre');
-  assert.ok(Math.abs(collider.ry - (site().ry + stand.rotation.y)) < 1e-10);
-  assert.ok(collider.maxY > collider.minY);
+test('former speculative tower no longer blocks sampled road through its old footprint', () => {
+  const old = { x: 2371.239880716379, z: 1268.8037214225317,
+    minX: 2353.703385979262, maxX: 2388.7763754534963,
+    minZ: 1251.2672266854145, maxZ: 1286.340216159649,
+    obb: { hx: 13, hz: 13, cs: -0.886791576872191, sn: -0.46216955675220855 } };
+  const inside = (c, x, z) => {
+    const dx=x-c.x, dz=z-c.z;
+    return Math.abs(dx*c.obb.cs-dz*c.obb.sn)<=c.obb.hx && Math.abs(dx*c.obb.sn+dz*c.obb.cs)<=c.obb.hz;
+  };
+  let roadPoints = 0;
+  for (let x=old.minX; x<=old.maxX; x++) for (let z=old.minZ; z<=old.maxZ; z++) {
+    if (!inside(old,x,z)) continue;
+    const hit=fullMeta.fullRoadSurfaceAt(x,z,0,terrain.HONG_KONG_TERRAIN_META.happyValleyPadHeight);
+    if (!hit || Math.abs(hit.height-terrain.HONG_KONG_TERRAIN_META.happyValleyPadHeight)>=2.5) continue;
+    roadPoints++;
+    assert.ok(!built.colliders.some(c => inside(c,x,z) && c.minY < hit.height+2 && c.maxY > hit.height),
+      `collider still blocks road ${hit.way.id} at ${x}, ${z}`);
+  }
+  assert.ok(roadPoints>0, 'old footprint must actually overlap sampled road');
+  assert.ok(!built.group.getObjectByName('HappyValleyClubTower'));
 });
 
 test('temporary rail and fence gaps avoid sampled same-level road vertices', () => {
