@@ -406,3 +406,25 @@ test('running rail uses one broad top member and regularly spaced posts', () => 
   assert.ok(low>1.0 && high<1.3,`top rail heights ${low}, ${high}`);
   assert.ok(posts.geometry.getAttribute('position').count > 10000, 'posts should not be 9 segments apart');
 });
+
+test('perimeter vertices clear every nearby same-level road layer', async () => {
+  const {roadRibbonHeightAtSegment}=await import('../js/cities/hongkong/road-elevation.js');
+  built.group.updateMatrixWorld(true);
+  const roadY=terrain.HONG_KONG_TERRAIN_META.happyValleyPadHeight;
+  let tested=0;
+  for(const name of ['HappyValleyPerimeterWallBase','HappyValleyPerimeterFence','HappyValleyPerimeterPickets']) {
+    const mesh=built.group.getObjectByName(name),vertices=mesh.geometry.getAttribute('position'),v=new THREE.Vector3();
+    for(let i=0;i<vertices.count;i++) {
+      v.fromBufferAttribute(vertices,i).applyMatrix4(mesh.matrixWorld);tested++;
+      for(const way of fullMeta.fullRoadWaysNear(v.x,v.z,10)) for(let k=2;k<way.flat.length;k+=2) {
+        const ax=way.flat[k-2],az=way.flat[k-1],dx=way.flat[k]-ax,dz=way.flat[k+1]-az,l=dx*dx+dz*dz;
+        if(l<.0025)continue;
+        const t=Math.max(0,Math.min(1,((v.x-ax)*dx+(v.z-az)*dz)/l)),x=ax+t*dx,z=az+t*dz;
+        if(Math.hypot(v.x-x,v.z-z)>way.width/2)continue;
+        const h=roadRibbonHeightAtSegment(way.id,k/2-1,t,x,z);
+        assert.ok(Math.abs(h-roadY)>=2.5,`${name} intersects road ${way.id} at ${v.x}, ${v.z}`);
+      }
+    }
+  }
+  assert.ok(tested>10000);
+});
