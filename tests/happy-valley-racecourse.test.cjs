@@ -295,3 +295,19 @@ test('racecourse floodlights have discrete night-emissive lamp faces', () => {
   assert.equal(frames.geometry.getAttribute('position').count,6*2*8*24);
   assert.equal(built.stats.happyValleyFloodlightMasts,6);
 });
+
+test('racecourse overlays do not cover generated shallow road-tunnel openings', async () => {
+  const {TERRAIN_TUNNEL_OPENING_RECTS}=await import('../js/cities/hongkong/road-elevation.js');
+  const openings=TERRAIN_TUNNEL_OPENING_RECTS.filter(r=>['osm-tunnel:41116','osm-tunnel:43020'].includes(r.routeId));
+  assert.ok(openings.length>=10);
+  const meshes=['HappyValleyGroundApron','HappyValleyInfieldTurf','HappyValleyTrackSurface'].map(name=>built.group.getObjectByName(name));
+  let inside=0;
+  for(const r of openings) for(const a of [-.8,-.4,0,.4,.8]) for(const b of [-.8,0,.8]) {
+    const x=r.cx+r.ux*r.hx*a-r.uz*r.hz*b,z=r.cz+r.uz*r.hx*a+r.ux*r.hz*b;
+    if(!ringUtils.pointInFlatRing(site().ring,x,z))continue;
+    inside++;
+    const ray=new THREE.Raycaster(new THREE.Vector3(x,terrain.HONG_KONG_TERRAIN_META.happyValleyPadHeight+1,z),new THREE.Vector3(0,-1,0),0,2);
+    assert.equal(ray.intersectObjects(meshes).length,0,`racecourse surface covers ${r.routeId}`);
+  }
+  assert.ok(inside>50);
+});

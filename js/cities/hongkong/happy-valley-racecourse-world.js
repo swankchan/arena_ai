@@ -19,6 +19,8 @@ import { buildHappyValleyPavilion } from './happy-valley-pavilion-world.js';
 import { buildHappyValleyMembersIII } from './happy-valley-members-iii-world.js';
 import { HAPPY_VALLEY_MEMBERS_III, HAPPY_VALLEY_MEMBERS_III_ENTRANCE } from './happy-valley-members-iii-site.js';
 import { fullRoadSurfaceAt } from './full-meta.js';
+import { TERRAIN_TUNNEL_OPENING_RECTS } from './road-elevation.js';
+import { subtractTunnelOpenings } from './tunnel-openings.js';
 
 const C = HAPPY_VALLEY_COLOURS;
 const DEG = Math.PI / 180;
@@ -66,13 +68,51 @@ function makeMaterials() {
 // Shared with diagnostics, frames and tests: a single closed-loop source of truth.
 const trackPoint = happyValleyTrackPoint;
 
+// Generic tunnel portal cuts are already used by full-world terrain, but the
+// authored racecourse overlay used to cover them again. Cut the same openings
+// in the overlay meshes; this does not construct or certify a tunnel roof.
+const SITE_TUNNEL_OPENINGS = TERRAIN_TUNNEL_OPENING_RECTS.filter(r =>
+  r.minX<=HAPPY_VALLEY_SITE.bounds.maxX && r.maxX>=HAPPY_VALLEY_SITE.bounds.minX &&
+  r.minZ<=HAPPY_VALLEY_SITE.bounds.maxZ && r.maxZ>=HAPPY_VALLEY_SITE.bounds.minZ);
+function inTunnelOpening(point, margin=0) {
+  const s=HAPPY_VALLEY_SITE,c=Math.cos(s.ry),sn=Math.sin(s.ry);
+  const x=s.x+c*point.x+sn*point.z,z=s.z-sn*point.x+c*point.z;
+  return SITE_TUNNEL_OPENINGS.some(r=>{
+    const dx=x-r.cx,dz=z-r.cz;
+    return Math.abs(dx*r.ux+dz*r.uz)<=r.hx+margin && Math.abs(-dx*r.uz+dz*r.ux)<=r.hz+margin;
+  });
+}
+function cutRacecourseTunnelOpenings(mesh) {
+  if(!mesh || !SITE_TUNNEL_OPENINGS.length) return;
+  const original=mesh.geometry, source=original.index?original.toNonIndexed():original;
+  const position=source.getAttribute('position'), colour=source.getAttribute('color'), lit=source.getAttribute('aLit');
+  const positions=[],colours=[],lights=[],s=HAPPY_VALLEY_SITE,c=Math.cos(s.ry),sn=Math.sin(s.ry);
+  for(let i=0;i+2<position.count;i+=3) {
+    const triangle=[];
+    for(let j=0;j<3;j++) {const x=position.getX(i+j),z=position.getZ(i+j);triangle.push([s.x+c*x+sn*z,s.z-sn*x+c*z]);}
+    for(const poly of subtractTunnelOpenings(triangle,SITE_TUNNEL_OPENINGS)) for(let j=1;j+1<poly.length;j++) {
+      for(const [X,Z] of [poly[0],poly[j],poly[j+1]]) {
+        const dx=X-s.x,dz=Z-s.z;
+        positions.push(c*dx-sn*dz,position.getY(i),sn*dx+c*dz);
+        if(colour) colours.push(colour.getX(i),colour.getY(i),colour.getZ(i));
+        if(lit) lights.push(lit.getX(i));
+      }
+    }
+  }
+  const g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.Float32BufferAttribute(positions,3));
+  if(colour)g.setAttribute('color',new THREE.Float32BufferAttribute(colours,3));
+  if(lit)g.setAttribute('aLit',new THREE.Float32BufferAttribute(lights,1));
+  g.computeVertexNormals();g.computeBoundingBox();g.computeBoundingSphere();
+  mesh.geometry=g;if(source!==original)source.dispose();original.dispose();
+}
+
 // Only an approximate same-level road query, not a complete swept collision test.
 // These temporary breaks preserve infield-road access until the mapped track is re-fitted.
 function trackRoadConflict(point, groundOffset, margin = 1.3) {
   const s = HAPPY_VALLEY_SITE, c = Math.cos(s.ry), sn = Math.sin(s.ry);
   const x = s.x + c * point.x + sn * point.z, z = s.z - sn * point.x + c * point.z;
   const hit = fullRoadSurfaceAt(x, z, margin, groundOffset);
-  return !!hit && Math.abs(hit.height - groundOffset) < 2.5;
+  return inTunnelOpening(point,margin) || (!!hit && Math.abs(hit.height - groundOffset) < 2.5);
 }
 
 function buildCourse(group, materials, stats, groundOffset) {
@@ -120,8 +160,8 @@ function buildCourse(group, materials, stats, groundOffset) {
     const p = trackPoint(t, -HAPPY_VALLEY_TRACK.width - 1.2);
     cylinder(distancePoles, [p.x, 0.9, p.z], 0.09, 1.8, 6);
   }
-  meshStore(course, band, materials.grass, 'HappyValleyTrackSurface', false);
-  meshStore(course, infieldStore, materials.infield, 'HappyValleyInfieldTurf', false);
+  cutRacecourseTunnelOpenings(meshStore(course, band, materials.grass, 'HappyValleyTrackSurface', false));
+  cutRacecourseTunnelOpenings(meshStore(course, infieldStore, materials.infield, 'HappyValleyInfieldTurf', false));
   merged(course, rails, materials.rail, 'HappyValleyRunningRails');
   merged(course, posts, materials.rail, 'HappyValleyRunningRailPosts');
   merged(course, distancePoles, materials.rail, 'HappyValleyDistancePoles');
@@ -253,6 +293,7 @@ function buildGrounds(group, materials, stats, groundOffset) {
   // Provisional lawn follows the mapped OSM site boundary, not a surveyed surface.
   const apron = new THREE.Mesh(roofGeometry(ring, -0.03), materials.apron);
   apron.name = 'HappyValleyGroundApron';
+  cutRacecourseTunnelOpenings(apron);
   grounds.add(apron);
   // Six floodlight masts around the course, four on the stand side and two opposite.
   for (const [t, out] of FLOODLIGHT_POSITIONS) {

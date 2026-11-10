@@ -1,0 +1,22 @@
+<!doctype html><meta charset="utf-8"><style>body{margin:0}</style>
+<script type="importmap">{"imports":{"three":"../../vendor/three/build/three.webgpu.js","three/webgpu":"../../vendor/three/build/three.webgpu.js","three/tsl":"../../vendor/three/build/three.tsl.js","three/addons/":"../../vendor/three/examples/jsm/"}}</script>
+<script type="module">
+import * as THREE from 'three/webgpu';
+import {buildHappyValleyRacecourse} from '../../js/cities/hongkong/happy-valley-racecourse-world.js';
+import {fullRoadWaysNear} from '../../js/cities/hongkong/full-meta.js';
+import {roadRibbonHeightAtSegment} from '../../js/cities/hongkong/road-elevation.js';
+const scene=new THREE.Scene();scene.background=new THREE.Color(0xb9cdd5);
+buildHappyValleyRacecourse(scene,{groundOffset:11.33165});
+// Only three nearby road ribbons; no complete terrain or tunnel structure.
+const roads=fullRoadWaysNear(2145,840,120).filter(r=>[43020,41116,41115].includes(r.id));
+const vertices=[];
+for(const r of roads) for(let i=2;i<r.flat.length;i+=2){
+  let [ax,az,bx,bz]=r.flat.slice(i-2,i+2),dx=bx-ax,dz=bz-az,L=Math.hypot(dx,dz),steps=Math.ceil(L/2),nx=dz/L*r.width/2,nz=-dx/L*r.width/2;
+  const p=(t,side)=>{let x=ax+dx*t,z=az+dz*t;return [x+nx*side,roadRibbonHeightAtSegment(r.id,i/2-1,t,x,z)+.04,z+nz*side]};
+  for(let j=0;j<steps;j++){let a=p(j/steps,-1),b=p(j/steps,1),c=p((j+1)/steps,-1),d=p((j+1)/steps,1);vertices.push(...a,...b,...c,...b,...d,...c);}
+}
+const g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.Float32BufferAttribute(vertices,3));g.computeVertexNormals();scene.add(new THREE.Mesh(g,new THREE.MeshStandardMaterial({color:0x4b5053,side:THREE.DoubleSide})));
+scene.add(new THREE.HemisphereLight(0xffffff,0x566a58,1));const sun=new THREE.DirectionalLight(0xffffff,2);sun.position.set(2200,250,1200);scene.add(sun);
+const camera=new THREE.PerspectiveCamera(45,1.6,.1,2500);camera.position.set(2200,42,895);camera.lookAt(2148,10,835);
+const renderer=new THREE.WebGPURenderer({forceWebGL:true,antialias:true});await renderer.init();renderer.setSize(1280,800);document.body.appendChild(renderer.domElement);renderer.render(scene,camera);window.ready=true;
+</script>
