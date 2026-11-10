@@ -2,13 +2,15 @@
 // Useful for visual/raycast regression; does not include full world, coast or
 // every authored earthwork and must not be used as game terrain.
 import * as THREE from 'three/webgpu';
+import {siteCutTriangles} from './happy-valley-site-cut-data.js';
 import {HAPPY_VALLEY_SITE as site} from '../../js/cities/hongkong/happy-valley-racecourse-architecture.js';
 import {HONG_KONG_TERRAIN_META as meta,hongKongTerrainHeight} from '../../js/cities/hongkong/terrain.js';
 import {TERRAIN_TUNNEL_OPENING_RECTS} from '../../js/cities/hongkong/road-elevation.js';
 import {buildTunnelOpeningRects,subtractTunnelOpenings} from '../../js/cities/hongkong/tunnel-openings.js';
 import {happyValleyTrackTerrainCuts} from './happy-valley-experimental-terrain-cut.js';
 import {happyValleyTrackTerrainGrade} from './happy-valley-experimental-terrain-grade.js';
-export function buildLocalTerrain({cutTrack=false,grade=false}={}){
+export function buildLocalTerrain({cutTrack=false,grade=false,siteCut=false}={}){
+ if(siteCut && (grade || cutTrack)) throw new Error("Site-cut comparison cannot be combined with the other offline experiments");
  const grid=meta.grid, pad=80, b=site.bounds;
  const minI=Math.floor((b.minX-pad-grid.minX)/grid.cell),maxI=Math.ceil((b.maxX+pad-grid.minX)/grid.cell);
  const minJ=Math.floor((b.minZ-pad-grid.minZ)/grid.cell),maxJ=Math.ceil((b.maxZ+pad-grid.minZ)/grid.cell);
@@ -25,8 +27,9 @@ export function buildLocalTerrain({cutTrack=false,grade=false}={}){
   const x=grid.minX+i*grid.cell,z=grid.minZ+j*grid.cell,w=grid.cell,N=grade?7:1;
   for(let v=0;v<N;v++)for(let u=0;u<N;u++){
    const x0=x+u*w/N,z0=z+v*w/N,step=w/N;
-   for(const tri of [[[x0,z0],[x0,z0+step],[x0+step,z0]],[[x0+step,z0],[x0,z0+step],[x0+step,z0+step]]]) {
-    for(const poly of subtractTunnelOpenings(tri,rects))for(let k=1;k+1<poly.length;k++)for(const [X,Z] of [poly[0],poly[k],poly[k+1]])positions.push(X,height(X,Z),Z);
+   for(const [k,tri] of [[[x0,z0],[x0,z0+step],[x0+step,z0]],[[x0+step,z0],[x0,z0+step],[x0+step,z0+step]]].entries()) {
+    const cut=siteCut ? siteCutTriangles[`${i},${j},${k}`] : undefined;
+    for(const piece of cut??[tri]) for(const poly of subtractTunnelOpenings(piece,rects))for(let k=1;k+1<poly.length;k++)for(const [X,Z] of [poly[0],poly[k],poly[k+1]])positions.push(X,height(X,Z),Z);
    }
   }
  }

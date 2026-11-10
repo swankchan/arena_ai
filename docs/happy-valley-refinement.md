@@ -175,3 +175,9 @@ The eight new 1.6 m square collider bases are sampled against the venue ring, ma
 八個現建球場的估算足球線補上中心點及四角 1 m 四分一圓角球弧，依照 [足球場地通用規則](https://www.thefa.com/-/media/files/thefaportal/governance-docs/laws-of-the-game/law-01---the-field-of-play.ashx)，不代表已核實各場的實際線位。場 3 是非標準尺寸、8 是七人場，9／10 是多用途場；實際設施及賽事佈置可能有別。頂點檢查確保線段在已建球場輪廓內；未證所有道路圖層、近景 WebGPU 或實地照片一致。
 
 八支新增推算燈柱的射燈現改為指向同站跑道中心，而非朝橢圓形中心的一個比例點；局部 WebGL 夜景可見更多光落在彎道附近，但仍有明顯亮暗斑，光強及位置並非實測。測試只驗目標點接近舊跑道中心，並未驗完整遊戲的照度或效能。
+
+### 場界地形裁切試算（離線，未上線）
+
+另一試算用 `node tools/cities/hongkong/build-happy-valley-site-cut-experiment.mjs` 把局部 70 m 原始格網三角形減去 OSM 場界，保留多邊形外的三角片，場界內依靠現有馬場草坪覆蓋；重建輸出在 `tests/visual/happy-valley-site-cut-data.js`，`happy-valley-track-terrain.html?sitecut` 可對照。局部 2,732 個現繪跑道樣點沒有高於跑道的地形命中，截圖亦不再見跑道格網遮擋。但這是測試 fixture，並非完整 terrain chunk 或最終修復。
+
+`node tools/cities/hongkong/check-happy-valley-site-seam.mjs` 沿場界每約 2 m 比較外側未裁 70 m 地形插值與現有平坦草坪：911 點中 866 點高差超過 0.1 m，範圍約 -0.745 至 +6.795 m；附近六條同高道路也碰場界。截圖仍可見天空縫，不能以一道不分道路的垂直牆遮住。這是未裁地形的估算，不含所有道路、隧道裁切或 earthworks；需要設計連續分區過渡並驗證道路、地形查詢及碰撞一致，故未接 runtime。
