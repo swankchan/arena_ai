@@ -17,7 +17,14 @@ function letteringTexture() {
   // Individual characters follow the elliptical sign, as in the reference.
   function arc(text,start,end) {
     const glyphs=Array.from(text);ctx.font='bold 34px sans-serif';
-    const weights=glyphs.map(glyph=>WINNING_POST_GLYPHS[glyph]?34:Math.max(8,ctx.measureText(glyph).width));
+    // Stub and headless canvases may expose measureText but return no TextMetrics, or omit the
+    // key entirely. Fall back to a CJK-ish advance so the lettering still lays out instead of
+    // throwing on an incomplete 2D context.
+    const measure=glyph=>{
+      const metrics=ctx.measureText?.(glyph);
+      return typeof metrics?.width==='number'?Math.max(8,metrics.width):34;
+    };
+    const weights=glyphs.map(glyph=>WINNING_POST_GLYPHS[glyph]?34:measure(glyph));
     const total=weights.reduce((a,b)=>a+b,0);let cursor=0;
     glyphs.forEach((glyph,i)=>{
       const theta=start+(end-start)*(cursor+weights[i]/2)/total;
@@ -32,7 +39,10 @@ function letteringTexture() {
       if(outline) {
         // Avoid missing-CJK-font tofu on browsers without system Chinese fonts.
         ctx.scale(.034,-.034);ctx.translate(-outline.advance/2,-440);
-        ctx.fill(new Path2D(outline.path));
+        // Path2D is a browser global; a headless/stub canvas has no fillable path, so draw the
+        // glyph text instead of failing the whole venue build.
+        if(typeof Path2D!=='function'){ctx.fillText(glyph,0,0);}
+        else ctx.fill(new Path2D(outline.path));
       } else ctx.fillText(glyph,0,0);
       ctx.restore();
     });

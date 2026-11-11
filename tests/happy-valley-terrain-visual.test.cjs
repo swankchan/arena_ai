@@ -117,3 +117,25 @@ test('inset seam diagnostic distinguishes high and low steps near roads', {timeo
  assert.ok(report.aboveNearSameLevelRoad>0 && report.belowNearSameLevelRoad>0);
  assert.match(report.caveat,/excludes tunnel cuts/);
 });
+
+test('seam source check reproduces the committed step and locates it in the surrounding grid', {timeout:30000}, () => {
+ const {execFileSync}=require('node:child_process');
+ const report=JSON.parse(execFileSync(process.execPath,['tools/cities/hongkong/check-happy-valley-seam-source.mjs','--inset1m'],{encoding:'utf8'}));
+ const seam=JSON.parse(execFileSync(process.execPath,['tools/cities/hongkong/check-happy-valley-site-seam.mjs','--inset1m'],{encoding:'utf8'}));
+ assert.equal(report.boundary,'experimental 1m inset');
+ // Same samples and the same statistic as the committed diagnostic; the split must not drift.
+ assert.equal(report.samples,seam.samples);
+ assert.equal(report.flatEdge.above,seam.terrainAbovePad);
+ assert.equal(report.flatEdge.below,seam.terrainBelowPad);
+ assert.equal(report.flatEdge.minMetres,seam.minMetres);
+ assert.equal(report.flatEdge.maxMetres,seam.maxMetres);
+ // The pad is not what lifts the edge: only the surrounding corners can be, and every edge cell straddles.
+ assert.equal(report.cellsFullyInsideVenue,0);
+ assert.equal(report.straddlingCells,report.samples);
+ assert.equal(report.insideCornersPerCell.four,0);
+ assert.ok(report.highestSurroundingCornerAbovePad.p50>1);
+ // The bare DTM inside the venue is below the pad as often as above, so the median datum is not a high guess.
+ assert.ok(report.pureDtmGrid.below>report.pureDtmGrid.above*.5);
+ assert.ok(report.pureDtmGrid.below>0 && report.pureDtmGrid.above>0);
+ assert.match(report.caveat,/excludes tunnel cuts/);
+});
