@@ -41,6 +41,18 @@ function renderCityCards() {
     const taxiStyle = getTaxiStyle(city.taxiStyle);
     if (taxiStyle) card.dataset.taxiStyle = city.taxiStyle;
     card.append(cta, english, arrow);
+    if (taxiStyle) {
+      const taxi = document.createElement('span');
+      taxi.className = 'city-card-taxi';
+      const dot = document.createElement('span');
+      dot.className = 'city-card-taxi-dot';
+      dot.style.background = `#${taxiStyle.paint.toString(16).padStart(6, '0')}`;
+      dot.setAttribute('aria-hidden', 'true');
+      const label = document.createElement('span');
+      label.textContent = taxiStyle.label;
+      taxi.append(dot, label);
+      card.appendChild(taxi);
+    }
     card.addEventListener('click', () => selectCity(city.id));
     list.appendChild(card);
   }

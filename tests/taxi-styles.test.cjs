@@ -36,9 +36,11 @@ test('city registry entries resolve valid taxi styles', () => {
     assert.ok(city.taxiStyle, `${city.id} declares a taxi style`);
     assert.equal(getTaxiStyle(city.taxiStyle), TAXI_STYLES[city.taxiStyle]);
   }
-  assert.equal(getCity('newyork').taxiStyle, 'nyc-medallion');
+  // The catalogue keeps the New York style for the shared car geometry, but the app ships one city.
+  assert.deepEqual(CITIES.map((city) => city.id), ['hongkong']);
   assert.equal(getCity('hongkong').taxiStyle, 'hk-urban');
-  assert.equal(getCity('grid').taxiStyle, 'nyc-medallion');
+  assert.equal(getCity('newyork'), null);
+  assert.equal(getCity('grid'), null);
 });
 
 test('the home-screen city cards show the city taxi style', () => {
