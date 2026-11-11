@@ -142,6 +142,7 @@ test('the provisional course and mapped Pavilion are present without the misplac
     'HappyValleyParadeRingSurface', 'HappyValleyParadeRingCentre', 'HappyValleyParadeRingRail', 'HappyValleyScreenFrame',
     'HappyValleyFloodlightMasts', 'HappyValleyFloodlightHeads', 'HappyValleyPerimeterFence',
   ]) assert.ok(names.includes(name), name);
+  // The old east-side placeholders stay deleted; the stands now come from mapped footprints.
   for (const name of ['HappyValleyGrandstand', 'HappyValleyClubhouse', 'HappyValleyClubTower', 'HappyValleyClubAndMuseum'])
     assert.ok(!names.includes(name), `${name} was an unmapped placeholder on the wrong side`);
   assert.equal(built.stats.happyValleyFloodlightMasts, 14);

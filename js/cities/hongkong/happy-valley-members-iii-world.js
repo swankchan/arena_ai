@@ -5,6 +5,7 @@ import { HAPPY_VALLEY_MEMBERS_III as site, HAPPY_VALLEY_MEMBERS_III_ENTRANCE as 
 import { HAPPY_VALLEY_SITE as venue } from './happy-valley-racecourse-architecture.js';
 import { harbourCityWorldToLocal, harbourCityEdgeOutward, harbourCitySegmentCollider } from './harbour-city-architecture.js';
 import { roofGeometry, store, quad, meshStore, beam, merged, nightAmount } from './harbour-city-world-utils.js';
+import { dropCollidersOverRoads } from './happy-valley-stand-road-clearance.js';
 
 export function buildHappyValleyMembersIII(parent,groundOffset) {
   const origin=harbourCityWorldToLocal(venue,site.x,site.z);
@@ -94,5 +95,7 @@ export function buildHappyValleyMembersIII(parent,groundOffset) {
     if(edge!==entrance.edge) add(0,1,groundOffset,groundOffset+site.height);
     else {add(0,start,groundOffset,groundOffset+site.height);add(end,1,groundOffset,groundOffset+site.height);add(start,end,groundOffset+entrance.height,groundOffset+site.height);}
   }
-  return {group,colliders};
+  // 黃泥涌道 crosses this mapped outline; never seal the street with a wall collider.
+  const guarded=dropCollidersOverRoads(colliders);
+  return {group,colliders:guarded.colliders,droppedColliders:guarded.removed};
 }

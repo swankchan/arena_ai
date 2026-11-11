@@ -29,7 +29,15 @@ test('Pavilion Stand uses mapped footprint and the transformed world position', 
 });
 
 test('wall collider footprints avoid sampled same-level roads', () => {
-  const colliders=built.colliders.slice(6,15);assert.equal(colliders.length,site.localRing.length/2+1);
+  // Select this stand's own colliders by footprint, not by a fixed index range: three more
+  // stands now exist next to it, and roads remove a few wall segments.
+  const colliders=built.colliders.filter(c=>{
+    if(c.x===undefined)return false;
+    const dx=c.x-site.x,dz=c.z-site.z;
+    return Math.hypot(dx,dz)<site.height*2 && pointInFlatRing(site.ring,c.x,c.z);
+  });
+  // Two wall segments end on 黃泥涌道 and are correctly dropped rather than sealing the street.
+  assert.equal(colliders.length,5);
   for (const c of colliders) {
     assert.ok(c.minY >= terrain.happyValleyPadHeight);
     for(let x=c.minX;x<=c.maxX;x+=.5) for(let z=c.minZ;z<=c.maxZ;z+=.5) {

@@ -18,6 +18,7 @@ import { HAPPY_VALLEY_PAVILION, HAPPY_VALLEY_PAVILION_ENTRANCE } from './happy-v
 import { buildHappyValleyPitches, HAPPY_VALLEY_PITCHES, happyValleyPitchFrame } from './happy-valley-pitches-world.js';
 import { buildHappyValleyPavilion } from './happy-valley-pavilion-world.js';
 import { buildHappyValleyMembersIII } from './happy-valley-members-iii-world.js';
+import { buildHappyValleyRemainingStands } from './happy-valley-remaining-stands-world.js';
 import { HAPPY_VALLEY_MEMBERS_III, HAPPY_VALLEY_MEMBERS_III_ENTRANCE } from './happy-valley-members-iii-site.js';
 import { fullRoadSurfaceAt } from './full-meta.js';
 import { TERRAIN_TUNNEL_OPENING_RECTS } from './road-elevation.js';
@@ -552,6 +553,9 @@ export function buildHappyValleyRacecourse(root, { groundOffset = 0 } = {}) {
   buildHappyValleyPitches(venue);
   const pavilion = buildHappyValleyPavilion(venue, groundOffset);
   const membersIII = buildHappyValleyMembersIII(venue, groundOffset);
+  // Grandstand, Members Stand I and Members Stand II: mapped footprints that the earlier
+  // mis-sited placeholders were deleted for and that had not been rebuilt since.
+  const remainingStands = buildHappyValleyRemainingStands(venue, groundOffset);
   buildInfield(venue, materials, stats);
   const winningPost=buildHappyValleyWinningPost(venue);
 
@@ -565,7 +569,7 @@ export function buildHappyValleyRacecourse(root, { groundOffset = 0 } = {}) {
     push(p.x, p.z, 1.6, 1.6, 36);
   }
 
-  colliders.push(...pavilion.colliders, ...membersIII.colliders);
+  colliders.push(...pavilion.colliders, ...membersIII.colliders, ...remainingStands.colliders);
   // Colliders only at the two feet and central post, not across the open arch.
   const postCos=Math.cos(winningPost.direction),postSin=Math.sin(winningPost.direction);
   for(const x of [-3.85,0,3.85]) push(winningPost.position.x+postCos*x,winningPost.position.z-postSin*x,
@@ -593,6 +597,7 @@ export function buildHappyValleyRacecourse(root, { groundOffset = 0 } = {}) {
     happyValleyPublishedLap: 1417,
     happyValleyModelledLap: Math.round(HAPPY_VALLEY_TRACK.lapMetres),
     happyValleyColliders: colliders.length,
+    happyValleyStandsClippedTriangles: Object.values(remainingStands.clippedTriangles).reduce((a, b) => a + b, 0),
   });
 
   return {

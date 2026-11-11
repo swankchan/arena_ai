@@ -42,8 +42,12 @@ test('all winning-post mesh vertices avoid sampled mapped pitches, stands and ro
 });
 test('winning post stands inside provisional inner rail with three small physical supports',()=>{
  assert.ok(source.HAPPY_VALLEY_WINNING_POST.offset < -arch.HAPPY_VALLEY_TRACK.width);
- // Original 6, pavilion 9 and Members III 7 precede the marker supports.
- const feet=venue.colliders.slice(22,25);assert.equal(feet.length,3);
+ // Locate the marker supports by position: the venue collider list now also holds the
+ // mapped Grandstand, Members Stand I and Members Stand II.
+ const group0=venue.group.getObjectByName('HappyValleyWinningPost');
+ const footPoints=[-3.85,0,3.85].map(x=>new THREE.Vector3(x,0,0).applyMatrix4(group0.matrixWorld));
+ const feet=footPoints.map(p=>venue.colliders.find(c=>c.x!==undefined&&Math.hypot(c.x-p.x,c.z-p.z)<.05));
+ assert.ok(feet.every(Boolean),'each marker foot has a collider');
  const group=venue.group.getObjectByName('HappyValleyWinningPost');
  for(let i=0;i<3;i++) {
   const local=new THREE.Vector3([-3.85,0,3.85][i],0,0).applyMatrix4(group.matrixWorld),c=feet[i];
@@ -53,7 +57,10 @@ test('winning post stands inside provisional inner rail with three small physica
 });
 test('marker collider grids avoid all nearby road layers within the marker height',async()=>{
  const {roadRibbonHeightAtSegment}=await import('../js/cities/hongkong/road-elevation.js');
- for(const c of venue.colliders.slice(22,25))for(let x=c.minX;x<=c.maxX;x+=.2)for(let z=c.minZ;z<=c.maxZ;z+=.2) {
+ const markerC=new THREE.Vector3(),postGroup=venue.group.getObjectByName('HappyValleyWinningPost');
+ const markerFeet=[-3.85,0,3.85].map(x=>new THREE.Vector3(x,0,0).applyMatrix4(postGroup.matrixWorld));
+ const markerColliders=markerFeet.map(p=>venue.colliders.find(c=>c.x!==undefined&&Math.hypot(c.x-p.x,c.z-p.z)<.05)).filter(Boolean);
+ for(const c of markerColliders)for(let x=c.minX;x<=c.maxX;x+=.2)for(let z=c.minZ;z<=c.maxZ;z+=.2) {
   const dx=x-c.x,dz=z-c.z;if(Math.abs(dx*c.obb.cs-dz*c.obb.sn)>c.obb.hx || Math.abs(dx*c.obb.sn+dz*c.obb.cs)>c.obb.hz)continue;
   for(const way of roads.fullRoadWaysNear(x,z,10))for(let j=2;j<way.flat.length;j+=2) {
    const ax=way.flat[j-2],az=way.flat[j-1],vx=way.flat[j]-ax,vz=way.flat[j+1]-az,l=vx*vx+vz*vz;if(l<.0025)continue;

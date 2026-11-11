@@ -1,5 +1,5 @@
 const assert=require('node:assert/strict'),fs=require('node:fs'),test=require('node:test');
-let THREE,site,source,entry,venue,built,road,ground,inside,frame;
+let THREE,site,source,entry,venue,built,road,ground,inside,frame,buildHappyValleyMembersIII;
 test.before(async()=>{
   THREE=await import('three/webgpu');
   ({HAPPY_VALLEY_MEMBERS_III:site,HAPPY_VALLEY_MEMBERS_III_SOURCE:source,HAPPY_VALLEY_MEMBERS_III_ENTRANCE:entry}=await import('../js/cities/hongkong/happy-valley-members-iii-site.js'));
@@ -9,6 +9,7 @@ test.before(async()=>{
   ({harbourCityEdgeFrame:frame}=await import('../js/cities/hongkong/harbour-city-architecture.js'));
   ground=(await import('../js/cities/hongkong/terrain.js')).HONG_KONG_TERRAIN_META.happyValleyPadHeight;
   built=(await import('../js/cities/hongkong/happy-valley-racecourse-world.js')).buildHappyValleyRacecourse(new THREE.Group(),{groundOffset:ground});built.group.updateMatrixWorld(true);
+  ({buildHappyValleyMembersIII}=await import('../js/cities/hongkong/happy-valley-members-iii-world.js'));
 });
 test('stand footprint and levels match OSM; tiers, seats, and night material exist',()=>{
   const mapped=JSON.parse(fs.readFileSync('tools/data/hongkong/landmarks.json')).elements.find(e=>e.id===1356276116&&e.type==='way');
@@ -25,7 +26,14 @@ test('building mesh vertices and wall collider samples avoid same-level roads',(
     v.fromBufferAttribute(p,i).applyMatrix4(mesh.matrixWorld);let hit=road(v.x,v.z,0,ground);count++;
     assert.ok(!hit||Math.abs(hit.height-ground)>=2.5,`${mesh.name} on road ${hit?.way.id}`);
   }});assert.ok(count>10000);
-  const walls=built.colliders.slice(15,22);assert.equal(walls.length,7);
+  // Locate this stand's wall colliders by footprint; the order changed when the remaining
+  // three stands were added and two wall segments were dropped off 黃泥涌道.
+  // Build this stand on its own so the assertion is about its own walls, not the venue's
+  // merged list (three more stands now share that list).
+  const standalone=buildHappyValleyMembersIII(new THREE.Group(),ground);
+  assert.equal(standalone.colliders.length,5);
+  assert.equal(standalone.droppedColliders,2);
+  const walls=standalone.colliders;
   for(const c of walls) for(let x=c.minX;x<=c.maxX;x+=.5)for(let z=c.minZ;z<=c.maxZ;z+=.5){
     const dx=x-c.x,dz=z-c.z;if(Math.abs(dx*c.obb.cs-dz*c.obb.sn)>c.obb.hx||Math.abs(dx*c.obb.sn+dz*c.obb.cs)>c.obb.hz)continue;
     let hit=road(x,z,0,ground);assert.ok(!hit||Math.abs(hit.height-ground)>=2.5,`wall crosses road ${hit?.way.id}`);
