@@ -25,6 +25,8 @@ import {loopGradeRects} from './peak-tram-loop-grading-site.js';
 import { FULL_BOUNDS, isDetailedCore, isTerritoryLand, territoryParkAt } from './full-meta.js';
 import { HK_TERRAIN, HONG_KONG_TERRAIN_META, hongKongTerrainCellLand, hongKongTerrainHeight, rawHongKongTerrainHeight } from './terrain.js';
 import { roadRibbonHeightAtSegment, roadRibbonProfileAtSegment, verifiedBridgeProfileAtSegment, TERRAIN_TUNNEL_OPENING_RECTS } from './road-elevation.js';
+import { addFlyoverCrossSection } from './flyover-furniture.js';
+import { HK_ROAD_DECKS } from '../../hk-road-deck-data.js';
 import {
   DERIVED_ROAD_MARKINGS, DERIVED_ROAD_PAINT_POLICY, DERIVED_ROAD_PAINT_STATS,
   addDerivedPaintPolicyStations, derivedPaintAllowed, derivedPaintEdgeMask, signedRoadLaneCount
@@ -223,18 +225,23 @@ function* createRoadChunksSteps(root, includeCore) {
   const bridgeChunkAt = (x, z) => {
     const key = `${Math.floor(x / CHUNK)},${Math.floor(z / CHUNK)}`;
     let chunk = bridgeChunks.get(key);
-    if (!chunk) bridgeChunks.set(key, (chunk = { positions: [], indices: [] }));
+    if (!chunk) bridgeChunks.set(key, (chunk = { positions: [], indices: [], railPositions: [], railIndices: [] }));
     return chunk;
   };
   let segments = 0, sourceSegments = 0, joins = 0, submergedTunnelSegments = 0, verifiedBridgeSegments = 0, verifiedBridgePiers = 0;
   let derivedPaintQuads = 0, derivedPaintSuppressedQuads = 0;
+  let flyoverFurnitureSegments = 0, flyoverFurniturePosts = 0, flyoverFurnitureMetres = 0;
+  const flyoverPostCarry = new Map();
   yield { label: '道路資料處理', done: 0, total: HK_FULL_ROADS.roads.length };
   for (const [wayId, road] of HK_FULL_ROADS.roads.entries()) {
     if (wayId > 0 && wayId % 512 === 0) yield { label: '道路資料處理', done: wayId, total: HK_FULL_ROADS.roads.length };
     if (CROSSING_FLAT_EXCLUSION_IDS.has(wayId)) continue;
     const [, width, , , , flat] = road;
     const lanes = signedRoadLaneCount(road);
-    let chainage = 0, nextPierChainage = 0;
+    let chainage = 0, nextPierChainage = 0, flyoverElevated = false;
+    // Railing post spacing continues along a way instead of restarting at every simplification vertex.
+    flyoverPostCarry.clear();
+    let flyoverSideCarry = [0, 0];
     for (let i = 2; i + 1 < flat.length; i += 2) {
       const segmentIndex = i / 2 - 1;
       const x1 = flat[i - 2], z1 = flat[i - 1], x2 = flat[i], z2 = flat[i + 1];
@@ -278,6 +285,30 @@ function* createRoadChunksSteps(root, includeCore) {
             { paintAllowed, edgeMask, extendStart: t0 <= 1e-7, extendEnd: t1 >= 1 - 1e-7 });
           if (paintAllowed) derivedPaintQuads++; else derivedPaintSuppressedQuads++;
           segments++;
+          // Deck furniture only where the carriageway is genuinely in the air; a bridge tag on an at-grade crossing
+          // would otherwise grow a parapet in the middle of a street.
+          // Only mapped elevated structures qualify: an ordinary hillside road on fill must not sprout a parapet,
+          // and the deck table is what turns a `layer` tag into a real lift.
+          const deckElevated = !(road[4] & 4) && ((road[4] & 2) || mappedDecks.has(wayId))
+            && (ay + by) * 0.5 - hongKongTerrainHeight(mx, mz) > 3.2;
+          if (deckElevated) {
+            const furniture = bridgeChunkAt(mx, mz);
+            // The first strip of an elevated run starts its post spacing afresh.
+            const startsRun = step === 0 || !flyoverElevated;
+            const run = addFlyoverCrossSection(furniture, { positions: furniture.railPositions, indices: furniture.railIndices }, {
+              ax, az, ay, bx, bz, by, width,
+              firstPost: startsRun,
+              postCarry: flyoverSideCarry[0]
+            });
+            flyoverFurnitureSegments++;
+            flyoverFurniturePosts += run.posts;
+            flyoverFurnitureMetres += run.metres;
+            flyoverSideCarry = [run.carry, run.carry];
+            flyoverElevated = true;
+          } else {
+            flyoverSideCarry = [0, 0];
+            flyoverElevated = false;
+          }
           if (verifiedBridge) {
             const concrete = bridgeChunkAt(mx, mz);
             addVerifiedBridgeQuad(concrete.positions, concrete.indices, ax, az, ay, bx, bz, by, width);
@@ -338,7 +369,9 @@ function* createRoadChunksSteps(root, includeCore) {
     meshes++;
   }
   const concreteMaterial = new THREE.MeshStandardMaterial({ color: 0x777b78, roughness: 0.93, metalness: 0, side: THREE.DoubleSide });
-  let verifiedBridgeMeshes = 0;
+  // Painted steel, as used for the railing panels on Hong Kong flyovers; shared by every chunk so it is one pipeline.
+  const railingMaterial = new THREE.MeshStandardMaterial({ color: 0x9aa3a1, roughness: 0.55, metalness: 0.55, side: THREE.DoubleSide });
+  let verifiedBridgeMeshes = 0, flyoverRailingMeshes = 0;
   for (const [key, chunk] of bridgeChunks) {
     if (roadChunksDone && roadChunksDone % 20 === 0) yield { label: '道路網格組裝', done: roadChunksDone, total: chunks.size + bridgeChunks.size };
     roadChunksDone++;
@@ -356,12 +389,30 @@ function* createRoadChunksSteps(root, includeCore) {
     mesh.userData.verifiedBridgeChunk = true;
     root.add(mesh);
     verifiedBridgeMeshes++;
+    if (!chunk.railPositions.length) continue;
+    const railGeometry = new THREE.BufferGeometry();
+    railGeometry.setAttribute('position', new THREE.Float32BufferAttribute(chunk.railPositions, 3));
+    railGeometry.setIndex(chunk.railIndices);
+    railGeometry.computeVertexNormals();
+    railGeometry.computeBoundingBox();
+    railGeometry.computeBoundingSphere();
+    const railing = new THREE.Mesh(railGeometry, railingMaterial);
+    railing.name = `HongKongFlyoverRailing:${key}`;
+    railing.receiveShadow = true;
+    railing.castShadow = true;
+    railing.userData.flyoverRailingChunk = true;
+    root.add(railing);
+    flyoverRailingMeshes++;
   }
   return {
     segments, sourceSegments, meshes, joins, submergedTunnelSegments, verifiedBridgeSegments, verifiedBridgePiers, verifiedBridgeMeshes,
-    derivedPaintQuads, derivedPaintSuppressedQuads
+    derivedPaintQuads, derivedPaintSuppressedQuads,
+    flyoverFurnitureSegments, flyoverFurniturePosts, flyoverFurnitureMetres: Math.round(flyoverFurnitureMetres), flyoverRailingMeshes
   };
 }
+
+// Ways whose OSM `layer` became a real deck lift; only they and the bridge-flagged ways carry flyover furniture.
+const mappedDecks = new Set(HK_ROAD_DECKS.decks.filter((deck) => deck.vertexBlend.some((blend) => blend > 0.02)).map((deck) => deck.wayId));
 
 const TERRAIN_COLOURS = {
   land: new THREE.Color(0x4b5145),
@@ -544,6 +595,11 @@ export function* buildFullHongKongWorldSteps(root, { waterLevel = -2.2, includeC
       verifiedBridgePiers: roads.verifiedBridgePiers,
       verifiedBridgeMeshes: roads.verifiedBridgeMeshes,
       verifiedBridgeHeightSource: 'OSM bridge/layer; procedural decks, not surveyed engineering elevations',
+      flyoverFurnitureSegments: roads.flyoverFurnitureSegments,
+      flyoverFurniturePosts: roads.flyoverFurniturePosts,
+      flyoverFurnitureMetres: roads.flyoverFurnitureMetres,
+      flyoverRailingMeshes: roads.flyoverRailingMeshes,
+      flyoverFurnitureSource: 'presentation cross-section (shoulder, kerb, parapet, railing); not a surveyed profile',
       fullLandRings: HK_FULL_MAP.land.length,
       fullParks: HK_FULL_MAP.parks.length,
       fullSeawallColliders: colliders.length,
