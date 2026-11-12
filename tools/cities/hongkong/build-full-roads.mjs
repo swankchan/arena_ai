@@ -53,6 +53,34 @@ export function hongKongRoadSourceRecord(road) {
   return JSON.stringify(road) === JSON.stringify(THE_SUMMIT_DRIVEWAY_ADJUSTED) ? THE_SUMMIT_DRIVEWAY_SOURCE : road;
 }
 
+// OSM sidewalk tagging, reduced to the one question the road ribbon asks: does this way have a walkable edge to put a
+// kerb against? `sidewalk=both/left/right`, `sidewalk:left/right=yes|separate` and the older `footway:*` spelling all say
+// yes; an explicit `no`/`none` on the side that matters says no; an untagged way says nothing and gets no kerb.
+function kerbSideValue(tags, side) {
+  const specific = tags[`sidewalk:${side}`] ?? tags[`footway:${side}`] ?? tags[`sidewalk:${side}:foot`];
+  if (specific !== undefined) return specific;
+  return tags.sidewalk;
+}
+function hasKerb(tags) {
+  const left = kerbSideValue(tags, 'left'), right = kerbSideValue(tags, 'right');
+  const walkable = (value) => value !== undefined && value !== 'no' && value !== 'none';
+  // A kerb is a raised edge between carriageway and footway. Where the only edge is a road marking or a gore there is
+  // nothing to raise, so the separation tag can veto as well.
+  const separation = [tags['separation:left'], tags['separation:right']].filter(Boolean);
+  if (separation.length && separation.every((value) => value === 'no' || value === 'road_marking' || value === 'lane_markings')) {
+    if (!walkable(left) && !walkable(right)) return false;
+  }
+  return walkable(left) || walkable(right);
+}
+function kerbSideTags(elements) {
+  const byId = new Map();
+  for (const element of elements) {
+    const tags = element.tags || {};
+    if (tags.highway && hasKerb(tags)) byId.set(element.id, true);
+  }
+  return byId;
+}
+
 export async function buildHongKongFullRoads({ dataDir = DEFAULT_DATA, outFile = DEFAULT_OUT, manifestFile = DEFAULT_MANIFEST } = {}) {
   const { default: cfg } = await import('./config.mjs');
   const frame = makeFrame(cfg.frame);
@@ -70,10 +98,15 @@ export async function buildHongKongFullRoads({ dataDir = DEFAULT_DATA, outFile =
       elements.push(element);
     }
   }
+  const kerbTags = kerbSideTags(elements);
   const built = buildRoads(elements, frame.toWorld);
   const drivable = built.roads.filter((road) => road.drivable);
+  // Bit 3 of the flags word carries the OSM kerb statement for the whole way: a raised kerb is only drawn where OSM says
+  // the street has a walkable edge, and never on a carriageway tagged `sidewalk=no`. Where the tags say nothing at all the
+  // bit stays clear and the roadside is left as it was — the majority of Hong Kong's ways are untagged.
   const roads = drivable.map((road) => {
-    const flags = (road.highway ? 1 : 0) | (road.elevated ? 2 : 0) | (road.tunnel ? 4 : 0);
+    const flags = (road.highway ? 1 : 0) | (road.elevated ? 2 : 0) | (road.tunnel ? 4 : 0)
+      | (kerbTags.get(road.id) ? 8 : 0);
     return [road.name, q(road.w), road.dir, road.lanes, flags, flat(rdp(road.pts, 0.65))];
   });
   applyHongKongRoadAdjustments(roads);
