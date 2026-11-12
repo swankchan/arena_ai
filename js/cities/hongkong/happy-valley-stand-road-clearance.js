@@ -9,9 +9,13 @@ import { roadRibbonHeightAtSegment } from './road-elevation.js';
 import { HONG_KONG_TERRAIN_META as meta } from './terrain.js';
 
 export const STAND_ROAD_MARGIN = 1.0;
+// The carriageway beside the stands follows the hillside and rises a few metres above the racecourse datum; a fixed
+// tolerance around that datum therefore stops recognising the street at all. Same-level means "the street surface this
+// player drives on", excluding tunnels and flyovers, with a generous allowance for that natural rise.
+export const SAME_LEVEL_ROAD_TOLERANCE = 6;
 
-// True when (x, z) lies over a carriageway whose ribbon is at the venue datum, i.e. a
-// street the player can actually drive rather than a tunnel far below the stand.
+// True when (x, z) lies over a carriageway a player actually drives, i.e. a surface
+// street rather than a tunnel far below the stand or a flyover above it.
 export function standOverSameLevelRoad(x, z, margin = STAND_ROAD_MARGIN) {
   for (const way of fullRoadWaysNear(x, z, 12)) {
     for (let k = 2; k < way.flat.length; k += 2) {
@@ -23,7 +27,8 @@ export function standOverSameLevelRoad(x, z, margin = STAND_ROAD_MARGIN) {
       const px = ax + t * vx, pz = az + t * vz;
       if (Math.hypot(x - px, z - pz) > way.width / 2 + margin) continue;
       const height = roadRibbonHeightAtSegment(way.id, k / 2 - 1, t, px, pz);
-      if (Math.abs(height - meta.happyValleyPadHeight) < 2.5) return true;
+      if (way.flags & 6) continue;
+      if (Math.abs(height - meta.happyValleyPadHeight) < SAME_LEVEL_ROAD_TOLERANCE) return true;
     }
   }
   return false;
