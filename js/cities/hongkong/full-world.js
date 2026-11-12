@@ -12,6 +12,7 @@ import { createHongKongRoadSurfaceMaterial } from '../../tsl-materials.js';
 import { createHongKongHarbourWaterMaterial } from './harbour-water.js';
 import { buildTerritoryCoastColliders } from './coast-colliders.js';
 import { CROSSING_FLAT_EXCLUSION_IDS, CROSSING_ROUTES } from './crossings.js';
+import { addStreetKerb, kerbSidesForRoadRecord, streetKerbStats } from './street-kerb.js';
 import { buildTunnelOpeningRects, subtractTunnelOpenings } from './tunnel-openings.js';
 import {murrayLobbyTerrainCut} from './murray-lobby-site.js';
 import {peakUpperStationTerrainCut} from './peak-upper-station-site.js';
@@ -244,7 +245,7 @@ function addTunnelCoastStations(stations, x1, z1, dx, dz) {
 }
 
 function* createRoadChunksSteps(root, includeCore) {
-  const chunks = new Map(), bridgeChunks = new Map();
+  const chunks = new Map(), bridgeChunks = new Map(), kerbChunks = new Map();
   const chunkAt = (x, z) => {
     const key = `${Math.floor(x / CHUNK)},${Math.floor(z / CHUNK)}`;
     let chunk = chunks.get(key);
@@ -262,12 +263,16 @@ function* createRoadChunksSteps(root, includeCore) {
   // would understate the structure actually drawn.
   let derivedPaintQuads = 0, derivedPaintSuppressedQuads = 0;
   let flyoverFurnitureSegments = 0, flyoverFurniturePosts = 0, flyoverFurnitureMetres = 0;
+  let streetKerbSegments = 0, streetKerbSidesDrawn = 0;
   const flyoverPostCarry = new Map();
   yield { label: '道路資料處理', done: 0, total: HK_FULL_ROADS.roads.length };
   for (const [wayId, road] of HK_FULL_ROADS.roads.entries()) {
     if (wayId > 0 && wayId % 512 === 0) yield { label: '道路資料處理', done: wayId, total: HK_FULL_ROADS.roads.length };
     if (CROSSING_FLAT_EXCLUSION_IDS.has(wayId)) continue;
     const [, width, , , , flat] = road;
+    // Kerbs come from the OSM sidewalk tags for this way, not from its shape. Zero means the tags said nothing about a
+    // footway here and the roadside is left exactly as it was.
+    const kerbSides = kerbSidesForRoadRecord(wayId);
     const lanes = signedRoadLaneCount(road);
     let chainage = 0, nextPierChainage = 0, flyoverElevated = false;
     // Railing post spacing continues along a way instead of restarting at every simplification vertex.
@@ -315,6 +320,14 @@ function* createRoadChunksSteps(root, includeCore) {
             segmentStart + segmentLength * t0, lanes,
             { paintAllowed, edgeMask, extendStart: t0 <= 1e-7, extendEnd: t1 >= 1 - 1e-7 });
           if (paintAllowed) derivedPaintQuads++; else derivedPaintSuppressedQuads++;
+          // Street-level kerb on the sides OSM says have a footway. Tunnels are excluded: there is no footway to rise to.
+          if (kerbSides && !(road[4] & 4)) {
+            const key = `${Math.floor(mx / CHUNK)},${Math.floor(mz / CHUNK)}`;
+            let kerb = kerbChunks.get(key);
+            if (!kerb) kerbChunks.set(key, (kerb = { positions: [], indices: [] }));
+            const sidesDrawn = addStreetKerb(kerb.positions, kerb.indices, { ax, az, ay, bx, bz, by, width, sides: kerbSides });
+            if (sidesDrawn) { streetKerbSegments++; streetKerbSidesDrawn += sidesDrawn; }
+          }
           segments++;
           // Deck furniture only where the carriageway is genuinely in the air; a bridge tag on an at-grade crossing
           // would otherwise grow a parapet in the middle of a street.
@@ -449,6 +462,23 @@ function* createRoadChunksSteps(root, includeCore) {
     root.add(railing);
     flyoverRailingMeshes++;
   }
+  let streetKerbMeshes = 0;
+  for (const chunk of kerbChunks.values()) {
+    if (!chunk.positions.length) continue;
+    const geometry = new THREE.BufferGeometry();
+    geometry.setAttribute('position', new THREE.Float32BufferAttribute(chunk.positions, 3));
+    geometry.setIndex(chunk.indices);
+    geometry.computeVertexNormals();
+    geometry.computeBoundingBox();
+    geometry.computeBoundingSphere();
+    // Kerbs are part of the street surface, so they share its material rather than reading as separate concrete.
+    const mesh = new THREE.Mesh(geometry, concreteMaterial);
+    mesh.name = 'HongKongStreetKerb';
+    mesh.receiveShadow = true;
+    mesh.userData.streetKerbChunk = true;
+    root.add(mesh);
+    streetKerbMeshes++;
+  }
   let hillsideRailingMeshes = 0;
   for (const chunk of hillsideRailing.chunks) {
     if (!chunk.positions.length) continue;
@@ -470,7 +500,8 @@ function* createRoadChunksSteps(root, includeCore) {
     segments, sourceSegments, meshes, joins, submergedTunnelSegments, verifiedBridgeSegments, verifiedBridgePiers, verifiedBridgeMeshes,
     hillsideRailingMeshes, hillsideRailingPosts: hillsideRailing.stats.posts, hillsideRailingMetres: hillsideRailing.stats.metres,
     derivedPaintQuads, derivedPaintSuppressedQuads,
-    flyoverFurnitureSegments, flyoverFurniturePosts, flyoverFurnitureMetres: Math.round(flyoverFurnitureMetres), flyoverRailingMeshes
+    flyoverFurnitureSegments, flyoverFurniturePosts, flyoverFurnitureMetres: Math.round(flyoverFurnitureMetres), flyoverRailingMeshes,
+    streetKerbSegments, streetKerbSides: streetKerbSidesDrawn, streetKerbMeshes, ...streetKerbStats()
   };
 }
 
@@ -661,6 +692,9 @@ export function* buildFullHongKongWorldSteps(root, { waterLevel = -2.2, includeC
       flyoverSubstructurePiers: roads.verifiedBridgePiers,
       flyoverSubstructureSource: 'pier plus cross-beam at 45 m spacing wherever a mapped deck is more than 3.2 m up; spacing is a convention',
       flyoverFurnitureSegments: roads.flyoverFurnitureSegments,
+      streetKerbSegments: roads.streetKerbSegments,
+      streetKerbSides: roads.streetKerbSides,
+      streetKerbMeshes: roads.streetKerbMeshes,
       flyoverFurniturePosts: roads.flyoverFurniturePosts,
       flyoverFurnitureMetres: roads.flyoverFurnitureMetres,
       flyoverRailingMeshes: roads.flyoverRailingMeshes,

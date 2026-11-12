@@ -121,8 +121,15 @@
 - `tests/road-pad-profile-regression.test.cjs` 的 profile hash 因甲板淨空抬升而改變（段數仍為 6,154，來源幾何未變）：`18088042…` → `45fedded…`。
 - 新增測試：`hongkong-flyover-furniture`（5）、`hongkong-flyover-underpass`（4）、`hongkong-hillside-railing`（4）、`hongkong-street-light-decks`（3）。
 
+### 七、逐街路緣石（OSM sidewalk tags）
+
+- 新模組 `js/cities/hongkong/street-kerb.js`，資料由 `tools/cities/hongkong/build-kerb-sides.mjs` 從 **OSM tag** 產生（不是從幾何推測）：`sidewalk=both|left|right|yes`、`sidewalk:left|right`、舊式 `footway:*` 全部納入；`no`/`none` 表示該側沒有；**完全沒有 tag 的路段不加路緣石**。
+- 覆蓋：18,596 條 ways 中 **4,002 條有 tag**，對應 **3,520 條 runtime 路段**（幾何匹配，非假設索引＝way id；69 條對不上）。其餘 **14,531 條無 tag**，維持原狀 —— 這是誠實的答案，不是遺漏。
+- 尺寸（**呈現約定，非測量**）：面寬 **0.15 m**、路面上緣 **0.13 m**、頂寬 **0.22 m**、裙邊 0.18 m。
+- Tag 判定順序（測試覆蓋 9 個個案）：側面專用 tag 優先於 way-wide 簡寫；`sidewalk=both` 逐側加入而非一次加兩側（否則後續的 `sidewalk:right=no` 無法收回）；`separation:*` 若全部只是 `road_marking`/`lane_markings`/`no` 則否決。
+- **覆蓋範圍的重要限制**：3,520 條有 tag 的路段中，**3,488 條位於詳細街區內**，而 `full-world.js` 以 `includeCore=false` 跳過該區 —— 那裡的街區行人路本身已是 **0.14 m** 高的抬升平台（`world.js` 的 `SIDEWALK_TOP`），路緣高度本來就存在。因此實際新增路緣石的路段是**外圍 32 條**（如加列山道、薄扶林道、司徒拔道、觀塘道）。
+
 ### 尚未做到
 
-- 地面街道**沒有**路緣石與行人路邊石：那些在 `world.js` 的街區輪廓（`SIDEWALK_TOP`）另行處理，不在全港道路帶內。
-- OSM 的 `sidewalk` / `separation:kerb` tags 仍未被用作逐街判斷；現時的路肩與護欄是按**幾何**（離地、跌落）決定，不是按 tag。
-- 同一交匯處多層甲板的互相穿越仍未解決（見上表 `skippedInverted`）。
+- 詳細街區內**沒有逐段路緣石**，因為那裡的街區輪廓（`SIDEWALK_TOP = 0.14`）已經是抬升平台；若日後街區改為獨立行人路網，這張 tag 表可直接複用。
+- 同一交匯處多層甲板的互相穿越仍未解決（`skippedInverted` 7,018）。
