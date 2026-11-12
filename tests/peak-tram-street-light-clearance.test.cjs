@@ -24,3 +24,13 @@ test('existing lamps and arms clear the built Kennedy bridge and approach withou
 test('adjustments fail closed if source data changes',async()=>{
  const {peakTramAdjustedStreetLight:a}=await import('../js/cities/hongkong/peak-tram-lamp-adjustments.js');assert.throws(()=>a(4642,[0,0,0,1],null));assert.equal(a(123,[0,0,0,1],null),null);
 });
+// The guard used to pin the generated clearance override byte for byte, so re-deriving that data (as the deck work did)
+// threw on city start-up instead of simply moving the pole. The override is derived, so it must not be required to
+// match a stale copy; what must hold is that the CSV row is unchanged and the pole keeps its track clearance.
+test('a re-derived clearance override does not break the hand correction',async()=>{
+ const {peakTramAdjustedStreetLight:a}=await import('../js/cities/hongkong/peak-tram-lamp-adjustments.js');
+ const {HK_STREET_LIGHTS:L}=await import('../js/hk-street-light-data.js');
+ const stale=[373,326,21,14144], current=[373,141,9,14151];
+ for (const override of [stale, current]) assert.deepEqual(a(373, L.lamps[373], override), {x:-311.5, z:831.75});
+ assert.throws(() => a(373, L.lamps[373], null), /lost its generated relocation/);
+});
