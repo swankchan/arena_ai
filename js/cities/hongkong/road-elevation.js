@@ -29,6 +29,7 @@ import { THE_ARCH_GROUND_RINGS } from './the-arch-architecture.js';
 import { SORRENTO_GROUND_RINGS } from './sorrento-architecture.js';
 import { smoothConstrainedProfileHeights } from './road-profile-smoothing.js';
 import { HK_ROAD_DECKS } from '../../hk-road-deck-data.js';
+import { underpassLiftAtVertex } from './flyover-underpass-clearance.js';
 
 export const ROAD_SURFACE_OFFSET = 0.025;
 export const ROAD_PROFILE_STEP = 20;
@@ -210,7 +211,8 @@ function deckHeightAtVertex(deck, wayId, vertexIndex) {
   const count = HK_FULL_ROADS.roads[wayId][5].length / 2;
   let heights = deckVertexCache.get(wayId);
   if (!heights) deckVertexCache.set(wayId, (heights = deckVertexHeights(deck, wayId)));
-  return heights[Math.max(0, Math.min(count - 1, vertexIndex))];
+  // The layer-tag lift is only a starting point: a deck must also clear whatever passes beneath it.
+  return heights[Math.max(0, Math.min(count - 1, vertexIndex))] + underpassLiftAtVertex(wayId, vertexIndex ?? 0);
 }
 
 export function roadRibbonHeightAtVertex(wayId, vertexIndex) {
