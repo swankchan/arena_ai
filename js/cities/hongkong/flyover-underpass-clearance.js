@@ -9,7 +9,7 @@
 // buries the carriageway, only separates the two surfaces that were intersecting.
 import { HK_FULL_ROADS } from '../../hk-full-roads-data.js';
 import { HK_ROAD_DECKS } from '../../hk-road-deck-data.js';
-import { roadRibbonHeightAtSegment } from './road-elevation.js';
+import { roadRibbonHeightAtSegment, roadRibbonHeightAtVertex } from './road-elevation.js';
 import { containerVoidCeilingsUnder } from './container-voids.js';
 
 export const UNDER = 1;
@@ -116,6 +116,23 @@ function lowestStructureCeilingUnder(wayId, x, z, ux, uz, deckHeight) {
   return lowest === null ? null : deckHeight + lowest;
 }
 
+// True when both ways have the same built structure spanning this point, which makes their difference a level of that
+// interchange rather than an underpass.
+function shareStructureAbove(wayId, otherWayId, x, z) {
+  const here = containerVoidCeilingsUnder(x, z);
+  if (!here.length) return false;
+  const ids = new Set(here.map((voidSpan) => voidSpan.id));
+  const otherRoad = HK_FULL_ROADS.roads[otherWayId];
+  if (!otherRoad) return false;
+  const flat = otherRoad[5];
+  for (let i = 0; i + 1 < flat.length; i += 2) {
+    for (const voidSpan of containerVoidCeilingsUnder(flat[i], flat[i + 1])) {
+      if (ids.has(voidSpan.id)) return true;
+    }
+  }
+  return false;
+}
+
 // A deck occupies its full carriageway, not just its centreline: on way 40414 at Sorrento the centreline runs past the
 // podium corner while the shoulder is already beneath the slab. Test the centreline and both shoulders.
 function lowestStructureCeilingAcrossCarriageway(wayId, x, z, ux, uz, deckHeight, halfWidth) {
@@ -137,6 +154,8 @@ let liftsByWay = null;
 let computingLifts = false;
 
 let clamped = 0, skipped = 0, inverted = 0, buried = 0;
+// Ways the pass refuses to lift because their drawn profile is already inside a structure's headroom.
+let overHeightWays = new Set();
 let lowestDeckLayer = null;
 function computeLifts() {
   computingLifts = true;
@@ -160,6 +179,34 @@ function computeLiftsInner() {
     if (known === undefined || deck.layer < known) lowestDeckLayer.set(deck.wayId, deck.layer);
   }
 
+  // A way whose drawn profile already exceeds the headroom of a structure above it cannot be lifted at all: any lift
+  // makes an existing clash worse, and no lift can fix the street beneath. Way 51157 at ICC is this case — its top is
+  // already inside the Dragon Tail canopy's headroom before the pass runs.
+  overHeightWays = new Set();
+  for (const deck of HK_ROAD_DECKS.decks) {
+    const road = HK_FULL_ROADS.roads[deck.wayId];
+    if (!road) continue;
+    const flat = road[5];
+    const count = flat.length / 2;
+    for (let vertex = 0; vertex + 1 < count && !overHeightWays.has(deck.wayId); vertex++) {
+      const ax = flat[vertex * 2], az = flat[vertex * 2 + 1];
+      const bx = flat[vertex * 2 + 2], bz = flat[vertex * 2 + 3];
+      const length = Math.hypot(bx - ax, bz - az);
+      if (length < 0.5) continue;
+      const steps = Math.max(1, Math.ceil(length / SAMPLE_STEP_M));
+      for (let step = 0; step <= steps && !overHeightWays.has(deck.wayId); step++) {
+        const t = step / steps;
+        // Measure the profile this pass would start from, not the one it is about to produce.
+        const drawn = roadRibbonHeightAtSegment(deck.wayId, vertex, t);
+        const applied = underpassLiftAtVertex(deck.wayId, t < 0.5 ? vertex : vertex + 1);
+        const base = drawn - applied;
+        const ceiling = lowestStructureCeilingAcrossCarriageway(deck.wayId,
+          ax + (bx - ax) * t, az + (bz - az) * t, (bx - ax) / length, (bz - az) / length, base, road[1] * 0.5);
+        if (ceiling !== null && base > ceiling) overHeightWays.add(deck.wayId);
+      }
+    }
+  }
+
   for (const deck of HK_ROAD_DECKS.decks) {
     const road = HK_FULL_ROADS.roads[deck.wayId];
     if (!road) continue;
@@ -180,6 +227,7 @@ function computeLiftsInner() {
         const x = ax + dx * t, z = az + dz * t;
         const base = roadRibbonHeightAtSegment(deck.wayId, vertex, t);
         for (const crossing of surfaceCrossingsUnder(deck.wayId, x, z, ux, uz)) {
+          if (overHeightWays.has(deck.wayId)) { buried++; continue; }
           const below = roadRibbonHeightAtSegment(crossing.wayId, crossing.segment, crossing.t);
           const gap = base - below;
           if (gap >= UNDERPASS_CLEARANCE_M) continue;
@@ -191,6 +239,11 @@ function computeLiftsInner() {
           // A negative gap against another deck means this ribbon is the one passing underneath; lifting it would also
           // have to lift the deck it serves, so it is reported instead.
           if (gap < 0 && otherLayer !== undefined) { inverted++; continue; }
+          // Two decks that share the same structure above them are the two levels of one interchange, not a flyover
+          // over a street. Lifting the upper one to clear the lower one either buries it in the structure overhead
+          // (way 51157 at ICC clears the Dragon Tail by 4.2 m and cannot give 5.2 m) or turns a single junction into a
+          // two-storey viaduct. Reported, not raised.
+          if (otherLayer !== undefined && shareStructureAbove(deck.wayId, crossing.wayId, x, z)) { inverted++; continue; }
           if (!onTop) { skipped++; continue; }
           let need = UNDERPASS_CLEARANCE_M - gap;
           if (need > MAX_UNDERPASS_LIFT_M) { clamped++; continue; }
@@ -198,8 +251,13 @@ function computeLiftsInner() {
           // at Sorrento the 9.7 m layer lift pushed the ramp 2 m into the slab: the slab leaves only 2.6 m of headroom,
           // so no lift can reach the 5.2 m the street asks for. A partial lift would not fix the crossing, it would
           // only trade one clash for another, so the station keeps the ground-following height it already had.
-          const ceiling = lowestStructureCeilingAcrossCarriageway(deck.wayId, x, z, ux, uz, base, road[1] * 0.5);
-          if (ceiling !== null && ceiling - below < UNDERPASS_CLEARANCE_M) { buried++; continue; }
+          const groundHeight = base - underpassLiftAtVertex(deck.wayId, t < 0.5 ? vertex : vertex + 1);
+          const ceiling = lowestStructureCeilingAcrossCarriageway(deck.wayId, x, z, ux, uz, groundHeight, road[1] * 0.5);
+          // Two different ceilings have to hold before this station may be lifted: the street below must end up with
+          // UNDERPASS_CLEARANCE_M, and the deck's own top must still leave the structure above its headroom. Where both
+          // cannot be true at once the structure wins and the station stays where it is — on way 51157 at ICC the
+          // Dragon Tail canopy leaves 4.5 m, so no lift can give the street beneath 5.2 m without hitting it.
+          if (ceiling !== null && below + UNDERPASS_CLEARANCE_M > ceiling) { buried++; continue; }
           touched = true;
           lifts[vertex] = Math.max(lifts[vertex], need);
           lifts[vertex + 1] = Math.max(lifts[vertex + 1], need);
@@ -215,11 +273,21 @@ function computeLiftsInner() {
         if (lifts[vertex] <= 0.05) continue;
         const x = flat[vertex * 2], z = flat[vertex * 2 + 1];
         const segment = Math.min(vertex, count - 2);
-        const before = roadRibbonHeightAtSegment(deck.wayId, segment, vertex === 0 ? 0 : 1);
-        const adjacent = roadRibbonHeightAtSegment(deck.wayId, segment, vertex === 0 ? 0.02 : 0.98);
+        const appliedLift = underpassLiftAtVertex(deck.wayId, vertex);
+        const before = roadRibbonHeightAtSegment(deck.wayId, segment, vertex === 0 ? 0 : 1) - appliedLift;
+        const adjacent = roadRibbonHeightAtSegment(deck.wayId, segment, vertex === 0 ? 0.02 : 0.98) - appliedLift;
         const ux = (flat[segment * 2 + 2] - flat[segment * 2]) / Math.hypot(flat[segment * 2 + 2] - flat[segment * 2], flat[segment * 2 + 3] - flat[segment * 2 + 1]);
         const uz = (flat[segment * 2 + 3] - flat[segment * 2 + 1]) / Math.hypot(flat[segment * 2 + 2] - flat[segment * 2], flat[segment * 2 + 3] - flat[segment * 2 + 1]);
-        const ceiling = lowestStructureCeilingAcrossCarriageway(deck.wayId, x, z, ux, uz, before, road[1] * 0.5);
+        // Sample the segment whose raised profile this vertex belongs to, not only the vertex itself: a ramp between a
+        // lifted vertex outside the canopy and an unlifted one inside it can still poke through in the middle.
+        let ceiling = lowestStructureCeilingAcrossCarriageway(deck.wayId, x, z, ux, uz, before, road[1] * 0.5);
+        for (let s = 0; s <= 4; s++) {
+          const ts = s / 4;
+          const sx = flat[segment * 2] + (flat[segment * 2 + 2] - flat[segment * 2]) * ts;
+          const sz = flat[segment * 2 + 1] + (flat[segment * 2 + 3] - flat[segment * 2 + 1]) * ts;
+          const at = lowestStructureCeilingAcrossCarriageway(deck.wayId, sx, sz, ux, uz, before, road[1] * 0.5);
+          if (at !== null && (ceiling === null || at < ceiling)) ceiling = at;
+        }
         if (ceiling === null) continue;
         // The slab has to leave room for the carriageway beneath it, not merely for the deck.
         // Never let a vertex reach the ceiling exactly: the clearance assertion is strict, and rebuilding the same
@@ -257,7 +325,7 @@ export function underpassLiftStats() {
   }
   return {
     ways, raisedVertices, clampedStations: clamped, skippedLowerDecks: skipped, skippedInverted: inverted,
-    skippedStructureBound: buried,
+    skippedStructureBound: buried, skippedOverHeightWays: overHeightWays.size,
     maxLiftM: Math.round(maxLift * 100) / 100,
     clearanceM: UNDERPASS_CLEARANCE_M, maxLiftCapM: MAX_UNDERPASS_LIFT_M
   };

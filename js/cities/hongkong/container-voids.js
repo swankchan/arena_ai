@@ -9,7 +9,23 @@
 // conventions the architecture modules draw with; they are not surveyed soffit elevations.
 import { pointInFlatRing } from './landmark-site.js';
 import { SORRENTO_SITE, SORRENTO_GROUND_SOFFIT } from './sorrento-architecture.js';
+import { ICC_SITE, ICC_DRAGON_TAIL, iccPlanAt, iccLocalToWorld } from './icc-architecture.js';
 import { HONG_KONG_TERRAIN_META } from './terrain.js';
+
+// See the comment on the ICC void below.
+const DRAGON_TAIL_EDGE_MARGIN_M = 12;
+
+function dragonTailFootprint() {
+  // The footprint is grown by a ramp margin: a deck that climbs past the canopy edge on its way to a higher street still
+  // has to clear the canopy where the climb happens, and the climb starts before the deck is under it.
+  const local = iccPlanAt(ICC_DRAGON_TAIL.y0, ICC_DRAGON_TAIL.projection + DRAGON_TAIL_EDGE_MARGIN_M);
+  const ring = [];
+  for (let i = 0; i + 1 < local.length; i += 2) {
+    const world = iccLocalToWorld(local[i], local[i + 1]);
+    ring.push(world.x, world.z);
+  }
+  return Object.freeze(ring);
+}
 
 export const CONTAINER_VOIDS = Object.freeze([
   Object.freeze({
@@ -22,20 +38,33 @@ export const CONTAINER_VOIDS = Object.freeze([
     // Headroom a carriageway running under the slab still has to keep. A deck lift is a better answer than a clash
     // only while it leaves this much room; past that the structure owns the alignment.
     requiredClearance: 4.7
+  }),
+  // The Dragon Tail canopy over ICC's two elevated arrival ways. Lifting 51157 by 4.8 m to clear a street beneath it
+  // cut its clearance under the canopy from 6.2 m to 1.76 m, so the canopy is a ceiling in exactly the same sense the
+  // Sorrento podium is. The footprint is the canopy's own plan, not the tower ring: the arrival ways run past the tower
+  // and only the canopy reaches out over them.
+  Object.freeze({
+    id: 'icc-dragon-tail',
+    ring: dragonTailFootprint(),
+    // `ICC_DRAGON_TAIL.y0` is measured from the tower's own datum, not from the terrain, so the soffit is the pad plus
+    // that offset. The 0.35 m is the canopy plate the ICC test measures to as well.
+    ceiling: HONG_KONG_TERRAIN_META.iccPadHeight + ICC_DRAGON_TAIL.y0 - 0.35,
+    slabDepth: 0,
+    requiredClearance: 4.5
   })
 ]);
 
-// Structures whose underside spans this point. `ceiling` is the drawn soffit height, `clearanceCeiling` the height a
+// Structures whose underside spans this point. `ceiling` is the drawn soffit height, `headroomCeiling` the height a
 // deck's top surface may reach before it touches the slab.
 export function containerVoidsAt(x, z) {
   const found = [];
   for (const voidSpan of CONTAINER_VOIDS) {
     if (!pointInFlatRing(voidSpan.ring, x, z)) continue;
-    // The deck top may not rise above what still leaves `requiredClearance` under the slab. Derived from the slab's own
-    // numbers in this order so the headroom is exact rather than the remainder of a subtraction chain.
+    // The highest a deck top may reach. `ceiling` is the drawn underside of the structure; the deck also has to leave the
+    // carriageway beneath it `requiredClearance`, which is what makes this a headroom rather than a soffit height.
     found.push({ ...voidSpan,
-      clearanceCeiling: voidSpan.ceiling - voidSpan.slabDepth - voidSpan.requiredClearance,
-      headroom: voidSpan.ceiling - voidSpan.slabDepth - voidSpan.requiredClearance });
+      soffit: voidSpan.ceiling,
+      headroomCeiling: voidSpan.ceiling - voidSpan.slabDepth - voidSpan.requiredClearance });
   }
   return found;
 }
@@ -44,6 +73,6 @@ export function containerVoidsAt(x, z) {
 export function containerVoidCeilingsUnder(x, z) {
   return containerVoidsAt(x, z).map((voidSpan) => ({
     id: voidSpan.id,
-    ceiling: voidSpan.clearanceCeiling
+    ceiling: voidSpan.headroomCeiling
   }));
 }
