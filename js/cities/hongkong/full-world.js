@@ -26,6 +26,7 @@ import { FULL_BOUNDS, isDetailedCore, isTerritoryLand, territoryParkAt } from '.
 import { HK_TERRAIN, HONG_KONG_TERRAIN_META, hongKongTerrainCellLand, hongKongTerrainHeight, rawHongKongTerrainHeight } from './terrain.js';
 import { roadRibbonHeightAtSegment, roadRibbonProfileAtSegment, verifiedBridgeProfileAtSegment, TERRAIN_TUNNEL_OPENING_RECTS } from './road-elevation.js';
 import { addFlyoverCrossSection } from './flyover-furniture.js';
+import { buildHillsideRailingChunks } from './hillside-railing.js';
 import { HK_ROAD_DECKS } from '../../hk-road-deck-data.js';
 import {
   DERIVED_ROAD_MARKINGS, DERIVED_ROAD_PAINT_POLICY, DERIVED_ROAD_PAINT_STATS,
@@ -383,6 +384,10 @@ function* createRoadChunksSteps(root, includeCore) {
       }
     }
   }
+  yield { label: '路邊護欄', done: 0, total: 1 };
+  // Roadside railings where the ground beside the carriageway falls away. Built from the same ribbon heights the road
+  // itself uses, and already split into 2 km cells so the territory layer still culls per chunk.
+  const hillsideRailing = buildHillsideRailingChunks({ chunkSize: CHUNK });
   const material = createHongKongRoadSurfaceMaterial({ dry: true, derivedMarkings: DERIVED_ROAD_MARKINGS });
   let meshes = 0;
   yield { label: '道路網格組裝', done: 0, total: chunks.size + bridgeChunks.size };
@@ -444,8 +449,26 @@ function* createRoadChunksSteps(root, includeCore) {
     root.add(railing);
     flyoverRailingMeshes++;
   }
+  let hillsideRailingMeshes = 0;
+  for (const chunk of hillsideRailing.chunks) {
+    if (!chunk.positions.length) continue;
+    const geometry = new THREE.BufferGeometry();
+    geometry.setAttribute('position', new THREE.Float32BufferAttribute(chunk.positions, 3));
+    geometry.setIndex(chunk.indices);
+    geometry.computeVertexNormals();
+    geometry.computeBoundingBox();
+    geometry.computeBoundingSphere();
+    const mesh = new THREE.Mesh(geometry, railingMaterial);
+    mesh.name = `HongKongHillsideRailing:${chunk.key}`;
+    mesh.receiveShadow = true;
+    mesh.castShadow = true;
+    mesh.userData.hillsideRailingChunk = true;
+    root.add(mesh);
+    hillsideRailingMeshes++;
+  }
   return {
     segments, sourceSegments, meshes, joins, submergedTunnelSegments, verifiedBridgeSegments, verifiedBridgePiers, verifiedBridgeMeshes,
+    hillsideRailingMeshes, hillsideRailingPosts: hillsideRailing.stats.posts, hillsideRailingMetres: hillsideRailing.stats.metres,
     derivedPaintQuads, derivedPaintSuppressedQuads,
     flyoverFurnitureSegments, flyoverFurniturePosts, flyoverFurnitureMetres: Math.round(flyoverFurnitureMetres), flyoverRailingMeshes
   };
@@ -642,6 +665,10 @@ export function* buildFullHongKongWorldSteps(root, { waterLevel = -2.2, includeC
       flyoverFurnitureMetres: roads.flyoverFurnitureMetres,
       flyoverRailingMeshes: roads.flyoverRailingMeshes,
       flyoverFurnitureSource: 'presentation cross-section (shoulder, kerb, parapet, railing); not a surveyed profile',
+      hillsideRailingChunks: roads.hillsideRailingMeshes,
+      hillsideRailingPosts: roads.hillsideRailingPosts,
+      hillsideRailingMetres: roads.hillsideRailingMetres,
+      hillsideRailingSource: 'presentation railing where the DTM falls away; not a surveyed barrier inventory',
       fullLandRings: HK_FULL_MAP.land.length,
       fullParks: HK_FULL_MAP.parks.length,
       fullSeawallColliders: colliders.length,
