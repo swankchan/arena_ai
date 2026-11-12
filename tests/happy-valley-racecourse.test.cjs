@@ -235,10 +235,14 @@ test('former speculative tower no longer blocks sampled road through its old foo
     return Math.abs(dx*c.obb.cs-dz*c.obb.sn)<=c.obb.hx && Math.abs(dx*c.obb.sn+dz*c.obb.cs)<=c.obb.hz;
   };
   let roadPoints = 0;
+  const padHeight = terrain.HONG_KONG_TERRAIN_META.happyValleyPadHeight;
   for (let x=old.minX; x<=old.maxX; x++) for (let z=old.minZ; z<=old.maxZ; z++) {
     if (!inside(old,x,z)) continue;
-    const hit=fullMeta.fullRoadSurfaceAt(x,z,0,terrain.HONG_KONG_TERRAIN_META.happyValleyPadHeight);
-    if (!hit || Math.abs(hit.height-terrain.HONG_KONG_TERRAIN_META.happyValleyPadHeight)>=2.5) continue;
+    // Select the surface road at this plan position without a height reference: the carriageway there follows the
+    // nearby hillside and rises above the racecourse datum, which is exactly what the old collider blocked.
+    const hit=fullMeta.fullRoadSurfaceAt(x,z,0,padHeight) || fullMeta.fullRoadSurfaceAt(x,z,0);
+    if (!hit || (hit.flags & 6)) continue;
+    if (Math.abs(hit.height-padHeight) > 4.5) continue;
     roadPoints++;
     assert.ok(!built.colliders.some(c => inside(c,x,z) && c.minY < hit.height+2 && c.maxY > hit.height),
       `collider still blocks road ${hit.way.id} at ${x}, ${z}`);

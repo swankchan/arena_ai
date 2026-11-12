@@ -401,23 +401,26 @@ function buildRibbonProfile(wayId, segmentIndex) {
 
 // Between two drawn vertices the envelope is sampled every ROAD_PROFILE_STEP metres on the centreline and both
 // shoulders, so on a hillside the max-of-three reading lifts separate stations by centimetres and the carriageway
-// becomes a sawtooth even though its vertices are smoothed. A real road between two levels rises at most once. The
-// tallest rise above the straight chord is kept (usually a genuine crest or a bridge-pier shelf) and the remaining
-// stations sit on the chord. The end heights are untouched, so adjoining segments, the rendered triangles and the
-// entity ground query still meet exactly.
-const SINGLE_HUMP_FLOOR = 0.1;
+// becomes a sawtooth even though its vertices are smoothed. A real road between two levels rises at most once, and only
+// where it crosses a crest. A genuine crest shows up as an envelope that is higher than *both* end heights near the
+// middle of the segment; anything else is survey noise about the chord and the chord is drawn instead. End heights are
+// untouched, so adjoining segments, the rendered triangles and the entity ground query still meet exactly.
+const CREST_MIN_RISE = 0.1;
+const CREST_MIN_POSITION = 0.15, CREST_MAX_POSITION = 0.85;
 function flattenInteriorProfile(ts, heights) {
   if (ts.length < 3) return heights;
   const startHeight = heights[0], endHeight = heights.at(-1);
   const chord = (index) => startHeight + (endHeight - startHeight) * ts[index];
-  let peak = -1, peakRise = SINGLE_HUMP_FLOOR;
+  let crest = -1, crestRise = CREST_MIN_RISE;
   for (let index = 1; index + 1 < ts.length; index++) {
-    const rise = heights[index] - chord(index);
-    if (rise > peakRise) { peak = index; peakRise = rise; }
+    const t = ts[index];
+    if (t < CREST_MIN_POSITION || t > CREST_MAX_POSITION) continue;
+    const rise = heights[index] - Math.max(startHeight, endHeight);
+    if (rise > crestRise) { crest = index; crestRise = rise; }
   }
   const out = heights.slice();
   for (let index = 1; index + 1 < ts.length; index++) {
-    out[index] = index === peak ? Math.max(heights[index], chord(index)) : chord(index);
+    out[index] = index === crest ? Math.max(heights[index], chord(index)) : chord(index);
   }
   return out;
 }

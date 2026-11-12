@@ -29,7 +29,9 @@ test('Gateway Tower 2 retains both exact crossing road records', () => {
 test('Gateway Tower 2 twelve-metre podium preserves every crossing road profile', () => {
   const site = hc.GATEWAY_TOWER_TWO_SITE, base = terrain.harbourCityPadHeight(site.key); let minimum = Infinity, samples = 0;
   for (const road of hc.harbourCityRoadRecords(site)) for (let seg = 0; seg + 3 < road.points.length; seg += 2) { const ax = road.points[seg], az = road.points[seg + 1], bx = road.points[seg + 2], bz = road.points[seg + 3], steps = Math.max(1, Math.ceil(Math.hypot(bx - ax, bz - az))); for (let step = 0; step <= steps; step++) { const t = step / steps, x = ax + (bx - ax) * t, z = az + (bz - az) * t; if (x < site.bounds.minX || x > site.bounds.maxX || z < site.bounds.minZ || z > site.bounds.maxZ) continue; minimum = Math.min(minimum, base + 12 - hc.HARBOUR_CITY_ROAD_LINTEL_DEPTH - elevation.roadRibbonHeightAtSegment(road.recordIndex, seg >> 1, t)); samples++; } }
-  assert.ok(samples > 20); assert.ok(Math.abs(minimum - 12.60234445077033) < 1e-9); assert.ok(minimum >= hc.HARBOUR_CITY_ROAD_VEHICLE_CLEARANCE);
+  assert.ok(samples > 20); // Recaptured after the hillside welds: the carriageway level here follows one welded node table, so the exact
+  // clearance value moved by about 1 m. The 4.7 m vehicle clearance assertion below is the requirement.
+  assert.ok(Math.abs(minimum - 11.572672732598186) < 1e-9); assert.ok(minimum >= hc.HARBOUR_CITY_ROAD_VEHICLE_CLEARANCE);
 });
 test('Gateway Tower 2 keeps floor conventions and documents the official interconnection evidence', () => {
   const source = fs.readFileSync(path.join(root, 'js/cities/hongkong/gateway-tower-two-world.js'), 'utf8');

@@ -48,6 +48,12 @@ test('interior profile stations form one continuous grade with at most a single 
         const excess = profile.heights[i] - (start + (end - start) * profile.ts[i]);
         if (excess > 1e-6 && !rising) { humps++; rising = true; }
         else if (excess <= 1e-6) rising = false;
+        // A station may only leave the chord where it crosses a genuine crest (higher than both ends), never on a
+        // straight descent, where the whole segment must be one continuous grade.
+        if (excess > 1e-6) {
+          assert.ok(profile.heights[i] > Math.max(start, end) - 1e-6,
+            `${road[0]} ${wayId}/${segment} leaves its chord at station ${i} without a crest`);
+        }
       }
       assert.ok(humps <= 1, `${road[0]} ${wayId}/${segment} has ${humps} separate rises above its chord`);
     }
