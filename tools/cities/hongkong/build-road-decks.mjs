@@ -55,7 +55,9 @@ function rampBlend(chain, lift, options = {}) {
     ramp <= EPSILON ? 0 : smoothstep(clamp01(Math.min(distance, length - distance) / ramp)));
   if (options.groundedStart !== false) blend[0] = 0;
   if (options.groundedEnd !== false) blend[count - 1] = 0;
-  const maxStep = (index) => MAX_RAMP_GRADE * (chain[index] - chain[index - 1]) / lift;
+  // The cap applies to the stored (3-decimal) blend values, so it is tightened slightly to survive that rounding.
+  const quantised = MAX_RAMP_GRADE - 0.002;
+  const maxStep = (index) => quantised * (chain[index] - chain[index - 1]) / lift;
   for (let index = 1; index < count; index++) blend[index] = Math.min(blend[index], blend[index - 1] + maxStep(index));
   for (let index = count - 2; index >= 0; index--) blend[index] = Math.min(blend[index], blend[index + 1] + maxStep(index + 1));
   return blend;

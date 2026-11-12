@@ -28,6 +28,7 @@ import { CGO_GROUND_RINGS } from './central-government-architecture.js';
 import { THE_ARCH_GROUND_RINGS } from './the-arch-architecture.js';
 import { SORRENTO_GROUND_RINGS } from './sorrento-architecture.js';
 import { smoothConstrainedProfileHeights } from './road-profile-smoothing.js';
+import { HK_ROAD_DECKS } from '../../hk-road-deck-data.js';
 
 export const ROAD_SURFACE_OFFSET = 0.025;
 export const ROAD_PROFILE_STEP = 20;
@@ -36,6 +37,9 @@ const tunnelBytes = new Uint8Array(atob(tunnelData.heights).split('').map((chara
 const tunnelHeights = new Int16Array(tunnelBytes.buffer);
 const tunnelWays = new Map();
 const verifiedBridgeWays = new Map(HK_VERIFIED_BRIDGES.ways.map((way) => [way.wayId, way]));
+// Mapped flyovers whose OSM layer is known but whose height is not surveyed: a stated presentation lift over the road
+// they cross, with a graded ramp at each end. See tools/cities/hongkong/build-road-decks.mjs.
+const deckWays = new Map(HK_ROAD_DECKS.decks.map((deck) => [deck.wayId, deck]));
 const profileCache = new Map();
 const smoothedWayCache = new Map();
 // Government House approach and the forecourt branch share a node but independent
@@ -122,8 +126,98 @@ function rawRoadRibbonHeightAtVertex(wayId, vertexIndex) {
   return height;
 }
 
+// Ordinary surface ways are drawn from one shared node table. Two OSM ways that meet at the same mapped node used to
+// sample opposite road shoulders, so their drawn surfaces met metres apart there and the carriageway visibly broke
+// apart on a hillside (measured on the bundled data: 18,829 of 44,709 shared surface nodes disagreed by more than
+// 5 cm, 7,176 by more than 30 cm, worst 7.8 m). A shared node now has exactly one height: the highest cross-section
+// sample any adjoining way produced there. Nothing is lowered and no height is invented — the weld only reuses a
+// sample one of the ways already had.
+//
+// Welding alone would move the crease one vertex inwards, so the neighbouring vertices are relaxed towards their
+// chord as well (bounded, never lowering). The welded nodes and the two ends of each way stay fixed.
+const WELD_RELAX_PASSES = 24;
+const WELD_RELAX_MAX_RISE = 2;
+const weldNodeHeights = new Map();
+const weldFixedVertices = new Map();
+let weldTableBuilt = false;
+
+const weldKey = (x, z) => `${x.toFixed(2)},${z.toFixed(2)}`;
+
+function isOrdinarySurfaceWay(wayId) {
+  const road = HK_FULL_ROADS.roads[wayId];
+  return Boolean(road) && !(road[4] & 2) && !(road[4] & 4) &&
+    !verifiedBridgeWays.has(wayId) && !tunnelWays.has(wayId);
+}
+
+function buildSurfaceWeldTable() {
+  const waysPerNode = new Map();
+  for (let wayId = 0; wayId < HK_FULL_ROADS.roads.length; wayId++) {
+    if (!isOrdinarySurfaceWay(wayId)) continue;
+    const flat = HK_FULL_ROADS.roads[wayId][5];
+    for (let i = 0; i < flat.length; i += 2) {
+      const key = weldKey(flat[i], flat[i + 1]);
+      let entries = waysPerNode.get(key);
+      if (!entries) waysPerNode.set(key, (entries = []));
+      entries.push([wayId, i / 2]);
+    }
+  }
+  for (const [key, entries] of waysPerNode) {
+    let height = -Infinity;
+    for (const [wayId, vertex] of entries) height = Math.max(height, rawRoadRibbonHeightAtVertex(wayId, vertex));
+    weldNodeHeights.set(key, height);
+    if (entries.length < 2) continue;
+    for (const [wayId, vertex] of entries) {
+      let fixed = weldFixedVertices.get(wayId);
+      if (!fixed) weldFixedVertices.set(wayId, (fixed = new Set()));
+      fixed.add(vertex);
+    }
+  }
+  weldTableBuilt = true;
+}
+
+export function surfaceWeldStats() {
+  if (!weldTableBuilt) buildSurfaceWeldTable();
+  let weldedVertices = 0;
+  for (const fixed of weldFixedVertices.values()) weldedVertices += fixed.size;
+  return { nodes: weldNodeHeights.size, waysWithSharedNodes: weldFixedVertices.size, weldedVertices };
+}
+
+// Deck heights cannot follow the raw blend alone: the ground under a short deck link can climb steeply, so the lift is
+// also limited between adjacent vertices. Everything is measured relative to the ground the deck stands on, and the
+// ground itself is never lowered.
+const MAX_DECK_GRADE = 0.12;
+const deckVertexCache = new Map();
+function deckVertexHeights(deck, wayId) {
+  const flat = HK_FULL_ROADS.roads[wayId][5];
+  const count = flat.length / 2;
+  const ground = new Float64Array(count);
+  const lift = new Float64Array(count);
+  for (let vertex = 0; vertex < count; vertex++) {
+    ground[vertex] = Math.max(rawRoadRibbonHeightAtVertex(wayId, vertex),
+      surfaceRoadHeight(flat[vertex * 2], flat[vertex * 2 + 1]));
+    lift[vertex] = Math.max(0, deck.lift * deck.vertexBlend[vertex]);
+  }
+  const run = (index) =>
+    Math.hypot(flat[index * 2] - flat[index * 2 - 2], flat[index * 2 + 1] - flat[index * 2 - 1]);
+  for (let index = 1; index < count; index++) lift[index] = Math.min(lift[index], lift[index - 1] + MAX_DECK_GRADE * run(index));
+  for (let index = count - 2; index >= 0; index--) lift[index] = Math.min(lift[index], lift[index + 1] + MAX_DECK_GRADE * run(index + 1));
+  const heights = new Float64Array(count);
+  for (let index = 0; index < count; index++) heights[index] = ground[index] + lift[index];
+  return heights;
+}
+
+function deckHeightAtVertex(deck, wayId, vertexIndex) {
+  const count = HK_FULL_ROADS.roads[wayId][5].length / 2;
+  let heights = deckVertexCache.get(wayId);
+  if (!heights) deckVertexCache.set(wayId, (heights = deckVertexHeights(deck, wayId)));
+  return heights[Math.max(0, Math.min(count - 1, vertexIndex))];
+}
+
 export function roadRibbonHeightAtVertex(wayId, vertexIndex) {
   const road = HK_FULL_ROADS.roads[wayId];
+  // Mapped flyovers first: they must stay above whatever they span, never welded to the surface beneath.
+  const deck = deckWays.get(wayId);
+  if (deck && !(road?.[4] & 4) && !verifiedBridgeWays.has(wayId)) return deckHeightAtVertex(deck, wayId, vertexIndex);
   // Elevated ways keep their original bridge profile as well: only verified examples have surveyed replacement
   // heights, but none of them should be lifted towards a terrain chord as if they were ordinary surface streets.
   if ((road?.[4] & 2) || verifiedBridgeWays.has(wayId) || tunnelWays.has(wayId)) {
@@ -131,19 +225,63 @@ export function roadRibbonHeightAtVertex(wayId, vertexIndex) {
   }
   let heights = smoothedWayCache.get(wayId);
   if (!heights) {
+    if (!weldTableBuilt) buildSurfaceWeldTable();
     const flat = HK_FULL_ROADS.roads[wayId]?.[5] || [];
     const nodes = [];
-    for (let i = 0; i < flat.length; i += 2) nodes.push({ x: flat[i], z: flat[i + 1],
-      height: rawRoadRibbonHeightAtVertex(wayId, i / 2) });
+    for (let i = 0; i < flat.length; i += 2) {
+      const welded = weldNodeHeights.get(weldKey(flat[i], flat[i + 1]));
+      nodes.push({ x: flat[i], z: flat[i + 1],
+        height: Math.max(rawRoadRibbonHeightAtVertex(wayId, i / 2), welded ?? -Infinity) });
+    }
     if (wayId === GH_APPROACH) {
       // Tie the shared forecourt junction exactly, then lift intermediate valley
       // vertices toward a continuous grade; endpoints otherwise remain unchanged.
       nodes[0].height = roadRibbonHeightAtVertex(GH_FORECOURT, 6);
     }
-    heights = smoothConstrainedProfileHeights(nodes);
+    const fixed = weldFixedVertices.get(wayId);
+    heights = smoothConstrainedProfileHeights(nodes, 18, fixed);
+    if (wayId !== GH_APPROACH) heights = weldAndRelax(nodes, heights, fixed);
     smoothedWayCache.set(wayId, heights);
   }
   return heights[Math.max(0, Math.min(heights.length - 1, vertexIndex))] ?? 0;
+}
+
+// The weld height of a shared node must survive the whole way's profile exactly, otherwise the two ways still meet at
+// different levels. The smoothing above has no notion of a fixed vertex, so the welded nodes are restored afterwards
+// and the neighbouring vertices carry the difference.
+function weldAndRelax(nodes, heights, fixed) {
+  const count = heights.length;
+  if (!fixed || !fixed.size || count < 3) return heights;
+  const welded = heights.slice();
+  for (const vertex of fixed) welded[vertex] = Math.max(welded[vertex], nodes[vertex].height);
+  return pinFixedVertices(relaxWeldedNeighbours(welded, fixed), welded, fixed);
+}
+
+// A fixed vertex is only ever raised here: lowering it would put the surface under the terrain.
+function pinFixedVertices(heights, welded, fixed) {
+  const out = heights.slice();
+  for (const vertex of fixed) out[vertex] = Math.max(out[vertex], welded[vertex]);
+  return out;
+}
+
+// Raise the vertices next to a welded node towards their neighbours' chord so the join does not become one sharp grade
+// change. The correction never lowers a vertex and is capped per vertex.
+function relaxWeldedNeighbours(heights, fixed) {
+  const count = heights.length;
+  if (count < 3) return heights;
+  const start = heights.slice();
+  const result = heights.slice();
+  for (let pass = 0; pass < WELD_RELAX_PASSES; pass++) {
+    const previous = result.slice();
+    for (let vertex = 1; vertex < count - 1; vertex++) {
+      if (fixed?.has(vertex)) continue;
+      const target = (previous[vertex - 1] + previous[vertex + 1]) / 2;
+      if (target <= previous[vertex]) continue;
+      result[vertex] = Math.min(start[vertex] + WELD_RELAX_MAX_RISE,
+        previous[vertex] + (target - previous[vertex]) * 0.5);
+    }
+  }
+  return result;
 }
 
 function addTerrainStations(stations, ax, az, dx, dz, offsetX, offsetZ) {
@@ -212,9 +350,15 @@ function buildRibbonProfile(wayId, segmentIndex) {
   if (tunnelWays.has(wayId)) {
     return { ts: [0, 1], heights: [roadRibbonHeightAtVertex(wayId, segmentIndex), roadRibbonHeightAtVertex(wayId, segmentIndex + 1)] };
   }
+  const deck = deckWays.get(wayId);
   const ax = flat[start], az = flat[start + 1];
   const dx = flat[start + 2] - ax, dz = flat[start + 3] - az;
   const length = Math.hypot(dx, dz);
+  // A mapped flyover is a structure, not terrain: its profile is the deck between the two vertex heights, so the
+  // carriageway beneath stays on the ground instead of the envelope dragging the deck back down mid-span.
+  if (deck) {
+    return { ts: [0, 1], heights: [roadRibbonHeightAtVertex(wayId, segmentIndex), roadRibbonHeightAtVertex(wayId, segmentIndex + 1)] };
+  }
   if (length < 0.001) {
     const height = roadRibbonHeightAtVertex(wayId, segmentIndex);
     return { ts: [0, 1], heights: [height, height] };
@@ -252,7 +396,30 @@ function buildRibbonProfile(wayId, segmentIndex) {
       : t === 1 ? roadRibbonHeightAtVertex(wayId, segmentIndex + 1) : sampleHeight(t));
   }
   if (ts.at(-1) !== 1) { ts.push(1); heights.push(roadRibbonHeightAtVertex(wayId, segmentIndex + 1)); }
-  return { ts, heights };
+  return { ts, heights: flattenInteriorProfile(ts, heights) };
+}
+
+// Between two drawn vertices the envelope is sampled every ROAD_PROFILE_STEP metres on the centreline and both
+// shoulders, so on a hillside the max-of-three reading lifts separate stations by centimetres and the carriageway
+// becomes a sawtooth even though its vertices are smoothed. A real road between two levels rises at most once. The
+// tallest rise above the straight chord is kept (usually a genuine crest or a bridge-pier shelf) and the remaining
+// stations sit on the chord. The end heights are untouched, so adjoining segments, the rendered triangles and the
+// entity ground query still meet exactly.
+const SINGLE_HUMP_FLOOR = 0.1;
+function flattenInteriorProfile(ts, heights) {
+  if (ts.length < 3) return heights;
+  const startHeight = heights[0], endHeight = heights.at(-1);
+  const chord = (index) => startHeight + (endHeight - startHeight) * ts[index];
+  let peak = -1, peakRise = SINGLE_HUMP_FLOOR;
+  for (let index = 1; index + 1 < ts.length; index++) {
+    const rise = heights[index] - chord(index);
+    if (rise > peakRise) { peak = index; peakRise = rise; }
+  }
+  const out = heights.slice();
+  for (let index = 1; index + 1 < ts.length; index++) {
+    out[index] = index === peak ? Math.max(heights[index], chord(index)) : chord(index);
+  }
+  return out;
 }
 
 // The same deterministic stations drive road triangles, derived paint and entity ground queries. Consequently a

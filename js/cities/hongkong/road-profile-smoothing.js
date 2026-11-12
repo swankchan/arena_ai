@@ -2,11 +2,14 @@
 // approaches rise towards the neighbouring chord, removing visible steps without flattening the territory DTM.
 // The 5 m source DTM is approximate, so corrections are deliberately bounded rather than treated as engineering levels.
 export const MAX_ORDINARY_ROAD_LIFT = 6;
-export function smoothConstrainedProfileHeights(nodes, iterations = 18) {
+export function smoothConstrainedProfileHeights(nodes, iterations = 18, fixed = null) {
   const result = nodes.map((node) => node.height);
   for (let pass = 0; pass < iterations; pass++) {
     const previous = result.slice();
     for (let i = 1; i < result.length - 1; i++) {
+      // A node shared with another OSM way must keep one height across both ways. Smoothing it here would raise only
+      // this way's copy and re-open the join, so shared nodes stay exactly on their welded height.
+      if (fixed?.has?.(i)) continue;
       const before = nodes[i - 1], current = nodes[i], after = nodes[i + 1];
       const left = Math.hypot(current.x - before.x, current.z - before.z);
       const right = Math.hypot(after.x - current.x, after.z - current.z);

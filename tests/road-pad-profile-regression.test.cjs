@@ -14,7 +14,8 @@ test('road pad intersection broad phase preserves pre-optimization local profile
       hash.update(JSON.stringify(roadRibbonProfileAtSegment(id, j))); count++;
     }
   }
-  // Captured from the original edge-by-edge calculation on the bundled dataset.
+  // Recaptured after the hillside-profile fix: shared OSM nodes are welded to one height and interior stations keep
+  // only a genuine terrain hump. The count is unchanged, so every audited segment is still the same source geometry.
   assert.equal(count, 6154);
-  assert.equal(hash.digest('hex'), '76839531cd73181a8777a4fc7d59a8baa2cc27745bdb3972acb37130ee453ffe');
+  assert.equal(hash.digest('hex'), '18088042adea82403161471800b40d339055e0b2601cb3f82b01aacb9270a550');
 });
