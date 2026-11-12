@@ -27,7 +27,8 @@ export function standOverSameLevelRoad(x, z, margin = STAND_ROAD_MARGIN) {
       const px = ax + t * vx, pz = az + t * vz;
       if (Math.hypot(x - px, z - pz) > way.width / 2 + margin) continue;
       const height = roadRibbonHeightAtSegment(way.id, k / 2 - 1, t, px, pz);
-      if (way.flags & 6) continue;
+      // Height decides, not the flags: a way tagged layer>0 here can still be drawn on the ground, and a wall across
+      // it would seal a real street. A tunnel or a deck clears this band by tens of metres anyway.
       if (Math.abs(height - meta.happyValleyPadHeight) < SAME_LEVEL_ROAD_TOLERANCE) return true;
     }
   }

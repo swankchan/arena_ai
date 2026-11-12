@@ -1,5 +1,5 @@
 const assert=require('node:assert/strict'),fs=require('node:fs'),test=require('node:test');
-let THREE,site,source,entry,venue,built,road,ground,inside,frame,buildHappyValleyMembersIII;
+let THREE,site,source,entry,venue,built,road,ground,inside,frame,buildHappyValleyMembersIII,overRoad;
 test.before(async()=>{
   THREE=await import('three/webgpu');
   ({HAPPY_VALLEY_MEMBERS_III:site,HAPPY_VALLEY_MEMBERS_III_SOURCE:source,HAPPY_VALLEY_MEMBERS_III_ENTRANCE:entry}=await import('../js/cities/hongkong/happy-valley-members-iii-site.js'));
@@ -10,6 +10,9 @@ test.before(async()=>{
   ground=(await import('../js/cities/hongkong/terrain.js')).HONG_KONG_TERRAIN_META.happyValleyPadHeight;
   built=(await import('../js/cities/hongkong/happy-valley-racecourse-world.js')).buildHappyValleyRacecourse(new THREE.Group(),{groundOffset:ground});built.group.updateMatrixWorld(true);
   ({buildHappyValleyMembersIII}=await import('../js/cities/hongkong/happy-valley-members-iii-world.js'));
+  // One shared definition of "same-level street": the carriageway here rises above the venue datum, so a fixed
+  // 2.5 m band around the datum would no longer recognise it.
+  ({standOverSameLevelRoad:overRoad}=await import('../js/cities/hongkong/happy-valley-stand-road-clearance.js'));
 });
 test('stand footprint and levels match OSM; tiers, seats, and night material exist',()=>{
   const mapped=JSON.parse(fs.readFileSync('tools/data/hongkong/landmarks.json')).elements.find(e=>e.id===1356276116&&e.type==='way');
@@ -23,8 +26,8 @@ test('stand footprint and levels match OSM; tiers, seats, and night material exi
 test('building mesh vertices and wall collider samples avoid same-level roads',()=>{
   const group=built.group.getObjectByName('HappyValleyMembersStandIII'),v=new THREE.Vector3();let count=0;
   group.traverse(mesh=>{if(!mesh.isMesh)return;let p=mesh.geometry.getAttribute('position');for(let i=0;i<p.count;i++){
-    v.fromBufferAttribute(p,i).applyMatrix4(mesh.matrixWorld);let hit=road(v.x,v.z,0,ground);count++;
-    assert.ok(!hit||Math.abs(hit.height-ground)>=2.5,`${mesh.name} on road ${hit?.way.id}`);
+    v.fromBufferAttribute(p,i).applyMatrix4(mesh.matrixWorld);count++;
+    assert.ok(!overRoad(v.x,v.z,0),`${mesh.name} sits on a same-level street at ${v.x.toFixed(1)}, ${v.z.toFixed(1)}`);
   }});assert.ok(count>10000);
   // Locate this stand's wall colliders by footprint; the order changed when the remaining
   // three stands were added and two wall segments were dropped off 黃泥涌道.
@@ -36,7 +39,7 @@ test('building mesh vertices and wall collider samples avoid same-level roads',(
   const walls=standalone.colliders;
   for(const c of walls) for(let x=c.minX;x<=c.maxX;x+=.5)for(let z=c.minZ;z<=c.maxZ;z+=.5){
     const dx=x-c.x,dz=z-c.z;if(Math.abs(dx*c.obb.cs-dz*c.obb.sn)>c.obb.hx||Math.abs(dx*c.obb.sn+dz*c.obb.cs)>c.obb.hz)continue;
-    let hit=road(x,z,0,ground);assert.ok(!hit||Math.abs(hit.height-ground)>=2.5,`wall crosses road ${hit?.way.id}`);
+    assert.ok(!overRoad(x,z,0),`wall crosses a same-level street at ${x.toFixed(1)}, ${z.toFixed(1)}`);
   }
 });
 test('estimated rear portal is not blocked by authored walls or fence at walking height',()=>{
