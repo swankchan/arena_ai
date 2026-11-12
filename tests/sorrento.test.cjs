@@ -81,7 +81,10 @@ test('the open six-level podium exceeds the vehicle envelope at every retained r
     }
   }
   assert.equal(samples,4661);assert.ok(minimum>sorrento.SORRENTO_VEHICLE_CLEARANCE,`minimum clearance ${minimum}`);
-  assert.ok(Math.abs(minimum-7.315100549803548)<1e-9);
+  // Recaptured after the podium slab started bounding the underpass lift: way 40414 used to be lifted 9.7 m by its OSM
+  // layer, which drove the ramp 2 m into this podium. The slab now caps that lift at the headroom it actually leaves, so
+  // the minimum is the 4.7 m vehicle requirement plus the 1 mm guard that keeps the strict comparison true.
+  assert.ok(Math.abs(minimum-4.700999999999999)<1e-9);
 });
 
 test('the Sorrento DTM pad is reproducible and retained road corridors remain road-priority', () => {

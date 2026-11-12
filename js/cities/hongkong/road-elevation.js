@@ -29,7 +29,7 @@ import { THE_ARCH_GROUND_RINGS } from './the-arch-architecture.js';
 import { SORRENTO_GROUND_RINGS } from './sorrento-architecture.js';
 import { smoothConstrainedProfileHeights } from './road-profile-smoothing.js';
 import { HK_ROAD_DECKS } from '../../hk-road-deck-data.js';
-import { underpassLiftAtVertex } from './flyover-underpass-clearance.js';
+import { underpassLiftAtVertex, isComputingUnderpassLifts } from './flyover-underpass-clearance.js';
 
 export const ROAD_SURFACE_OFFSET = 0.025;
 export const ROAD_PROFILE_STEP = 20;
@@ -431,11 +431,13 @@ function flattenInteriorProfile(ts, heights) {
 // query between two rendered vertices returns the rendered chord height rather than a different fresh DTM sample.
 export function roadRibbonProfileAtSegment(wayId, segmentIndex) {
   const key = wayId * 100000 + segmentIndex;
-  let profile = profileCache.get(key);
-  if (!profile) {
-    profile = buildRibbonProfile(wayId, segmentIndex);
-    profileCache.set(key, profile);
-  }
+  const cached = profileCache.get(key);
+  if (cached) return cached;
+  // The underpass pass measures decks while its own lift table is still empty, so a profile cached during that pass
+  // would record the un-lifted deck height for the rest of the session — the same way could then answer 8.6 m or
+  // 14.8 m depending on which query happened first. Build it, but only memoise it once the lifts are known.
+  const profile = buildRibbonProfile(wayId, segmentIndex);
+  if (!isComputingUnderpassLifts()) profileCache.set(key, profile);
   return profile;
 }
 
