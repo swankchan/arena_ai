@@ -8,6 +8,7 @@ import { crossingSurfaceAt } from './crossings.js';
 import { surfaceRoadHeight } from './road-elevation.js';
 import { obrienLampConflicts } from './obrien-footbridge-architecture.js';
 import { peakTramAdjustedStreetLight } from './peak-tram-lamp-adjustments.js';
+import { lampUnderLowDeck } from './street-light-deck-clearance.js';
 
 export const HK_STREET_LIGHT_HEIGHT = 9.6;
 const ARM_REACH = 2.15;
@@ -103,7 +104,7 @@ export function createHongKongStreetLighting(root, { lamps = HK_STREET_LIGHTS.la
   group.userData.streetLighting = true;
   root.add(group);
   const buckets = new Map();
-  let singleArm = 0, doubleArm = 0, bridgeMatched = 0, footbridgeSuppressed = 0;
+  let singleArm = 0, doubleArm = 0, bridgeMatched = 0, footbridgeSuppressed = 0, deckSuppressed = 0;
   const applyClearance = lamps === HK_STREET_LIGHTS.lamps;
   for (let sourceIndex = 0; sourceIndex < lamps.length; sourceIndex++) {
     if (applyClearance && CLEARANCE_SUPPRESSED.has(sourceIndex)) continue;
@@ -113,6 +114,9 @@ export function createHongKongStreetLighting(root, { lamps = HK_STREET_LIGHTS.la
     const heading = lamp[2], arms = lamp[3];
     if (![x, z, heading, arms].every(Number.isFinite) || ![1, 2].includes(arms)) throw new Error('Invalid street-light record');
     if (applyClearance && obrienLampConflicts(x,z,heading,arms)) { footbridgeSuppressed++; continue; }
+    // A lamp under a deck would punch its lantern through the concrete; the survey does not describe a shorter post, so
+    // the lamp is suppressed instead of guessed into a different one.
+    if (applyClearance && lampUnderLowDeck(x, z, heading, arms, surfaceRoadHeight(x, z))) { deckSuppressed++; continue; }
     const key = `${Math.floor(x / CHUNK_SIZE)},${Math.floor(z / CHUNK_SIZE)}`;
     let bucket = buckets.get(key);
     if (!bucket) buckets.set(key, (bucket = { key, lamps: [], minX: Infinity, maxX: -Infinity, minZ: Infinity, maxZ: -Infinity }));
@@ -180,9 +184,10 @@ export function createHongKongStreetLighting(root, { lamps = HK_STREET_LIGHTS.la
     streetLightNightGlowRangeM: NIGHT_GLOW_RANGE,
     streetLightRealPointLights: 0,
     streetLightRelocated: applyClearance ? HK_STREET_LIGHT_CLEARANCE.overrides.length : 0,
-    streetLightSuppressed: applyClearance ? HK_STREET_LIGHT_CLEARANCE.suppressed.length + footbridgeSuppressed : 0,
+    streetLightSuppressed: applyClearance ? HK_STREET_LIGHT_CLEARANCE.suppressed.length + footbridgeSuppressed + deckSuppressed : 0,
     streetLightFootbridgeSuppressed: footbridgeSuppressed,
-    streetLightRendered: applyClearance ? lamps.length - HK_STREET_LIGHT_CLEARANCE.suppressed.length - footbridgeSuppressed : lamps.length,
+    streetLightDeckSuppressed: deckSuppressed,
+    streetLightRendered: applyClearance ? lamps.length - HK_STREET_LIGHT_CLEARANCE.suppressed.length - footbridgeSuppressed - deckSuppressed : lamps.length,
     streetLightTramAdjusted: applyClearance ? (HK_STREET_LIGHT_CLEARANCE.tramAdjusted || 0) : 0,
     streetLightCarriagewayConflicts: 0,
     streetLightTramConflicts: 0

@@ -27,9 +27,9 @@
     "kowloonShangriLaFacadeMargin": 0.55
   },
   "counts": {
-    "relocated": 38518,
-    "suppressed": 80,
-    "rendered": 144915,
+    "relocated": 34168,
+    "suppressed": 77,
+    "rendered": 144918,
     "tramAdjusted": 54,
     "remainingCarriagewayConflicts": 0,
     "remainingTramConflicts": 0,
