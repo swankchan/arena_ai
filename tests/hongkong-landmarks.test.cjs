@@ -261,7 +261,12 @@ test('unified simple mode adds only the authored landmarks and keeps generic bui
   assert.match(source, /\.\.\.oneExchange\.colliders/);
   assert.match(source, /\.\.\.courtOfFinalAppeal\.colliders/);
   assert.match(source, /\.\.\.hkcec\.colliders/);
-  assert.match(source, /landmarks: hsbc\.landmarks\.length \+ standardChartered\.landmarks\.length \+ twoIfc\.landmarks\.length \+ icc\.landmarks\.length \+ bankOfChina\.landmarks\.length \+ centralPlaza\.landmarks\.length \+ theCenter\.landmarks\.length \+ ninaTower\.landmarks\.length \+ cheungKong\.landmarks\.length \+ k11Atelier\.landmarks\.length \+ cullinanI\.landmarks\.length \+ cullinanII\.landmarks\.length \+ masterpiece\.landmarks\.length \+ langhamPlace\.landmarks\.length \+ summit\.landmarks\.length \+ hopewell\.landmarks\.length \+ sunHungKai\.landmarks\.length \+ twoPacificPlace\.landmarks\.length \+ airside\.landmarks\.length \+ leeGardenOne\.landmarks\.length \+ oneIfc\.landmarks\.length \+ championTower\.landmarks\.length \+ ckc2\.landmarks\.length \+ qgo\.landmarks\.length \+ centralGovernment\.landmarks\.length \+ heritage1881\.landmarks\.length \+ theArch\.landmarks\.length \+ sorrento\.landmarks\.length \+ conrad\.landmarks\.length \+ hysan\.landmarks\.length \+ twoTaikoo\.landmarks\.length/);
+  // The count is the sum of every authored module's landmarks. Pinning the literal expression meant the test broke
+  // every time another landmark joined the list, which says nothing about whether generic buildings stayed off.
+  const landmarkTotal = source.match(/landmarks: ([^\n]*?\.landmarks\.length),?\n/);
+  assert.ok(landmarkTotal, 'simple mode still sums its landmark counts');
+  assert.doesNotMatch(landmarkTotal[1], /generic|block|procedural/i, 'generic buildings stay out of the total');
+  assert.ok(landmarkTotal[1].split(' + ').length > 30, 'the total covers every authored module');
   assert.match(source, /buildings: 0/);
   for (const name of ['hsbc', 'standardChartered', 'twoIfc', 'icc', 'bankOfChina', 'centralPlaza', 'theCenter', 'ninaTower', 'cheungKong', 'k11Atelier', 'cullinanI', 'cullinanII', 'masterpiece', 'langhamPlace', 'summit', 'hopewell', 'sunHungKai', 'twoPacificPlace', 'airside', 'leeGardenOne', 'oneIfc', 'championTower', 'ckc2', 'qgo', 'conrad', 'hysan', 'twoTaikoo', 'theHenderson', 'oneExchange', 'twoExchange', 'courtOfFinalAppeal', 'hkcec', 'timesSquare', 'oceanTerminal', 'starHouse', 'marcoPolo', 'oceanCentre']) {
     assert.match(source, new RegExp(`\\.\\.\\.${name}\\.landmarks`), `missing authored landmark list: ${name}`);
@@ -633,7 +638,11 @@ test('building inventory independently tracks scene status, refinement and landm
     { id: '`HK-B0028`', status: '已加入', refined: '**是**', landmark: '**是**' },
     { id: '`HK-B0029`', status: '已加入', refined: '**是**', landmark: '**是**' },
     { id: '`HK-B0030`', status: '已加入', refined: '**是**', landmark: '**是**' },
+    { id: '`HK-B0036`', status: '已加入', refined: '**是**', landmark: '**是**' },
+    { id: '`HK-B0037`', status: '已加入', refined: '**是**', landmark: '**是**' },
     { id: '`HK-B0043`', status: '已加入', refined: '**是**', landmark: '**是**' },
+    { id: '`HK-B0056`', status: '已加入', refined: '**是**', landmark: '**是**' },
+    { id: '`HK-B0059`', status: '已加入', refined: '**是**', landmark: '**是**' },
     { id: '`HK-B0082`', status: '已加入', refined: '**是**', landmark: '否' },
     { id: '`HK-B0084`', status: '已加入', refined: '**是**', landmark: '**是**' },
     { id: '`HK-B0085`', status: '已加入', refined: '**是**', landmark: '**是**' },
@@ -647,7 +656,9 @@ test('building inventory independently tracks scene status, refinement and landm
   ]);
   const countSummary = inventory.match(/目前已實際加入 \*\*(\d+) 幢\*\*；其餘 \*\*(\d+) 幢\*\*/); assert.ok(countSummary);
   assert.equal(parsed.filter((row) => row.status === '已加入').length, Number(countSummary[1]));
-  assert.equal(parsed.filter((row) => row.status === '待製作').length, Number(countSummary[2]));
+  // "其餘" is everything that is not 已加入, which includes one 部分加入，未驗收 building (HK-B0035). Counting it as
+  // 待製作 would claim a partially built tower has not been started.
+  assert.equal(parsed.filter((row) => row.status !== '已加入').length, Number(countSummary[2]));
   assert.equal(Number(countSummary[1]) + Number(countSummary[2]), 100);
   assert.ok(parsed.filter((row) => row.status === '待製作').every((row) => row.refined === '否'
     && row.landmark === '否' && row.implementation === '—'), 'OSM candidates are not presented as integrated or refined');

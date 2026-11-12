@@ -260,5 +260,11 @@ test('Hong Kong traffic rejects coastal runoff without removing ordinary major r
 
   const trafficSource = readFileSync(join(__dirname, '../js/cities/hongkong/traffic.js'), 'utf8');
   assert.match(trafficSource, /if \(!onLand\[i\]\) continue;/, 'route transitions use the same land filter');
-  assert.match(trafficSource, /if \(onLand\[i\] && graph\[i\]\[3\] >= 7\.4 && total\[i\] >= 100\)/, 'initial placement and restaging use the land filter');
+  // The gate is land AND a class the route's vehicle may use AND enough traffic to be worth spawning. Pinning the exact
+  // expression made the test fail when the class permission was added; the requirement is that all three hold.
+  const placement = trafficSource.match(/if \((onLand\[i\][^)]*)\)[^\n]*drivable\.push\(i\)/);
+  assert.ok(placement, 'initial placement and restaging use the land filter');
+  for (const condition of ['onLand[i]', 'trafficRoadPermits(', 'total[i] >= 100']) {
+    assert.ok(placement[0].includes(condition), `placement gate keeps ${condition}`);
+  }
 });

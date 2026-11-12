@@ -104,8 +104,8 @@
 | `HK-B0033` | 太古廣場三座 Three Pacific Place | 金鐘 | 待製作 | 否 | 否 | 182 m | OSM way **88391081** | — |
 | `HK-B0034` | 會展廣場辦公大樓 Convention Plaza Office Tower | 灣仔 | 待製作 | 否 | 否 | 181 m | OSM way **107497689** | — |
 | `HK-B0035` | 入境事務大樓 Immigration Tower | 灣仔 | 部分加入，未驗收 | 是 | 未驗證 | 180.8 m／49 層 | OSM way **510722228** v8 | `immigration-tower-world.js`；[未完成事項](immigration-tower.md) |
-| `HK-B0036` | 稅務大樓 Revenue Tower | 灣仔 | 已加入 | 是 | 是 | 180 m | OSM way **27087037** | `revenue-tower-world.js`；`3e768c0` |
-| `HK-B0037` | 怡和大廈 Jardine House | 中環 | 已加入 | 是 | 是 | 178.54 m | OSM way **42293714** | `jardine-house-world.js`；`9b004d3` |
+| `HK-B0036` | 稅務大樓 Revenue Tower | 灣仔 | 已加入 | **是** | **是** | 180 m | OSM way **27087037** | `revenue-tower-world.js`；`3e768c0` |
+| `HK-B0037` | 怡和大廈 Jardine House | 中環 | 已加入 | **是** | **是** | 178.54 m | OSM way **42293714** | `jardine-house-world.js`；`9b004d3` |
 | `HK-B0038` | 華潤大廈 China Resources Building | 灣仔 | 待製作 | 否 | 否 | 178 m | OSM way **107497701** | — |
 | `HK-B0039` | 遠東金融中心 Far East Finance Centre | 金鐘 | 待製作 | 否 | 否 | 176 m | OSM way **107336261** | — |
 | `HK-B0040` | 力寶中心第一座 Lippo Centre Tower 1 | 金鐘 | 待製作 | 否 | 否 | 172 m | OSM way **107336260** | — |
@@ -124,10 +124,10 @@
 | `HK-B0053` | 海港中心 Harbour Centre | 灣仔 | 待製作 | 否 | 否 | 146 m | OSM relation **18183384** | — |
 | `HK-B0054` | 鷹君中心 Great Eagle Centre | 灣仔 | 待製作 | 否 | 否 | 146 m | OSM relation **18183385** | — |
 | `HK-B0055` | 交易廣場第三座 Three Exchange Square | 中環 | 待製作 | 否 | 否 | 144 m | OSM way **148554950** | — |
-| `HK-B0056` | 皇室大廈安達人壽大樓 Chubb Tower, Windsor House | 銅鑼灣 | 已加入 | 是 | 是 | 140 m | OSM way **149401356** | `windsor-house-world.js`；`8f02fe9` |
+| `HK-B0056` | 皇室大廈安達人壽大樓 Chubb Tower, Windsor House | 銅鑼灣 | 已加入 | **是** | **是** | 140 m | OSM way **149401356** | `windsor-house-world.js`；`8f02fe9` |
 | `HK-B0057` | 統一中心 United Centre | 金鐘 | 待製作 | 否 | 否 | 140 m | OSM way **107336258** | — |
 | `HK-B0058` | 灣仔政府大樓 Wanchai Tower | 灣仔 | 待製作 | 否 | 否 | 137 m | OSM way **27087041** | — |
-| `HK-B0059` | 恒生銀行總行大廈 Hang Seng Bank Headquarters | 中環 | 已加入 | 是 | 是 | 137 m | OSM way **28825127** | `hang-seng-world.js`；`3312ab8` |
+| `HK-B0059` | 恒生銀行總行大廈 Hang Seng Bank Headquarters | 中環 | 已加入 | **是** | **是** | 137 m | OSM way **28825127** | `hang-seng-world.js`；`3312ab8` |
 | `HK-B0060` | 中國建設銀行大廈 CCB Tower | 中環 | 待製作 | 否 | 否 | 135 m | OSM way **242113651** | — |
 | `HK-B0061` | iSQUARE | 尖沙咀 | 待製作 | 否 | 否 | 130 m | OSM relation **15829461** | — |
 | `HK-B0062` | 香港君悅酒店 Grand Hyatt Hong Kong | 灣仔 | 待製作 | 否 | 否 | 129 m | OSM way **107497699** | — |
