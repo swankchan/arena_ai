@@ -144,13 +144,14 @@ function computeLifts() {
           const below = roadRibbonHeightAtSegment(crossing.wayId, crossing.segment, crossing.t);
           const gap = base - below;
           if (gap >= UNDERPASS_CLEARANCE_M) continue;
-          // A negative gap means this ribbon runs beneath the other one; it cannot be lifted to pass over itself.
-          if (gap < 0) { inverted++; continue; }
           // Two deck ribbons can intersect where neither is reliably "the flyover". The higher layer stays: lift only
           // the deck that is already on top, never the one that would have to burrow through the other.
           const otherLayer = lowestDeckLayer.get(crossing.wayId);
-          // A road with no deck at all is a surface street: anything above it must clear it.
+          // A road with no deck at all is a surface street: anything above it must clear it, even a deck drawn below it.
           const onTop = otherLayer === undefined || deck.layer >= otherLayer;
+          // A negative gap against another deck means this ribbon is the one passing underneath; lifting it would also
+          // have to lift the deck it serves, so it is reported instead.
+          if (gap < 0 && otherLayer !== undefined) { inverted++; continue; }
           if (!onTop) { skipped++; continue; }
           const need = UNDERPASS_CLEARANCE_M - gap;
           if (need > MAX_UNDERPASS_LIFT_M) { clamped++; continue; }
