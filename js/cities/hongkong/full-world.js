@@ -176,6 +176,34 @@ function addVerifiedBridgeQuad(positions, indices, x1, z1, y1, x2, z2, y2, width
   }
 }
 
+// A pier alone leaves a visible gap under the deck: the soffit is 0.72 m deep but the pier head still floats. A
+// cross-beam spanning the carriageway closes that gap and is what the silhouette of a Hong Kong flyover shows.
+function addPierCrossBeam(positions, indices, { x, z, dx, dz, width, top, depth = 0.55 }) {
+  const ux = dx, uz = dz;            // unit along the road
+  const nx = uz, nz = -ux;           // lateral
+  const half = width * 0.5 + 0.85;   // out to the shoulder edge
+  const beamHalf = 0.45;             // along the road
+  const y0 = top - depth, y1 = top;
+  const pts = [];
+  for (const along of [-beamHalf, beamHalf]) {
+    for (const side of [-1, 1]) {
+      pts.push([
+        x + ux * along + nx * side * half, z + uz * along + nz * side * half
+      ]);
+    }
+  }
+  // 0:-a,-side 1:-a,+side 2:+a,-side 3:+a,+side
+  const [p0, p1, p2, p3] = pts;
+  pushQuad(positions, indices,
+    [p0[0], y1, p0[1]], [p1[0], y1, p1[1]], [p3[0], y1, p3[1]], [p2[0], y1, p2[1]]);
+  pushQuad(positions, indices,
+    [p0[0], y0, p0[1]], [p2[0], y0, p2[1]], [p3[0], y0, p3[1]], [p1[0], y0, p1[1]]);
+  for (const [a, b] of [[p0, p1], [p1, p3], [p3, p2], [p2, p0]]) {
+    pushQuad(positions, indices,
+      [a[0], y0, a[1]], [b[0], y0, b[1]], [b[0], y1, b[1]], [a[0], y1, a[1]]);
+  }
+}
+
 function addBridgePier(positions, indices, x, z, bottom, top) {
   if (top - bottom < 1) return;
   const hx = 0.75, hz = 0.75, base = positions.length / 3;
@@ -229,6 +257,8 @@ function* createRoadChunksSteps(root, includeCore) {
     return chunk;
   };
   let segments = 0, sourceSegments = 0, joins = 0, submergedTunnelSegments = 0, verifiedBridgeSegments = 0, verifiedBridgePiers = 0;
+  // verifiedBridgePiers now counts every substructure pier, verified bridge or mapped deck; the verified-only count
+  // would understate the structure actually drawn.
   let derivedPaintQuads = 0, derivedPaintSuppressedQuads = 0;
   let flyoverFurnitureSegments = 0, flyoverFurniturePosts = 0, flyoverFurnitureMetres = 0;
   const flyoverPostCarry = new Map();
@@ -313,13 +343,23 @@ function* createRoadChunksSteps(root, includeCore) {
             const concrete = bridgeChunkAt(mx, mz);
             addVerifiedBridgeQuad(concrete.positions, concrete.indices, ax, az, ay, bx, bz, by, width);
             verifiedBridgeSegments++;
-            const pierChainage = chainage + segmentLength * (t0 + t1) * 0.5;
-            const ground = hongKongTerrainHeight(mx, mz);
-            if (pierChainage >= nextPierChainage && isTerritoryLand(mx, mz) && (ay + by) * 0.5 - ground > 3.2) {
-              addBridgePier(concrete.positions, concrete.indices, mx, mz, ground - 0.2, (ay + by) * 0.5 - 0.72);
-              verifiedBridgePiers++;
-              nextPierChainage = pierChainage + 45;
-            }
+          }
+          // Substructure is not limited to the hand-verified ways: every mapped elevated strip needs a pier and a
+          // cross-beam, otherwise the deck reads as a strip of asphalt floating over the hill.
+          const substructureGround = deckElevated ? hongKongTerrainHeight(mx, mz) : 0;
+          const pierChainage = chainage + segmentLength * (t0 + t1) * 0.5;
+          if (deckElevated && pierChainage >= nextPierChainage && isTerritoryLand(mx, mz)
+            && (ay + by) * 0.5 - substructureGround > 3.2) {
+            // Verified bridges draw a 0.72 m soffit, so their piers stop under it; a lifted deck ribbon has no soffit of
+            // its own, so the pier meets the carriageway ribbon directly.
+            const soffit = (ay + by) * 0.5 - (verifiedBridge ? 0.72 : 0.06);
+            const concrete = bridgeChunkAt(mx, mz);
+            addBridgePier(concrete.positions, concrete.indices, mx, mz, substructureGround - 0.2, soffit);
+            addPierCrossBeam(concrete.positions, concrete.indices, {
+              x: mx, z: mz, dx: dx / segmentLength, dz: dz / segmentLength, width, top: soffit
+            });
+            verifiedBridgePiers++;
+            nextPierChainage = pierChainage + 45;
           }
         }
       }
@@ -595,6 +635,8 @@ export function* buildFullHongKongWorldSteps(root, { waterLevel = -2.2, includeC
       verifiedBridgePiers: roads.verifiedBridgePiers,
       verifiedBridgeMeshes: roads.verifiedBridgeMeshes,
       verifiedBridgeHeightSource: 'OSM bridge/layer; procedural decks, not surveyed engineering elevations',
+      flyoverSubstructurePiers: roads.verifiedBridgePiers,
+      flyoverSubstructureSource: 'pier plus cross-beam at 45 m spacing wherever a mapped deck is more than 3.2 m up; spacing is a convention',
       flyoverFurnitureSegments: roads.flyoverFurnitureSegments,
       flyoverFurniturePosts: roads.flyoverFurniturePosts,
       flyoverFurnitureMetres: roads.flyoverFurnitureMetres,
