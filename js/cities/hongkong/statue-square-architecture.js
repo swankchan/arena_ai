@@ -20,3 +20,38 @@ export const SQUARE_SHELTERS=Object.freeze([
 ].map(p=>Object.freeze({...p,world:Object.freeze(p.ring.flatMap(([lon,lat])=>projectHongKongLonLat(lon,lat)))})));
 export const JACKSON_POSITION=Object.freeze(projectHongKongLonLat(114.1596580,22.2810055)); // OSM node 9705188417 v11.
 export const CENOTAPH_RING=Object.freeze([[114.1605951,22.2816122],[114.1605473,22.2816248],[114.1605555,22.2816515],[114.1606033,22.2816389],[114.1605951,22.2816122]].flatMap(([lon,lat])=>projectHongKongLonLat(lon,lat))); // way 737551130 v4, 10.66 m.
+
+// 和平紀念碑（英軍陣亡紀念碑）歷史與建築規範
+// The Cenotaph (Hong Kong) Historic & Architectural Specifications
+export const CENOTAPH_SOURCE = Object.freeze({
+  id: 'HK-CENTRAL-CENOTAPH',
+  osmWayId: 737551130,
+  name: '和平紀念碑（英軍陣亡紀念碑）The Cenotaph',
+  nameEn: 'The Cenotaph, Hong Kong',
+  architect: 'Sir Edwin Lutyens (設計原版為倫敦白廳和平紀念碑 Whitehall Cenotaph 同款複製品)',
+  unveiledDate: '1923-05-24',
+  declaredMonumentDate: '2015-10-23',
+  heightMetres: 10.66,
+  material: '細琢花崗岩 / 淺灰石灰岩 (Fine-dressed Hong Kong granite / limestone)',
+  inscriptions: Object.freeze([
+    'THE GLORIOUS DEAD',
+    '1914-1918',
+    '1939-1945',
+    '英靈不滅 浩氣長存'
+  ]),
+  flagstaffsCount: 6,
+  wreathsCount: 4,
+  researchSources: Object.freeze([
+    {
+      url: 'https://www.amo.gov.hk/en/historic-buildings/declared-monuments/hong-kong-island/the-cenotaph/index.html',
+      title: 'The Cenotaph, Central — Antiquities and Monuments Office (AMO)',
+      evidence: 'Declared monument in 2015; unveiled 24 May 1923; designed by Sir Edwin Lutyens as a replica of London Whitehall Cenotaph; 10.66m high; commemorates victims of WWI and WWII.'
+    },
+    {
+      url: 'https://fpf.ccidahk.gov.hk/en/location/detail.php?id=1369',
+      title: 'Statue Square — Film Services Office',
+      evidence: 'Statue Square divided into north and south sections by Chater Road; features 1965 Alan Fitch folded plate canopies, reflecting pools, and Sir Thomas Jackson bronze statue.'
+    }
+  ])
+});
+
