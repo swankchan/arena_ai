@@ -30,7 +30,7 @@ function setPickerStatus(message, isError = false) {
   status.dataset.error = String(isError);
 }
 
-export function startCity(cityId) {
+export function startCity(cityId, options = {}) {
   if (booting) return;
   const cityStub = getCity(cityId);
   if (!cityStub) return;
@@ -38,7 +38,7 @@ export function startCity(cityId) {
   setPickerStatus(`Loading ${cityStub.name}…`);
   document.getElementById('start-overlay')?.classList.add('hidden');
   document.getElementById('loading-overlay')?.classList.remove('hidden');
-  initApp(cityStub).catch((error) => {
+  initApp(cityStub, options).catch((error) => {
     console.error('[boot]', error);
     booting = false;
     document.getElementById('loading-overlay')?.classList.add('hidden');
@@ -49,7 +49,7 @@ export function startCity(cityId) {
   });
 }
 
-async function initApp(cityStub) {
+async function initApp(cityStub, options = {}) {
   const { city } = await cityStub.load();
 
   document.title = city.name;
@@ -120,7 +120,12 @@ async function initApp(cityStub) {
   markInit('lighting');
 
   // 3. Build the selected city's world. The pack owns every city-specific asset and builder.
-  const world = await city.build({ scene, renderer, lightingSystem, markInit, setStatus });
+  let selectedDistricts = options.selectedDistricts;
+  if (!selectedDistricts && cityStub.id === 'hongkong') {
+    const { getStoredSelectedDistricts } = await import('./cities/hongkong/districts.js');
+    selectedDistricts = getStoredSelectedDistricts();
+  }
+  const world = await city.build({ scene, renderer, lightingSystem, markInit, setStatus, selectedDistricts });
   markInit('world');
 
   setStatus('Preparing controls and scene…');
@@ -538,6 +543,79 @@ async function initApp(cityStub) {
     }
   } else if (teleportTrigger) {
     teleportTrigger.hidden = true;
+  }
+
+  // District Filter Popover setup
+  const hudDistrictList = document.getElementById('hud-district-list');
+  const hudDistrictsTrigger = document.getElementById('btn-districts');
+  const hudApplyDistrictsBtn = document.getElementById('hud-apply-districts');
+
+  if (hudDistrictsTrigger) {
+    hudDistrictsTrigger.hidden = cityStub.id !== 'hongkong';
+  }
+
+  if (hudDistrictList && cityStub.id === 'hongkong') {
+    const { DISTRICTS, DISTRICT_REGIONS, saveSelectedDistricts } = await import('./cities/hongkong/districts.js');
+    let hudCurrent = new Set(selectedDistricts);
+
+    function renderHudDistricts() {
+      hudDistrictList.replaceChildren();
+      for (const d of DISTRICTS) {
+        const item = document.createElement('label');
+        item.className = 'hud-district-item';
+        const isChecked = hudCurrent.has(d.id);
+        if (isChecked) item.classList.add('active');
+
+        const input = document.createElement('input');
+        input.type = 'checkbox';
+        input.value = d.id;
+        input.checked = isChecked;
+        input.className = 'hud-district-checkbox';
+
+        const name = document.createElement('span');
+        name.className = 'pop-name';
+        name.textContent = `${d.name} · ${d.englishName}`;
+
+        const count = document.createElement('span');
+        count.className = 'pop-count';
+        count.textContent = `${d.landmarkCount} 地標`;
+
+        item.append(input, name, count);
+
+        input.addEventListener('change', () => {
+          if (input.checked) {
+            hudCurrent.add(d.id);
+            item.classList.add('active');
+          } else {
+            hudCurrent.delete(d.id);
+            item.classList.remove('active');
+          }
+        });
+
+        hudDistrictList.appendChild(item);
+      }
+    }
+
+    document.querySelectorAll('.hud-districts-presets .hud-preset-btn').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        const preset = btn.dataset.hudPreset;
+        if (preset === 'all') {
+          hudCurrent = new Set(DISTRICTS.map((d) => d.id));
+        } else if (preset === 'clear') {
+          hudCurrent.clear();
+        } else if (DISTRICT_REGIONS[preset]) {
+          hudCurrent = new Set(DISTRICT_REGIONS[preset]);
+        }
+        renderHudDistricts();
+      });
+    });
+
+    hudApplyDistrictsBtn?.addEventListener('click', () => {
+      saveSelectedDistricts(Array.from(hudCurrent));
+      window.location.reload();
+    });
+
+    renderHudDistricts();
   }
 
   const openMapBtn = document.getElementById('btn-open-map');

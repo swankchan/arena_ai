@@ -1821,3 +1821,267 @@ body.touch-enabled .instrument { width: 113px; flex-basis: 113px; }
 .loader-map-credit { margin-top: 18px; color: rgba(222, 232, 218, .64); font-size: 10px; letter-spacing: .02em; }
 @media (max-height: 520px) { .loader-title { font-size: 26px; } .loader-track { margin: 14px 0 10px; } }
 .loading-phase-note { margin-top: 8px; color: rgba(210, 223, 212, .48); font-size: 10px; letter-spacing: .02em; }
+
+/* ==================================================================================================================
+   District Selection Panel (Cover & HUD)
+   ================================================================================================================== */
+.district-picker {
+  margin: 18px 0 14px;
+  padding: 16px;
+  background: rgba(18, 22, 26, 0.72);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 12px;
+  -webkit-backdrop-filter: blur(16px);
+  backdrop-filter: blur(16px);
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.4);
+}
+
+.district-picker-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+  gap: 10px;
+}
+
+.district-picker-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13.5px;
+  font-weight: 650;
+  color: #f0ede6;
+  letter-spacing: 0.3px;
+}
+
+.district-badge {
+  background: rgba(212, 163, 89, 0.2);
+  color: #d4a359;
+  border: 1px solid rgba(212, 163, 89, 0.4);
+  font-size: 11px;
+  padding: 2px 7px;
+  border-radius: 4px;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+}
+
+.district-summary {
+  font-size: 12px;
+  color: #a8a49c;
+  font-variant-numeric: tabular-nums;
+}
+
+.district-presets {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 14px;
+}
+
+.preset-btn {
+  background: rgba(255, 255, 255, 0.06);
+  color: #cfcac0;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  padding: 5px 11px;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 550;
+  cursor: pointer;
+  transition: all 0.16s ease;
+}
+
+.preset-btn:hover {
+  background: rgba(255, 255, 255, 0.14);
+  color: #fff;
+  border-color: rgba(255, 255, 255, 0.25);
+}
+
+.preset-btn.active {
+  background: #d4a359;
+  color: #16181b;
+  border-color: #d4a359;
+  font-weight: 650;
+  box-shadow: 0 2px 8px rgba(212, 163, 89, 0.35);
+}
+
+.district-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+  gap: 8px;
+  max-height: 220px;
+  overflow-y: auto;
+  padding-right: 4px;
+  scrollbar-width: thin;
+}
+
+.district-card {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 7px 10px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.09);
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  user-select: none;
+}
+
+.district-card:hover {
+  background: rgba(255, 255, 255, 0.09);
+  border-color: rgba(255, 255, 255, 0.18);
+}
+
+.district-card.is-checked {
+  background: rgba(212, 163, 89, 0.12);
+  border-color: rgba(212, 163, 89, 0.45);
+}
+
+.district-checkbox {
+  margin-top: 3px;
+  accent-color: #d4a359;
+  cursor: pointer;
+}
+
+.district-info {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  flex: 1;
+}
+
+.district-name-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 4px;
+}
+
+.district-name {
+  font-size: 12.5px;
+  font-weight: 600;
+  color: #f2efe9;
+}
+
+.district-card.is-checked .district-name {
+  color: #e5b875;
+}
+
+.district-count {
+  font-size: 10px;
+  color: #928e84;
+  background: rgba(255, 255, 255, 0.06);
+  padding: 1px 4px;
+  border-radius: 3px;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.district-english {
+  font-size: 10.5px;
+  color: #8c8880;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* HUD Districts Popover */
+.districts-popover {
+  width: 320px;
+  max-height: 480px;
+  display: flex;
+  flex-direction: column;
+}
+
+.hud-districts-presets {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  padding: 6px 10px 10px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.hud-preset-btn {
+  background: rgba(255, 255, 255, 0.06);
+  color: #ccc;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  padding: 3px 8px;
+  border-radius: 4px;
+  font-size: 11px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.hud-preset-btn:hover {
+  background: rgba(212, 163, 89, 0.2);
+  color: #d4a359;
+  border-color: rgba(212, 163, 89, 0.4);
+}
+
+.hud-district-list {
+  overflow-y: auto;
+  max-height: 280px;
+  padding: 6px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.hud-district-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 8px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 12px;
+  color: #ddd;
+}
+
+.hud-district-item:hover {
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.hud-district-item.active {
+  background: rgba(212, 163, 89, 0.12);
+  color: #f0cca0;
+}
+
+.hud-district-checkbox {
+  accent-color: #d4a359;
+  cursor: pointer;
+}
+
+.hud-district-item .pop-name {
+  flex: 1;
+}
+
+.hud-district-item .pop-count {
+  font-size: 10px;
+  color: #888;
+  background: rgba(0, 0, 0, 0.3);
+  padding: 1px 5px;
+  border-radius: 4px;
+}
+
+.hud-district-footer {
+  padding: 10px;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.hud-apply-btn {
+  width: 100%;
+  padding: 8px 12px;
+  background: #d4a359;
+  color: #141618;
+  border: none;
+  border-radius: 6px;
+  font-size: 12.5px;
+  font-weight: 650;
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+
+.hud-apply-btn:hover {
+  background: #e2b56e;
+}

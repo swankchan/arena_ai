@@ -1,6 +1,12 @@
 import { CITIES, getCity } from './cities/registry.js';
 import { getTaxiStyle } from './taxi-styles.js';
 import { EXPORT_BUILDINGS } from './exports/building-catalog.js';
+import {
+  DISTRICTS,
+  DISTRICT_REGIONS,
+  getStoredSelectedDistricts,
+  saveSelectedDistricts
+} from './cities/hongkong/districts.js';
 
 // Lightweight application entry. Keep the home screen independent of Three.js and city-pack
 // imports so the picker still renders when a runtime module or graphics dependency is unavailable.
@@ -75,7 +81,8 @@ async function selectCity(cityId) {
     await new Promise((resolve) => requestAnimationFrame(() => setTimeout(resolve, 0)));
     appPromise ??= import('./app.runtime.js');
     const app = await appPromise;
-    await app.startCity(cityId);
+    const selectedDistricts = getStoredSelectedDistricts();
+    await app.startCity(cityId, { selectedDistricts });
   } catch (error) {
     console.error('[boot]', error);
     appPromise = null;
@@ -88,6 +95,109 @@ async function selectCity(cityId) {
 }
 
 renderCityCards();
+
+function renderDistrictPicker() {
+  const grid = document.getElementById('district-grid');
+  const summary = document.getElementById('district-summary');
+  if (!grid) return;
+
+  let currentSelected = new Set(getStoredSelectedDistricts());
+
+  function updateSummary() {
+    const total = DISTRICTS.length;
+    const selectedCount = DISTRICTS.filter((d) => currentSelected.has(d.id)).length;
+    if (summary) {
+      summary.textContent = `已選擇 ${selectedCount} / ${total} 區`;
+    }
+    document.querySelectorAll('.district-presets .preset-btn').forEach((btn) => {
+      const preset = btn.dataset.preset;
+      if (preset === 'all') {
+        btn.classList.toggle('active', selectedCount === total);
+      } else if (preset === 'clear') {
+        btn.classList.toggle('active', selectedCount === 0);
+      } else if (DISTRICT_REGIONS[preset]) {
+        const pSet = DISTRICT_REGIONS[preset];
+        const allInPreset = pSet.every((id) => currentSelected.has(id));
+        const onlyPreset = allInPreset && selectedCount === pSet.length;
+        btn.classList.toggle('active', onlyPreset);
+      }
+    });
+  }
+
+  grid.replaceChildren();
+  for (const d of DISTRICTS) {
+    const item = document.createElement('label');
+    item.className = 'district-card';
+    const isChecked = currentSelected.has(d.id);
+    if (isChecked) item.classList.add('is-checked');
+
+    const input = document.createElement('input');
+    input.type = 'checkbox';
+    input.value = d.id;
+    input.checked = isChecked;
+    input.className = 'district-checkbox';
+
+    const content = document.createElement('div');
+    content.className = 'district-info';
+
+    const headerRow = document.createElement('div');
+    headerRow.className = 'district-name-row';
+
+    const name = document.createElement('span');
+    name.className = 'district-name';
+    name.textContent = d.name;
+
+    const count = document.createElement('span');
+    count.className = 'district-count';
+    count.textContent = `${d.landmarkCount} 地標`;
+
+    headerRow.append(name, count);
+
+    const sub = document.createElement('span');
+    sub.className = 'district-english';
+    sub.textContent = d.englishName;
+
+    content.append(headerRow, sub);
+    item.append(input, content);
+
+    input.addEventListener('change', () => {
+      if (input.checked) {
+        currentSelected.add(d.id);
+        item.classList.add('is-checked');
+      } else {
+        currentSelected.delete(d.id);
+        item.classList.remove('is-checked');
+      }
+      saveSelectedDistricts(Array.from(currentSelected));
+      updateSummary();
+    });
+
+    grid.appendChild(item);
+  }
+
+  document.querySelectorAll('.district-presets .preset-btn').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      const preset = btn.dataset.preset;
+      if (preset === 'all') {
+        currentSelected = new Set(DISTRICTS.map((d) => d.id));
+      } else if (preset === 'clear') {
+        currentSelected.clear();
+      } else if (DISTRICT_REGIONS[preset]) {
+        currentSelected = new Set(DISTRICT_REGIONS[preset]);
+      }
+      grid.querySelectorAll('input.district-checkbox').forEach((input) => {
+        input.checked = currentSelected.has(input.value);
+        input.closest('.district-card')?.classList.toggle('is-checked', input.checked);
+      });
+      saveSelectedDistricts(Array.from(currentSelected));
+      updateSummary();
+    });
+  });
+
+  updateSummary();
+}
+
+renderDistrictPicker();
 
 const modelSelect = document.getElementById('model-select');
 const modelSearch = document.getElementById('model-search');

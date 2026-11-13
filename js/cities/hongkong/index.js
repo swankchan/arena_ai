@@ -33,10 +33,10 @@ export const city = {
   ],
   defaultMode: 'car',
 
-  async build({ scene, markInit, setStatus }) {
+  async build({ scene, markInit, setStatus, selectedDistricts }) {
     setStatus('Building Hong Kong’s terrain-following road map...');
 
-    const world = await buildHongKongWorldAsync(scene, { setStatus });
+    const world = await buildHongKongWorldAsync(scene, { setStatus, selectedDistricts });
     markInit?.('world');
     setStatus('Setting up Hong Kong traffic...');
     await new Promise(resolve => setTimeout(resolve, 0));
@@ -70,7 +70,7 @@ export const city = {
 
     return {
       colliders: world.colliders,
-      dynamicRoots: [traffic.group, harbour.group, tramway.group, crowd.group, world.murray.lift.group],
+      dynamicRoots: [traffic.group, harbour.group, tramway.group, crowd.group, world.murray?.lift?.group].filter(Boolean),
       streetLighting: world.streetLighting,
       traffic,
       tramway,
@@ -134,7 +134,7 @@ export const city = {
     airport: world.airport,
       landmarks: world.landmarks,
       stats,
-      teleports: [...TELEPORTS, world.ifcMall.roofTeleport],
+      teleports: [...TELEPORTS, world.ifcMall?.roofTeleport].filter(Boolean),
       cameraPresets: city.cameraPresets,
       roadNames: ROAD_NAMES,
       placeNames: PLACE_NAMES,

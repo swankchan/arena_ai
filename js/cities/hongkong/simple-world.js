@@ -173,278 +173,331 @@ import { buildHongKongAirport } from './airport-world.js';
 import { buildTstWaterfrontRailing } from './tst-waterfront-railing-world.js';
 import { buildTstWaterfrontPromenade } from './tst-waterfront-promenade-world.js';
 import { buildCentralCarnival } from './central-carnival-world.js';
+import { shouldBuildLandmark } from './districts.js';
 
 const WATER_LEVEL = -2.2;
 
 // One coherent territory-wide DTM map. Roads follow the same terrain height queries used by players and furniture;
 // the six explicit sea crossings retain their own main-span / submerged profiles. No generated building blocks.
-function* buildSimpleHongKongWorldSteps(scene) {
+function* buildSimpleHongKongWorldSteps(scene, options = {}) {
+  const selectedDistricts = options.selectedDistricts;
+  const maybe = (key, fn, defaultStub = {}) => {
+    if (!shouldBuildLandmark(key, selectedDistricts)) {
+      return {
+        group: null,
+        colliders: [],
+        landmarks: [],
+        stats: {},
+        plazaTop: 0,
+        groundOffset: 0,
+        treeSites: [],
+        roofTeleport: null,
+        conradPodiumTop: 0,
+        lobbyFloorY: 0,
+        skyGardenFloorY: 0,
+        busTerminalClearanceFloorY: 0,
+        busTerminalClearanceCeilingY: 0,
+        runwayColliders: [],
+        taxiwayColliders: [],
+        groundHeightAt: (_x, _z, fallback) => fallback,
+        ...defaultStub,
+      };
+    }
+    return fn();
+  };
+
   yield 'Building Hong Kong’s unified territory-wide road map...';
   const full = yield* buildFullHongKongWorldSteps(scene, { waterLevel: WATER_LEVEL, includeCore: true });
   yield 'Building Hong Kong International Airport: three runways, terminals and control towers...';
-  const airport = buildHongKongAirport(scene);
+  const airport = maybe('airport', () => buildHongKongAirport(scene));
   yield 'Building the HSBC Main Building landmark...';
-  const hsbc = buildHsbcHeadquarters(scene, { groundOffset: HONG_KONG_TERRAIN_META.hsbcPadHeight });
+  const hsbc = maybe('hsbc', () => buildHsbcHeadquarters(scene, { groundOffset: HONG_KONG_TERRAIN_META.hsbcPadHeight }));
   yield 'Building 信德中心及港澳碼頭 Shun Tak Centre...';
-  const shunTak = buildShunTakCentre(scene);
+  const shunTak = maybe('shunTak', () => buildShunTakCentre(scene));
   yield 'Building 遮打花園 Chater Garden...';
-  const chaterGarden = buildChaterGarden(scene);
+  const chaterGarden = maybe('chaterGarden', () => buildChaterGarden(scene));
   yield 'Building 皇后像廣場 Statue Square...';
-  const statueSquare = buildStatueSquare(scene);
+  const statueSquare = maybe('statueSquare', () => buildStatueSquare(scene));
   yield 'Building 舊中國銀行大廈 Old Bank of China Building...';
-  const oldBankOfChina = buildOldBankOfChinaBuilding(scene);
+  const oldBankOfChina = maybe('oldBankOfChina', () => buildOldBankOfChinaBuilding(scene));
   yield 'Building 環球大廈 World-Wide House...';
-  const worldWideHouse = buildWorldWideHouse(scene);
+  const worldWideHouse = maybe('worldWideHouse', () => buildWorldWideHouse(scene));
   yield 'Building 娛樂行 Entertainment Building...';
-  const entertainmentBuilding = buildEntertainmentBuilding(scene);
+  const entertainmentBuilding = maybe('entertainmentBuilding', () => buildEntertainmentBuilding(scene));
   yield 'Building 香港文華東方酒店 Mandarin Oriental...';
-  const mandarinOriental = buildMandarinOriental(scene);
+  const mandarinOriental = maybe('mandarinOriental', () => buildMandarinOriental(scene));
   yield 'Building 太子大廈 Prince’s Building...';
-  const princesBuilding = buildPrincesBuilding(scene);
+  const princesBuilding = maybe('princesBuilding', () => buildPrincesBuilding(scene));
   yield 'Building 香港會所大廈 The Hong Kong Club Building...';
-  const hongKongClub = buildHongKongClub(scene);
+  const hongKongClub = maybe('hongKongClub', () => buildHongKongClubBuilding(scene));
   yield 'Building 恒生銀行總行 Hang Seng Bank Headquarters...';
-  const hangSeng = buildHangSengHeadquarters(scene);
+  const hangSeng = maybe('hangSeng', () => buildHangSengHeadquarters(scene));
   yield 'Building 中環街市 Central Market...';
-  const centralMarket = buildCentralMarket(scene);
+  const centralMarket = maybe('centralMarket', () => buildCentralMarket(scene));
   yield 'Building 力寶中心一期同二期 Lippo Centre Towers 1 & 2...';
-  const lippoCentre = buildLippoCentre(scene);
+  const lippoCentre = maybe('lippoCentre', () => buildLippoCentre(scene));
   yield 'Building 遠東金融中心 Far East Finance Centre...';
-  const farEastFinanceCentre = buildFarEastFinanceCentre(scene);
+  const farEastFinanceCentre = maybe('farEastFinance', () => buildFarEastFinanceCentre(scene));
   yield 'Building 友邦金融中心 AIA Central...';
-  const aiaCentral = buildAiaCentral(scene);
+  const aiaCentral = maybe('aiaCentral', () => buildAiaCentral(scene));
   yield 'Building 中國工商銀行大廈 ICBC Tower...';
-  const icbcTower = buildIcbcTower(scene);
+  const icbcTower = maybe('icbcTower', () => buildIcbcTower(scene));
   yield 'Building 美國銀行中心 Bank of America Tower...';
-  const bankOfAmericaTower = buildBankOfAmericaTower(scene);
+  const bankOfAmericaTower = maybe('bankOfAmerica', () => buildBankOfAmericaTower(scene));
   yield 'Building 中信大廈 CITIC Tower...';
-  const citicTower = buildCiticTower(scene);
+  const citicTower = maybe('citicTower', () => buildCiticTower(scene));
   yield 'Building 中國建設銀行大廈 CCB Tower...';
-  const ccbTower = buildCcbTower(scene);
+  const ccbTower = maybe('ccbTower', () => buildCcbTower(scene));
   yield 'Building 交易廣場第三座 Three Exchange Square...';
-  const threeExchange = buildThreeExchangeSquare(scene);
+  const threeExchange = maybe('threeExchange', () => buildThreeExchangeSquare(scene));
   yield 'Building 海富中心 Admiralty Centre...';
-  const admiraltyCentre = buildAdmiraltyCentre(scene);
+  const admiraltyCentre = maybe('admiraltyCentre', () => buildAdmiraltyCentre(scene));
   yield 'Building 統一中心 United Centre...';
-  const unitedCentre = buildUnitedCentre(scene);
+  const unitedCentre = maybe('unitedCentre', () => buildUnitedCentre(scene));
   yield 'Building 華潤大廈 China Resources Building...';
-  const chinaResources = buildChinaResourcesBuilding(scene);
+  const chinaResources = maybe('chinaResources', () => buildChinaResourcesBuilding(scene));
   yield 'Building 會展廣場辦公大樓 Convention Plaza Office Tower...';
-  const conventionPlazaOffice = buildConventionPlazaOfficeTower(scene);
+  const conventionPlazaOffice = maybe('conventionPlazaOffice', () => buildConventionPlazaOfficeTower(scene));
   yield 'Building 會景閣 Convention Plaza Apartments...';
-  const conventionPlazaApartments = buildConventionPlazaApartments(scene);
+  const conventionPlazaApartments = maybe('conventionPlazaApartments', () => buildConventionPlazaApartments(scene));
   yield 'Building the Standard Chartered Bank Building landmark...';
-  const standardChartered = buildStandardCharteredBankBuilding(scene, { groundOffset: HONG_KONG_TERRAIN_META.scbPadHeight });
+  const standardChartered = maybe('standardChartered', () => buildStandardCharteredBankBuilding(scene, { groundOffset: HONG_KONG_TERRAIN_META.scbPadHeight }));
   yield 'Building Two International Finance Centre...';
-  const twoIfc = buildTwoInternationalFinanceCentre(scene, { groundOffset: HONG_KONG_TERRAIN_META.twoIfcPadHeight });
+  const twoIfc = maybe('twoIfc', () => buildTwoInternationalFinanceCentre(scene, { groundOffset: HONG_KONG_TERRAIN_META.twoIfcPadHeight }));
   yield 'Building 國際金融中心商場 IFC Mall...';
-  const ifcMall = buildIfcMall(scene);
-  const generalPostOffice = buildGeneralPostOffice(scene);
-  const revenueTower = buildRevenueTower(scene);
-  const wanchaiTower = buildWanchaiTower(scene);
-  const immigrationTower = buildImmigrationTower(scene);
-  const obrienFootbridge = buildObrienFootbridge(scene);
-  const windsorHouse = buildWindsorHouse(scene);
+  const ifcMall = maybe('ifcMall', () => buildIfcMall(scene));
+  const generalPostOffice = maybe('generalPostOffice', () => buildGeneralPostOffice(scene));
+  const revenueTower = maybe('revenueTower', () => buildRevenueTower(scene));
+  const wanchaiTower = maybe('wanchaiTower', () => buildWanchaiTower(scene));
+  const immigrationTower = maybe('immigrationTower', () => buildImmigrationTower(scene));
+  const obrienFootbridge = maybe('obrienFootbridge', () => buildObrienFootbridge(scene));
+  const windsorHouse = maybe('windsorHouse', () => buildWindsorHouse(scene));
   yield 'Building 銅鑼灣崇光百貨 SOGO...';
-  const sogo = buildSogoCausewayBay(scene);
+  const sogo = maybe('sogo', () => buildSogoCausewayBay(scene));
   yield 'Building 香港禮賓府 Government House...';
-  const governmentHouse = buildGovernmentHouse(scene);
+  const governmentHouse = maybe('governmentHouse', () => buildGovernmentHouse(scene));
   yield 'Building 凌霄閣 Peak Tower...';
-  const peakTower = buildPeakTower(scene);
-  const stJohns = buildStJohnsBuilding(scene);
-  const stJohnsCathedral = buildStJohnsCathedral(scene);
-  const cheungKongPark = buildCheungKongPark(scene);
-  const peakTramCentralEntrance = buildPeakTramCentralEntrance(scene);
-  const peakTramCentralPlatform = buildPeakTramCentralPlatform(scene);
-  const centralPlatformRoof = buildPeakTramCentralRoof(scene);
-  const centralConcourse = buildPeakTramCentralConcourse(scene);
-  const centralLift = buildCentralLift(scene);
-  const peakTramCentralApproach = buildPeakTramCentralApproach(scene);
-  const centralEarthworks = buildCentralApproachEarthworks(scene);
-  const peakTramKennedyBridge = buildPeakTramKennedyBridge(scene);
-  const peakTramKennedyApproach = buildPeakTramKennedyApproach(scene);
-  const peakTramMacDonnell = buildMacDonnellStation(scene);
-  const peakTramMacDonnellBridge = buildMacDonnellBridge(scene);
-  const peakTramMagazineGapBridge = buildMagazineGapBridge(scene);
-  const peakTramMayRoadBridge = buildMayRoadBridge(scene);
-  const peakTramMayRoadStation = buildMayRoadStation(scene);
-  const peakTramPassingLoop = buildPeakTramPassingLoop(scene);
-  const peakTramUpperLine = buildPeakTramUpperLine(scene);
-  const peakTramBarkerApproach = buildPeakTramBarkerApproach(scene);
-  const peakTramSummitApproach = buildPeakTramSummitApproach(scene);
-  const peakTramBarkerStationTrack = buildPeakTramBarkerStationTrack(scene);
-  const peakTramBarkerStation = buildBarkerRoadStation(scene);
-  const peakTramBarkerEarthworks = buildBarkerRoadEarthworks(scene);
-  const peakTramBarkerAbutments = buildBarkerAbutments(scene);
-  const peakTramLoopGrading = buildPeakTramLoopGrading(scene);
-  const murray = buildMurray(scene);
-  const blueHouse = buildBlueHouse(scene);
+  const peakTower = maybe('peakTower', () => buildPeakTower(scene));
+  const stJohns = maybe('stJohns', () => buildStJohnsBuilding(scene));
+  const stJohnsCathedral = maybe('stJohnsCathedral', () => buildStJohnsCathedral(scene));
+  const cheungKongPark = maybe('cheungKongPark', () => buildCheungKongPark(scene));
+  const peakTramCentralEntrance = maybe('peakTram', () => buildPeakTramCentralEntrance(scene));
+  const peakTramCentralPlatform = maybe('peakTram', () => buildPeakTramCentralPlatform(scene));
+  const centralPlatformRoof = maybe('peakTram', () => buildPeakTramCentralRoof(scene));
+  const centralConcourse = maybe('peakTram', () => buildPeakTramCentralConcourse(scene));
+  const centralLift = maybe('peakTram', () => buildCentralLift(scene));
+  const peakTramCentralApproach = maybe('peakTram', () => buildPeakTramCentralApproach(scene));
+  const centralEarthworks = maybe('peakTram', () => buildCentralApproachEarthworks(scene));
+  const peakTramKennedyBridge = maybe('peakTram', () => buildPeakTramKennedyBridge(scene));
+  const peakTramKennedyApproach = maybe('peakTram', () => buildPeakTramKennedyApproach(scene));
+  const peakTramMacDonnell = maybe('peakTram', () => buildMacDonnellStation(scene));
+  const peakTramMacDonnellBridge = maybe('peakTram', () => buildMacDonnellBridge(scene));
+  const peakTramMagazineGapBridge = maybe('peakTram', () => buildMagazineGapBridge(scene));
+  const peakTramMayRoadBridge = maybe('peakTram', () => buildMayRoadBridge(scene));
+  const peakTramMayRoadStation = maybe('peakTram', () => buildMayRoadStation(scene));
+  const peakTramPassingLoop = maybe('peakTram', () => buildPeakTramPassingLoop(scene));
+  const peakTramUpperLine = maybe('peakTram', () => buildPeakTramUpperLine(scene));
+  const peakTramBarkerApproach = maybe('peakTram', () => buildPeakTramBarkerApproach(scene));
+  const peakTramSummitApproach = maybe('peakTram', () => buildPeakTramSummitApproach(scene));
+  const peakTramBarkerStationTrack = maybe('peakTram', () => buildPeakTramBarkerStationTrack(scene));
+  const peakTramBarkerStation = maybe('peakTram', () => buildBarkerRoadStation(scene));
+  const peakTramBarkerEarthworks = maybe('peakTram', () => buildBarkerRoadEarthworks(scene));
+  const peakTramBarkerAbutments = maybe('peakTram', () => buildBarkerAbutments(scene));
+  const peakTramLoopGrading = maybe('peakTram', () => buildPeakTramLoopGrading(scene));
+  const murray = maybe('murray', () => buildMurray(scene));
+  const blueHouse = maybe('blueHouse', () => buildBlueHouse(scene));
   yield 'Building 香港演藝學院 Hong Kong Academy for Performing Arts...';
-  const hkapa = buildHkapa(scene);
-  const jardineHouse = buildJardineHouse(scene);
+  const hkapa = maybe('hkapa', () => buildHkapa(scene));
+  const jardineHouse = maybe('jardineHouse', () => buildJardineHouse(scene));
   yield 'Building the International Commerce Centre...';
-  const icc = buildInternationalCommerceCentre(scene, { groundOffset: HONG_KONG_TERRAIN_META.iccPadHeight });
+  const icc = maybe('icc', () => buildInternationalCommerceCentre(scene, { groundOffset: HONG_KONG_TERRAIN_META.iccPadHeight }));
   yield 'Building the Bank of China Tower...';
-  const bankOfChina = buildBankOfChinaTower(scene, { groundOffset: HONG_KONG_TERRAIN_META.bankOfChinaPadHeight });
+  const bankOfChina = maybe('bankOfChina', () => buildBankOfChinaTower(scene, { groundOffset: HONG_KONG_TERRAIN_META.bankOfChinaPadHeight }));
   yield 'Building Central Plaza and its Lightime clock...';
-  const centralPlaza = buildCentralPlaza(scene, { groundOffset: HONG_KONG_TERRAIN_META.centralPlazaPadHeight });
+  const centralPlaza = maybe('centralPlaza', () => buildCentralPlaza(scene, { groundOffset: HONG_KONG_TERRAIN_META.centralPlazaPadHeight }));
   yield 'Building The Center and its rainbow neon facade...';
-  const theCenter = buildTheCenter(scene, { groundOffset: HONG_KONG_TERRAIN_META.theCenterPadHeight });
+  const theCenter = maybe('theCenter', () => buildTheCenter(scene, { groundOffset: HONG_KONG_TERRAIN_META.theCenterPadHeight }));
   yield 'Building Nina Tower, its crescent hotel and glass skybridge...';
-  const ninaTower = buildNinaTower(scene, { groundOffset: HONG_KONG_TERRAIN_META.ninaTowerPadHeight });
+  const ninaTower = maybe('ninaTower', () => buildNinaTower(scene, { groundOffset: HONG_KONG_TERRAIN_META.ninaTowerPadHeight }));
   yield 'Building Cheung Kong Center, its sunshades and fibre-optic facade...';
-  const cheungKong = buildCheungKongCenter(scene, { groundOffset: HONG_KONG_TERRAIN_META.cheungKongPadHeight });
+  const cheungKong = maybe('cheungKong', () => buildCheungKongCenter(scene, { groundOffset: HONG_KONG_TERRAIN_META.cheungKongPadHeight }));
   yield 'Building K11 Atelier, its limestone piers and stepped crown...';
-  const k11Atelier = buildK11Atelier(scene, { groundOffset: HONG_KONG_TERRAIN_META.k11AtelierPadHeight });
+  const k11Atelier = maybe('k11Atelier', () => buildK11Atelier(scene, { groundOffset: HONG_KONG_TERRAIN_META.k11AtelierPadHeight }));
   yield 'Building The Cullinan I, its 40 m glass entrance and angular crown...';
-  const cullinanI = buildCullinanI(scene, { groundOffset: HONG_KONG_TERRAIN_META.cullinanIPadHeight });
+  const cullinanI = maybe('cullinanI', () => buildCullinanI(scene, { groundOffset: HONG_KONG_TERRAIN_META.cullinanIPadHeight }));
   yield 'Building The Cullinan II and its crystalline W Hotel atrium...';
-  const cullinanII = buildCullinanII(scene, { groundOffset: HONG_KONG_TERRAIN_META.cullinanIIPadHeight });
+  const cullinanII = maybe('cullinanII', () => buildCullinanII(scene, { groundOffset: HONG_KONG_TERRAIN_META.cullinanIIPadHeight }));
   yield 'Building The Masterpiece, its curved balconies and open crown...';
-  const masterpiece = buildMasterpiece(scene, { groundOffset: HONG_KONG_TERRAIN_META.masterpiecePadHeight });
+  const masterpiece = maybe('masterpiece', () => buildMasterpiece(scene, { groundOffset: HONG_KONG_TERRAIN_META.masterpiecePadHeight }));
   yield 'Building Langham Place Office Tower and its ribbed dome...';
-  const langhamPlace = buildLanghamPlace(scene, { groundOffset: HONG_KONG_TERRAIN_META.langhamPlacePadHeight });
+  const langhamPlace = maybe('langhamPlace', () => buildLanghamPlace(scene, { groundOffset: HONG_KONG_TERRAIN_META.langhamPlacePadHeight }));
   yield 'Building The Summit butterfly wings, curved podium and crown...';
-  const summit = buildSummit(scene, { groundOffset: HONG_KONG_TERRAIN_META.summitPadHeight });
+  const summit = maybe('summit', () => buildSummit(scene, { groundOffset: HONG_KONG_TERRAIN_META.summitPadHeight }));
   yield 'Building Hopewell Centre, its cylindrical fins, revolving restaurant and observation lift...';
-  const hopewell = buildHopewell(scene, {
+  const hopewell = maybe('hopewell', () => buildHopewell(scene, {
     groundOffset: HONG_KONG_TERRAIN_META.hopewellDatumHeight,
     queensRoadUpperGround: HONG_KONG_TERRAIN_META.hopewellQreUpperPadHeight,
     queensRoadLowerGround: HONG_KONG_TERRAIN_META.hopewellQreLowerPadHeight,
     kennedyRoadGround: HONG_KONG_TERRAIN_META.hopewellKennedyPadHeight
-  });
+  }));
   yield 'Building Sun Hung Kai Centre bronze grid, illuminated stone corners and sloping atrium...';
-  const sunHungKai = buildSunHungKai(scene, { groundOffset: HONG_KONG_TERRAIN_META.sunHungKaiPadHeight });
+  const sunHungKai = maybe('sunHungKai', () => buildSunHungKai(scene, { groundOffset: HONG_KONG_TERRAIN_META.sunHungKaiPadHeight }));
   yield 'Building Two Pacific Place ribbons, Island Shangri-La crown and its two arrival levels...';
-  const twoPacificPlace = buildTwoPacificPlace(scene, {
+  const twoPacificPlace = maybe('twoPacificPlace', () => buildTwoPacificPlace(scene, {
     groundOffset: HONG_KONG_TERRAIN_META.twoPacificPlacePadHeight,
     hotelGround: HONG_KONG_TERRAIN_META.twoPacificPlaceHotelPadHeight,
     officeGround: HONG_KONG_TERRAIN_META.twoPacificPlaceOfficePadHeight
-  });
+  }));
   yield 'Building AIRSIDE’s five textile-inspired volumes, fluted glass and rooftop landscape...';
-  const airside = buildAirside(scene, { groundOffset: HONG_KONG_TERRAIN_META.airsidePadHeight });
+  const airside = maybe('airside', () => buildAirside(scene, { groundOffset: HONG_KONG_TERRAIN_META.airsidePadHeight }));
   yield 'Building Lee Garden One’s triangular tower, three corner lobes and southwest spire...';
-  const leeGardenOne = buildLeeGardenOne(scene, { groundOffset: HONG_KONG_TERRAIN_META.leeGardenOnePadHeight });
+  const leeGardenOne = maybe('leeGardenOne', () => buildLeeGardenOne(scene, { groundOffset: HONG_KONG_TERRAIN_META.leeGardenOnePadHeight }));
   yield 'Building One IFC’s stepped-square shaft, pilaster fins and open crown...';
-  const oneIfc = buildOneInternationalFinanceCentre(scene, { groundOffset: HONG_KONG_TERRAIN_META.oneIfcPadHeight });
+  const oneIfc = maybe('oneIfc', () => buildOneInternationalFinanceCentre(scene, { groundOffset: HONG_KONG_TERRAIN_META.oneIfcPadHeight }));
   yield 'Building Champion Tower’s curved reflective facade and ten-storey lobby...';
-  const championTower = buildChampionTower(scene, { groundOffset: HONG_KONG_TERRAIN_META.championTowerPadHeight });
+  const championTower = maybe('championTower', () => buildChampionTower(scene, { groundOffset: HONG_KONG_TERRAIN_META.championTowerPadHeight }));
   yield 'Building Cheung Kong Center II’s jumbo glass podium and CKC II crown...';
-  const ckc2 = buildCkc2(scene, { groundOffset: HONG_KONG_TERRAIN_META.ckc2PadHeight });
+  const ckc2 = maybe('ckc2', () => buildCkc2(scene, { groundOffset: HONG_KONG_TERRAIN_META.ckc2PadHeight }));
   yield 'Building Queensway Government Offices’ ribbon windows and rooftop dragon...';
-  const qgo = buildQgo(scene, { groundOffset: HONG_KONG_TERRAIN_META.qgoPadHeight, entranceGroundOffset: HONG_KONG_TERRAIN_META.qgoEntrancePadHeight });
+  const qgo = maybe('qgo', () => buildQgo(scene, { groundOffset: HONG_KONG_TERRAIN_META.qgoPadHeight, entranceGroundOffset: HONG_KONG_TERRAIN_META.qgoEntrancePadHeight }));
   yield 'Building Tamar’s Open Door, Chief Executive’s Office and Legislative Council Complex...';
-  const centralGovernment = buildCentralGovernmentComplex(scene, { groundOffset: HONG_KONG_TERRAIN_META.centralGovernmentPadHeight });
+  const centralGovernment = maybe('centralGovernment', () => buildCentralGovernmentComplex(scene, { groundOffset: HONG_KONG_TERRAIN_META.centralGovernmentPadHeight }));
   yield 'Building 1881 Heritage’s verandahs, grand staircase, Round House and time ball...';
-  const heritage1881 = buildHeritage1881(scene, { groundOffset: HONG_KONG_TERRAIN_META.heritage1881PadHeight });
+  const heritage1881 = maybe('heritage1881', () => buildHeritage1881(scene, { groundOffset: HONG_KONG_TERRAIN_META.heritage1881PadHeight }));
   yield 'Building The Arch’s four towers, elevated clubhouse and circular crown opening...';
-  const theArch = buildTheArch(scene, { groundOffset: HONG_KONG_TERRAIN_META.theArchPadHeight });
+  const theArch = maybe('theArch', () => buildTheArch(scene, { groundOffset: HONG_KONG_TERRAIN_META.theArchPadHeight }));
   yield 'Building The Harbourside’s three 255 m wave towers, sky corridors and podium...';
-  const theHarbourside = buildTheHarbourside(scene, { groundOffset: HONG_KONG_TERRAIN_META.theHarboursidePadHeight });
+  const theHarbourside = maybe('theHarbourside', () => buildTheHarbourside(scene, { groundOffset: HONG_KONG_TERRAIN_META.theHarboursidePadHeight }));
   yield 'Building The Waterfront’s six 142 m towers, podium and garden deck...';
-  const theWaterfront = buildTheWaterfront(scene, { groundOffset: HONG_KONG_TERRAIN_META.theWaterfrontPadHeight });
+  const theWaterfront = maybe('theWaterfront', () => buildTheWaterfront(scene, { groundOffset: HONG_KONG_TERRAIN_META.theWaterfrontPadHeight }));
   yield 'Building Sorrento’s five winged towers, white fins and curved beige sail crowns...';
-  const sorrento = buildSorrento(scene, { groundOffset: HONG_KONG_TERRAIN_META.sorrentoPadHeight });
+  const sorrento = maybe('sorrento', () => buildSorrento(scene, { groundOffset: HONG_KONG_TERRAIN_META.sorrentoPadHeight }));
   yield 'Building Conrad Hong Kong’s curved ribbons, white fins and Supreme Court Road porte-cochere...';
-  const conrad = buildConrad(scene, { groundOffset: HONG_KONG_TERRAIN_META.conradPadHeight, entranceGroundOffset: HONG_KONG_TERRAIN_META.conradEntrancePadHeight });
+  const conrad = maybe('conrad', () => buildConrad(scene, { groundOffset: HONG_KONG_TERRAIN_META.conradPadHeight, entranceGroundOffset: HONG_KONG_TERRAIN_META.conradEntrancePadHeight }));
   yield 'Building Hysan Place’s shifting volumes, sky gardens and diagonal express escalators...';
-  const hysan = buildHysanPlace(scene, { groundOffset: HONG_KONG_TERRAIN_META.hysanPadHeight });
+  const hysan = maybe('hysan', () => buildHysanPlace(scene, { groundOffset: HONG_KONG_TERRAIN_META.hysanPadHeight }));
   yield 'Building Two Taikoo Place’s conical glass corners, sky gardens and renewable-energy roof...';
-  const twoTaikoo = buildTwoTaikooPlace(scene, { groundOffset: HONG_KONG_TERRAIN_META.twoTaikooPadHeight });
+  const twoTaikoo = maybe('twoTaikoo', () => buildTwoTaikooPlace(scene, { groundOffset: HONG_KONG_TERRAIN_META.twoTaikooPadHeight }));
   yield 'Building The Henderson’s curved silver petals, elevated lobby, Sky Garden and Cloud 39...';
-  const theHenderson = buildTheHenderson(scene, { groundOffset: HONG_KONG_TERRAIN_META.hendersonPadHeight });
+  const theHenderson = maybe('theHenderson', () => buildTheHenderson(scene, { groundOffset: HONG_KONG_TERRAIN_META.hendersonPadHeight }));
   yield 'Building One Exchange Square’s silver cylinders, pink granite and bus-terminal podium...';
-  const oneExchange = buildOneExchangeSquare(scene, { groundOffset: HONG_KONG_TERRAIN_META.oneExchangePadHeight });
+  const oneExchange = maybe('oneExchange', () => buildOneExchangeSquare(scene, { groundOffset: HONG_KONG_TERRAIN_META.oneExchangePadHeight }));
   yield 'Building Two Exchange Square’s curved arrival, lift directory and long-core roof...';
-  const twoExchange = buildTwoExchangeSquare(scene, { groundOffset: HONG_KONG_TERRAIN_META.twoExchangePadHeight });
+  const twoExchange = maybe('twoExchange', () => buildTwoExchangeSquare(scene, { groundOffset: HONG_KONG_TERRAIN_META.twoExchangePadHeight }));
   yield 'Building the Court of Final Appeal’s granite colonnades, Themis and ribbed dome...';
-  const courtOfFinalAppeal = buildCourtOfFinalAppeal(scene, { groundOffset: HONG_KONG_TERRAIN_META.cfaPadHeight });
+  const courtOfFinalAppeal = maybe('courtOfFinalAppeal', () => buildCourtOfFinalAppeal(scene, { groundOffset: HONG_KONG_TERRAIN_META.cfaPadHeight }));
   yield 'Building HKCEC’s flying-bird roofs, atrium garden and Convention Plaza Apartments...';
-  const hkcec = buildHkcec(scene, { groundOffset: HONG_KONG_TERRAIN_META.hkcecPadHeight });
+  const hkcec = maybe('hkcec', () => buildHkcec(scene, { groundOffset: HONG_KONG_TERRAIN_META.hkcecPadHeight }));
   yield 'Building Mong Kok Stadium’s 6,700-seat bowl, seven tensile sails and LED screen...';
-  const mongKokStadium = buildMongKokStadium(scene, { groundOffset: HONG_KONG_TERRAIN_META.mongKokStadiumPadHeight });
+  const mongKokStadium = maybe('mongKokStadium', () => buildMongKokStadium(scene, { groundOffset: HONG_KONG_TERRAIN_META.mongKokStadiumPadHeight }));
   yield 'Building Hong Kong Coliseum’s inverted-pyramid arena...';
-  const coliseum = buildHongKongColiseum(scene);
+  const coliseum = maybe('hongKongColiseum', () => buildHongKongColiseum(scene));
   yield 'Building Hong Kong Stadium’s twin membrane roofs and white lattice arches...';
-  const hongKongStadium = buildHongKongStadium(scene, { groundOffset: HONG_KONG_TERRAIN_META.hongKongStadiumPadHeight });
+  const hongKongStadium = maybe('hongKongStadium', () => buildHongKongStadium(scene, { groundOffset: HONG_KONG_TERRAIN_META.hongKongStadiumPadHeight }));
   yield 'Reconstructing 荔園 Lai Yuen’s entrance towers, rides and 宋城 (historical)...';
-  const laiYuen = buildLaiYuen(scene, { groundOffset: HONG_KONG_TERRAIN_META.laiYuenPadHeight });
+  const laiYuen = maybe('laiYuen', () => buildLaiYuen(scene, { groundOffset: HONG_KONG_TERRAIN_META.laiYuenPadHeight }));
   yield 'Building 沙田馬場 Sha Tin Racecourse’s twin grandstands and 1,900 m turf course...';
-  const shaTin = buildShaTinRacecourse(scene, { groundOffset: HONG_KONG_TERRAIN_META.shaTinPadHeight });
+  const shaTin = maybe('shaTinRacecourse', () => buildShaTinRacecourse(scene, { groundOffset: HONG_KONG_TERRAIN_META.shaTinPadHeight }));
   yield 'Building 香港海洋公園 Ocean Park’s two halves, cable car and Ocean Express...';
-  const oceanPark = buildOceanPark(scene);
+  const oceanPark = maybe('oceanPark', () => buildOceanPark(scene));
   yield 'Rebuilding 伊利沙伯體育館 Queen Elizabeth Stadium...';
-  const queenElizabethStadium = buildQueenElizabethStadium(scene, { groundOffset: HONG_KONG_TERRAIN_META.queenElizabethStadiumPadHeight });
+  const queenElizabethStadium = maybe('queenElizabethStadium', () => buildQueenElizabethStadium(scene, { groundOffset: HONG_KONG_TERRAIN_META.queenElizabethStadiumPadHeight }));
   yield 'Building 啟德主場館 Kai Tak Stadium...';
-  const kaiTakStadium = buildKaiTakStadium(scene, { groundOffset: HONG_KONG_TERRAIN_META.kaiTakStadiumPadHeight });
+  const kaiTakStadium = maybe('kaiTakStadium', () => buildKaiTakStadium(scene, { groundOffset: HONG_KONG_TERRAIN_META.kaiTakStadiumPadHeight }));
   yield 'Building 啟德體藝館 Kai Tak Arena and 啟德青年運動場...';
-  const kaiTakArena = buildKaiTakArena(scene, { groundOffset: HONG_KONG_TERRAIN_META.kaiTakArenaPadHeight });
-  const kaiTakYouth = buildKaiTakYouthSportsGround(scene, { groundOffset: HONG_KONG_TERRAIN_META.kaiTakYouthPadHeight });
+  const kaiTakArena = maybe('kaiTakArena', () => buildKaiTakArena(scene, { groundOffset: HONG_KONG_TERRAIN_META.kaiTakArenaPadHeight }));
+  const kaiTakYouth = maybe('kaiTakYouthSportsGround', () => buildKaiTakYouthSportsGround(scene, { groundOffset: HONG_KONG_TERRAIN_META.kaiTakYouthPadHeight }));
   yield 'Building 跑馬地馬場 Happy Valley Racecourse...';
-  const happyValley = buildHappyValleyRacecourse(scene, { groundOffset: HONG_KONG_TERRAIN_META.happyValleyPadHeight });
+  const happyValley = maybe('happyValleyRacecourse', () => buildHappyValleyRacecourse(scene, { groundOffset: HONG_KONG_TERRAIN_META.happyValleyPadHeight }));
   yield 'Building Times Square’s twin towers, arched atria and civic piazza clock...';
-  const timesSquare = buildTimesSquare(scene, { groundOffset: HONG_KONG_TERRAIN_META.timesSquarePadHeight });
+  const timesSquare = maybe('timesSquare', () => buildTimesSquare(scene, { groundOffset: HONG_KONG_TERRAIN_META.timesSquarePadHeight }));
   yield 'Building Ocean Terminal, LCX and the cascading 2017 harbour extension...';
-  const oceanTerminal = buildOceanTerminal(scene, { groundOffset: HONG_KONG_TERRAIN_META.harbourCityPadHeights.oceanTerminal });
+  const oceanTerminal = maybe('oceanTerminal', () => buildOceanTerminal(scene, { groundOffset: HONG_KONG_TERRAIN_META.harbourCityPadHeights.oceanTerminal }));
   yield 'Building Star House’s pale concrete lattice and Star Annex entrance...';
-  const starHouse = buildStarHouse(scene, { groundOffset: HONG_KONG_TERRAIN_META.harbourCityPadHeights.starHouse });
+  const starHouse = maybe('starHouse', () => buildStarHouse(scene, { groundOffset: HONG_KONG_TERRAIN_META.harbourCityPadHeights.starHouse }));
   yield 'Building Marco Polo Hongkong Hotel’s recessed room grid and gold-horse entrance...';
-  const marcoPolo = buildMarcoPoloHongkongHotel(scene, { groundOffset: HONG_KONG_TERRAIN_META.harbourCityPadHeights.marcoPoloHongkong });
+  const marcoPolo = maybe('marcoPolo', () => buildMarcoPoloHongkongHotel(scene, { groundOffset: HONG_KONG_TERRAIN_META.harbourCityPadHeights.marcoPoloHongkong }));
   yield 'Building Ocean Centre’s thirteen white office ribbons and Canton Road atrium...';
-  const oceanCentre = buildOceanCentre(scene, { groundOffset: HONG_KONG_TERRAIN_META.harbourCityPadHeights.oceanCentre });
+  const oceanCentre = maybe('oceanCentre', () => buildOceanCentre(scene, { groundOffset: HONG_KONG_TERRAIN_META.harbourCityPadHeights.oceanCentre }));
   yield 'Building Prince Hotel’s dark window strips and deep porte-cochere...';
-  const princeHotel = buildPrinceHotel(scene, { groundOffset: HONG_KONG_TERRAIN_META.harbourCityPadHeights.princeHotel });
+  const princeHotel = maybe('princeHotel', () => buildPrinceHotel(scene, { groundOffset: HONG_KONG_TERRAIN_META.harbourCityPadHeights.princeHotel }));
   yield 'Building The Gateway Tower 1 curved curtain wall and pink-granite podium...';
-  const gatewayTowerOne = buildGatewayTowerOne(scene, { groundOffset: HONG_KONG_TERRAIN_META.harbourCityPadHeights.gatewayTowerOne });
+  const gatewayTowerOne = maybe('gateway1', () => buildGatewayTowerOne(scene, { groundOffset: HONG_KONG_TERRAIN_META.harbourCityPadHeights.gatewayTowerOne }));
   yield 'Building The Gateway Tower 2 and the Gateway I interconnecting floors...';
-  const gatewayTowerTwo = buildGatewayTowerTwo(scene, { groundOffset: HONG_KONG_TERRAIN_META.harbourCityPadHeights.gatewayTowerTwo });
+  const gatewayTowerTwo = maybe('gateway2', () => buildGatewayTowerTwo(scene, { groundOffset: HONG_KONG_TERRAIN_META.harbourCityPadHeights.gatewayTowerTwo }));
   yield 'Building Prudential Tower and its office / serviced-apartment facade...';
-  const gatewayTowerThree = buildGatewayTowerThree(scene, { groundOffset: HONG_KONG_TERRAIN_META.harbourCityPadHeights.gatewayTowerThree });
+  const gatewayTowerThree = maybe('gateway3', () => buildGatewayTowerThree(scene, { groundOffset: HONG_KONG_TERRAIN_META.harbourCityPadHeights.gatewayTowerThree }));
   yield 'Building The Gateway Tower 5 and the Prudential twin gateway arch...';
-  const gatewayTowerFive = buildGatewayTowerFive(scene, { groundOffset: HONG_KONG_TERRAIN_META.harbourCityPadHeights.gatewayTowerFive });
+  const gatewayTowerFive = maybe('gateway5', () => buildGatewayTowerFive(scene, { groundOffset: HONG_KONG_TERRAIN_META.harbourCityPadHeights.gatewayTowerFive }));
   yield 'Building The Gateway Tower 6 office crown and pink-granite podium...';
-  const gatewayTowerSix = buildGatewayTowerSix(scene, { groundOffset: HONG_KONG_TERRAIN_META.harbourCityPadHeights.gatewayTowerSix });
+  const gatewayTowerSix = maybe('gateway6', () => buildGatewayTowerSix(scene, { groundOffset: HONG_KONG_TERRAIN_META.harbourCityPadHeights.gatewayTowerSix }));
   yield 'Building Pacific Club’s arched windows, barrel vault and piled pier...';
-  const pacificClub = buildPacificClub(scene, { groundOffset: HONG_KONG_TERRAIN_META.harbourCityPadHeights.pacificClub });
+  const pacificClub = maybe('pacificClub', () => buildPacificClub(scene, { groundOffset: HONG_KONG_TERRAIN_META.harbourCityPadHeights.pacificClub }));
   yield 'Building the Space Museum’s panelled egg dome and sweeping tiled west wing...';
-  const spaceMuseum = buildSpaceMuseum(scene, { groundOffset: HONG_KONG_TERRAIN_META.spaceMuseumPadHeight });
+  const spaceMuseum = maybe('spaceMuseum', () => buildSpaceMuseum(scene, { groundOffset: HONG_KONG_TERRAIN_META.spaceMuseumPadHeight }));
   yield 'Building the Hong Kong Museum of Art’s wavy glass facade and Harbour Gallery...';
-  const artMuseum = buildArtMuseum(scene, { groundOffset: HONG_KONG_TERRAIN_META.artMuseumPadHeight });
+  const artMuseum = maybe('museumOfArt', () => buildArtMuseum(scene, { groundOffset: HONG_KONG_TERRAIN_META.artMuseumPadHeight }));
   yield 'Building the Hong Kong Science Museum’s pink granite hall, glass tower and Energy Machine...';
-  const scienceMuseum = buildScienceMuseum(scene, { groundOffset: HONG_KONG_TERRAIN_META.scienceMuseumPadHeight });
+  const scienceMuseum = maybe('scienceMuseum', () => buildHongKongScienceMuseum(scene, { groundOffset: HONG_KONG_TERRAIN_META.scienceMuseumPadHeight }));
   yield 'Building the Hong Kong Museum of History’s stepped terracotta facade and curved roof vaults...';
-  const historyMuseum = buildHistoryMuseum(scene, { groundOffset: HONG_KONG_TERRAIN_META.historyMuseumPadHeight });
+  const historyMuseum = maybe('historyMuseum', () => buildHistoryMuseum(scene, { groundOffset: HONG_KONG_TERRAIN_META.historyMuseumPadHeight }));
   yield 'Building the Cultural Centre’s twin tiled sails and covered foyer...';
-  const culturalCentre = buildCulturalCentre(scene, { groundOffset: HONG_KONG_TERRAIN_META.culturalCentrePadHeight });
+  const culturalCentre = maybe('culturalCentre', () => buildCulturalCentre(scene, { groundOffset: HONG_KONG_TERRAIN_META.culturalCentrePadHeight }));
   yield 'Building Hong Kong City Hall’s High Block, Low Block and Memorial Garden...';
-  const cityHall = buildCityHall(scene, { groundOffset: HONG_KONG_TERRAIN_META.cityHallPadHeight });
+  const cityHall = maybe('cityHall', () => buildCityHall(scene, { groundOffset: HONG_KONG_TERRAIN_META.cityHallPadHeight }));
   yield 'Building Hong Kong Central Library’s Gate to Knowledge and Causeway Road forecourt...';
-  const centralLibrary = buildCentralLibrary(scene, { groundOffset: HONG_KONG_TERRAIN_META.centralLibraryPadHeight });
+  const centralLibrary = maybe('centralLibrary', () => buildCentralLibrary(scene, { groundOffset: HONG_KONG_TERRAIN_META.centralLibraryPadHeight }));
   yield 'Building the Clock Tower’s granite, brick belfry and reflecting-pool palms...';
-  const clockTower = buildClockTower(scene, { groundOffset: HONG_KONG_TERRAIN_META.clockTowerPadHeight });
+  const clockTower = maybe('clockTower', () => buildClockTower(scene, { groundOffset: HONG_KONG_TERRAIN_META.clockTowerPadHeight }));
   yield 'Building The Peninsula’s heritage arches, tower, helipad and fountain forecourt...';
-  const peninsulaHotel = buildPeninsulaHotel(scene, { groundOffset: HONG_KONG_TERRAIN_META.peninsulaPadHeight });
+  const peninsulaHotel = maybe('peninsulaHotel', () => buildPeninsulaHotel(scene, { groundOffset: HONG_KONG_TERRAIN_META.peninsulaPadHeight }));
   yield 'Building Sheraton’s guestroom grid, sign blade, Nathan Road entrance and rooftop pool...';
-  const sheratonHotel = buildSheratonHotel(scene, { groundOffset: HONG_KONG_TERRAIN_META.sheratonPadHeight });
+  const sheratonHotel = maybe('sheratonHotel', () => buildSheratonHotel(scene, { groundOffset: HONG_KONG_TERRAIN_META.sheratonPadHeight }));
   yield 'Building The Salisbury–YMCA’s dark podium and unequal rounded twin towers...';
-  const salisburyYMCA = buildSalisburyYMCA(scene, { groundOffset: HONG_KONG_TERRAIN_META.salisburyPadHeight });
+  const salisburyYMCA = maybe('salisburyYMCA', () => buildSalisburyYMCA(scene, { groundOffset: HONG_KONG_TERRAIN_META.salisburyPadHeight }));
   yield 'Building Kowloon Shangri-La’s dark podium, porte-cochere and projecting bay-window grid...';
-  const kowloonShangriLa = buildKowloonShangriLa(scene, { groundOffset: HONG_KONG_TERRAIN_META.kowloonShangriLaPadHeight });
+  const kowloonShangriLa = maybe('kowloonShangriLa', () => buildKowloonShangriLa(scene, { groundOffset: HONG_KONG_TERRAIN_META.kowloonShangriLaPadHeight }));
   yield 'Building the Star Ferry to Tsim Sha Tsui East wave balustrade...';
-  const tstWaterfrontRailing = buildTstWaterfrontRailing(scene);
+  const tstWaterfrontRailing = maybe('tstWaterfrontRailing', () => buildTstWaterfrontRailing(scene));
   yield 'Building Tsim Sha Tsui waterfront promenade, covered walkways, Avenue of Stars and 3D seawall...';
-  const tstWaterfrontPromenade = buildTstWaterfrontPromenade(scene);
+  const tstWaterfrontPromenade = maybe('tstWaterfrontPromenade', () => buildTstWaterfrontPromenade(scene));
   yield 'Building Central Harbourfront Event Space, Hong Kong Observation Wheel and AIA Carnival...';
-  const centralCarnival = buildCentralCarnival(scene);
+  const centralCarnival = maybe('centralCarnival', () => buildCentralCarnival(scene));
   yield 'Building Hong Kong Park’s aviary, conservatory, heritage terraces and walking network...';
-  const hongKongPark = buildHongKongPark(scene);
+  const hongKongPark = maybe('hongKongPark', () => buildHongKongPark(scene));
   yield 'Building Kowloon Park’s Chinese Garden, Bird Lake, pool complex and sports grounds...';
-  const kowloonPark = buildKowloonPark(scene);
+  const kowloonPark = maybe('kowloonPark', () => buildKowloonPark(scene));
   yield 'Building Victoria Park’s central lawn, tennis centre, model boat pool and sports grounds...';
-  const victoriaPark = buildVictoriaPark(scene);
-  const majorParkTrees = buildMajorParkTreeLayer(scene, [hongKongPark, kowloonPark, victoriaPark, chaterGarden, statueSquare], [...hongKongPark.colliders, ...kowloonPark.colliders, ...victoriaPark.colliders, ...chaterGarden.colliders, ...statueSquare.colliders, ...courtOfFinalAppeal.colliders, ...oldBankOfChina.colliders, ...centralMarket.colliders, ...lippoCentre.colliders, ...farEastFinanceCentre.colliders, ...aiaCentral.colliders, ...icbcTower.colliders, ...bankOfAmericaTower.colliders, ...citicTower.colliders, ...ccbTower.colliders, ...threeExchange.colliders, ...admiraltyCentre.colliders, ...unitedCentre.colliders, ...chinaResources.colliders, ...conventionPlazaOffice.colliders, ...conventionPlazaApartments.colliders, ...hsbc.colliders, ...standardChartered.colliders]);
+  const victoriaPark = maybe('victoriaPark', () => buildVictoriaPark(scene));
+  const parkList = [hongKongPark, kowloonPark, victoriaPark, chaterGarden, statueSquare].filter(p => p && p.group);
+  const parkTreesToExclude = [
+    ...(hongKongPark?.colliders ?? []),
+    ...(kowloonPark?.colliders ?? []),
+    ...(victoriaPark?.colliders ?? []),
+    ...(chaterGarden?.colliders ?? []),
+    ...(statueSquare?.colliders ?? []),
+    ...(courtOfFinalAppeal?.colliders ?? []),
+    ...(oldBankOfChina?.colliders ?? []),
+    ...(centralMarket?.colliders ?? []),
+    ...(lippoCentre?.colliders ?? []),
+    ...(farEastFinanceCentre?.colliders ?? []),
+    ...(aiaCentral?.colliders ?? []),
+    ...(icbcTower?.colliders ?? []),
+    ...(bankOfAmericaTower?.colliders ?? []),
+    ...(citicTower?.colliders ?? []),
+    ...(ccbTower?.colliders ?? []),
+    ...(threeExchange?.colliders ?? []),
+    ...(admiraltyCentre?.colliders ?? []),
+    ...(unitedCentre?.colliders ?? []),
+    ...(chinaResources?.colliders ?? []),
+    ...(conventionPlazaOffice?.colliders ?? []),
+    ...(conventionPlazaApartments?.colliders ?? []),
+    ...(hsbc?.colliders ?? []),
+    ...(standardChartered?.colliders ?? []),
+  ];
+  const majorParkTrees = parkList.length ? buildMajorParkTreeLayer(scene, parkList, parkTreesToExclude) : { group: new THREE.Group(), stats: { trees: 0 }, update: () => {} };
   yield 'Building drivable harbour bridges and tunnels...';
-  const crossings = buildHongKongCrossings(scene);
+  const crossings = maybe('harbourBridgesAndTunnels', () => buildHongKongCrossings(scene));
   yield 'Placing 144,995 lamp posts across Hong Kong...';
   const streetLighting = createHongKongStreetLighting(scene);
   yield 'Restoring surveyed Hong Kong road markings and crossings...';
@@ -887,10 +940,12 @@ function* buildSimpleHongKongWorldSteps(scene) {
 }
 
 // Preserve the synchronous builder for existing callers; the game uses the yielding variant.
-export function buildSimpleHongKongWorld(scene, { setStatus = () => {} } = {}) {
-  return runLoadingSteps(buildSimpleHongKongWorldSteps(scene), setStatus);
+export function buildSimpleHongKongWorld(scene, options = {}) {
+  const { setStatus = () => {} } = options;
+  return runLoadingSteps(buildSimpleHongKongWorldSteps(scene, options), setStatus);
 }
 
-export function buildSimpleHongKongWorldAsync(scene, { setStatus = () => {}, yieldToBrowser } = {}) {
-  return runLoadingStepsAsync(buildSimpleHongKongWorldSteps(scene), setStatus, yieldToBrowser);
+export function buildSimpleHongKongWorldAsync(scene, options = {}) {
+  const { setStatus = () => {}, yieldToBrowser } = options;
+  return runLoadingStepsAsync(buildSimpleHongKongWorldSteps(scene, options), setStatus, yieldToBrowser);
 }
