@@ -14,9 +14,9 @@ test('road pad intersection broad phase preserves pre-optimization local profile
       hash.update(JSON.stringify(roadRibbonProfileAtSegment(id, j))); count++;
     }
   }
-  // Recaptured after the underpass lift was bounded by the podium slabs the decks run under, and after the segment
-  // profile cache stopped memoising un-lifted profiles mid-pass. Only deck ways change and the count is unchanged, so
-  // every audited segment is still the same source geometry.
+  // Recaptured after the crest rule stopped cutting the drawn chord through the hillside: 柏寧路 was 0.28 m under its own
+  // shoulders. Only interior stations move; the count is unchanged and every audited segment is still the same source
+  // geometry.
   assert.equal(count, 6154);
-  assert.equal(hash.digest('hex'), '8d2624e8accd4baeb8df4b8a34f1ae635c413c60fafba405409986bb6be90928');
+  assert.equal(hash.digest('hex'), '324ae10097b5b179c2cfcfca3eac88e454de47174937bb49cf8403cfdc1fb534');
 });

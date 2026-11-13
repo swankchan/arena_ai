@@ -420,9 +420,19 @@ function flattenInteriorProfile(ts, heights) {
     const rise = heights[index] - Math.max(startHeight, endHeight);
     if (rise > crestRise) { crest = index; crestRise = rise; }
   }
+  // The chord is only allowed to flatten the profile where it still covers the ground. 柏寧路 drops steeply enough that
+  // the straight descent between its ends cut 0.28 m under the surveyed shoulders, burying the carriageway in the
+  // hillside it is cut into. Rather than bending the interior stations around the obstacle — which would leave the
+  // descent with a hump it does not really have — the whole chord is raised until it covers every station, so the
+  // segment stays one continuous grade that no longer passes through the hill.
+  let lift = 0;
+  for (let index = 1; index + 1 < ts.length; index++) {
+    if (index === crest) continue;
+    lift = Math.max(lift, heights[index] - chord(index));
+  }
   const out = heights.slice();
   for (let index = 1; index + 1 < ts.length; index++) {
-    out[index] = index === crest ? Math.max(heights[index], chord(index)) : chord(index);
+    out[index] = index === crest ? Math.max(heights[index], chord(index) + lift) : chord(index) + lift;
   }
   return out;
 }
