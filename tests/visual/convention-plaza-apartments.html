@@ -1,0 +1,116 @@
+<!doctype html><meta charset="utf-8">
+<title>會景閣 Convention Plaza Apartments Visual Test</title>
+<style>
+  body { margin: 0; overflow: hidden; background: #111; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+  #ui {
+    position: absolute; top: 12px; left: 12px; color: #f5f3ef;
+    background: rgba(22, 26, 30, 0.88); backdrop-filter: blur(8px);
+    padding: 14px 18px; border-radius: 8px; z-index: 10; line-height: 1.55;
+    border: 1px solid rgba(255,255,255,0.15); max-width: 480px; box-shadow: 0 4px 20px rgba(0,0,0,0.5);
+  }
+  #ui h1 { margin: 0 0 6px; font-size: 16px; color: #d4a359; letter-spacing: 0.5px; }
+  #ui p { margin: 4px 0; font-size: 12.5px; color: #d0c8b8; }
+  #ui .tags { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 8px; }
+  #ui .tag { background: rgba(212, 163, 89, 0.2); color: #f0caa0; border: 1px solid rgba(212, 163, 89, 0.4); border-radius: 4px; padding: 2px 7px; font-size: 11px; }
+  #controls {
+    position: absolute; bottom: 12px; left: 12px; color: #bbb;
+    background: rgba(0,0,0,0.7); padding: 8px 12px; border-radius: 6px; font-size: 11px; z-index: 10;
+  }
+</style>
+<div id="ui">
+  <h1>會景閣 Convention Plaza Apartments</h1>
+  <p><b>灣仔港灣道1號 (1 Harbour Road, Wan Chai)</b> | 1989 年落成</p>
+  <p>建築師：伍振民 (Ng Chun Man & Associates) | 香港會議展覽中心一期綜合體 | 高度 164 米 (47 層)</p>
+  <div class="tags">
+    <span class="tag">雙翼折面維港全景視野</span>
+    <span class="tag">古銅反射玻璃幕牆</span>
+    <span class="tag">香檳金陽極氧化窗間帶</span>
+    <span class="tag">4樓平台戶外泳池與休閒花園</span>
+    <span class="tag">地面車道門廊雨棚</span>
+    <span class="tag">高空航空障礙警告燈</span>
+  </div>
+</div>
+<div id="controls">
+  滑鼠左鍵拖曳旋轉視角 | 滾輪縮放 | <a href="?night" style="color:#d4a359">夜景模式</a> / <a href="?" style="color:#d4a359">日景模式</a>
+</div>
+
+<script type="importmap">{"imports":{"three":"../../vendor/three/build/three.webgpu.js","three/webgpu":"../../vendor/three/build/three.webgpu.js","three/tsl":"../../vendor/three/build/three.tsl.js","three/addons/":"../../vendor/three/examples/jsm/"}}</script>
+<script type="module">
+import * as THREE from 'three/webgpu';
+import { cityUniforms } from '../../js/tsl-materials.js';
+import { buildConventionPlazaApartments } from '../../js/cities/hongkong/convention-plaza-apartments-world.js';
+import { buildConventionPlazaOfficeTower } from '../../js/cities/hongkong/convention-plaza-office-tower-world.js';
+import { CONVENTION_PLAZA_APARTMENTS_SITE as S } from '../../js/cities/hongkong/convention-plaza-apartments-site.js';
+import { hongKongTerrainHeight as h } from '../../js/cities/hongkong/terrain.js';
+
+const night = new URLSearchParams(location.search).has('night');
+cityUniforms.uInteriorGlow.value = night ? 1.5 : 0;
+const scene = new THREE.Scene();
+scene.background = new THREE.Color(night ? 0x0f1520 : 0xc7d8e5);
+
+// Add Convention Plaza Apartments & Office Tower
+buildConventionPlazaApartments(scene);
+try {
+  buildConventionPlazaOfficeTower(scene);
+} catch (e) {
+  console.warn('Neighbor building skipped:', e);
+}
+
+// Ground plane
+const groundGeo = new THREE.PlaneGeometry(800, 800);
+const groundMat = new THREE.MeshStandardMaterial({ color: night ? 0x181c22 : 0x48525c, roughness: 0.8 });
+const ground = new THREE.Mesh(groundGeo, groundMat);
+ground.rotation.x = -Math.PI / 2;
+ground.position.set(S.x, h(S.x, S.z) - 0.1, S.z);
+scene.add(ground);
+
+// Lighting
+const amb = new THREE.AmbientLight(night ? 0x223344 : 0x8899aa, night ? 0.6 : 1.2);
+scene.add(amb);
+const dir = new THREE.DirectionalLight(night ? 0x446688 : 0xfffaed, night ? 0.8 : 2.0);
+dir.position.set(S.x + 180, 260, S.z + 200);
+scene.add(dir);
+
+const camera = new THREE.PerspectiveCamera(45, innerWidth / innerHeight, 1, 2500);
+camera.position.set(S.x + 130, h(S.x, S.z) + 110, S.z + 160);
+
+const renderer = new THREE.WebGPURenderer({ antialias: true });
+renderer.setSize(innerWidth, innerHeight);
+renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+document.body.appendChild(renderer.domElement);
+
+let dragging = false, prevX = 0, prevY = 0;
+let theta = 0.6, phi = 0.45, radius = 250;
+const target = new THREE.Vector3(S.x, h(S.x, S.z) + 80, S.z);
+
+function updateCam() {
+  camera.position.x = target.x + radius * Math.sin(theta) * Math.cos(phi);
+  camera.position.y = target.y + radius * Math.sin(phi);
+  camera.position.z = target.z + radius * Math.cos(theta) * Math.cos(phi);
+  camera.lookAt(target);
+}
+updateCam();
+
+window.addEventListener('mousedown', e => { dragging = true; prevX = e.clientX; prevY = e.clientY; });
+window.addEventListener('mousemove', e => {
+  if (!dragging) return;
+  theta += (e.clientX - prevX) * 0.006;
+  phi = Math.max(0.08, Math.min(1.2, phi + (e.clientY - prevY) * 0.006));
+  prevX = e.clientX; prevY = e.clientY;
+  updateCam();
+});
+window.addEventListener('mouseup', () => { dragging = false; });
+window.addEventListener('wheel', e => {
+  radius = Math.max(40, Math.min(600, radius + e.deltaY * 0.25));
+  updateCam();
+});
+window.addEventListener('resize', () => {
+  camera.aspect = innerWidth / innerHeight;
+  camera.updateProjectionMatrix();
+  renderer.setSize(innerWidth, innerHeight);
+});
+
+renderer.setAnimationLoop(() => {
+  renderer.render(scene, camera);
+});
+</script>
