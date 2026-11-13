@@ -186,6 +186,7 @@ test('DISTRICT_BOUNDS and getDistrictsCombinedBounds compute spatial bounding bo
 test('simple-world.js references valid imported builder functions for Hong Kong Club and Science Museum', () => {
   const code = read('js/cities/hongkong/simple-world.js');
 
+  assert.match(code, /import\s+\*\s+as\s+THREE\s+from\s+['"]three\/webgpu['"];/, 'THREE must be imported in simple-world.js');
   assert.doesNotMatch(code, /\bbuildHongKongClubBuilding\b/, 'buildHongKongClubBuilding should not be referenced');
   assert.match(code, /\bbuildHongKongClub\(scene\)/, 'buildHongKongClub(scene) should be called');
   assert.doesNotMatch(code, /\bbuildHongKongScienceMuseum\b/, 'buildHongKongScienceMuseum should not be referenced');

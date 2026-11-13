@@ -1,3 +1,4 @@
+import * as THREE from 'three/webgpu';
 import {buildCentralApproachEarthworks} from './peak-tram-central-earthworks.js';
 import {centralApproachGrade} from './peak-tram-central-earthworks-site.js';
 import {buildPeakTramCentralRoof} from './peak-tram-central-roof.js';
@@ -188,6 +189,7 @@ function* buildSimpleHongKongWorldSteps(scene, options = {}) {
         colliders: [],
         landmarks: [],
         stats: {},
+        update: () => {},
         plazaTop: 0,
         groundOffset: 0,
         treeSites: [],
@@ -473,7 +475,7 @@ function* buildSimpleHongKongWorldSteps(scene, options = {}) {
   const kowloonPark = maybe('kowloonPark', () => buildKowloonPark(scene));
   yield 'Building Victoria Park’s central lawn, tennis centre, model boat pool and sports grounds...';
   const victoriaPark = maybe('victoriaPark', () => buildVictoriaPark(scene));
-  const parkList = [hongKongPark, kowloonPark, victoriaPark, chaterGarden, statueSquare].filter(p => p && p.group);
+  const parkList = [hongKongPark, kowloonPark, victoriaPark, chaterGarden, statueSquare].filter(p => p && Array.isArray(p.treeSites) && p.treeSites.length > 0);
   const parkTreesToExclude = [
     ...(hongKongPark?.colliders ?? []),
     ...(kowloonPark?.colliders ?? []),
@@ -804,20 +806,20 @@ function* buildSimpleHongKongWorldSteps(scene, options = {}) {
       for (const park of [hongKongPark, kowloonPark, victoriaPark]) floor = Math.max(floor, park.groundHeightAt(x, z, floor));
       return floor;
     },
-    update(dt, elapsed, context) {
-      murray.lift.update(dt, context.controllerManager);
-      centralLift.update(dt, context.controllerManager);
-      centralConcourse.update(dt, context.controllerManager);
-      centralPlatformRoof.update();
-      victoriaPark.update();
-      happyValley.update(context);
-      crossings.update?.(context);
-      centralPlaza.update?.(dt, elapsed, context);
-      theCenter.update?.(dt, elapsed, context);
-      clockTower.update?.(dt, elapsed, context);
-      if (context.cameraSystem?.currentPos) majorParkTrees.update(context.cameraSystem.currentPos);
-      streetLighting.update(context);
-    },
+        update(dt, elapsed, context) {
+          murray?.lift?.update?.(dt, context.controllerManager);
+          centralLift?.update?.(dt, context.controllerManager);
+          centralConcourse?.update?.(dt, context.controllerManager);
+          centralPlatformRoof?.update?.();
+          victoriaPark?.update?.();
+          happyValley?.update?.(context);
+          crossings?.update?.(context);
+          centralPlaza?.update?.(dt, elapsed, context);
+          theCenter?.update?.(dt, elapsed, context);
+          clockTower?.update?.(dt, elapsed, context);
+          if (context.cameraSystem?.currentPos) majorParkTrees?.update?.(context.cameraSystem.currentPos);
+          streetLighting?.update?.(context);
+        },
     streetLighting,
     hsbc,
     standardChartered,
