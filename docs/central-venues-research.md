@@ -21,9 +21,20 @@ This is a research queue, **not a completion list**. Hang Seng headquarters, Hon
 
 ### 遮打花園 / Chater Garden — photo-directed landscape
 
-* OSM garden [way 148784038](https://api.openstreetmap.org/api/0.6/way/148784038/full.json), version 8, defines the site; © OpenStreetMap contributors, ODbL. Its projected area is approximately 11,326 m², not a claimed official measurement. DTM elevations are game terrain, not surveyed levels.
-* References: [visitor photo of the pool, landscaping and palms](https://tripadvisor.com/LocationPhotoDirectLink-g294217-d5484289-i554321009-Chater_Garden-Hong_Kong.html), [LCSD Tree Walk sign photographed on site](https://tripadvisor.com/LocationPhotoDirectLink-g294217-d5484289-i96270058-Chater_Garden-Hong_Kong.html), [waterfall photograph](https://tripadvisor.com/LocationPhotoDirectLink-g294217-d5484289-i478766240-Chater_Garden-Hong_Kong.html), and [visitor description of the open gathering area and western Tree Walk](https://www.tripadvisor.co.uk/Attraction_Review-g294217-d5484289-Reviews-Chater_Garden-Hong_Kong.html). Photos show green rails, paved tree walks, palms, trimmed shrubs and a dark two-tier spill feature in a blue pool.
-* Paving, planting and pool locations are photo-directed scene approximations, not mapped or surveyed interior geometry. Ground is sampled from the DTM and skips game road surfaces; the pool is deliberately collidable. Trees share the existing major-park tree renderer. WebGPU visual validation remains outstanding.
+* OSM garden [way 148784038](https://api.openstreetmap.org/api/0.6/way/148784038/full.json), version 8, defines the site; © OpenStreetMap contributors, ODbL. Its projected area is approximately 11,326 m², not a claimed official measurement. DTM elevations are game terrain, not surveyed levels (dropping ~3.8 m from Queensway at 8.8 m down to Chater Road at 5.7 m).
+* History: Site of the historic Hong Kong Cricket Club (香港木球會, 1851–1975). Following relocation of the club to Wong Nai Chung Gap and construction of the MTR Central Station (Island Line concourse and tunnels beneath), the municipal park opened on 20 October 1978.
+* References: [visitor photo of the pool, landscaping and palms](https://tripadvisor.com/LocationPhotoDirectLink-g294217-d5484289-i554321009-Chater_Garden-Hong_Kong.html), [LCSD Tree Walk sign photographed on site](https://tripadvisor.com/LocationPhotoDirectLink-g294217-d5484289-i96270058-Chater_Garden-Hong_Kong.html), [waterfall photograph](https://tripadvisor.com/LocationPhotoDirectLink-g294217-d5484289-i478766240-Chater_Garden-Hong_Kong.html), and [visitor description of the open gathering area and western Tree Walk](https://www.tripadvisor.co.uk/Attraction_Review-g294217-d5484289-Reviews-Chater_Garden-Hong_Kong.html).
+* Refined features:
+  - Central gathering plaza and amphitheatre stone terrace steps surrounding the signature sunken water cascade.
+  - Multi-tier blue spill pool with dark honed granite cascade weirs, cascading water curtains, side spillways, vertical fountain jets, and submerged cyan wash lights.
+  - Shaded colonnade pergola pavilions (涼亭 / 休憩亭廊) on the eastern plaza flank with white precast concrete pillars, timber trellis louvers, integrated bench seating, and ceiling downlights.
+  - MTR Central Station Exit J2 entrance structure (港鐵中環站 J2 出口) at the northwest corner facing Jackson Road / Chater Road, featuring granite portal walls, stainless handrails, and an illuminated red MTR totem beacon.
+  - Hong Kong Cricket Club commemorative marker (香港木球會原址紀念碑) and 1890 Central Reclamation foundation stone stele with bronze inscription plaque.
+  - LCSD Central & Western District Tree Walk (中西區樹木徑) bilingual educational display boards and specimen tree labels.
+  - Traditional LCSD green criss-cross tubular metal railings, contoured teak park benches, clipped garden shrubs, and Royal Palms (Roystonea regia).
+  - Victorian/modern park lamp posts with warm amber/white lanterns glowing at night via WebGPU TSL emissive nodes.
+  - Tree sites integrated into the major park tree layer with >= 2.95 m clearance from all adjacent roads.
+  - Physical colliders for the pool weir, pergola pavilions, MTR J2 portal, and memorial stele. WebGPU visual validation remains outstanding.
 
 ### 信德中心連港澳碼頭 / Shun Tak Centre and Hong Kong–Macau Ferry Terminal
 

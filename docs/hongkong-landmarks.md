@@ -1287,3 +1287,44 @@ The previous isolated harbour view showed the roof as a low, flat-sided drum: it
 - 長江公園：**不套用整平基準**。`level=3` 記錄的是它鋪在長江集團中心三樓平台／梯級之上，但它本身是**依山而築的梯級花園**（地形跨 5 m）。地面用 ring 三角扇跟隨 DTM，再在其上畫池塘、疊水、石景瀑布、蜿蜒步道、石階、長椅與密植樹冠。**池／瀑布／石階／長椅的位置和尺寸都是估算**，來源只描述「有池塘疊水、石景瀑布、樹蔭步道、長椅、保留殖民時期石階欄杆」。
 - 淨空：兩座新地標**沒有任何幾何頂點落入公園 ring 或辦事處 ring**（測試以世界座標逐頂點檢查）。新台地只令 **2 段**已稽核路面剖面移動，且都是**向上 0.49 m**，不可能增加埋深；已用「有台地／無台地」兩次全量傾印比對確認，段數仍為 6154。
 - **未驗證**：未做瀏覽器 WebGPU 目視、日夜材質、駕駛實撞或內部建模。塔高、窗洞、池景位置均為估算。
+
+### 遮打花園（遮打公園）精修 / Chater Garden Refinement（2026-11-11）
+
+- **來源與背景**：
+  - **OSM 地段**：Way **148784038 v8**（23 頂點、`leisure=garden`、`garden=municipal`、`garden:area=district`、`wikidata=Q5087587`），投影面積約 **11,326 m²**。
+  - **歷史前身**：香港木球會（Hong Kong Cricket Club, 1851–1975）原址「打球場」。1975 年木球會遷往黃泥涌峽後，地段作為地鐵中環站（遮打站）及港島綫隧道工地；1978 年 10 月 20 日正式闢為市政公園開放。
+  - **邊界界面**：北臨遮打道（Chater Road）及終審法院大樓（前最高法院／前立法會大樓）；西界昃臣道（Jackson Road）及香港會所；南倚金鐘道（Queensway）及長江集團中心、中銀大廈；東接美利道（Murray Road）、The Henderson 與接駁金鐘廊之行人天橋。
+  - **地形落差**：園區原始 DTM 地貌呈自然斜坡，由南側金鐘道高處約 **8.8 m** 緩降至北側遮打道約 **5.7 m**（高差約 **3.8 m**）。園林步道與草坪以 2 m 網格（逾 2,600 個單元）完全跟隨 DTM，並經 `fullRoadSurfaceAt` 檢查排除所有車道面。
+- **精修景觀與設施**：
+  1. **中央集會廣場與石階露天座**（Central Gathering Plaza & Amphitheatre）：
+     - 圍繞疊水池鋪設淡暖色花崗岩方塊石板地坪，提供寬闊的公共聚集、休憩與文娛活動空間，階梯式退台連接周邊草坪與步道。
+  2. **兩層疊水瀑布池與噴水池**（Water Cascade & Blue Spill Pool）：
+     - 淺藍防水磚水池底座（25 m × 14 m）、外圍石材壓頂擋牆。
+     - 雙層黑色微磨花崗岩溢水堰台階（分別高 1.05 m 與 2.0 m），配半透明水簾與兩側瀑布跌水。
+     - 雙排細霧柱狀噴泉噴嘴及四角噴泉。
+     - 水池沉降式藍綠色水底洗牆燈，夜間自動發光。
+  3. **遮蔭涼亭與休憩亭廊**（Shaded Colonnade Pergola Pavilions）：
+     - 位於中央廣場東側（22 m × 5.4 m × 3.5 m），包含 12 根預製混凝土方柱、橫樑框架、遮陽木格柵百葉（pergola trellis）與中央防雨蓋頂。
+     - 柱間設有一體化柚木條長椅，頂部設有夜間暖光吸頂嵌燈。
+  4. **港鐵中環站 J2 出口**（MTR Central Station Exit J2）：
+     - 位於西北角（昃臣道／遮打道交界，直面終審法院大樓），設有花崗石階梯通道入口門廊、不銹鋼安全扶手。
+     - 經典港鐵紅色方形發光立柱標誌燈箱（Totem），夜間發出經典紅色港鐵標誌光芒。
+  5. **紀念石碑與導覽設施**：
+     - 香港木球會原址紀念碑（1851–1975）與 1890 年中環填海工程奠基石紀念碑（花崗岩基座配深銅色銘文銘牌）。
+     - 康文署「中西區樹木研習徑」（LCSD Tree Walk）雙立柱金屬斜面雙語資訊導覽牌及樹木解說牌。
+  6. **園林家具與植物層次**：
+     - 傳統香港經典深綠色交叉金屬護欄（LCSD green criss-cross railings）。
+     - 16+ 組實木配綠色金屬支架公園長椅。
+     - 修剪球狀灌木花帶與大王椰子樹群（Roystonea regia）。
+     - 35+ 處園林樹木位點（`treeSites`），經道路淨空 2.95 m 嚴格核驗，無縫接入主要公園樹木渲染層（`buildMajorParkTreeLayer`）。
+  7. **夜間照明系統**（WebGPU TSL Night Lighting）：
+     - 14 座深綠色鑄鐵古典／現代混合園林路燈柱與暖白／琥珀色燈罩，使用 `MeshStandardNodeMaterial` 配合 `emissiveNode` 與 `nightAmount()`，入夜後呈現溫暖的城市綠洲夜景。
+     - 水池水底泛光與涼亭頂部夜燈同步發光。
+  8. **實體碰撞體**（Colliders）：
+     - 疊水池四周石牆與瀑布主體碰撞體。
+     - 休憩長廊柱群與頂蓋碰撞體。
+     - 港鐵 J2 出口圍牆碰撞體。
+     - 木球會歷史紀念碑碰撞體。
+- **測試與驗證**：
+  - `tests/chater-garden.test.cjs` 包含地塊邊界、全頂點道路淨空、樹位道路淨空、五大核心網格名稱（`Chater Garden terrain-following lawn and paved tree walk`、`Chater Garden blue spill pool`、`Chater Garden stone cascade and pool walls`、`Chater Garden cascading water`、`Chater Garden green garden railings and pool coping`）、新建築組件、夜光節點、碰撞體幾何以及 `simple-world.js` 全鏈路集成測試，全數 PASS。
+
