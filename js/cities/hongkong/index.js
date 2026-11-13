@@ -113,6 +113,7 @@ export const city = {
       oneExchange: world.oneExchange,
       twoExchange: world.twoExchange,
       courtOfFinalAppeal: world.courtOfFinalAppeal,
+      oldBankOfChina: world.oldBankOfChina,
       cityHall: world.cityHall,
       centralLibrary: world.centralLibrary,
       hkapa: world.hkapa,

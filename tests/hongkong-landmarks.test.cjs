@@ -194,7 +194,9 @@ test('unified simple mode adds only the authored landmarks and keeps generic bui
   assert.match(source, /!groundUsesRoad \? centralGovernment\.groundHeightAt\(x, z, qgoGround\) : qgoGround/);
   assert.match(source, /!groundUsesRoad \? heritage1881\.groundHeightAt\(x, z, centralGovernmentGround\) : centralGovernmentGround/);
   assert.match(source, /!groundUsesRoad \? theArch\.groundHeightAt\(x, z, heritage1881Ground\) : heritage1881Ground/);
-  assert.match(source, /!groundUsesRoad \? sorrento\.groundHeightAt\(x, z, theArchGround\) : theArchGround/);
+  assert.match(source, /!groundUsesRoad \? theHarbourside\.groundHeightAt\(x, z, theArchGround\) : theArchGround/);
+  assert.match(source, /!groundUsesRoad \? theWaterfront\.groundHeightAt\(x, z, theHarboursideGround\) : theHarboursideGround/);
+  assert.match(source, /!groundUsesRoad \? sorrento\.groundHeightAt\(x, z, theWaterfrontGround\) : theWaterfrontGround/);
   assert.match(source, /!groundUsesRoad \? conrad\.groundHeightAt\(x, z, sorrentoGround\) : sorrentoGround/);
   assert.match(source, /!groundUsesRoad \? hysan\.groundHeightAt\(x, z, conradGround\) : conradGround/);
   assert.match(source, /!groundUsesRoad \? twoTaikoo\.groundHeightAt\(x, z, hysanGround\) : hysanGround/);

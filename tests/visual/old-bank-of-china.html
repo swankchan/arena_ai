@@ -1,0 +1,55 @@
+<!doctype html><meta charset="utf-8">
+<title>舊中國銀行大廈 Bank of China Building Visual Test</title>
+<style>body{margin:0;overflow:hidden;background:#111}#ui{position:absolute;top:10px;left:10px;color:#fff;font-family:sans-serif;background:rgba(0,0,0,0.7);padding:8px 14px;border-radius:4px;z-index:10}</style>
+<div id="ui"><b>舊中國銀行大廈 Bank of China Building</b> (1951, 2A Des Voeux Road Central)<br>Grade I Historic Building | Art Deco & Chinese Hip-and-Gable Crown | Guardian Lions</div>
+<script type="importmap">{"imports":{"three":"../../vendor/three/build/three.webgpu.js","three/webgpu":"../../vendor/three/build/three.webgpu.js","three/tsl":"../../vendor/three/build/three.tsl.js","three/addons/":"../../vendor/three/examples/jsm/"}}</script>
+<script type="module">
+import * as THREE from 'three/webgpu';
+import {cityUniforms} from '../../js/tsl-materials.js';
+import {buildOldBankOfChinaBuilding} from '../../js/cities/hongkong/old-bank-of-china-world.js';
+import {OLD_BANK_OF_CHINA_SITE as S, OLD_BOC_BASE_Y, OLD_BOC_ROOF_TOP} from '../../js/cities/hongkong/old-bank-of-china-site.js';
+import {hongKongTerrainHeight as h} from '../../js/cities/hongkong/terrain.js';
+
+const night = new URLSearchParams(location.search).has('night');
+cityUniforms.uInteriorGlow.value = night ? 1.4 : 0;
+const scene = new THREE.Scene();
+scene.background = new THREE.Color(night ? 0x0f1722 : 0xc6d8e8);
+
+buildOldBankOfChinaBuilding(scene);
+
+// Surroundings terrain patch
+const verts = [];
+for (let x = S.x - 50; x < S.x + 50; x += 3) {
+  for (let z = S.z - 50; z < S.z + 50; z += 3) {
+    for (let [a, b] of [[x, z], [x, z + 3], [x + 3, z], [x + 3, z], [x, z + 3], [x + 3, z + 3]]) {
+      verts.push(a, h(a, b) - 0.05, b);
+    }
+  }
+}
+let g = new THREE.BufferGeometry();
+g.setAttribute('position', new THREE.Float32BufferAttribute(verts, 3));
+g.computeVertexNormals();
+scene.add(new THREE.Mesh(g, new THREE.MeshStandardMaterial({color: 0x5a6358, side: THREE.DoubleSide})));
+
+scene.add(new THREE.HemisphereLight(0xffffff, 0x556655, night ? 0.3 : 1.1));
+let sun = new THREE.DirectionalLight(0xffffff, night ? 0.15 : 2.2);
+sun.position.set(S.x + 80, 180, S.z - 80);
+scene.add(sun);
+
+let camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.5, 1000);
+// View from Des Voeux Road Central looking at the grand north entrance and guardian lions
+camera.position.set(S.x - 22, 18, S.z - 42);
+camera.lookAt(S.x, 28, S.z);
+
+let renderer = new THREE.WebGPURenderer({forceWebGL: true, antialias: true});
+await renderer.init();
+renderer.setSize(window.innerWidth, window.innerHeight);
+document.body.appendChild(renderer.domElement);
+
+function animate() {
+  requestAnimationFrame(animate);
+  renderer.render(scene, camera);
+}
+animate();
+window.ready = true;
+</script>
