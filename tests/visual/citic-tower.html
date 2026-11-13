@@ -1,0 +1,118 @@
+<!doctype html><meta charset="utf-8">
+<title>中信大廈 CITIC Tower Visual Test</title>
+<style>
+  body { margin: 0; overflow: hidden; background: #111; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+  #ui {
+    position: absolute; top: 12px; left: 12px; color: #f5f3ef;
+    background: rgba(22, 26, 30, 0.88); backdrop-filter: blur(8px);
+    padding: 14px 18px; border-radius: 8px; z-index: 10; line-height: 1.55;
+    border: 1px solid rgba(255,255,255,0.15); max-width: 480px; box-shadow: 0 4px 20px rgba(0,0,0,0.5);
+  }
+  #ui h1 { margin: 0 0 6px; font-size: 16px; color: #cc1122; letter-spacing: 0.5px; }
+  #ui p { margin: 4px 0; font-size: 12.5px; color: #d0c8b8; }
+  #ui .tags { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 8px; }
+  #ui .tag { background: rgba(204, 17, 34, 0.2); color: #f29da6; border: 1px solid rgba(204, 17, 34, 0.4); border-radius: 4px; padding: 2px 7px; font-size: 11px; }
+  #controls {
+    position: absolute; bottom: 12px; left: 12px; color: #bbb;
+    background: rgba(0,0,0,0.7); padding: 8px 12px; border-radius: 6px; font-size: 11px; z-index: 10;
+  }
+</style>
+<div id="ui">
+  <h1>中信大廈 CITIC Tower</h1>
+  <p><b>金鐘添美道1號 (1 Tim Mei Avenue, Tamar)</b> | 1997 年落成</p>
+  <p>建築師：巴馬丹拿 (P&T Architects) | 高度 126 米 (33 層) | 添馬海濱標誌建築</p>
+  <div class="tags">
+    <span class="tag">經典圓角等邊三角形幾何</span>
+    <span class="tag">翡翠綠海景反射玻璃幕牆</span>
+    <span class="tag">純白陶瓷飾面鋁合金窗間牆</span>
+    <span class="tag">圓形中庭裙樓與落客車道</span>
+    <span class="tag">三立面中信發光紅徽招牌</span>
+    <span class="tag">三角形頂角航空障礙警告燈</span>
+  </div>
+</div>
+<div id="controls">
+  滑鼠左鍵拖曳旋轉視角 | 滾輪縮放 | <a href="?night" style="color:#cc1122">夜景模式</a> / <a href="?" style="color:#cc1122">日景模式</a>
+</div>
+
+<script type="importmap">{"imports":{"three":"../../vendor/three/build/three.webgpu.js","three/webgpu":"../../vendor/three/build/three.webgpu.js","three/tsl":"../../vendor/three/build/three.tsl.js","three/addons/":"../../vendor/three/examples/jsm/"}}</script>
+<script type="module">
+import * as THREE from 'three/webgpu';
+import { cityUniforms } from '../../js/tsl-materials.js';
+import { buildCiticTower } from '../../js/cities/hongkong/citic-tower-world.js';
+import { buildCentralGovernmentComplex } from '../../js/cities/hongkong/central-government-world.js';
+import { CITIC_TOWER_SITE as S } from '../../js/cities/hongkong/citic-tower-site.js';
+import { hongKongTerrainHeight as h } from '../../js/cities/hongkong/terrain.js';
+
+const night = new URLSearchParams(location.search).has('night');
+cityUniforms.uInteriorGlow.value = night ? 1.5 : 0;
+const scene = new THREE.Scene();
+scene.background = new THREE.Color(night ? 0x0f1520 : 0xc7d8e5);
+
+// Add CITIC Tower
+buildCiticTower(scene);
+
+// Add neighbor Central Government Complex
+try {
+  buildCentralGovernmentComplex(scene);
+} catch (e) {
+  console.warn('Neighbor building skipped:', e);
+}
+
+// Ground plane
+const groundGeo = new THREE.PlaneGeometry(800, 800);
+const groundMat = new THREE.MeshStandardMaterial({ color: night ? 0x181c22 : 0x48525c, roughness: 0.8 });
+const ground = new THREE.Mesh(groundGeo, groundMat);
+ground.rotation.x = -Math.PI / 2;
+ground.position.set(S.x, h(S.x, S.z) - 0.1, S.z);
+scene.add(ground);
+
+// Lighting
+const amb = new THREE.AmbientLight(night ? 0x223344 : 0x8899aa, night ? 0.6 : 1.2);
+scene.add(amb);
+const dir = new THREE.DirectionalLight(night ? 0x446688 : 0xfffaed, night ? 0.8 : 2.0);
+dir.position.set(S.x + 180, 260, S.z + 200);
+scene.add(dir);
+
+const camera = new THREE.PerspectiveCamera(45, innerWidth / innerHeight, 1, 2500);
+camera.position.set(S.x + 110, h(S.x, S.z) + 80, S.z + 140);
+
+const renderer = new THREE.WebGPURenderer({ antialias: true });
+renderer.setSize(innerWidth, innerHeight);
+renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+document.body.appendChild(renderer.domElement);
+
+let dragging = false, prevX = 0, prevY = 0;
+let theta = 0.6, phi = 0.45, radius = 190;
+const target = new THREE.Vector3(S.x, h(S.x, S.z) + 60, S.z);
+
+function updateCam() {
+  camera.position.x = target.x + radius * Math.sin(theta) * Math.cos(phi);
+  camera.position.y = target.y + radius * Math.sin(phi);
+  camera.position.z = target.z + radius * Math.cos(theta) * Math.cos(phi);
+  camera.lookAt(target);
+}
+updateCam();
+
+window.addEventListener('mousedown', e => { dragging = true; prevX = e.clientX; prevY = e.clientY; });
+window.addEventListener('mousemove', e => {
+  if (!dragging) return;
+  theta += (e.clientX - prevX) * 0.006;
+  phi = Math.max(0.08, Math.min(1.2, phi + (e.clientY - prevY) * 0.006));
+  prevX = e.clientX; prevY = e.clientY;
+  updateCam();
+});
+window.addEventListener('mouseup', () => { dragging = false; });
+window.addEventListener('wheel', e => {
+  radius = Math.max(40, Math.min(600, radius + e.deltaY * 0.25));
+  updateCam();
+});
+window.addEventListener('resize', () => {
+  camera.aspect = innerWidth / innerHeight;
+  camera.updateProjectionMatrix();
+  renderer.setSize(innerWidth, innerHeight);
+});
+
+renderer.setAnimationLoop(() => {
+  renderer.render(scene, camera);
+});
+</script>
