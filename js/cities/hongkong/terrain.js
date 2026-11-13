@@ -59,6 +59,8 @@ import { KOWLOON_SHANGRI_LA_GROUND_SITES, kowloonShangriLaTerrainHeightAt } from
 import { CGO_GROUND_SITES, centralGovernmentTerrainHeightAt } from './central-government-architecture.js';
 import { HERITAGE_1881_GROUND_SITES, heritage1881TerrainHeightAt } from './heritage-1881-architecture.js';
 import { THE_ARCH_GROUND_SITES, theArchTerrainHeightAt } from './the-arch-architecture.js';
+import { HARBOURSIDE_GROUND_SITES, theHarboursideTerrainHeightAt } from './the-harbourside-architecture.js';
+import { WATERFRONT_GROUND_SITES, theWaterfrontTerrainHeightAt } from './the-waterfront-architecture.js';
 import { SORRENTO_GROUND_SITES, sorrentoTerrainHeightAt } from './sorrento-architecture.js';
 import { AIRPORT_TERRAIN_SITES, airportTerrainHeightAt } from './airport-architecture.js';
 import { CITY_HALL_GROUND_SITES, cityHallTerrainHeightAt } from './city-hall-architecture.js';
@@ -311,6 +313,12 @@ export function heritage1881PadHeight() { return HERITAGE_1881_PAD_HEIGHT; }
 // The Arch's exact estate ring supplies one DTM datum; its retained station roads keep their own profiles.
 const THE_ARCH_PAD_HEIGHT = authoredHighestRawDatum(THE_ARCH_GROUND_SITES, rawHongKongTerrainHeight);
 export function theArchPadHeight() { return THE_ARCH_PAD_HEIGHT; }
+
+const HARBOURSIDE_PAD_HEIGHT = authoredHighestRawDatum(HARBOURSIDE_GROUND_SITES, rawHongKongTerrainHeight);
+export function theHarboursidePadHeight() { return HARBOURSIDE_PAD_HEIGHT; }
+
+const WATERFRONT_PAD_HEIGHT = authoredHighestRawDatum(WATERFRONT_GROUND_SITES, rawHongKongTerrainHeight);
+export function theWaterfrontPadHeight() { return WATERFRONT_PAD_HEIGHT; }
 // Sorrento's exact six-level podium supplies one DTM datum; retained Austin Road / station ways keep their profiles.
 const SORRENTO_PAD_HEIGHT = authoredHighestRawDatum(SORRENTO_GROUND_SITES, rawHongKongTerrainHeight);
 // City Hall's civic site shares a DTM-derived construction datum. Its internal service ways stay road-priority;
@@ -392,7 +400,9 @@ export function hongKongTerrainHeight(x, z) {
   const heritage1881Height = heritage1881TerrainHeightAt(x, z, centralGovernmentHeight, HERITAGE_1881_PAD_HEIGHT);
   const theArchHeight = theArchTerrainHeightAt(x, z, heritage1881Height, THE_ARCH_PAD_HEIGHT);
   const sorrentoHeight = sorrentoTerrainHeightAt(x, z, theArchHeight, SORRENTO_PAD_HEIGHT);
-  const stJohnsCathedralHeight = stJohnsCathedralTerrainHeightAt(x, z, sorrentoHeight, ST_JOHNS_CATHEDRAL_PAD_HEIGHT);
+  const harboursideHeight = theHarboursideTerrainHeightAt(x, z, sorrentoHeight, HARBOURSIDE_PAD_HEIGHT);
+  const waterfrontHeight = theWaterfrontTerrainHeightAt(x, z, harboursideHeight, WATERFRONT_PAD_HEIGHT);
+  const stJohnsCathedralHeight = stJohnsCathedralTerrainHeightAt(x, z, waterfrontHeight, ST_JOHNS_CATHEDRAL_PAD_HEIGHT);
   const cityHallHeight = cityHallTerrainHeightAt(x, z, stJohnsCathedralHeight, CITY_HALL_PAD_HEIGHT);
   const centralLibraryHeight = centralLibraryTerrainHeightAt(x, z, cityHallHeight, CENTRAL_LIBRARY_PAD_HEIGHT);
   const hkapaHeight = hkapaTerrainHeightAt(x, z, centralLibraryHeight, HKAPA_PAD_HEIGHT);
@@ -476,6 +486,8 @@ export const HONG_KONG_TERRAIN_META = Object.freeze({
   centralGovernmentPadHeight: CENTRAL_GOVERNMENT_PAD_HEIGHT,
   heritage1881PadHeight: HERITAGE_1881_PAD_HEIGHT,
   theArchPadHeight: THE_ARCH_PAD_HEIGHT,
+  theHarboursidePadHeight: HARBOURSIDE_PAD_HEIGHT,
+  theWaterfrontPadHeight: WATERFRONT_PAD_HEIGHT,
   sorrentoPadHeight: SORRENTO_PAD_HEIGHT,
   stJohnsCathedralPadHeight: ST_JOHNS_CATHEDRAL_PAD_HEIGHT,
   cityHallPadHeight: CITY_HALL_PAD_HEIGHT,

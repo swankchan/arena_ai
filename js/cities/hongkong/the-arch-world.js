@@ -206,6 +206,18 @@ export function buildTheArch(scene, { groundOffset = 0 } = {}) {
   materials.bronze = new THREE.MeshStandardMaterial({ color: 0x865038, roughness: 0.46, metalness: 0.42 });
   warmWindowEmission(materials.glazing, [1.0,0.78,0.49], 2.8);
   const podium = buildPodium(root, groundOffset, materials), towers = buildTowers(root, groundOffset, materials), arch = buildElevatedArch(root, groundOffset, materials);
+
+  // Dedicated entrance canopy and signage for Moon Tower (映月閣)
+  const moonGroup = towers.groups['the-arch-moon'];
+  if (moonGroup) {
+    addEntranceCanopy(moonGroup, THE_ARCH_MOON_SITE, 14, materials, {
+      name: 'The Arch Moon Tower — Austin Road / garden canopy', width: 14, projection: 4.2, y: 5.2,
+    });
+    addEdgeSign(moonGroup, THE_ARCH_MOON_SITE, 14, '凱旋門 映月閣', 'THE ARCH · MOON TOWER', 8.5, 12, 1.8, 0.45, {
+      background: '#5b3528', foreground: '#f1dfc2', accent: '#c89058',
+    });
+  }
+
   const colliders = [...podium.colliders, ...towers.colliders, ...arch.colliders];
   const landmarks = [THE_ARCH_SITE, ...THE_ARCH_TOWER_SITES].map((site) => ({
     name: site.name, englishName: site.englishName, x: site.x, z: site.z, w: site.w, d: site.d,

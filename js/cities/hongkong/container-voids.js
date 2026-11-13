@@ -9,6 +9,8 @@
 // conventions the architecture modules draw with; they are not surveyed soffit elevations.
 import { pointInFlatRing } from './landmark-site.js';
 import { SORRENTO_SITE, SORRENTO_GROUND_SOFFIT } from './sorrento-architecture.js';
+import { THE_ARCH_SITE, THE_ARCH_GROUND_SOFFIT, THE_ARCH_VEHICLE_CLEARANCE } from './the-arch-architecture.js';
+import { WATERFRONT_PODIUM_SITE, WATERFRONT_GROUND_SOFFIT } from './the-waterfront-architecture.js';
 import { ICC_SITE, ICC_DRAGON_TAIL, iccPlanAt, iccLocalToWorld } from './icc-architecture.js';
 import { HONG_KONG_TERRAIN_META } from './terrain.js';
 
@@ -28,6 +30,20 @@ function dragonTailFootprint() {
 }
 
 export const CONTAINER_VOIDS = Object.freeze([
+  Object.freeze({
+    id: 'the-arch-podium',
+    ring: THE_ARCH_SITE.ring,
+    ceiling: HONG_KONG_TERRAIN_META.theArchPadHeight + THE_ARCH_GROUND_SOFFIT,
+    slabDepth: 0.42,
+    requiredClearance: THE_ARCH_VEHICLE_CLEARANCE
+  }),
+  Object.freeze({
+    id: 'the-waterfront-podium',
+    ring: WATERFRONT_PODIUM_SITE.ring,
+    ceiling: HONG_KONG_TERRAIN_META.theWaterfrontPadHeight + WATERFRONT_GROUND_SOFFIT,
+    slabDepth: 0.42,
+    requiredClearance: 4.7
+  }),
   Object.freeze({
     id: 'sorrento-podium',
     ring: SORRENTO_SITE.ring,

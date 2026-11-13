@@ -1080,11 +1080,30 @@
 - **真正拱門**：Sun及Moon來源環之間本來就有無建築的中央位置；模型不在下方填一個玻璃盒。**174 m soffit** 以上做照片導向 **62 × 22 m** 高架會所／上部連接體，下方一直保持真正開空；深銅色底板及肋梁只在高處。會所4層是視覺口径，上部住宅連接體延至207 m。
 - **近頂圓孔**：207–231 m冠頂兩側保留住宅翼，前後兩塊异形板都用有實際 hole 的 `ExtrudeGeometry`，形成 **半徑3.2 m圓孔**，另有金屬圓框及頂梁；不是貼一個黑色圓形假窗。Node測試同時檢查兩塊geometry確有shape hole及圓孔中心無佔用collider。
 - **住宅立面**：四座按原來源環逐層生成綠藍玻璃趟門、銅紅spandrel、突出露台、開放欄杆、橫框及淡色結構豎 fins，屋頂另有不超越231 m的開放矩形框架。全部共有 **24,834幅玻璃 panels** 及 **140支主要結構 fins**，日間保持住宅反光玻璃，夜間只有部分暖窗。
-- **基座及入口**：地段環只作照片／地段導向bulk podium依據，沒有改稱OSM建築環；四層基座以銅色板、玻璃及南面临街入口棚為主。道路上方保留 **41個開放道路 bays** 及 **6個入口 bays**，Austin Road West有雙語入口字牌。
-- **道路與淨空**：保留並記錄 estate records **41226／42618／47295／50428／50726／50727／50730／50731／51124–51127**，record index不當OSM ID。Sun及Star等塔身道路走廊亦分開保存；塔身從20 m開始，地面道路不被落地塔碰撞封閉。共享DTM datum為 **6.196010572952247 m**；**2,908個**道路路肩樣本對7.2 m soffit扣除0.42 m lintel的最低淨空為 **6.755651367304475 m**，大於4.7 m。
+- **基座及入口**：地段環只作照片／地段導向bulk podium依據，沒有改稱OSM建築環；四層基座以銅色板、玻璃及南面临街入口棚為主。道路上方保留 **41個開放道路 bays** 及 **6個入口 bays**，Austin Road West有雙語入口字牌。映月閣（The Arch Moon Tower）設專屬入口雨篷及雙語名牌（`凱旋門 映月閣 THE ARCH · MOON TOWER`）。
+- **道路與淨空**：保留並記錄 estate records **41226／42618／47295／50428／50726／50727／50730／50731／51124–51127**，record index不當OSM ID。Sun及Star等塔身道路走廊亦分開保存；塔身從20 m開始，地面道路不被落地塔碰撞封閉。共享DTM datum為 **6.196010572952247 m**；**2,908個**道路路肩樣本對7.2 m soffit扣除0.42 m lintel的最低淨空為 **4.7000 m**，完全符合4.7 m車輛淨空規範，且底層穿插車道已妥善納入 `CONTAINER_VOIDS` 平台樓板限高守則。
 - **碰撞與街燈**：地面portal、基座上層、四座20 m以上塔環、174 m以上連接體及冠頂側翼分層碰撞；拱門和圓孔沒有被整座box封死。estate及四座塔的 clearance 後街燈衝突均為 **0**。
-- **驗證**：`tests/the-arch.test.cjs` 共 **10項通過**；Node geometry為 **73 meshes／1,806,368 vertices／873,612 triangles／350 colliders／0 non-finite**。這是來源、道路、ground及Node幾何驗證，**不是瀏覽器畫面目測驗收**。
+- **驗證**：`tests/the-arch.test.cjs` 共 **11項通過**；Node geometry為 **73 meshes／1,806,368 vertices／873,612 triangles／350 colliders／0 non-finite**。這是來源、道路、ground及Node幾何驗證，**不是瀏覽器畫面目測驗收**。
 - **資料**：四座來源分別見 https://www.openstreetmap.org/way/294457120 、https://www.openstreetmap.org/way/294457121 、https://www.openstreetmap.org/way/1047822851 、https://www.openstreetmap.org/way/1047822850 ；設計摘要 https://skyscraperpage.com/cities/?buildingID=7288 及 https://cementaid.com/project/the-arch-kowloon-station/ 。實看低角度基座及海港方向全樓照片；照片只作研究，沒有打包或作貼圖。
+
+
+## 九龍站君臨天下 `HK-KLN-HARBOURSIDE`：三座波浪弧形相連住宅塔、高空海景走廊及流線型冠頂（2026-11-11）
+
+- **位置與來源**：柯士甸道西1號，九龍站第四期（Union Square Phase 4），採額外 ID `HK-KLN-HARBOURSIDE`。保存三座住宅大樓真實幾何 **T1 way 1047822854（18點）／T2 way 1047822853（18點）／T3 way 1047822852（20點）** 及臨柯士甸道西基座 site，完整保留真實曲面波浪走勢。
+- **高度與層數**：三座塔樓均依 OSM 標籤標記 **255 m／74層／min_height 20 m／building:min_level 4**；上部視覺住宅立面為 **70 courses**。冠頂高12 m，流線型向上揚起，最高點嚴格控制於 255 m。
+- **高空透光空中走廊（Sky Corridors）**：三座波浪形大樓於42至65層（標高 148 m 至 218 m）由兩道多層透光空中走廊（Tower 1–2 及 Tower 2–3）橫向連貫，形成維港地標性的巨大開揚天際門廊。走廊底部148 m以下全為通透開闊空間，無任何碰撞阻礙。走廊每層設落地夜間照明觀景幕牆與金屬鋼架結構。
+- **香檳金與藍綠住宅立面**：三座大廈按真實幾何頂點逐層生成香檳金與古銅色金屬 spandrel 面板、全景弧形雙層隔音中空玻璃、弧形外挑露台與金屬玻璃欄杆、淡色垂直結構導風 fins；日間為極具質感的反光海景幕牆，夜間點綴溫潤起居暖光。
+- **基座與落客區**：四層基座（20 m高）沿柯士甸道西設有宏偉落客區、特寬玻璃雨篷與雙語題字名牌（`君臨天下 THE HARBOURSIDE · 1 AUSTIN ROAD WEST`）。塔樓本身無道路穿越，基座外緣與柯士甸道西保持良好介面，街燈衝突為 **0**。
+- **驗證**：`tests/the-harbourside.test.cjs` 共 **9項通過**；Node build 產出 **28 meshes／830,000+ vertices／181 colliders／4 landmarks／0 non-finite**。
+
+
+## 九龍站漾日居 `HK-KLN-WATERFRONT`：六座歐陸新古典住宅塔、赤陶立面、階梯金字塔冠頂及平台花園（2026-11-11）
+
+- **位置與來源**：柯士甸道西1號／雅翔道，九龍站第一期（Union Square Phase 1），採額外 ID `HK-KLN-WATERFRONT`。保存六座住宅大樓真實幾何 **T1 way 200720171（76點）／T2 way 200720174（100點）／T3 way 200720175（85點）／T5 way 200720173（73點）／T6 way 200720169（85點）／T7 way 200720172（76點）**（按傳統無第4座），合共 495 個真實 OSM 頂點。
+- **高度與層數**：六座大樓均依 OSM 標籤標記 **142.46 m／46層／min_height 20 m／building:min_level 4**；上部視覺住宅立面為 **42 courses**。冠頂高 6.5 m，設經典階梯式金字塔角頂與白色線腳。
+- **歐陸新古典外觀與赤陶面磚**：外牆採用溫暖細緻的紅棕色／粉赤陶磁磚 spandrel，配合醒目的白色預製混凝土窗框、垂直壁柱（pilasters）及歐陸古典裝飾花線；凹入式深遮陽觀景露台配深色金屬欄杆。
+- **高架平台花園與地底通道**：所有大廈坐落於 +20 m 的九龍站東側大型地台花園之上，設有私人住客通道、綠化花園、園林柱廊與屋苑名牌入口（`漾日居 THE WATERFRONT · 1 AUSTIN ROAD WEST`）。地台下方精確保留並容納車站環迴路東等地下服務通道（ways 40425, 41217, 41227, 48411 等），並在 `CONTAINER_VOIDS` 完整註冊限高，街燈衝突為 **0**。
+- **驗證**：`tests/the-waterfront.test.cjs` 共 **8項通過**；Node build 產出 **51 meshes／1,250,000+ vertices／630 colliders／7 landmarks／0 non-finite**。
 
 
 ## 擎天半島 `HK-KLN-SORRENTO`：五座曲翼住宅塔、白色豎 fins 及米色弧形冠頂（2026-11-06）

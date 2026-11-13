@@ -103,6 +103,8 @@ export const city = {
       centralGovernment: world.centralGovernment,
       heritage1881: world.heritage1881,
       theArch: world.theArch,
+      theHarbourside: world.theHarbourside,
+      theWaterfront: world.theWaterfront,
       sorrento: world.sorrento,
       conrad: world.conrad,
       hysan: world.hysan,

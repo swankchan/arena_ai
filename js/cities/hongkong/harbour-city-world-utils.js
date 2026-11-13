@@ -137,6 +137,11 @@ export function createStreetLevel(site, options = {}) {
 }
 
 export function signMesh(title, subtitle, width, height, options = {}) {
+  if (typeof document === 'undefined') {
+    const mesh = new THREE.Mesh(new THREE.PlaneGeometry(width, height), new THREE.MeshBasicMaterial({ visible: false }));
+    mesh.name = `Sign: ${title}`;
+    return mesh;
+  }
   const canvas = document.createElement('canvas'); canvas.width = 1536; canvas.height = 384;
   const ctx = canvas.getContext('2d'); ctx.fillStyle = options.background ?? '#e7e4da'; ctx.fillRect(0, 0, canvas.width, canvas.height);
   if (options.accent !== false) { ctx.fillStyle = options.accent ?? '#9b7a42'; ctx.fillRect(0, 0, 18, canvas.height); }

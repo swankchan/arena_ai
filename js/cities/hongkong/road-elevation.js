@@ -26,10 +26,13 @@ import { SALISBURY_GROUND_RINGS } from './salisbury-ymca-architecture.js';
 import { KOWLOON_SHANGRI_LA_GROUND_RINGS } from './kowloon-shangri-la-architecture.js';
 import { CGO_GROUND_RINGS } from './central-government-architecture.js';
 import { THE_ARCH_GROUND_RINGS } from './the-arch-architecture.js';
+import { HARBOURSIDE_GROUND_RINGS } from './the-harbourside-architecture.js';
+import { WATERFRONT_GROUND_RINGS } from './the-waterfront-architecture.js';
 import { SORRENTO_GROUND_RINGS } from './sorrento-architecture.js';
 import { smoothConstrainedProfileHeights } from './road-profile-smoothing.js';
 import { HK_ROAD_DECKS } from '../../hk-road-deck-data.js';
 import { underpassLiftAtVertex, isComputingUnderpassLifts } from './flyover-underpass-clearance.js';
+import { containerVoidsAt } from './container-voids.js';
 
 export const ROAD_SURFACE_OFFSET = 0.025;
 export const ROAD_PROFILE_STEP = 20;
@@ -196,7 +199,13 @@ function deckVertexHeights(deck, wayId) {
   for (let vertex = 0; vertex < count; vertex++) {
     ground[vertex] = Math.max(rawRoadRibbonHeightAtVertex(wayId, vertex),
       surfaceRoadHeight(flat[vertex * 2], flat[vertex * 2 + 1]));
-    lift[vertex] = Math.max(0, deck.lift * deck.vertexBlend[vertex]);
+    let maxLift = Math.max(0, deck.lift * deck.vertexBlend[vertex]);
+    const voids = containerVoidsAt(flat[vertex * 2], flat[vertex * 2 + 1]);
+    for (const v of voids) {
+      const allowed = Math.max(0, v.headroomCeiling - ground[vertex]);
+      if (allowed < maxLift) maxLift = allowed;
+    }
+    lift[vertex] = maxLift;
   }
   const run = (index) =>
     Math.hypot(flat[index * 2] - flat[index * 2 - 2], flat[index * 2 + 1] - flat[index * 2 - 1]);
@@ -309,7 +318,7 @@ function addTerrainStations(stations, ax, az, dx, dz, offsetX, offsetZ) {
 // Most of the 77,000 ways are nowhere near an authored construction pad.
 // Cache conservative AABBs once and reject disjoint segments before testing the
 // original ring edges. This does not change the actual intersection maths.
-const roadPadRings = [HSBC_SITE.ring, SCB_SITE.ring, ICC_SITE.ring, AIRSIDE_SITE.ring, LEE_GARDEN_ONE_SITE.ring, ONE_IFC_SITE.ring, CHAMPION_TOWER_SITE.ring, CKC2_SITE.ring, QGO_SITE.ring, CONRAD_SITE.ring, HYSAN_SITE.ring, TWO_TAIKOO_SITE.ring, ...HENDERSON_GROUND_RINGS, ...ONE_EXCHANGE_GROUND_RINGS, ...TWO_EXCHANGE_GROUND_RINGS, ...CFA_GROUND_RINGS, ...HKCEC_GROUND_RINGS, ...TIMES_SQUARE_GROUND_RINGS, ...HARBOUR_CITY_GROUND_RINGS, ...PENINSULA_GROUND_RINGS, ...SHERATON_GROUND_RINGS, ...SALISBURY_GROUND_RINGS, ...KOWLOON_SHANGRI_LA_GROUND_RINGS, ...CGO_GROUND_RINGS, ...THE_ARCH_GROUND_RINGS, ...SORRENTO_GROUND_RINGS].map((ring) => {
+const roadPadRings = [HSBC_SITE.ring, SCB_SITE.ring, ICC_SITE.ring, AIRSIDE_SITE.ring, LEE_GARDEN_ONE_SITE.ring, ONE_IFC_SITE.ring, CHAMPION_TOWER_SITE.ring, CKC2_SITE.ring, QGO_SITE.ring, CONRAD_SITE.ring, HYSAN_SITE.ring, TWO_TAIKOO_SITE.ring, ...HENDERSON_GROUND_RINGS, ...ONE_EXCHANGE_GROUND_RINGS, ...TWO_EXCHANGE_GROUND_RINGS, ...CFA_GROUND_RINGS, ...HKCEC_GROUND_RINGS, ...TIMES_SQUARE_GROUND_RINGS, ...HARBOUR_CITY_GROUND_RINGS, ...PENINSULA_GROUND_RINGS, ...SHERATON_GROUND_RINGS, ...SALISBURY_GROUND_RINGS, ...KOWLOON_SHANGRI_LA_GROUND_RINGS, ...CGO_GROUND_RINGS, ...THE_ARCH_GROUND_RINGS, ...HARBOURSIDE_GROUND_RINGS, ...WATERFRONT_GROUND_RINGS, ...SORRENTO_GROUND_RINGS].map((ring) => {
   let minX = Infinity, minZ = Infinity, maxX = -Infinity, maxZ = -Infinity;
   for (let i = 0; i < ring.length; i += 2) {
     minX = Math.min(minX, ring[i]); maxX = Math.max(maxX, ring[i]);

@@ -109,11 +109,9 @@ export function underpassLiftAt(wayId, x, z, ux, uz, deckHeight) {
 function lowestStructureCeilingUnder(wayId, x, z, ux, uz, deckHeight) {
   let lowest = null;
   for (const voidSpan of containerVoidCeilingsUnder(x, z, ux, uz)) {
-    const gap = voidSpan.ceiling - deckHeight;
-    if (gap < 2.2) continue; // already inside: not this pass's problem, and lifting would make it worse
-    if (lowest === null || gap < lowest) lowest = gap;
+    if (lowest === null || voidSpan.ceiling < lowest) lowest = voidSpan.ceiling;
   }
-  return lowest === null ? null : deckHeight + lowest;
+  return lowest;
 }
 
 // True when both ways have the same built structure spanning this point, which makes their difference a level of that

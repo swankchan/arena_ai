@@ -91,10 +91,10 @@ export const THE_ARCH_STAR_SOURCE = towerSource(1047822850, starGeometry, '觀�
 
 export const THE_ARCH_ESTATE_ROAD_IDS = Object.freeze([41226, 42618, 47295, 50428, 50726, 50727, 50730, 50731, 51124, 51125, 51126, 51127]);
 export const THE_ARCH_SITE = makeAuthoredSite('the-arch-estate', THE_ARCH_NAME, 'The Arch Estate', THE_ARCH_SITE_SOURCE, { role: 'estate', roadIds: THE_ARCH_ESTATE_ROAD_IDS });
-export const THE_ARCH_SKY_SITE = makeAuthoredSite('the-arch-sky', '摩天閣', 'Skytower', THE_ARCH_SKY_SOURCE, { height: 231, levels: 64, minHeight: 20, role: 'residential-tower', roadIds: [51127] });
-export const THE_ARCH_SUN_SITE = makeAuthoredSite('the-arch-sun', '朝日閣', 'Suntower', THE_ARCH_SUN_SOURCE, { height: 231, levels: 64, minHeight: 20, role: 'residential-tower', roadIds: [47295, 51124, 51125, 51126] });
-export const THE_ARCH_MOON_SITE = makeAuthoredSite('the-arch-moon', '映月閣', 'Moontower', THE_ARCH_MOON_SOURCE, { height: 231, levels: 64, minHeight: 20, role: 'residential-tower', roadIds: [47295] });
-export const THE_ARCH_STAR_SITE = makeAuthoredSite('the-arch-star', '觀星閣', 'Startower', THE_ARCH_STAR_SOURCE, { height: 231, levels: 64, minHeight: 20, role: 'residential-tower', roadIds: [47295, 50428, 50727] });
+export const THE_ARCH_SKY_SITE = makeAuthoredSite('the-arch-sky', '凱旋門 摩天閣', 'The Arch Skytower', THE_ARCH_SKY_SOURCE, { height: 231, levels: 64, minHeight: 20, role: 'residential-tower', roadIds: [51127] });
+export const THE_ARCH_SUN_SITE = makeAuthoredSite('the-arch-sun', '凱旋門 朝日閣', 'The Arch Suntower', THE_ARCH_SUN_SOURCE, { height: 231, levels: 64, minHeight: 20, role: 'residential-tower', roadIds: [47295, 51124, 51125, 51126] });
+export const THE_ARCH_MOON_SITE = makeAuthoredSite('the-arch-moon', '凱旋門 映月閣', 'The Arch Moon Tower', THE_ARCH_MOON_SOURCE, { height: 231, levels: 64, minHeight: 20, role: 'residential-tower', roadIds: [47295] });
+export const THE_ARCH_STAR_SITE = makeAuthoredSite('the-arch-star', '凱旋門 觀星閣', 'The Arch Startower', THE_ARCH_STAR_SOURCE, { height: 231, levels: 64, minHeight: 20, role: 'residential-tower', roadIds: [47295, 50428, 50727] });
 export const THE_ARCH_TOWER_SITES = Object.freeze([THE_ARCH_SKY_SITE, THE_ARCH_SUN_SITE, THE_ARCH_MOON_SITE, THE_ARCH_STAR_SITE]);
 export const THE_ARCH_PODIUM_SITE = makePhotoDirectedSite(
   'the-arch-podium', '凱旋門基座', THE_ARCH_SITE.ring,
