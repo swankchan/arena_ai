@@ -1358,4 +1358,44 @@ The previous isolated harbour view showed the roof as a low, flat-sided drum: it
   - `tests/cultural-centre.test.cjs` & `tests/clock-tower.test.cjs`（20/20 PASS）。
   - `npm run build:runtime` 403 模組乾淨打包，零資產、零外部圖片依賴。
 
+### 中環海濱活動空間、幸福摩天輪與嘉年華遊樂場 / Central Harbourfront Event Space, Hong Kong Observation Wheel & AIA Carnival（2026-11-11）
+
+- **地理位置與常設背景**：
+  - **位置範圍**：位於中環填海區民光街 33 號，中環 9 號及 10 號公眾碼頭前沿、中環天星碼頭（7 號碼頭）東南側（`X: 192.0 ～ 272.0`，`Z: -424.0 ～ -354.0`，面積 **5,600 m²**）。
+  - **使用者明確指令**：「雖然是節慶偶有, 但我想長擺」——將冬夏節慶大型嘉年華（如友邦嘉年華 AIA Carnival、歐陸雜技團馬戲大帳篷）與常駐的香港摩天輪（幸福摩天輪）及復古旋轉木馬常態實體化，打造維港南岸標誌性永久海濱遊樂世界。
+  - **道路淨空**：經 `isTerritoryLand` 與 `fullRoadSurfaceAt` 嚴格審計，全區 100% 位於陸地，對民光街車道與中環灣仔繞道隧道淨空嚴格零侵入。
+- **核心遊樂設施與建築幾何**：
+  1. **香港摩天輪（幸福摩天輪 / Hong Kong Observation Wheel）**：
+     - 總高 **60.0 米**，直徑 **54.0 米**，中心軸高 **32.0 米**。
+     - 純白高強度管狀鋼格構 A 字形四足支撐塔架，配四座大型鋼筋混凝土基礎座與重型中央旋轉輪轂。
+     - 雙層同心圓環（外徑 54m、內徑 48.4m）與 21 對（42 根）高張力鋼索輻條。
+     - 42 顆封閉式全景玻璃觀景吊艙（41 顆紅白觀景吊艙 + 1 顆尊貴 VIP 金色豪華吊艙），配垂直防擺重力吊臂。
+     - 16m × 8.5m 高架旅客登輪木月台（標高 +2.2m）、無障礙斜坡、安全排隊通道、不銹鋼護欄、藍色遮陽棚、獨立售票處與操作控制室。
+     - 圓周配備 WebGPU TSL 動態光環（`wheelLedMat`），入夜後散發璀璨綠松石色／翡翠光芒。
+  2. **AIA Vitality Park 歐陸復古旋轉木馬（Classic European Carousel）**：
+     - 直徑 **11.5 米**，雙層紅色與象牙白波浪扇形篷頂，飾以鍍金雕花飾邊與金球頂飾。
+     - 階梯式圓形柚木基座，中央八角形巴洛克金色鏡面立柱，16 匹雕花旋轉木馬（配黃銅立柱與馬鞍）與 2 組貴族四輪馬車座席。
+     - 簷口環繞 24 盞 WebGPU TSL 暖光彩球燈（`warmBulbMat`）。
+  3. **波浪飛天椅（Wave Swinger / Flying Chairs）**：
+     - 古典彩繪八角形中央機芯塔（高 12.5 米），懸臂波浪折疊傘狀頂棚，懸掛 16 組雙吊鏈懸垂式雙人鞦韆座椅，外設安全圍欄。
+  4. **碰碰車樂園（Bumper Cars Pavilion）**：
+     - 15m × 11m 鋼架遮雨棚（淨空高 4.2 米），懸掛粉紅霓虹燈招牌「BUMPER CARS · 碰碰車」，高導電防滑金屬地面，周圍環繞 0.45 米厚黑橡膠防撞牆，天花全覆蓋導電網格，場內配備 8 輛紅白藍綠繽紛碰碰車（配彈簧方向盤與頂部導電天線桿）。
+  5. **歐陸雜技團馬戲大帳篷（Circus Big Top / Grand Event Marquee）**：
+     - 24m × 16m 雙尖頂紅紅白條紋帆布節慶大帳篷（牆高 4.2 米，脊高 11.5 米），雙主鋼桅頂飄揚黃色嘉年華三角旗幟，拱形正門設有門廊與暖光燈飾。
+  6. **經典嘉年華攤位遊戲區（Carnival Game Booths）**：
+     - 4 排木質條紋遊戲棚：Ring Toss（幸運拋鐵圈）、Milk Bottle Toss（保齡球擲瓶）、Balloon Dart Pop（飛鏢射氣球）、Cuddly Toy Prize Wall（巨型毛絨公仔牆，陳列泰迪熊與彩色布偶）。
+  7. **美食小食街與露天野餐區（Food & Beverage Village）**：
+     - 3 組經典嘉年華特色小食木屋：Popcorn & Cotton Candy（爆谷與棉花糖）、Waffles & Churros（窩夫與西班牙油條）、Beverages & Soft Serve（特飲與軟雪糕）。
+     - 露天野餐區配置 4 組實木野餐桌椅組合及條紋遮陽傘。
+  8. **迎賓大門與節慶燈帶（Festival Archways & Festoon Lighting）**：
+     - 西側迎賓正門拱門（寬 8.5 米，高 5.5 米，面朝民耀街與中環碼頭通道），設發光橫匾「中環海濱活動空間 · 幸福摩天輪嘉年華 AIA CARNIVAL · CENTRAL FAIRGROUND」；北側海旁長廊觀景副門（寬 7.5 米，高 5.0 米）。
+     - 場內立柱牽拉節日燈串（Festoon light cables），暖白燈球點綴夜空。
+  9. **實體碰撞盒與地標登記**：
+     - 61 組精確實體碰撞盒（涵蓋摩天輪基座、立柱、月台、旋轉木馬、碰碰車防撞牆、馬戲帳篷、攤位、小食亭與迎賓門柱）。
+     - 登記兩處統一地標：`hong-kong-observation-wheel`（幸福摩天輪）與 `central-harbourfront-event-space`（中環海濱活動空間）。
+- **測試驗證**：
+  - `tests/central-carnival.test.cjs`（4/4 PASS）。
+  - `npm run build:runtime`（405 模組乾淨打包，35,085,631 字節，零外部圖片依賴）。
+
+
 

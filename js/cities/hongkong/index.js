@@ -124,6 +124,7 @@ export const city = {
       kowloonShangriLa: world.kowloonShangriLa,
       tstWaterfrontRailing: world.tstWaterfrontRailing,
       tstWaterfrontPromenade: world.tstWaterfrontPromenade,
+      centralCarnival: world.centralCarnival,
     hongKongPark: world.hongKongPark,
     kowloonPark: world.kowloonPark,
     victoriaPark: world.victoriaPark,
