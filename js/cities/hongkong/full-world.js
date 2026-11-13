@@ -23,6 +23,7 @@ import {barkerApproachCuts} from './peak-tram-barker-approach-site.js';
 import {summitApproachCuts} from './peak-tram-summit-approach-site.js';
 import {barkerStationTrackCuts} from './peak-tram-barker-station-track-site.js';
 import {loopGradeRects} from './peak-tram-loop-grading-site.js';
+import { getDistrictsCombinedBounds } from './districts.js';
 import { FULL_BOUNDS, isDetailedCore, isTerritoryLand, territoryParkAt } from './full-meta.js';
 import { HK_TERRAIN, HONG_KONG_TERRAIN_META, hongKongTerrainCellLand, hongKongTerrainHeight, rawHongKongTerrainHeight } from './terrain.js';
 import { roadRibbonHeightAtSegment, roadRibbonProfileAtSegment, verifiedBridgeProfileAtSegment, TERRAIN_TUNNEL_OPENING_RECTS } from './road-elevation.js';
@@ -244,7 +245,7 @@ function addTunnelCoastStations(stations, x1, z1, dx, dz) {
   }
 }
 
-function* createRoadChunksSteps(root, includeCore) {
+function* createRoadChunksSteps(root, includeCore, selectedDistricts) {
   const chunks = new Map(), bridgeChunks = new Map(), kerbChunks = new Map();
   const chunkAt = (x, z) => {
     const key = `${Math.floor(x / CHUNK)},${Math.floor(z / CHUNK)}`;
@@ -265,10 +266,39 @@ function* createRoadChunksSteps(root, includeCore) {
   let flyoverFurnitureSegments = 0, flyoverFurniturePosts = 0, flyoverFurnitureMetres = 0;
   let streetKerbSegments = 0, streetKerbSidesDrawn = 0;
   const flyoverPostCarry = new Map();
-  yield { label: '道路資料處理', done: 0, total: HK_FULL_ROADS.roads.length };
-  for (const [wayId, road] of HK_FULL_ROADS.roads.entries()) {
-    if (wayId > 0 && wayId % 512 === 0) yield { label: '道路資料處理', done: wayId, total: HK_FULL_ROADS.roads.length };
-    if (CROSSING_FLAT_EXCLUSION_IDS.has(wayId)) continue;
+
+  const targetBounds = getDistrictsCombinedBounds(selectedDistricts);
+  let wayIdsToProcess;
+  if (targetBounds) {
+    wayIdsToProcess = [];
+    for (let id = 0; id < HK_FULL_ROADS.roads.length; id++) {
+      if (CROSSING_FLAT_EXCLUSION_IDS.has(id)) continue;
+      const flat = HK_FULL_ROADS.roads[id][5];
+      let inBounds = false;
+      for (let i = 0; i < flat.length; i += 2) {
+        if (flat[i] >= targetBounds.minX && flat[i] <= targetBounds.maxX &&
+            flat[i + 1] >= targetBounds.minZ && flat[i + 1] <= targetBounds.maxZ) {
+          inBounds = true;
+          break;
+        }
+      }
+      if (inBounds) wayIdsToProcess.push(id);
+    }
+  } else {
+    wayIdsToProcess = [];
+    for (let id = 0; id < HK_FULL_ROADS.roads.length; id++) {
+      if (!CROSSING_FLAT_EXCLUSION_IDS.has(id)) wayIdsToProcess.push(id);
+    }
+  }
+
+  yield { label: '道路資料處理', done: 0, total: wayIdsToProcess.length };
+  let processedCount = 0;
+  for (const wayId of wayIdsToProcess) {
+    processedCount++;
+    if (processedCount > 0 && processedCount % 256 === 0) {
+      yield { label: '道路資料處理', done: processedCount, total: wayIdsToProcess.length };
+    }
+    const road = HK_FULL_ROADS.roads[wayId];
     const [, width, , , , flat] = road;
     // Kerbs come from the OSM sidewalk tags for this way, not from its shape. Zero means the tags said nothing about a
     // footway here and the roadside is left exactly as it was.
@@ -529,15 +559,27 @@ function setTerrainSmoothNormals(geometry) {
   geometry.setAttribute('normal', new THREE.Float32BufferAttribute(normals, 3));
 }
 
-function* createTerrainChunksSteps(root, includeCore) {
+function* createTerrainChunksSteps(root, includeCore, selectedDistricts) {
   const grid = HONG_KONG_TERRAIN_META.grid;
   const chunks = new Map();
+  const targetBounds = getDistrictsCombinedBounds(selectedDistricts);
+  const terrainBounds = targetBounds ? {
+    minX: targetBounds.minX - 3500,
+    maxX: targetBounds.maxX + 3500,
+    minZ: targetBounds.minZ - 3500,
+    maxZ: targetBounds.maxZ + 3500
+  } : null;
+
   const parkMask = new Uint8Array((grid.w - 1) * (grid.h - 1));
   yield { label: '地勢公園資料', done: 0, total: grid.h - 1 };
   for (let row = 0; row < grid.h - 1; row++) {
     if (row > 0 && row % 8 === 0) yield { label: '地勢公園資料', done: row, total: grid.h - 1 };
+    const pz = grid.minZ + (row + 0.5) * grid.cell;
+    if (terrainBounds && (pz < terrainBounds.minZ || pz > terrainBounds.maxZ)) continue;
     for (let col = 0; col < grid.w - 1; col++) {
-      const park = territoryParkAt(grid.minX + (col + 0.5) * grid.cell, grid.minZ + (row + 0.5) * grid.cell);
+      const px = grid.minX + (col + 0.5) * grid.cell;
+      if (terrainBounds && (px < terrainBounds.minX || px > terrainBounds.maxX)) continue;
+      const park = territoryParkAt(px, pz);
       parkMask[row * (grid.w - 1) + col] = park ? park.cat + 1 : 0;
     }
   }
@@ -557,6 +599,7 @@ function* createTerrainChunksSteps(root, includeCore) {
     const cx = (points[0][0] + points[1][0] + points[2][0]) / 3;
     const cz = (points[0][1] + points[1][1] + points[2][1]) / 3;
     if (!includeCore && isDetailedCore(cx, cz)) return;
+    if (terrainBounds && (cx < terrainBounds.minX || cx > terrainBounds.maxX || cz < terrainBounds.minZ || cz > terrainBounds.maxZ)) return;
     const key = `${Math.floor(cx / TERRAIN_CHUNK)},${Math.floor(cz / TERRAIN_CHUNK)}`;
     let chunk = chunks.get(key);
     if (!chunk) chunks.set(key, (chunk = { positions: [], minX: Infinity, maxX: -Infinity, minZ: Infinity, maxZ: -Infinity }));
@@ -572,8 +615,10 @@ function* createTerrainChunksSteps(root, includeCore) {
   for (let row = 0; row < grid.h - 1; row++) {
     if (row > 0 && row % 8 === 0) yield { label: '地勢及海岸網格', done: row, total: grid.h - 1 };
     const z0 = grid.minZ + row * grid.cell, z1 = z0 + grid.cell;
+    if (terrainBounds && (z1 < terrainBounds.minZ || z0 > terrainBounds.maxZ)) continue;
     for (let col = 0; col < grid.w - 1; col++) {
       const x0 = grid.minX + col * grid.cell, x1 = x0 + grid.cell;
+      if (terrainBounds && (x1 < terrainBounds.minX || x0 > terrainBounds.maxX)) continue;
       const cellIndex = row * (grid.w - 1) + col;
       const clipped = coastCells[cellIndex];
       if (clipped) {
@@ -649,7 +694,7 @@ function createSeawalls(root, waterLevel, includeCore) {
   return { colliders, openings };
 }
 
-export function* buildFullHongKongWorldSteps(root, { waterLevel = -2.2, includeCore = false } = {}) {
+export function* buildFullHongKongWorldSteps(root, { waterLevel = -2.2, includeCore = false, selectedDistricts } = {}) {
   const waterCentre = [(FULL_BOUNDS.minX + FULL_BOUNDS.maxX) * 0.5, (FULL_BOUNDS.minZ + FULL_BOUNDS.maxZ) * 0.5];
   const waterY = waterLevel - 0.06;
   const waterOpeningRects = buildTunnelOpeningRects(CROSSING_ROUTES, waterY);
@@ -664,8 +709,8 @@ export function* buildFullHongKongWorldSteps(root, { waterLevel = -2.2, includeC
   water.name = 'HongKongTerritorialWater';
   root.add(water);
 
-  const terrain = yield* createTerrainChunksSteps(root, includeCore);
-  const roads = yield* createRoadChunksSteps(root, includeCore);
+  const terrain = yield* createTerrainChunksSteps(root, includeCore, selectedDistricts);
+  const roads = yield* createRoadChunksSteps(root, includeCore, selectedDistricts);
   yield 'Building seawalls and coastal collision…';
   const seawalls = createSeawalls(root, waterLevel, includeCore);
   const colliders = seawalls.colliders;

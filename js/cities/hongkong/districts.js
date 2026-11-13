@@ -485,6 +485,55 @@ export function shouldBuildLandmark(landmarkKey, selectedDistricts) {
   return isDistrictSelected(target, selectedDistricts);
 }
 
+// 各區空間範圍邊界 (Spatial Bounding Boxes in Metres, Origin at Statue Square, Central)
+export const DISTRICT_BOUNDS = Object.freeze({
+  'central-western': { minX: -4200, maxX: 1200, minZ: -1600, maxZ: 3000 },
+  'wan-chai': { minX: 600, maxX: 4500, minZ: -1600, maxZ: 3200 },
+  'eastern': { minX: 2800, maxX: 10500, minZ: -2400, maxZ: 4200 },
+  'southern': { minX: -4200, maxX: 9500, minZ: 1400, maxZ: 10500 },
+  'yau-tsim': { minX: -1200, maxX: 3500, minZ: -4000, maxZ: -800 },
+  'mong-kok': { minX: -800, maxX: 2400, minZ: -5200, maxZ: -3100 },
+  'sham-shui-po': { minX: -4800, maxX: 1600, minZ: -7200, maxZ: -3800 },
+  'kowloon-city': { minX: 800, maxX: 6800, minZ: -5200, maxZ: -1200 },
+  'wong-tai-sin': { minX: 1600, maxX: 7000, minZ: -7000, maxZ: -3800 },
+  'kwun-tong': { minX: 4000, maxX: 11000, minZ: -6000, maxZ: -1000 },
+  'tsuen-wan': { minX: -13500, maxX: -2500, minZ: -13500, maxZ: -6000 },
+  'kwai-tsing': { minX: -9500, maxX: -1800, minZ: -10500, maxZ: -4800 },
+  'tuen-mun': { minX: -27500, maxX: -10500, minZ: -17500, maxZ: -7000 },
+  'yuen-long': { minX: -23500, maxX: -6000, minZ: -25500, maxZ: -12000 },
+  'north': { minX: -9000, maxX: 10000, minZ: -33500, maxZ: -20000 },
+  'tai-po': { minX: -800, maxX: 14000, minZ: -24500, maxZ: -13000 },
+  'sha-tin': { minX: -2200, maxX: 11000, minZ: -18000, maxZ: -8000 },
+  'sai-kung': { minX: 7500, maxX: 27500, minZ: -19500, maxZ: 2000 },
+  'islands': { minX: -37000, maxX: -5000, minZ: -6000, maxZ: 16000 },
+});
+
+// 計算所選分區之合併空間包圍盒
+export function getDistrictsCombinedBounds(selectedDistricts, buffer = 600) {
+  if (!selectedDistricts || selectedDistricts.length === 0 || selectedDistricts.includes('all') || selectedDistricts.length >= DISTRICTS.length) {
+    return null; // 全港境，不作空間邊界限制
+  }
+  let minX = -400, maxX = 400, minZ = -400, maxZ = 400; // 保留中環開場出生點核心範圍
+  let matched = 0;
+  for (const id of selectedDistricts) {
+    const b = DISTRICT_BOUNDS[id];
+    if (b) {
+      minX = Math.min(minX, b.minX);
+      maxX = Math.max(maxX, b.maxX);
+      minZ = Math.min(minZ, b.minZ);
+      maxZ = Math.max(maxZ, b.maxZ);
+      matched++;
+    }
+  }
+  if (matched === 0) return null;
+  return {
+    minX: minX - buffer,
+    maxX: maxX + buffer,
+    minZ: minZ - buffer,
+    maxZ: maxZ + buffer
+  };
+}
+
 // 本地儲存鍵值
 export const DISTRICT_STORAGE_KEY = 'slop-hongkong-selected-districts';
 

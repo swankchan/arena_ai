@@ -159,3 +159,43 @@ test('CSS styles define responsive district components', () => {
   assert.match(css, /\.districts-popover\b/, 'districts-popover class defined');
   assert.match(css, /\.hud-district-item\b/, 'hud-district-item class defined');
 });
+
+test('DISTRICT_BOUNDS and getDistrictsCombinedBounds compute spatial bounding boxes', () => {
+  const { DISTRICTS, DISTRICT_BOUNDS, getDistrictsCombinedBounds } = districtsModule;
+
+  for (const d of DISTRICTS) {
+    const b = DISTRICT_BOUNDS[d.id];
+    assert.ok(b, `District ${d.id} must have bounding box`);
+    assert.ok(b.minX < b.maxX, `minX < maxX for ${d.id}`);
+    assert.ok(b.minZ < b.maxZ, `minZ < maxZ for ${d.id}`);
+  }
+
+  // All or null returns null (full territory)
+  assert.equal(getDistrictsCombinedBounds(null), null);
+  assert.equal(getDistrictsCombinedBounds([]), null);
+  assert.equal(getDistrictsCombinedBounds(['all']), null);
+  assert.equal(getDistrictsCombinedBounds(DISTRICTS.map((d) => d.id)), null);
+
+  // Single district has constrained bounds
+  const cw = getDistrictsCombinedBounds(['central-western']);
+  assert.ok(cw);
+  assert.ok(cw.minX < 0 && cw.maxX > 0);
+  assert.ok(cw.minZ < 0 && cw.maxZ > 0);
+});
+
+test('simple-world.js references valid imported builder functions for Hong Kong Club and Science Museum', () => {
+  const code = read('js/cities/hongkong/simple-world.js');
+
+  assert.doesNotMatch(code, /\bbuildHongKongClubBuilding\b/, 'buildHongKongClubBuilding should not be referenced');
+  assert.match(code, /\bbuildHongKongClub\(scene\)/, 'buildHongKongClub(scene) should be called');
+  assert.doesNotMatch(code, /\bbuildHongKongScienceMuseum\b/, 'buildHongKongScienceMuseum should not be referenced');
+  assert.match(code, /\bbuildScienceMuseum\(scene,/, 'buildScienceMuseum(scene, ...) should be called');
+});
+
+test('full-world.js filters road processing when selectedDistricts is specified', () => {
+  const code = read('js/cities/hongkong/full-world.js');
+
+  assert.match(code, /import\s*\{\s*getDistrictsCombinedBounds\s*\}\s*from\s*'(\.\/districts\.js|districts\.js)';/);
+  assert.match(code, /function\*\s+createRoadChunksSteps\s*\(\s*root\s*,\s*includeCore\s*,\s*selectedDistricts\s*\)/);
+  assert.match(code, /const\s+targetBounds\s*=\s*getDistrictsCombinedBounds\s*\(\s*selectedDistricts\s*\)/);
+});

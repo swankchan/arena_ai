@@ -207,7 +207,11 @@ function* buildSimpleHongKongWorldSteps(scene, options = {}) {
   };
 
   yield 'Building Hong Kong’s unified territory-wide road map...';
-  const full = yield* buildFullHongKongWorldSteps(scene, { waterLevel: WATER_LEVEL, includeCore: true });
+  const full = yield* buildFullHongKongWorldSteps(scene, {
+    waterLevel: WATER_LEVEL,
+    includeCore: true,
+    selectedDistricts: options.selectedDistricts
+  });
   yield 'Building Hong Kong International Airport: three runways, terminals and control towers...';
   const airport = maybe('airport', () => buildHongKongAirport(scene));
   yield 'Building the HSBC Main Building landmark...';
@@ -229,7 +233,7 @@ function* buildSimpleHongKongWorldSteps(scene, options = {}) {
   yield 'Building 太子大廈 Prince’s Building...';
   const princesBuilding = maybe('princesBuilding', () => buildPrincesBuilding(scene));
   yield 'Building 香港會所大廈 The Hong Kong Club Building...';
-  const hongKongClub = maybe('hongKongClub', () => buildHongKongClubBuilding(scene));
+  const hongKongClub = maybe('hongKongClub', () => buildHongKongClub(scene));
   yield 'Building 恒生銀行總行 Hang Seng Bank Headquarters...';
   const hangSeng = maybe('hangSeng', () => buildHangSengHeadquarters(scene));
   yield 'Building 中環街市 Central Market...';
@@ -438,7 +442,7 @@ function* buildSimpleHongKongWorldSteps(scene, options = {}) {
   yield 'Building the Hong Kong Museum of Art’s wavy glass facade and Harbour Gallery...';
   const artMuseum = maybe('museumOfArt', () => buildArtMuseum(scene, { groundOffset: HONG_KONG_TERRAIN_META.artMuseumPadHeight }));
   yield 'Building the Hong Kong Science Museum’s pink granite hall, glass tower and Energy Machine...';
-  const scienceMuseum = maybe('scienceMuseum', () => buildHongKongScienceMuseum(scene, { groundOffset: HONG_KONG_TERRAIN_META.scienceMuseumPadHeight }));
+  const scienceMuseum = maybe('scienceMuseum', () => buildScienceMuseum(scene, { groundOffset: HONG_KONG_TERRAIN_META.scienceMuseumPadHeight }));
   yield 'Building the Hong Kong Museum of History’s stepped terracotta facade and curved roof vaults...';
   const historyMuseum = maybe('historyMuseum', () => buildHistoryMuseum(scene, { groundOffset: HONG_KONG_TERRAIN_META.historyMuseumPadHeight }));
   yield 'Building the Cultural Centre’s twin tiled sails and covered foyer...';
