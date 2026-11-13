@@ -1,0 +1,132 @@
+<!doctype html><meta charset="utf-8">
+<title>遠東金融中心 Far East Finance Centre Visual Test</title>
+<style>
+  body { margin: 0; overflow: hidden; background: #111; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+  #ui {
+    position: absolute; top: 12px; left: 12px; color: #f5f3ef;
+    background: rgba(22, 26, 30, 0.88); backdrop-filter: blur(8px);
+    padding: 14px 18px; border-radius: 8px; z-index: 10; line-height: 1.55;
+    border: 1px solid rgba(255,255,255,0.15); max-width: 480px; box-shadow: 0 4px 20px rgba(0,0,0,0.5);
+  }
+  #ui h1 { margin: 0 0 6px; font-size: 16px; color: #f2cb57; letter-spacing: 0.5px; }
+  #ui p { margin: 4px 0; font-size: 12.5px; color: #d0c8b8; }
+  #ui .tags { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 8px; }
+  #ui .tag { background: rgba(212, 175, 55, 0.2); color: #ecd696; border: 1px solid rgba(212, 175, 55, 0.4); border-radius: 4px; padding: 2px 7px; font-size: 11px; }
+  #controls {
+    position: absolute; bottom: 12px; left: 12px; color: #bbb;
+    background: rgba(0,0,0,0.7); padding: 8px 12px; border-radius: 6px; font-size: 11px; z-index: 10;
+  }
+</style>
+<div id="ui">
+  <h1>遠東金融中心 Far East Finance Centre</h1>
+  <p><b>香港「金條大廈」(The Gold Bar Building)</b> | 1982 年落成 | 金鐘夏慤道 16 號</p>
+  <p>建築師：王歐陽建築師事務所 (Wong & Ouyang) | 高度 176 米 (41 層／49 級結構層)</p>
+  <div class="tags">
+    <span class="tag">24K 黃金鏡面反射幕牆</span>
+    <span class="tag">八角切角棱鏡體量</span>
+    <span class="tag">純黑花崗石商場裙樓</span>
+    <span class="tag">力寶中心／金鐘地鐵行人天橋</span>
+    <span class="tag">樓頂大型發光發亮招牌</span>
+    <span class="tag">天台吊臂 & 航空障礙警示燈</span>
+  </div>
+</div>
+<div id="controls">
+  滑鼠左鍵拖曳旋轉視角 | 滾輪縮放 | <a href="?night" style="color:#f2cb57">夜景模式</a> / <a href="?" style="color:#f2cb57">日景模式</a>
+</div>
+
+<script type="importmap">{"imports":{"three":"../../vendor/three/build/three.webgpu.js","three/webgpu":"../../vendor/three/build/three.webgpu.js","three/tsl":"../../vendor/three/build/three.tsl.js","three/addons/":"../../vendor/three/examples/jsm/"}}</script>
+<script type="module">
+import * as THREE from 'three/webgpu';
+import { cityUniforms } from '../../js/tsl-materials.js';
+import { buildFarEastFinanceCentre } from '../../js/cities/hongkong/far-east-finance-centre-world.js';
+import { buildLippoCentre } from '../../js/cities/hongkong/lippo-centre-world.js';
+import { FAR_EAST_FINANCE_CENTRE_SITE as S } from '../../js/cities/hongkong/far-east-finance-centre-site.js';
+import { hongKongTerrainHeight as h } from '../../js/cities/hongkong/terrain.js';
+
+const night = new URLSearchParams(location.search).has('night');
+cityUniforms.uInteriorGlow.value = night ? 1.5 : 0;
+const scene = new THREE.Scene();
+scene.background = new THREE.Color(night ? 0x0f1520 : 0xc7d8e5);
+
+buildFarEastFinanceCentre(scene);
+buildLippoCentre(scene);
+
+// Surroundings terrain patch
+const verts = [];
+for (let x = S.x - 90; x < S.x + 90; x += 4) {
+  for (let z = S.z - 90; z < S.z + 90; z += 4) {
+    for (let [a, b] of [[x, z], [x, z + 4], [x + 4, z], [x + 4, z], [x, z + 4], [x + 4, z + 4]]) {
+      verts.push(a, h(a, b) - 0.05, b);
+    }
+  }
+}
+let g = new THREE.BufferGeometry();
+g.setAttribute('position', new THREE.Float32BufferAttribute(verts, 3));
+g.computeVertexNormals();
+scene.add(new THREE.Mesh(g, new THREE.MeshStandardMaterial({ color: 0x556058, side: THREE.DoubleSide })));
+
+scene.add(new THREE.HemisphereLight(0xfff7e6, 0x485850, night ? 0.35 : 1.15));
+let sun = new THREE.DirectionalLight(0xfff5dd, night ? 0.2 : 2.2);
+sun.position.set(S.x + 120, 240, S.z - 130);
+scene.add(sun);
+
+if (night) {
+  const accentLight = new THREE.PointLight(0xffdf88, 4.0, 70, 1.2);
+  accentLight.position.set(S.x, 90, S.z - 25);
+  scene.add(accentLight);
+}
+
+let camera = new THREE.PerspectiveCamera(44, window.innerWidth / window.innerHeight, 0.5, 1200);
+const target = new THREE.Vector3(S.x, 80, S.z);
+let radius = 180, phi = Math.PI / 3.4, theta = -Math.PI / 3.8;
+
+function updateCamera() {
+  camera.position.set(
+    target.x + radius * Math.sin(phi) * Math.sin(theta),
+    target.y + radius * Math.cos(phi),
+    target.z + radius * Math.sin(phi) * Math.cos(theta)
+  );
+  camera.lookAt(target);
+}
+updateCamera();
+
+let isDragging = false, prevMouseX = 0, prevMouseY = 0;
+window.addEventListener('mousedown', (e) => {
+  if (e.target.tagName === 'A') return;
+  isDragging = true;
+  prevMouseX = e.clientX;
+  prevMouseY = e.clientY;
+});
+window.addEventListener('mousemove', (e) => {
+  if (!isDragging) return;
+  const dx = e.clientX - prevMouseX;
+  const dy = e.clientY - prevMouseY;
+  prevMouseX = e.clientX;
+  prevMouseY = e.clientY;
+  theta -= dx * 0.007;
+  phi = Math.max(0.1, Math.min(Math.PI / 2.05, phi - dy * 0.007));
+  updateCamera();
+});
+window.addEventListener('mouseup', () => { isDragging = false; });
+window.addEventListener('wheel', (e) => {
+  radius = Math.max(30, Math.min(400, radius + e.deltaY * 0.1));
+  updateCamera();
+});
+window.addEventListener('resize', () => {
+  camera.aspect = window.innerWidth / window.innerHeight;
+  camera.updateProjectionMatrix();
+  renderer.setSize(window.innerWidth, window.innerHeight);
+});
+
+let renderer = new THREE.WebGPURenderer({ forceWebGL: true, antialias: true });
+await renderer.init();
+renderer.setSize(window.innerWidth, window.innerHeight);
+document.body.appendChild(renderer.domElement);
+
+function animate() {
+  requestAnimationFrame(animate);
+  renderer.render(scene, camera);
+}
+animate();
+window.ready = true;
+</script>
