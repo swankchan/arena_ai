@@ -1276,6 +1276,24 @@
 
 The previous isolated harbour view showed the roof as a low, flat-sided drum: its procedural cross-section ran along the local north–south axis, so the intended central arch faced the side rather than Victoria Harbour. The new wing's OSM local +X points roughly harbourward. The roof cross-section now spans local Z and retains an approximately 80 m central span as it meets the curved footprint, instead of shrinking the arch with each horizontal section. The fascia and eave follow that changing roof height rather than cutting across the glazing at a fixed elevation. A saved attributed 2008 harbour photo is listed in `references/hongkong/hkcec/README.md`. A local day/night WebGL view now shows the three arched bays and upper glazing from the harbour; it is not a surveyed roof, full-world WebGPU view, or certification of seam continuity. Central glass and roof edges, exact wing profiles, surroundings, night lighting and real road interfaces still need refinement and in-game validation.
 
+### 灣仔會議展覽中心連金紫荊廣場精修（2026-11-13）
+
+- **金紫荊廣場（Golden Bauhinia Square）**：在新翼北端海旁步道（博覽道東對出海濱平台）增設標誌性景觀：
+  - 「永遠盛開的紫荊花」6米高鍍金青銅雕塑（中心座標：x = 1452, z = -272），帶中央金莖、五片三維盛開紫荊花瓣、內彎花尖、金雌蕊與五枚雄蕊金花藥。
+  - 三層紅色花崗岩圓台座（半徑 3.4 / 2.8 / 2.1 m）、飾紋青銅環圈及四面紀念銘牌。
+  - 香港回歸祖國紀念碑（x = 1462, z = -262）：高 20 米，基座帶青銅銘牌，柱身由 206 個石環疊成，頂部飾青銅環圈。
+  - 升旗台雙旗桿組（x = 1442, z = -282）：11.5 × 5.5 m 紅色花崗岩台階基座、14 米高不銹鋼旗桿、金球頂飾，懸掛中華人民共和國國旗與香港特別行政區區旗，帶地面射燈。
+  - 維港海濱長廊觀景欄杆、沿海石椅及夜間照明白光燈柱。
+- **新翼大會堂海景挑高前廳（Grand Hall Harbour Foyer）**：
+  - 在曲面玻璃幕牆內增設 3 樓及 5 樓弧形挑高中空夾層樓面與玻璃欄杆。
+  - 4 組跨層巨型斜向鋼結構防風桁架（wind-bracing trusses）連接地面與飛鳥屋頂。
+  - 跨層自動扶梯組連通地面與高層展館。
+  - 挑高前廳夜景天花暗藏暖光（`grandHallWarm`），隨 `uInteriorGlow` 在夜幕下照亮維港天際線。
+- **新翼飛鳥屋頂航空警示與夜景泛光**：
+  - 三座屋頂拱殼最高脊頂增設紅色航空障礙燈（中央 54.55 m、兩翼 35.25 m）。
+  - 屋面泛光燈向上照射白色曲面鳥翼屋蓋。
+- **嚴格保留道路與幾何驗證**：全部組件均位於新翼與車道之間的行人海濱開敞區，距行車道均大於 22 米，完全不干涉行車路網 clearance。原四個 OSM rings、地面柱位（217）、地面幕牆面板（366）及 colliders（452）保持不變。
+
 ### 聖約翰座堂連長江公園（2026-11-11）
 
 - 來源：**聖約翰座堂 OSM way `107497695`**（16 頂點、`amenity=place_of_worship`、`denomination=anglican`、`building:levels=3`、`construction_date=1849`、`heritage=3`、`protecting_title=法定古蹟`、`wikidata=Q2942473`）；**長江公園 OSM way `295407287`**（4 頂點、`leisure=park`、`level=3`、`wikidata=Q5094250`）。兩個 ring 分開記錄，沒有互相借用。

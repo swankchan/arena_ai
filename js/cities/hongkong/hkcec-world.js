@@ -17,7 +17,7 @@ import {
   HKCEC_NEW_WING_HEIGHT, HKCEC_APARTMENT_PODIUM_TOP, HKCEC_APARTMENT_MAIN_ROOF, HKCEC_APARTMENT_VISUAL_COURSES,
   HKCEC_APARTMENT_TARGET_PANEL_WIDTH, HKCEC_MAIN_ENTRANCE, HKCEC_APARTMENT_ENTRANCE, HKCEC_ENTRANCE_LAYOUTS, HKCEC_GROUND_RINGS,
   HKCEC_COLUMN_POSITIONS, HKCEC_GROUND_FACADE_SEGMENTS, hkcecEdgeOutward, hkcecRingColliders, hkcecLocalCollider, hkcecFrameCollider,
-  hkcecGroundHeightAt
+  hkcecGroundHeightAt, HKCEC_GOLDEN_BAUHINIA_SITE, HKCEC_REUNIFICATION_MONUMENT_SITE, HKCEC_FLAGPOLE_DAIS_SITE
 } from './hkcec-architecture.js';
 import { pointInFlatRing } from './landmark-site.js';
 
@@ -64,6 +64,9 @@ function facadeQuad(s, ring, edge, t0, t1, y0, y1, offset, colour, lit = 0, top1
 }
 function frameGroup(site, frame, lift = 0) { const group = new THREE.Group(); group.position.set(frame.localX, lift, frame.localZ); group.rotation.y = frame.ry - site.ry; return group; }
 function textPlane(text, width, height, fontSize = 64, foreground = '#edf4f2', background = 'rgba(10,24,29,.88)') {
+  if (typeof document === 'undefined' || !document.createElement) {
+    return new THREE.Mesh(new THREE.PlaneGeometry(width, height), new THREE.MeshBasicMaterial({ color: 0x112233 }));
+  }
   const canvas = document.createElement('canvas'); canvas.width = 1536; canvas.height = 256; const ctx = canvas.getContext('2d');
   ctx.clearRect(0, 0, canvas.width, canvas.height); if (background) { ctx.fillStyle = background; ctx.fillRect(0, 0, canvas.width, canvas.height); }
   ctx.fillStyle = foreground; ctx.font = `600 ${fontSize}px "Noto Sans HK", "PingFang HK", "Microsoft JhengHei", sans-serif`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
@@ -71,6 +74,75 @@ function textPlane(text, width, height, fontSize = 64, foreground = '#edf4f2', b
   const texture = new THREE.CanvasTexture(canvas); texture.colorSpace = THREE.SRGBColorSpace; texture.anisotropy = 4;
   const material = new THREE.MeshBasicMaterial({ map: texture, transparent: true, side: THREE.DoubleSide, depthWrite: false });
   const mesh = new THREE.Mesh(new THREE.PlaneGeometry(width, height), material); mesh.name = `Sign:${text}`; return mesh;
+}
+
+function drawStar2D(ctx, cx, cy, r, points = 5, angleOffset = 0) {
+  let rot = Math.PI / 2 * 3 + angleOffset;
+  const step = Math.PI / points;
+  ctx.beginPath();
+  ctx.moveTo(cx + Math.cos(rot) * r, cy + Math.sin(rot) * r);
+  for (let i = 0; i < points; i++) {
+    rot += step;
+    ctx.lineTo(cx + Math.cos(rot) * (r * 0.42), cy + Math.sin(rot) * (r * 0.42));
+    rot += step;
+    ctx.lineTo(cx + Math.cos(rot) * r, cy + Math.sin(rot) * r);
+  }
+  ctx.closePath();
+  ctx.fill();
+}
+
+function drawBauhiniaFlower2D(ctx, cx, cy, r) {
+  for (let i = 0; i < 5; i++) {
+    const angle = i * (Math.PI * 2 / 5) - Math.PI / 2;
+    ctx.save();
+    ctx.translate(cx, cy);
+    ctx.rotate(angle);
+    ctx.beginPath();
+    ctx.moveTo(0, 0);
+    ctx.bezierCurveTo(r * 0.35, -r * 0.25, r * 0.65, -r * 0.75, 0, -r);
+    ctx.bezierCurveTo(-r * 0.35, -r * 0.65, -r * 0.3, -r * 0.25, 0, 0);
+    ctx.fill();
+    ctx.fillStyle = '#ee1c25';
+    drawStar2D(ctx, 0, -r * 0.58, r * 0.1, 5, 0);
+    ctx.fillStyle = '#ffffff';
+    ctx.restore();
+  }
+  ctx.beginPath();
+  ctx.arc(cx, cy, r * 0.15, 0, Math.PI * 2);
+  ctx.fill();
+}
+
+function createFlagMaterial(type) {
+  if (typeof document === 'undefined' || !document.createElement) {
+    return new THREE.MeshStandardMaterial({ color: type === 'china' ? 0xde2910 : 0xee1c25, side: THREE.DoubleSide });
+  }
+  try {
+    const canvas = document.createElement('canvas');
+    canvas.width = 512; canvas.height = 341;
+    const ctx = canvas.getContext('2d');
+    if (ctx && ctx.fillRect) {
+      if (type === 'china') {
+        ctx.fillStyle = '#de2910';
+        ctx.fillRect(0, 0, 512, 341);
+        ctx.fillStyle = '#ffde00';
+        drawStar2D(ctx, 85, 85, 26, 5, 0);
+        drawStar2D(ctx, 170, 34, 9, 5, -0.6);
+        drawStar2D(ctx, 204, 68, 9, 5, -0.3);
+        drawStar2D(ctx, 204, 119, 9, 5, 0.0);
+        drawStar2D(ctx, 170, 153, 9, 5, 0.35);
+      } else {
+        ctx.fillStyle = '#ee1c25';
+        ctx.fillRect(0, 0, 512, 341);
+        ctx.fillStyle = '#ffffff';
+        drawBauhiniaFlower2D(ctx, 256, 170, 75);
+      }
+    }
+    const texture = new THREE.CanvasTexture(canvas);
+    texture.colorSpace = THREE.SRGBColorSpace;
+    return new THREE.MeshStandardMaterial({ map: texture, side: THREE.DoubleSide, roughness: 0.65 });
+  } catch (e) {
+    return new THREE.MeshStandardMaterial({ color: type === 'china' ? 0xde2910 : 0xee1c25, side: THREE.DoubleSide });
+  }
 }
 
 // Convention Plaza Apartments (會景閣) reads from the harbour as stacked silver ribbons of glass, not as a plain
@@ -379,6 +451,239 @@ function createNewWingRefinement(materials) {
   return { group, finCount, roofRibs: ribs.length };
 }
 
+function createNewWingGrandHallFoyer(materials) {
+  const group = new THREE.Group();
+  group.name = 'HKCECNewWingGrandHallHarbourFoyer';
+  const slabs = [], balustrades = [], trusses = [], escalators = [], lights = [];
+
+  // Internal mezzanine floors (Levels 3 & 5) following the inner arc of the curtain wall
+  for (const [y, depthOffset] of [[14, 6], [20, 10]]) {
+    const zSteps = 16;
+    for (let k = 0; k < zSteps; k++) {
+      const z0 = -36 + (72 / zSteps) * k;
+      const z1 = -36 + (72 / zSteps) * (k + 1);
+      const outerX0 = 120 - Math.pow(z0 / 40, 2) * 16 - depthOffset;
+      const outerX1 = 120 - Math.pow(z1 / 40, 2) * 16 - depthOffset;
+      const innerX = outerX0 - 18;
+      box(slabs, [(outerX0 + innerX) * 0.5, y - 0.25, (z0 + z1) * 0.5], [18, 0.5, (72 / zSteps) + 0.2]);
+      beam(balustrades, [outerX0, y + 0.55, z0], [outerX1, y + 0.55, z1], 0.08, 1.1);
+      beam(slabs, [outerX0, y + 1.1, z0], [outerX1, y + 1.1, z1], 0.12, 0.08);
+      if (k % 2 === 0) {
+        cylinder(lights, [(outerX0 + innerX) * 0.5, y - 0.55, (z0 + z1) * 0.5], 0.45, 0.15, 8);
+      }
+    }
+  }
+
+  // Grand Escalators between Level 1 (y = 8) and Level 3 (y = 14), and Level 3 to Level 5 (y = 20)
+  for (const [y0, y1, zSide] of [[8, 14, -14], [8, 14, 14], [14, 20, -18], [14, 20, 18]]) {
+    const x0 = 92, x1 = 106;
+    beam(escalators, [x0, y0 + 0.4, zSide], [x1, y1 + 0.4, zSide], 1.4, 0.6);
+    for (const offset of [-0.72, 0.72]) {
+      beam(balustrades, [x0, y0 + 1.0, zSide + offset], [x1, y1 + 1.0, zSide + offset], 0.06, 0.9);
+      beam(slabs, [x0, y0 + 1.45, zSide + offset], [x1, y1 + 1.45, zSide + offset], 0.1, 0.08);
+    }
+  }
+
+  // Monumental Structural Wind-Bracing Space-Frame Trusses (4 space frames)
+  for (const z of [-30, -10, 10, 30]) {
+    const topH = newWingRoofHeightAt(112, z) - 1.2;
+    cylinder(trusses, [92, (8 + topH) * 0.5, z], 0.65, topH - 8, 12);
+    beam(trusses, [92, 8, z], [116, topH, z], 0.55, 0.55);
+    beam(trusses, [92, 14, z], [112, 20, z], 0.35, 0.35);
+    beam(trusses, [92, 20, z], [114, 26, z], 0.35, 0.35);
+  }
+
+  merged(group, slabs, materials.white, 'NewWingGrandHallMezzanineFloorSlabs');
+  merged(group, balustrades, materials.clearGlass, 'NewWingGrandHallBalustradeGlass', false);
+  merged(group, escalators, materials.silver, 'NewWingGrandHallEscalators');
+  merged(group, trusses, materials.silver, 'NewWingGrandHallStructuralWindTrusses');
+  merged(group, lights, materials.grandHallWarm, 'NewWingGrandHallWarmInteriorDownlights', false);
+
+  return { group, mezzanines: 2, escalators: 4, windTrusses: 4 };
+}
+
+function createNewWingAviationBeacons(materials) {
+  const group = new THREE.Group();
+  group.name = 'HKCECNewWingAviationObstacleBeacons';
+  const beacons = [], mounts = [], floodlights = [];
+
+  const apexPositions = [
+    [110, 54.55, 0],
+    [95, 35.25, -42],
+    [95, 35.25, 42]
+  ];
+  for (const [x, y, z] of apexPositions) {
+    cylinder(mounts, [x, y + 0.3, z], 0.08, 0.6, 8);
+    sphere(beacons, [x, y + 0.68, z], [0.22, 0.28, 0.22]);
+  }
+
+  for (let z = -35; z <= 35; z += 14) {
+    cylinder(mounts, [78, 27.5, z], 0.12, 0.4, 8);
+    sphere(floodlights, [78, 27.8, z], [0.18, 0.18, 0.18]);
+  }
+
+  merged(group, mounts, materials.dark, 'NewWingBeaconMounts');
+  merged(group, beacons, materials.beaconRed, 'NewWingRoofAviationObstacleBeacons', false);
+  merged(group, floodlights, materials.light, 'NewWingRoofArchitecturalFloodlights', false);
+
+  return { group, beaconCount: apexPositions.length };
+}
+
+function createGoldenBauhiniaSquare(materials, groundOffset = 0) {
+  const group = new THREE.Group();
+  group.name = 'HKCECGoldenBauhiniaSquareAndPromenade';
+  group.position.set(0, groundOffset, 0);
+
+  const granite = [], darkGranite = [], bronze = [], sculptureGold = [], finialGold = [], silver = [], lamps = [];
+
+  const cx = HKCEC_GOLDEN_BAUHINIA_SITE.x, cz = HKCEC_GOLDEN_BAUHINIA_SITE.z;
+  const pavingGeo = new THREE.CylinderGeometry(22, 22, 0.08, 36);
+  pavingGeo.translate(cx, 0.04, cz);
+  const pavingMesh = new THREE.Mesh(pavingGeo, materials.paving);
+  pavingMesh.name = 'GoldenBauhiniaSquarePlazaPavingDisc';
+  pavingMesh.receiveShadow = true;
+  group.add(pavingMesh);
+
+  const ringGeo = new THREE.RingGeometry(10, 12, 36);
+  ringGeo.rotateX(-Math.PI / 2);
+  ringGeo.translate(cx, 0.085, cz);
+  const ringMesh = new THREE.Mesh(ringGeo, materials.redGranite);
+  ringMesh.name = 'GoldenBauhiniaSquarePlazaAccentRing';
+  group.add(ringMesh);
+
+  // Stepped red granite circular pedestal (3 tiers)
+  cylinder(granite, [cx, 0.22, cz], 3.4, 0.44, 24);
+  cylinder(granite, [cx, 0.66, cz], 2.8, 0.44, 24);
+  cylinder(granite, [cx, 1.15, cz], 2.1, 0.54, 24);
+  cylinder(bronze, [cx, 1.55, cz], 1.95, 0.26, 24);
+
+  // 4 Cardinal commemorative bronze presentation plaques on the pedestal
+  for (const [dx, dz, ry] of [[2.11, 0, Math.PI / 2], [-2.11, 0, -Math.PI / 2], [0, 2.11, 0], [0, -2.11, Math.PI]]) {
+    box(bronze, [cx + dx, 1.15, cz + dz], [0.85, 0.42, 0.04], ry);
+  }
+
+  // Central fluted gold trunk
+  cylinder(sculptureGold, [cx, 2.65, cz], 0.35, 1.95, 16, 0.45);
+  // Calyx base
+  cylinder(sculptureGold, [cx, 3.75, cz], 0.62, 0.35, 16, 0.35);
+
+  // 5 Sculpted blooming Bauhinia petals fanning out in 3D
+  for (let k = 0; k < 5; k++) {
+    const theta = k * (Math.PI * 2 / 5);
+    const cos = Math.cos(theta), sin = Math.sin(theta);
+    beam(sculptureGold, [cx + cos * 0.4, 3.9, cz + sin * 0.4], [cx + cos * 1.35, 4.85, cz + sin * 1.35], 0.68, 0.14);
+    beam(sculptureGold, [cx + cos * 1.35, 4.85, cz + sin * 1.35], [cx + cos * 1.82, 5.75, cz + sin * 1.82], 0.76, 0.12);
+    beam(sculptureGold, [cx + cos * 1.82, 5.75, cz + sin * 1.82], [cx + cos * 1.55, 6.25, cz + sin * 1.55], 0.56, 0.09);
+    const crossX = -sin * 0.28, crossZ = cos * 0.28;
+    beam(sculptureGold, [cx + cos * 1.35 + crossX, 4.95, cz + sin * 1.35 + crossZ], [cx + cos * 1.82, 5.75, cz + sin * 1.82], 0.32, 0.08);
+    beam(sculptureGold, [cx + cos * 1.35 - crossX, 4.95, cz + sin * 1.35 - crossZ], [cx + cos * 1.82, 5.75, cz + sin * 1.82], 0.32, 0.08);
+
+    const stamenAngle = theta + 0.36;
+    const scos = Math.cos(stamenAngle), ssin = Math.sin(stamenAngle);
+    beam(sculptureGold, [cx, 4.1, cz], [cx + scos * 0.75, 5.05, cz + ssin * 0.75], 0.035, 0.035);
+    sphere(sculptureGold, [cx + scos * 0.75, 5.08, cz + ssin * 0.75], [0.08, 0.08, 0.08]);
+  }
+  cylinder(sculptureGold, [cx, 4.85, cz], 0.07, 1.5, 10, 0.05);
+  sphere(sculptureGold, [cx, 5.62, cz], [0.12, 0.12, 0.12]);
+
+  // Hong Kong Reunification Monument (香港回歸祖國紀念碑)
+  const mx = HKCEC_REUNIFICATION_MONUMENT_SITE.x, mz = HKCEC_REUNIFICATION_MONUMENT_SITE.z;
+  box(darkGranite, [mx, 0.22, mz], [7.2, 0.44, 7.2]);
+  box(darkGranite, [mx, 0.66, mz], [5.6, 0.44, 5.6]);
+  box(darkGranite, [mx, 1.15, mz], [4.2, 0.54, 4.2]);
+  box(darkGranite, [mx, 2.3, mz], [2.6, 1.8, 2.6]);
+  for (const [dx, dz, ry] of [[1.31, 0, Math.PI / 2], [-1.31, 0, -Math.PI / 2], [0, 1.31, 0], [0, -1.31, Math.PI]]) {
+    box(bronze, [mx + dx, 2.3, mz + dz], [1.8, 1.2, 0.03], ry);
+  }
+  cylinder(darkGranite, [mx, 12.0, mz], 0.92, 17.6, 16, 0.54);
+  for (let r = 0; r < 9; r++) {
+    const ry_pos = 3.8 + r * 1.85;
+    cylinder(granite, [mx, ry_pos, mz], 0.94 - r * 0.038, 0.12, 16);
+  }
+  cylinder(bronze, [mx, 20.8, mz], 0.62, 0.4, 16);
+  cylinder(finialGold, [mx, 21.05, mz], 0.35, 0.15, 12);
+
+  // Ceremonial Flagpole Dais & National / HKSAR Flags
+  const fx = HKCEC_FLAGPOLE_DAIS_SITE.x, fz = HKCEC_FLAGPOLE_DAIS_SITE.z;
+  box(granite, [fx, 0.25, fz], [11.5, 0.5, 5.5]);
+  box(granite, [fx, 0.12, fz + 3.0], [10.5, 0.24, 0.6]);
+  for (let i = 0; i < 7; i++) {
+    const px = fx - 5.2 + i * (10.4 / 6);
+    cylinder(silver, [px, 0.75, fz - 2.45], 0.04, 0.6, 8);
+    cylinder(silver, [px, 0.75, fz + 2.45], 0.04, 0.6, 8);
+  }
+  beam(bronze, [fx - 5.2, 0.95, fz - 2.45], [fx + 5.2, 0.95, fz - 2.45], 0.04, 0.04);
+  beam(bronze, [fx - 5.2, 0.95, fz + 2.45], [fx + 5.2, 0.95, fz + 2.45], 0.04, 0.04);
+
+  for (const [side, pfx] of [[-1, fx - 2.2], [1, fx + 2.2]]) {
+    cylinder(silver, [pfx, 7.5, fz], 0.14, 14.0, 12, 0.07);
+    sphere(finialGold, [pfx, 14.58, fz], [0.22, 0.22, 0.22]);
+    cylinder(silver, [pfx, 0.58, fz + 0.45], 0.12, 0.16, 8);
+    sphere(lamps, [pfx, 0.68, fz + 0.45], [0.08, 0.08, 0.08]);
+  }
+
+  const flagChinaMat = materials.flagChina || materials.carpet;
+  const flagHKSARMat = materials.flagHKSAR || materials.carpet;
+
+  const flagChina = new THREE.Mesh(new THREE.PlaneGeometry(2.8, 1.86), flagChinaMat);
+  flagChina.name = 'GoldenBauhiniaChinaNationalFlag';
+  flagChina.position.set(fx - 2.2 + 1.35, 13.5, fz + 0.25);
+  flagChina.rotation.y = 0.35;
+  flagChina.rotation.z = -0.05;
+  group.add(flagChina);
+
+  const flagHKSAR = new THREE.Mesh(new THREE.PlaneGeometry(2.8, 1.86), flagHKSARMat);
+  flagHKSAR.name = 'GoldenBauhiniaHKSARRegionalFlag';
+  flagHKSAR.position.set(fx + 2.2 + 1.35, 13.5, fz + 0.25);
+  flagHKSAR.rotation.y = 0.35;
+  flagHKSAR.rotation.z = -0.05;
+  group.add(flagHKSAR);
+
+  // Waterfront Promenade Balustrades & Viewing Benches
+  const seawall = [
+    [1415, -298], [1430, -297], [1445, -293], [1460, -282], [1475, -265], [1485, -248]
+  ];
+  for (let i = 0; i < seawall.length - 1; i++) {
+    const a = seawall[i], b = seawall[i + 1];
+    beam(silver, [a[0], 1.05, a[1]], [b[0], 1.05, b[1]], 0.07, 0.07);
+    beam(silver, [a[0], 0.55, a[1]], [b[0], 0.55, b[1]], 0.05, 0.05);
+    const segLen = Math.hypot(b[0] - a[0], b[1] - a[1]);
+    const numPosts = Math.max(1, Math.ceil(segLen / 2.6));
+    for (let p = 0; p <= numPosts; p++) {
+      const t = p / numPosts;
+      const px = lerp(a[0], b[0], t), pz = lerp(a[1], b[1], t);
+      cylinder(silver, [px, 0.55, pz], 0.045, 1.1, 8);
+    }
+  }
+
+  const benches = [
+    [1424, -294, 0.05], [1438, -291, 0.25], [1452, -283, 0.65], [1467, -270, 0.85]
+  ];
+  for (const [bx, bz, bry] of benches) {
+    box(granite, [bx, 0.26, bz], [2.6, 0.45, 0.65], bry);
+    box(darkGranite, [bx, 0.52, bz], [2.7, 0.1, 0.7], bry);
+  }
+
+  const lampPositions = [
+    [1422, -290], [1435, -285], [1450, -278], [1463, -265], [1475, -252]
+  ];
+  for (const [lx, lz] of lampPositions) {
+    cylinder(silver, [lx, 2.1, lz], 0.09, 4.2, 8, 0.06);
+    sphere(silver, [lx, 4.25, lz], [0.22, 0.14, 0.22]);
+    sphere(lamps, [lx, 4.4, lz], [0.18, 0.22, 0.18]);
+  }
+
+  merged(group, granite, materials.redGranite, 'GoldenBauhiniaRedGranitePedestalsAndPlinths');
+  merged(group, darkGranite, materials.darkGranite, 'HongKongReunificationMonumentDarkGranite');
+  merged(group, bronze, materials.bronze, 'GoldenBauhiniaBronzeRingsAndPlaques');
+  merged(group, sculptureGold, materials.gold, 'ForeverBloomingGoldenBauhiniaSculpture');
+  merged(group, finialGold, materials.gold, 'GoldenBauhiniaMonumentAndFlagFinials');
+  merged(group, silver, materials.silver, 'GoldenBauhiniaStainlessSteelFlagpolesAndBalustrades');
+  merged(group, lamps, materials.light, 'GoldenBauhiniaPromenadeIlluminationLamps', false);
+
+  return { group, sculptureCount: 1, flagpoles: 2, monumentCount: 1 };
+}
+
 function createAtrium(materials) {
   const group = new THREE.Group(); group.name = 'HKCECAtriumLinkRoofGardenAndWhiteArchTrusses'; const glass = store(), bands = store(), frames = store();
   const ring = HKCEC_ATRIUM_SITE.localRing; let panels = 0;
@@ -497,7 +802,15 @@ export function buildHkcec(root, { groundOffset = 0 } = {}) {
   const wood = new THREE.MeshStandardMaterial({ color: 0x544638, roughness: .84 });
   const carpet = new THREE.MeshStandardMaterial({ color: 0x8f1822, roughness: .92, side: THREE.DoubleSide });
   const light = new THREE.MeshStandardNodeMaterial({ color: 0xffe0ad }); light.emissiveNode = color(0xffc274).mul(nightAmount()).mul(1.6);
-  const materials = { glass, whiteVertex, frames, roofMetal, silver, white, dark, soffit, roof, paving, planter, clearGlass, leaves, wood, carpet, light };
+  const gold = new THREE.MeshStandardNodeMaterial({ color: 0xf6be36, metalness: .88, roughness: .22 }); gold.emissiveNode = color(0xffd260).mul(nightAmount()).mul(.12);
+  const bronze = new THREE.MeshStandardMaterial({ color: 0x8a6a42, metalness: .75, roughness: .38 });
+  const redGranite = new THREE.MeshStandardMaterial({ color: 0x7a2822, roughness: .58, metalness: .08 });
+  const darkGranite = new THREE.MeshStandardMaterial({ color: 0x2e3538, roughness: .62, metalness: .12 });
+  const beaconRed = new THREE.MeshStandardNodeMaterial({ color: 0xff1e1e }); beaconRed.emissiveNode = color(0xff0000).mul(nightAmount()).mul(2.6);
+  const grandHallWarm = new THREE.MeshStandardNodeMaterial({ color: 0xffd8a6, roughness: .5 }); grandHallWarm.emissiveNode = color(0xffbe68).mul(nightAmount()).mul(1.4);
+  const flagChina = createFlagMaterial('china');
+  const flagHKSAR = createFlagMaterial('hksar');
+  const materials = { glass, whiteVertex, frames, roofMetal, silver, white, dark, soffit, roof, paving, planter, clearGlass, leaves, wood, carpet, light, gold, bronze, redGranite, darkGranite, beaconRed, grandHallWarm, flagChina, flagHKSAR };
 
   const apartmentGroup = new THREE.Group(); apartmentGroup.name = 'ConventionPlazaApartments'; apartmentGroup.userData.osm = { type: 'way', id: HKCEC_APARTMENT_OSM_SOURCE.id }; apartmentGroup.position.set(HKCEC_APARTMENT_SITE.x, groundOffset, HKCEC_APARTMENT_SITE.z); apartmentGroup.rotation.y = HKCEC_APARTMENT_SITE.ry; complex.add(apartmentGroup);
   const apartment = createApartmentFacade();
@@ -524,12 +837,17 @@ export function buildHkcec(root, { groundOffset = 0 } = {}) {
   const newRoof = createNewWingRoof(materials); newGroup.add(newRoof.group);
   const newEave = createNewWingEave(materials); newGroup.add(newEave.group);
   const newRefinement = createNewWingRefinement(materials); newGroup.add(newRefinement.group);
+  const newGrandHall = createNewWingGrandHallFoyer(materials); newGroup.add(newGrandHall.group);
+  const newAviation = createNewWingAviationBeacons(materials); newGroup.add(newAviation.group);
   const newColumns = createColonnade(HKCEC_NEW_WING_SITE, HKCEC_COLUMN_POSITIONS.newWing, materials, 'NewWing'); newGroup.add(newColumns.group);
   const newGround = createGroundFacade(HKCEC_NEW_WING_SITE, HKCEC_GROUND_FACADE_SEGMENTS.newWing, 'NewWing');
   meshStore(newGroup, newGround.glass, glass, 'NewWingRoadSafeGroundGlass'); meshStore(newGroup, newGround.stone, whiteVertex, 'NewWingGroundStonePlinths'); meshStore(newGroup, newGround.frames, frames, 'NewWingGroundCurtainWallFrames'); newGroup.add(newGround.group);
 
   const atrium = createAtrium(materials); const atriumGroup = atrium.group; atriumGroup.userData.osm = { type: 'way', id: HKCEC_ATRIUM_OSM_SOURCE.id }; atriumGroup.position.set(HKCEC_ATRIUM_SITE.x, groundOffset, HKCEC_ATRIUM_SITE.z); atriumGroup.rotation.y = HKCEC_ATRIUM_SITE.ry; complex.add(atriumGroup);
   const atriumColumns = createColonnade(HKCEC_ATRIUM_SITE, HKCEC_COLUMN_POSITIONS.atrium, materials, 'Atrium'); atriumGroup.add(atriumColumns.group);
+
+  const bauhiniaSquare = createGoldenBauhiniaSquare(materials, groundOffset);
+  complex.add(bauhiniaSquare.group);
 
   const colliders = [
     ...hkcecRingColliders(HKCEC_APARTMENT_SITE, HKCEC_APARTMENT_SITE.localRing, HKCEC_APARTMENT_PODIUM_TOP, HKCEC_APARTMENT_MAIN_ROOF), ...crown.colliders, ...apartmentEntrance.colliders,
@@ -566,7 +884,14 @@ export function buildHkcec(root, { groundOffset = 0 } = {}) {
     hkcecGroundFacadePanels: oldGround.panels + newGround.panels, hkcecGroundFacadeColliders: oldGround.colliders.length + newGround.colliders.length,
     hkcecMainEntranceCanopyClearance: mainEntrance.canopyClearance, hkcecApartmentEntranceCanopyClearance: apartmentEntrance.canopyClearance,
     hkcecMainEntranceRoadPortalWidth: mainEntrance.roadClearWidth, hkcecApartmentEntranceRoadPortalWidth: apartmentEntrance.roadClearWidth,
-    hkcecGroundRings: HKCEC_GROUND_RINGS.length, hkcecPlazaGround: grounds.plaza, hkcecColliders: colliders.length
+    hkcecGroundRings: HKCEC_GROUND_RINGS.length, hkcecPlazaGround: grounds.plaza, hkcecColliders: colliders.length,
+    hkcecGoldenBauhiniaSquare: true,
+    hkcecGoldenBauhiniaSculpture: true,
+    hkcecReunificationMonument: true,
+    hkcecFlagpoles: bauhiniaSquare.flagpoles,
+    hkcecGrandHallInteriorFoyer: true,
+    hkcecRoofAviationBeacons: newAviation.beaconCount,
+    hkcecPromenadeRailings: true
   };
   complex.userData.stats = stats;
   return { group: complex, colliders, landmarks, stats, groundOffset, grounds, plazaTop: grounds.plaza, groundHeightAt: (x, z, ground) => hkcecGroundHeightAt(x, z, ground, grounds) };

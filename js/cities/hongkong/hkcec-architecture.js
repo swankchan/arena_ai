@@ -863,6 +863,27 @@ export const HKCEC_APARTMENT_PODIUM_TOP = HKCEC_OLD_WING_ROOF, HKCEC_APARTMENT_M
 export const HKCEC_APARTMENT_VISUAL_COURSES = HKCEC_APARTMENT_OFFICIAL_RESIDENTIAL_LEVELS;
 export const HKCEC_APARTMENT_TARGET_PANEL_WIDTH = 1.65;
 
+// Golden Bauhinia Square (金紫荊廣場), Reunification Monument & Flagpoles
+export const HKCEC_GOLDEN_BAUHINIA_SITE = Object.freeze({
+  x: 1452, z: -272,
+  sculptureName: '永遠盛開的紫荊花雕塑 Forever Blooming Bauhinia Sculpture',
+  sculptureHeight: 6,
+  pedestalRadius: 3.4,
+  pedestalHeight: 1.68
+});
+export const HKCEC_REUNIFICATION_MONUMENT_SITE = Object.freeze({
+  x: 1462, z: -262,
+  name: '香港回歸祖國紀念碑 Hong Kong Reunification Monument',
+  height: 20,
+  rings: 206
+});
+export const HKCEC_FLAGPOLE_DAIS_SITE = Object.freeze({
+  x: 1442, z: -282,
+  name: '金紫荊廣場升旗台 Golden Bauhinia Square Flagpole Dais',
+  flagpoleCount: 2,
+  flagpoleHeight: 14
+});
+
 export function hkcecEdgeOutward(ring, edge) {
   const i = edge * 2, ax = ring[i], az = ring[i + 1], bx = ring[i + 2], bz = ring[i + 3], dx = bx - ax, dz = bz - az, length = Math.hypot(dx, dz) || 1;
   let area = 0; for (let j = 0; j + 3 < ring.length; j += 2) area += ring[j] * ring[j + 3] - ring[j + 2] * ring[j + 1];

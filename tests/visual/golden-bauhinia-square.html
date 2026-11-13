@@ -1,0 +1,110 @@
+<!doctype html><meta charset="utf-8">
+<title>灣仔金紫荊廣場與香港會議展覽中心 Golden Bauhinia Square & HKCEC Visual Test</title>
+<style>
+  body { margin: 0; overflow: hidden; background: #111; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+  #ui {
+    position: absolute; top: 12px; left: 12px; color: #f5f3ef;
+    background: rgba(22, 26, 30, 0.88); backdrop-filter: blur(8px);
+    padding: 14px 18px; border-radius: 8px; z-index: 10; line-height: 1.55;
+    border: 1px solid rgba(255,255,255,0.15); max-width: 520px; box-shadow: 0 4px 20px rgba(0,0,0,0.5);
+  }
+  #ui h1 { margin: 0 0 6px; font-size: 16px; color: #f5c342; letter-spacing: 0.5px; }
+  #ui p { margin: 4px 0; font-size: 12.5px; color: #d0c8b8; }
+  #ui .tags { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 8px; }
+  #ui .tag { background: rgba(245, 195, 66, 0.2); color: #f6d87e; border: 1px solid rgba(245, 195, 66, 0.4); border-radius: 4px; padding: 2px 7px; font-size: 11px; }
+  #controls {
+    position: absolute; bottom: 12px; left: 12px; color: #bbb;
+    background: rgba(0,0,0,0.7); padding: 8px 12px; border-radius: 6px; font-size: 11px; z-index: 10;
+  }
+</style>
+<div id="ui">
+  <h1>灣仔金紫荊廣場連香港會議展覽中心新翼</h1>
+  <p><b>香港島灣仔博覽道東1號 (1 Expo Drive East, Wan Chai)</b></p>
+  <p>香港地標精修：金紫荊「永遠盛開的紫荊花」鍍金雕塑、紅色花崗岩圓台座、回歸祖國紀念碑、國旗與區旗雙旗桿組、海濱長廊觀景欄杆、新翼大會堂挑高前廳與飛鳥屋頂航空警示燈。</p>
+  <div class="tags">
+    <span class="tag">永遠盛開的紫荊花 (6米鍍金雕塑)</span>
+    <span class="tag">三層紅色花崗岩圓形基座</span>
+    <span class="tag">香港回歸祖國紀念碑 (20米 206石環)</span>
+    <span class="tag">升旗台雙旗桿 (國旗與區旗)</span>
+    <span class="tag">維港海濱長廊觀景欄杆與夜景路燈</span>
+    <span class="tag">新翼大會堂挑高前廳與夜景暖光</span>
+    <span class="tag">飛鳥屋頂脊頂紅色航空障礙燈</span>
+  </div>
+</div>
+<div id="controls">
+  滑鼠左鍵拖曳旋轉視角 | 滾輪縮放 | <a href="?night" style="color:#f5c342">夜景模式</a> / <a href="?" style="color:#f5c342">日景模式</a>
+</div>
+
+<script type="importmap">{"imports":{"three":"../../vendor/three/build/three.webgpu.js","three/webgpu":"../../vendor/three/build/three.webgpu.js","three/tsl":"../../vendor/three/build/three.tsl.js","three/addons/":"../../vendor/three/examples/jsm/"}}</script>
+<script type="module">
+import * as THREE from 'three/webgpu';
+import { cityUniforms } from '../../js/tsl-materials.js';
+import { buildHkcec } from '../../js/cities/hongkong/hkcec-world.js';
+import { HKCEC_GOLDEN_BAUHINIA_SITE, HKCEC_NEW_WING_SITE } from '../../js/cities/hongkong/hkcec-architecture.js';
+import { hongKongTerrainHeight as h } from '../../js/cities/hongkong/terrain.js';
+
+const night = new URLSearchParams(location.search).has('night');
+cityUniforms.uInteriorGlow.value = night ? 1.5 : 0;
+const scene = new THREE.Scene();
+scene.background = new THREE.Color(night ? 0x0f1520 : 0xb5cdd8);
+
+// Build refined HKCEC complex including Golden Bauhinia Square
+buildHkcec(scene, { groundOffset: 5 });
+
+// Ground plane
+const groundGeo = new THREE.PlaneGeometry(800, 800);
+const groundMat = new THREE.MeshStandardMaterial({ color: night ? 0x161b22 : 0x424c56, roughness: 0.85 });
+const ground = new THREE.Mesh(groundGeo, groundMat);
+ground.rotation.x = -Math.PI / 2;
+ground.position.set(HKCEC_GOLDEN_BAUHINIA_SITE.x, 4.95, HKCEC_GOLDEN_BAUHINIA_SITE.z);
+scene.add(ground);
+
+// Lighting
+const amb = new THREE.AmbientLight(night ? 0x223344 : 0x8899aa, night ? 0.7 : 1.2);
+scene.add(amb);
+const sun = new THREE.DirectionalLight(night ? 0x446688 : 0xfffaed, night ? 0.9 : 2.2);
+sun.position.set(HKCEC_GOLDEN_BAUHINIA_SITE.x - 120, 160, HKCEC_GOLDEN_BAUHINIA_SITE.z - 180);
+scene.add(sun);
+
+// Camera target: Golden Bauhinia Square sculpture
+const target = new THREE.Vector3(HKCEC_GOLDEN_BAUHINIA_SITE.x, 5 + 3.5, HKCEC_GOLDEN_BAUHINIA_SITE.z);
+const camera = new THREE.PerspectiveCamera(45, innerWidth / innerHeight, 0.5, 2500);
+
+let theta = 1.1, phi = 0.35, radius = 48;
+function updateCam() {
+  camera.position.x = target.x + radius * Math.sin(theta) * Math.cos(phi);
+  camera.position.y = target.y + radius * Math.sin(phi);
+  camera.position.z = target.z + radius * Math.cos(theta) * Math.cos(phi);
+  camera.lookAt(target);
+}
+updateCam();
+
+const renderer = new THREE.WebGPURenderer({ antialias: true });
+renderer.setSize(innerWidth, innerHeight);
+renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+document.body.appendChild(renderer.domElement);
+
+let dragging = false, prevX = 0, prevY = 0;
+window.addEventListener('mousedown', e => { dragging = true; prevX = e.clientX; prevY = e.clientY; });
+window.addEventListener('mousemove', e => {
+  if (!dragging) return;
+  theta += (e.clientX - prevX) * 0.006;
+  phi = Math.max(0.04, Math.min(1.3, phi + (e.clientY - prevY) * 0.006));
+  prevX = e.clientX; prevY = e.clientY;
+  updateCam();
+});
+window.addEventListener('mouseup', () => { dragging = false; });
+window.addEventListener('wheel', e => {
+  radius = Math.max(8, Math.min(300, radius + e.deltaY * 0.1));
+  updateCam();
+});
+window.addEventListener('resize', () => {
+  camera.aspect = innerWidth / innerHeight;
+  camera.updateProjectionMatrix();
+  renderer.setSize(innerWidth, innerHeight);
+});
+
+renderer.setAnimationLoop(() => {
+  renderer.render(scene, camera);
+});
+</script>

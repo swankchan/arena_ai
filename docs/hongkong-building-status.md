@@ -69,7 +69,7 @@ inventory 已同步更新為「45 已加入／55 待製作」，並保留「40 �
 | ID | 建築物 | 地區 | 實際狀態／證據 |
 | --- | --- | --- | --- |
 | `HK-B0082` | 香港大會堂高座 Hong Kong City Hall High Block | 中環 | **已加入・已精修・公共組件** — `city-hall-world.js` High Block；補深混凝土模數 fins、樓層陰影縫及全周天台 coping，保留真實入口及高低座步道。獨立 commit `59ab0f2`。 |
-| `HK-B0088` | 香港會議展覽中心新翼 HKCEC New Wing | 灣仔 | **已加入・已精修・綜合組件** — `hkcec-world.js` New Wing；保留三層飛鳥屋頂，補 504 條細曲面牆 fins 及 180 段橫向白屋頂 ribs。獨立 commit `ac71a2a`。 |
+| `HK-B0088` | 香港會議展覽中心新翼 HKCEC New Wing | 灣仔 | **已加入・已精修・綜合組件** — `hkcec-world.js` New Wing；新翼海旁增設金紫荊廣場（永遠盛開的紫荊花鍍金雕塑、三層紅色花崗岩圓台座、香港回歸祖國紀念碑、雙旗桿國旗與區旗組）、海濱長廊觀景欄杆、大會堂挑高前廳內部樓層與夜景暖光、飛鳥屋頂三脊頂紅色航空障礙燈；保留三層飛鳥屋頂與細曲面牆 fins。 |
 | `HK-B0089` | 香港會議展覽中心舊翼 HKCEC Old Wing | 灣仔 | **已加入・已精修・綜合組件** — `hkcec-world.js` Old Wing；補海向長邊 93 段淺色弧形露台板、欄杆及圓角端部，道路／入口 collider 數保持不變。獨立 commit `59e26ad`。 |
 | `HK-B0093` | 茶具文物館 Flagstaff House Museum of Tea Ware | 中環 | **已加入・已精修・公園組件** — 新增 `flagstaff-house-architecture.js`／`flagstaff-house-world.js`，不再用通用 heritage 盒體；保留 OSM ring、DTM 及兩個真實入口，補 Greek Revival 柱廊、線腳、拱窗、百葉、紅瓦屋顶及煙囪。獨立 commit `bae5901`。 |
 | `HK-B0100` | 香港大會堂低座 Hong Kong City Hall Low Block | 中環 | **已加入・已精修・公共組件** — `city-hall-world.js` Low Block；保留 L 形來源立面，補 12 個花崗岩菱形窗框、9 道深遮陽板及 17 組天窗 curb，保留 3.2 m 入口開口。獨立 commit `6c0b28f`。 |

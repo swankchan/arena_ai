@@ -84,3 +84,33 @@ test('New Wing tall central arch faces the harbour rather than running across it
   assert.ok(tallHarbour>15,`tall harbour glass vertices ${tallHarbour}`);
   assert.ok(nearCentreTop>48,`harbour centre glass height ${nearCentreTop}`);
 });
+
+test('Golden Bauhinia Square, Reunification Monument, flagpoles and Grand Hall interior are refined with finite geometry', () => {
+  const stats = world.stats;
+  assert.equal(stats.hkcecGoldenBauhiniaSquare, true);
+  assert.equal(stats.hkcecGoldenBauhiniaSculpture, true);
+  assert.equal(stats.hkcecReunificationMonument, true);
+  assert.equal(stats.hkcecFlagpoles, 2);
+  assert.equal(stats.hkcecGrandHallInteriorFoyer, true);
+  assert.equal(stats.hkcecRoofAviationBeacons, 3);
+  assert.equal(stats.hkcecPromenadeRailings, true);
+
+  const names = [];
+  world.group.traverse((object) => { if (object.name) names.push(object.name); });
+  assert.ok(names.some((name) => /ForeverBloomingGoldenBauhiniaSculpture/.test(name)));
+  assert.ok(names.some((name) => /HongKongReunificationMonument/.test(name)));
+  assert.ok(names.some((name) => /GoldenBauhiniaChinaNationalFlag/.test(name)));
+  assert.ok(names.some((name) => /GoldenBauhiniaHKSARRegionalFlag/.test(name)));
+  assert.ok(names.some((name) => /NewWingGrandHallMezzanineFloorSlabs/.test(name)));
+  assert.ok(names.some((name) => /NewWingGrandHallStructuralWindTrusses/.test(name)));
+  assert.ok(names.some((name) => /NewWingRoofAviationObstacleBeacons/.test(name)));
+
+  // Spatial location verification of Golden Bauhinia Square
+  world.group.updateMatrixWorld(true);
+  const sculpture = world.group.getObjectByName('ForeverBloomingGoldenBauhiniaSculpture');
+  assert.ok(sculpture);
+  const scBox = new THREE.Box3().setFromObject(sculpture);
+  assert.ok(Math.abs(scBox.min.x - (h.HKCEC_GOLDEN_BAUHINIA_SITE.x - 2)) < 3);
+  assert.ok(Math.abs(scBox.min.z - (h.HKCEC_GOLDEN_BAUHINIA_SITE.z - 2)) < 3);
+  assert.ok(scBox.max.y > 5 + 5.5, `sculpture top reaches realistic height: ${scBox.max.y}`);
+});
