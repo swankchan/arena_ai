@@ -9,7 +9,7 @@ import * as THREE from 'three/webgpu';
 import {
   ST_JOHNS_CATHEDRAL_SITE as S, ST_JOHNS_CATHEDRAL as C, ST_JOHNS_GARDEN as G, CHEUNG_KONG_PARK_SITE as PK,
 } from './st-johns-cathedral-site.js';
-import { hongKongTerrainHeight } from './terrain.js';
+import { hongKongTerrainHeight, stJohnsCathedralPadHeight } from './terrain.js';
 import { harbourCityLocalCollider, harbourCityEdgeOutward } from './harbour-city-architecture.js';
 import { box, cylinder, merged, nightAmount, hash } from './harbour-city-world-utils.js';
 import { color } from 'three/tsl';
@@ -84,10 +84,11 @@ export function buildStJohnsCathedral(scene) {
   const ring = S.localRing;
   const edgeCount = ring.length / 2 - 1;
 
-  // --- Precinct volume -------------------------------------------------------------------------------------------
-  // The whole ring is extruded to the eaves height. That gives the correct outline including the transepts and the
-  // 1873 extension for free, and it is the only honest way to build a footprint this irregular without inventing walls.
-  const eavesHeight = C.naveWallHeight;
+  // The precinct terrace is held at stJohnsCathedralPadHeight() (~28.55 m), which is terraceY above the lowest
+  // foundation ground (~24.44 m). The walls and foundation plinth extrude from y = 0 up to eavesHeight,
+  // ensuring the building stands with full solid walls both on the terrace and down the falling slope to Garden Road.
+  const terraceY = stJohnsCathedralPadHeight() - ground;
+  const eavesHeight = terraceY + C.naveWallHeight;
   {
     const shape = new THREE.Shape();
     for (let i = 0; i < ring.length - 2; i += 2) {
@@ -97,23 +98,21 @@ export function buildStJohnsCathedral(scene) {
     shape.closePath();
     const geometry = new THREE.ExtrudeGeometry(shape, { depth: eavesHeight, bevelEnabled: false, curveSegments: 1 });
     geometry.rotateX(-Math.PI / 2);
-    geometry.translate(0, eavesHeight, 0);
     walls.push(geometry);
   }
 
   // --- Roofs -----------------------------------------------------------------------------------------------------
-  // Two pitched roofs over the two wings of the plan, plus lean-to aisles along the nave. The ridges are estimates.
-  const naveRoof = { x0: -26.3, x1: -6.0, z0: 1.0, z1: 10.1, ridge: C.naveRidgeHeight };
-  const eastRoof = { x0: 2.0, x1: 26.3, z0: -10.2, z1: 14.3, ridge: C.chancelHeight + 4.2 };
-  const crossingRoof = { x0: -6.0, x1: 2.0, z0: -14.3, z1: 14.3, ridge: C.naveRidgeHeight + 0.6, along: 'z' };
+  // Pitched roofs resting exactly on the wall eaves at eavesHeight, sloping up to their ridge heights.
+  const naveRoof = { x0: -26.3, x1: -6.0, z0: 1.0, z1: 10.1, ridge: terraceY + C.naveRidgeHeight };
+  const eastRoof = { x0: 2.0, x1: 26.3, z0: -10.2, z1: 14.3, ridge: terraceY + C.chancelHeight + 4.2 };
+  const crossingRoof = { x0: -6.0, x1: 2.0, z0: -14.3, z1: 14.3, ridge: terraceY + C.naveRidgeHeight + 0.6, along: 'z' };
 
   addPitchedRoof(slopes, naveRoof, eavesHeight, 'x');
   addPitchedRoof(slopes, eastRoof, eavesHeight, 'x');
   addPitchedRoof(slopes, crossingRoof, eavesHeight, 'z');
 
   // --- Windows ---------------------------------------------------------------------------------------------------
-  // Lancet windows are only placed on edges OSM actually draws, and only on walls that face outwards. The bay rhythm
-  // is an estimate; the walls it sits on are not.
+  // Lancet windows are placed on outward-facing mapped walls, positioned at sill level above the terrace floor.
   for (let edge = 0; edge < edgeCount; edge++) {
     const length = Math.hypot(ring[edge * 2 + 2] - ring[edge * 2], ring[edge * 2 + 3] - ring[edge * 2 + 1]);
     if (length < 4.0) continue; // short jogs are the plan's internal steps, not glazed walls
@@ -127,16 +126,16 @@ export function buildStJohnsCathedral(scene) {
       const height = 2.5, width = 1.15;
       const geometry = lancetGeometry(width, height, height * 0.55);
       geometry.rotateY(Math.atan2(outward.nx, outward.nz));
-      geometry.translate(x, eavesHeight * 0.46, z);
+      geometry.translate(x, terraceY + 2.0, z);
       (hash(edge, index, 7, 13) > 0.74 ? litGlass : glass).push(geometry);
     }
-    // Buttresses on the long walls only, one per bay, stepped in two stages.
+    // Buttresses on the long walls only, one per bay, stepping up from ground to near the eaves.
     if (length > 9) {
       for (let index = 0; index <= along; index++) {
         const t = Math.min(0.97, Math.max(0.03, index / along));
         const x = ring[edge * 2] + (ring[edge * 2 + 2] - ring[edge * 2]) * t + outward.nx * (C.buttressDepth * 0.5);
         const z = ring[edge * 2 + 1] + (ring[edge * 2 + 3] - ring[edge * 2 + 1]) * t + outward.nz * (C.buttressDepth * 0.5);
-        box(relief, [x, eavesHeight * 0.34, z], [0.62, eavesHeight * 0.68, C.buttressDepth], ry);
+        box(relief, [x, eavesHeight * 0.45, z], [0.62, eavesHeight * 0.9, C.buttressDepth], ry);
       }
     }
   }
@@ -146,23 +145,24 @@ export function buildStJohnsCathedral(scene) {
   // so the tower is on the surveyed footprint rather than a placed box. The 1849 walls carry the 1850 bell stage; the
   // parapet, pinnacles and "VR" cipher are estimate-and-photograph detail.
   const towerX = -22.4, towerZ = 2.05, towerW = 7.9, towerD = 7.5;
+  const towerTopY = terraceY + C.towerHeight;
   {
-    const rise = C.towerHeight - eavesHeight;
+    const rise = towerTopY - eavesHeight;
     box(walls, [towerX, eavesHeight + rise * 0.5, towerZ], [towerW, rise, towerD]);
     // String courses.
-    for (const y of [eavesHeight + 0.4, C.towerHeight - 2.6]) box(relief, [towerX, y, towerZ], [towerW + 0.3, 0.28, towerD + 0.3]);
+    for (const y of [eavesHeight + 0.4, towerTopY - 2.6]) box(relief, [towerX, y, towerZ], [towerW + 0.3, 0.28, towerD + 0.3]);
     // Parapet.
     for (const [dx, dz, sx, sz] of [[0, -1, towerW + 0.2, 0.34], [0, 1, towerW + 0.2, 0.34], [-1, 0, 0.34, towerD + 0.2], [1, 0, 0.34, towerD + 0.2]]) {
-      box(relief, [towerX + dx * towerW * 0.5, C.towerHeight + 0.42, towerZ + dz * towerD * 0.5], [sx, 0.84, sz]);
+      box(relief, [towerX + dx * towerW * 0.5, towerTopY + 0.42, towerZ + dz * towerD * 0.5], [sx, 0.84, sz]);
     }
     // Four corner pinnacles: a square shaft and a tapered cap.
     for (const sx of [-1, 1]) {
       for (const sz of [-1, 1]) {
         const px = towerX + sx * (towerW * 0.5 - 0.42), pz = towerZ + sz * (towerD * 0.5 - 0.42);
-        box(relief, [px, C.towerHeight + C.towerPinnacleHeight * 0.5, pz], [0.72, C.towerPinnacleHeight, 0.72]);
+        box(relief, [px, towerTopY + C.towerPinnacleHeight * 0.5, pz], [0.72, C.towerPinnacleHeight, 0.72]);
         const cap = new THREE.CylinderGeometry(0.5 * Math.SQRT2, 0.18 * Math.SQRT2, 1.0, 4, 1);
         cap.rotateY(Math.PI / 4);
-        cap.translate(px, C.towerHeight + C.towerPinnacleHeight + 0.5, pz);
+        cap.translate(px, towerTopY + C.towerPinnacleHeight + 0.5, pz);
         relief.push(cap);
       }
     }
@@ -171,23 +171,26 @@ export function buildStJohnsCathedral(scene) {
       const h = 3.0, w = 1.5;
       const geometry = lancetGeometry(w, h, h * 0.5);
       geometry.rotateY(ry);
-      geometry.translate(towerX + nx * (towerW * 0.5 + 0.03), C.towerHeight - 3.4, towerZ + nz * (towerD * 0.5 + 0.03));
+      geometry.translate(towerX + nx * (towerW * 0.5 + 0.03), towerTopY - 3.4, towerZ + nz * (towerD * 0.5 + 0.03));
       darkStone.push(geometry);
     }
-    // West door, deeper moulding, and the "VR" tablet above it. The date of the cipher is sourced; its exact crafts,
-    // size and lettering are not, so it is drawn as a raised tablet rather than lettered geometry.
+    // West door, deeper moulding, and the "VR" tablet above it.
     const doorH = 3.5, doorW = 2.1;
     const door = lancetGeometry(doorW, doorH, doorH * 0.6, 0.18);
     door.rotateY(-Math.PI / 2);
-    door.translate(towerX - towerW * 0.5 - 0.02, 0, towerZ);
+    door.translate(towerX - towerW * 0.5 - 0.02, terraceY, towerZ);
     timber.push(door);
     for (const [grow, inset] of [[0.95, 0.04], [0.55, 0.02]]) {
       const surround = lancetGeometry(doorW + grow, doorH + grow * 0.75, (doorH + grow * 0.75) * 0.6, inset);
       surround.rotateY(-Math.PI / 2);
-      surround.translate(towerX - towerW * 0.5 - 0.05, -0.05, towerZ);
+      surround.translate(towerX - towerW * 0.5 - 0.05, terraceY - 0.05, towerZ);
       relief.push(surround);
     }
-    const panelY = C.towerHeight - 6.0;
+    // Steps leading down from the west portal to path
+    for (let step = 1; step <= 3; step++) {
+      box(relief, [towerX - towerW * 0.5 - 0.05 - step * 0.35, terraceY - step * 0.18, towerZ], [0.38, 0.2, doorW + 1.2]);
+    }
+    const panelY = towerTopY - 6.0;
     box(relief, [towerX - towerW * 0.5 - 0.07, panelY, towerZ], [0.12, 2.1, 1.8]);
     box(darkStone, [towerX - towerW * 0.5 - 0.15, panelY, towerZ - 0.44], [0.05, 1.25, 0.34]);
     box(darkStone, [towerX - towerW * 0.5 - 0.15, panelY, towerZ + 0.44], [0.05, 1.25, 0.34]);
@@ -203,8 +206,11 @@ export function buildStJohnsCathedral(scene) {
     void porchX; void porchZ;
     const door = lancetGeometry(doorW, doorH, doorH * 0.62, 0.16);
     door.rotateY(Math.PI);
-    door.translate(9.25, 0, -14.3);
+    door.translate(9.25, terraceY, -14.3);
     timber.push(door);
+    for (let step = 1; step <= 2; step++) {
+      box(relief, [9.25, terraceY - step * 0.18, -14.3 - step * 0.3], [doorW + 0.8, 0.2, 0.35]);
+    }
   }
 
   // --- Garden ----------------------------------------------------------------------------------------------------
@@ -219,6 +225,11 @@ export function buildStJohnsCathedral(scene) {
     if (h > highest) highest = h;
   }
   // Retaining wall on the downhill side, following the precinct edges that face the fall.
+  const localGround = (lx, lz) => {
+    const cs = Math.cos(S.ry), sn = Math.sin(S.ry);
+    return hongKongTerrainHeight(S.x + lx * cs + lz * sn, S.z - lx * sn + lz * cs) - ground;
+  };
+
   {
     const inset = 3.0;
     for (let edge = 0; edge < edgeCount; edge++) {
@@ -241,28 +252,29 @@ export function buildStJohnsCathedral(scene) {
   ];
   for (const [lx, lz] of lawnPanels) {
     if (!clearOfNeighbours(lx, lz, 2.0)) continue;
-    box(lawn, [lx, 0.06, lz], [6.0, 0.12, 6.6]);
+    const ly = localGround(lx, lz);
+    box(lawn, [lx, ly + 0.04, lz], [6.0, 0.08, 6.6]);
   }
   // Path from the west door down to Garden Road, and a carriage sweep at the gate. The eastern path is clipped at the
   // office plot so it stops where the neighbouring building starts.
-  box(paths, [-33.0, 0.08, 2.0], [10.0, 0.10, G.pathWidth]);
-  box(paths, [-38.2, 0.08, 2.0], [4.2, 0.10, 12.0]);
+  box(paths, [-33.0, localGround(-33.0, 2.0) + 0.06, 2.0], [10.0, 0.10, G.pathWidth]);
+  box(paths, [-38.2, localGround(-38.2, 2.0) + 0.06, 2.0], [4.2, 0.10, 12.0]);
   for (let lx = -2.0; lx <= 20.0; lx += 1.0) {
     if (!clearOfNeighbours(lx, -20.5, 1.4)) break;
-    box(paths, [lx, 0.08, -20.5], [1.05, 0.10, G.pathWidth]);
+    box(paths, [lx, localGround(lx, -20.5) + 0.06, -20.5], [1.05, 0.10, G.pathWidth]);
   }
   // Clipped hedges along the precinct edges, leaving a gate gap at the west front and stopping at the office plot.
   for (const [z, x0, x1] of [[17.6, -30, 22], [-17.8, -30, -12], [-17.8, 6, 22]]) {
     for (let x = x0; x <= x1; x += 2.0) {
       if (!clearOfNeighbours(x, z, 1.2)) continue;
-      box(planting, [x, G.hedgeHeight * 0.5, z], [1.9, G.hedgeHeight, 0.9]);
+      const ly = localGround(x, z);
+      box(planting, [x, ly + G.hedgeHeight * 0.5, z], [1.9, G.hedgeHeight, 0.9]);
     }
   }
   // Trees, kept clear of the building, the lawns and the paths.
   for (const [lx, lz, scale] of [[-31, 11.5, 1.0], [-16, 15.2, 0.85], [-30, -13.5, 0.95], [18, 12.4, 0.9], [16, -12.6, 0.8], [-12, 15.4, 0.75], [-24, 15.0, 0.8]]) {
     if (!clearOfNeighbours(lx, lz, 2.6)) continue;
-    const cs = Math.cos(S.ry), sn = Math.sin(S.ry);
-    const base = hongKongTerrainHeight(S.x + lx * cs + lz * sn, S.z - lx * sn + lz * cs) - ground;
+    const base = localGround(lx, lz);
     const trunk = 3.0 * scale;
     cylinder(canopies, [lx, base + trunk * 0.5, lz], 0.22 * scale, trunk, 8);
     for (const [ox, oy, oz, r] of [[0, trunk + 1.4 * scale, 0, 2.2 * scale], [0.9 * scale, trunk + 2.1 * scale, 0.4 * scale, 1.5 * scale], [-0.8 * scale, trunk + 1.9 * scale, -0.5 * scale, 1.4 * scale]]) {
@@ -273,9 +285,11 @@ export function buildStJohnsCathedral(scene) {
   {
     for (const [x, z, w, d] of [[-38.6, 2.0, 0.08, 0.08]]) void x, z, w, d;
     for (let z = -4.0; z <= 8.0; z += 1.5) {
-      box(iron, [-38.6, 0.55, z], [0.09, 1.1, 0.09]);
+      const ly = localGround(-38.6, z);
+      box(iron, [-38.6, ly + 0.55, z], [0.09, 1.1, 0.09]);
     }
-    for (const y of [1.02, 0.62]) box(iron, [-38.6, y, 2.0], [0.06, 0.07, 12.0]);
+    const railY = localGround(-38.6, 2.0);
+    for (const y of [1.02, 0.62]) box(iron, [-38.6, railY + y, 2.0], [0.06, 0.07, 12.0]);
   }
 
   // --- Materials -------------------------------------------------------------------------------------------------
@@ -325,13 +339,13 @@ export function buildStJohnsCathedral(scene) {
   // --- Colliders -------------------------------------------------------------------------------------------------
   // Box colliders approximate the cruciform mass so the player cannot walk through the walls; the outline lives in the
   // mesh. Heights are estimated with the roofs.
-  const roofTop = Math.max(C.towerHeight + C.towerPinnacleHeight + 1.0, eastRoof.ridge);
+  const roofTop = Math.max(towerTopY + C.towerPinnacleHeight + 1.0, eastRoof.ridge);
   const colliders = [
     harbourCityLocalCollider(S, towerX, towerZ, towerW + 0.4, towerD + 0.4, ground, ground + roofTop),
-    harbourCityLocalCollider(S, -16.0, 5.5, 20.6, 9.2, ground, ground + C.naveRidgeHeight),
+    harbourCityLocalCollider(S, -16.0, 5.5, 20.6, 9.2, ground, ground + naveRoof.ridge),
     harbourCityLocalCollider(S, -3.0, 0.0, 8.0, 28.6, ground, ground + crossingRoof.ridge),
     harbourCityLocalCollider(S, 12.5, 2.0, 28.6, 24.5, ground, ground + eastRoof.ridge),
-    harbourCityLocalCollider(S, 2.2, -10.2, 14.0, 8.2, ground, ground + C.naveRidgeHeight * 0.85),
+    harbourCityLocalCollider(S, 2.2, -10.2, 14.0, 8.2, ground, ground + naveRoof.ridge * 0.85),
   ];
 
   return {
