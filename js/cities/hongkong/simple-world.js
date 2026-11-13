@@ -156,6 +156,7 @@ import { buildMajorParkTreeLayer } from './major-parks-world-utils.js';
 import { createHongKongTrafficAids } from './traffic-aids.js';
 import { buildHongKongAirport } from './airport-world.js';
 import { buildTstWaterfrontRailing } from './tst-waterfront-railing-world.js';
+import { buildTstWaterfrontPromenade } from './tst-waterfront-promenade-world.js';
 
 const WATER_LEVEL = -2.2;
 
@@ -385,6 +386,8 @@ function* buildSimpleHongKongWorldSteps(scene) {
   const kowloonShangriLa = buildKowloonShangriLa(scene, { groundOffset: HONG_KONG_TERRAIN_META.kowloonShangriLaPadHeight });
   yield 'Building the Star Ferry to Tsim Sha Tsui East wave balustrade...';
   const tstWaterfrontRailing = buildTstWaterfrontRailing(scene);
+  yield 'Building Tsim Sha Tsui waterfront promenade, covered walkways, Avenue of Stars and 3D seawall...';
+  const tstWaterfrontPromenade = buildTstWaterfrontPromenade(scene);
   yield 'Building Hong Kong Park’s aviary, conservatory, heritage terraces and walking network...';
   const hongKongPark = buildHongKongPark(scene);
   yield 'Building Kowloon Park’s Chinese Garden, Bird Lake, pool complex and sports grounds...';
@@ -641,6 +644,7 @@ function* buildSimpleHongKongWorldSteps(scene) {
     ...salisburyYMCA.stats,
     ...kowloonShangriLa.stats,
     ...tstWaterfrontRailing.stats,
+    ...tstWaterfrontPromenade.stats,
     ...hongKongPark.stats,
     ...kowloonPark.stats,
     ...victoriaPark.stats,
@@ -661,7 +665,7 @@ function* buildSimpleHongKongWorldSteps(scene) {
 
   return {
     root: scene,
-    colliders: [...full.colliders, ...crossings.colliders, ...hsbc.colliders, ...shunTak.colliders, ...chaterGarden.colliders, ...statueSquare.colliders, ...worldWideHouse.colliders, ...entertainmentBuilding.colliders, ...mandarinOriental.colliders, ...princesBuilding.colliders, ...hongKongClub.colliders, ...hangSeng.colliders, ...standardChartered.colliders, ...twoIfc.colliders, ...ifcMall.colliders, ...generalPostOffice.colliders, ...revenueTower.colliders, ...wanchaiTower.colliders, ...immigrationTower.colliders, ...obrienFootbridge.colliders, ...windsorHouse.colliders, ...sogo.colliders, ...governmentHouse.colliders, ...peakTower.colliders, ...stJohns.colliders, ...stJohnsCathedral.colliders, ...cheungKongPark.colliders, ...peakTramCentralEntrance.colliders, ...peakTramCentralPlatform.colliders, ...centralConcourse.colliders, ...centralLift.colliders, ...peakTramCentralApproach.colliders, ...peakTramKennedyBridge.colliders, ...peakTramKennedyApproach.colliders, ...peakTramUpperLine.colliders, ...peakTramBarkerApproach.colliders, ...peakTramSummitApproach.colliders, ...peakTramBarkerStationTrack.colliders, ...peakTramBarkerStation.colliders, ...peakTramBarkerAbutments.colliders, ...murray.colliders, ...blueHouse.colliders, ...hkapa.colliders, ...jardineHouse.colliders, ...icc.colliders, ...bankOfChina.colliders, ...centralPlaza.colliders, ...theCenter.colliders, ...ninaTower.colliders, ...cheungKong.colliders, ...k11Atelier.colliders, ...cullinanI.colliders, ...cullinanII.colliders, ...masterpiece.colliders, ...langhamPlace.colliders, ...summit.colliders, ...hopewell.colliders, ...sunHungKai.colliders, ...twoPacificPlace.colliders, ...airside.colliders, ...leeGardenOne.colliders, ...oneIfc.colliders, ...championTower.colliders, ...ckc2.colliders, ...qgo.colliders, ...centralGovernment.colliders, ...heritage1881.colliders, ...theArch.colliders, ...theHarbourside.colliders, ...theWaterfront.colliders, ...sorrento.colliders, ...conrad.colliders, ...hysan.colliders, ...twoTaikoo.colliders, ...theHenderson.colliders, ...oneExchange.colliders, ...twoExchange.colliders, ...courtOfFinalAppeal.colliders, ...hkcec.colliders, ...mongKokStadium.colliders, ...hongKongStadium.colliders, ...coliseum.colliders, ...laiYuen.colliders, ...queenElizabethStadium.colliders, ...kaiTakStadium.colliders, ...kaiTakArena.colliders, ...kaiTakYouth.colliders, ...happyValley.colliders, ...shaTin.colliders, ...oceanPark.colliders, ...timesSquare.colliders, ...oceanTerminal.colliders, ...starHouse.colliders, ...marcoPolo.colliders, ...oceanCentre.colliders, ...princeHotel.colliders, ...gatewayTowerOne.colliders, ...gatewayTowerTwo.colliders, ...gatewayTowerThree.colliders, ...gatewayTowerFive.colliders, ...gatewayTowerSix.colliders, ...pacificClub.colliders, ...spaceMuseum.colliders, ...artMuseum.colliders, ...scienceMuseum.colliders, ...historyMuseum.colliders, ...culturalCentre.colliders, ...cityHall.colliders, ...centralLibrary.colliders, ...clockTower.colliders, ...peninsulaHotel.colliders, ...sheratonHotel.colliders, ...salisburyYMCA.colliders, ...kowloonShangriLa.colliders, ...tstWaterfrontRailing.colliders, ...hongKongPark.colliders, ...kowloonPark.colliders, ...victoriaPark.colliders, ...airport.colliders],
+    colliders: [...full.colliders, ...crossings.colliders, ...hsbc.colliders, ...shunTak.colliders, ...chaterGarden.colliders, ...statueSquare.colliders, ...worldWideHouse.colliders, ...entertainmentBuilding.colliders, ...mandarinOriental.colliders, ...princesBuilding.colliders, ...hongKongClub.colliders, ...hangSeng.colliders, ...standardChartered.colliders, ...twoIfc.colliders, ...ifcMall.colliders, ...generalPostOffice.colliders, ...revenueTower.colliders, ...wanchaiTower.colliders, ...immigrationTower.colliders, ...obrienFootbridge.colliders, ...windsorHouse.colliders, ...sogo.colliders, ...governmentHouse.colliders, ...peakTower.colliders, ...stJohns.colliders, ...stJohnsCathedral.colliders, ...cheungKongPark.colliders, ...peakTramCentralEntrance.colliders, ...peakTramCentralPlatform.colliders, ...centralConcourse.colliders, ...centralLift.colliders, ...peakTramCentralApproach.colliders, ...peakTramKennedyBridge.colliders, ...peakTramKennedyApproach.colliders, ...peakTramUpperLine.colliders, ...peakTramBarkerApproach.colliders, ...peakTramSummitApproach.colliders, ...peakTramBarkerStationTrack.colliders, ...peakTramBarkerStation.colliders, ...peakTramBarkerAbutments.colliders, ...murray.colliders, ...blueHouse.colliders, ...hkapa.colliders, ...jardineHouse.colliders, ...icc.colliders, ...bankOfChina.colliders, ...centralPlaza.colliders, ...theCenter.colliders, ...ninaTower.colliders, ...cheungKong.colliders, ...k11Atelier.colliders, ...cullinanI.colliders, ...cullinanII.colliders, ...masterpiece.colliders, ...langhamPlace.colliders, ...summit.colliders, ...hopewell.colliders, ...sunHungKai.colliders, ...twoPacificPlace.colliders, ...airside.colliders, ...leeGardenOne.colliders, ...oneIfc.colliders, ...championTower.colliders, ...ckc2.colliders, ...qgo.colliders, ...centralGovernment.colliders, ...heritage1881.colliders, ...theArch.colliders, ...theHarbourside.colliders, ...theWaterfront.colliders, ...sorrento.colliders, ...conrad.colliders, ...hysan.colliders, ...twoTaikoo.colliders, ...theHenderson.colliders, ...oneExchange.colliders, ...twoExchange.colliders, ...courtOfFinalAppeal.colliders, ...hkcec.colliders, ...mongKokStadium.colliders, ...hongKongStadium.colliders, ...coliseum.colliders, ...laiYuen.colliders, ...queenElizabethStadium.colliders, ...kaiTakStadium.colliders, ...kaiTakArena.colliders, ...kaiTakYouth.colliders, ...happyValley.colliders, ...shaTin.colliders, ...oceanPark.colliders, ...timesSquare.colliders, ...oceanTerminal.colliders, ...starHouse.colliders, ...marcoPolo.colliders, ...oceanCentre.colliders, ...princeHotel.colliders, ...gatewayTowerOne.colliders, ...gatewayTowerTwo.colliders, ...gatewayTowerThree.colliders, ...gatewayTowerFive.colliders, ...gatewayTowerSix.colliders, ...pacificClub.colliders, ...spaceMuseum.colliders, ...artMuseum.colliders, ...scienceMuseum.colliders, ...historyMuseum.colliders, ...culturalCentre.colliders, ...cityHall.colliders, ...centralLibrary.colliders, ...clockTower.colliders, ...peninsulaHotel.colliders, ...sheratonHotel.colliders, ...salisburyYMCA.colliders, ...kowloonShangriLa.colliders, ...tstWaterfrontRailing.colliders, ...tstWaterfrontPromenade.colliders, ...hongKongPark.colliders, ...kowloonPark.colliders, ...victoriaPark.colliders, ...airport.colliders],
     bounds: full.bounds,
     stats,
     personSpawn: { ...SPAWN.person },
@@ -788,6 +792,7 @@ function* buildSimpleHongKongWorldSteps(scene) {
     salisburyYMCA,
     kowloonShangriLa,
     tstWaterfrontRailing,
+    tstWaterfrontPromenade,
     hongKongPark,
     kowloonPark,
     victoriaPark,

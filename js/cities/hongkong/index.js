@@ -123,6 +123,7 @@ export const city = {
       salisburyYMCA: world.salisburyYMCA,
       kowloonShangriLa: world.kowloonShangriLa,
       tstWaterfrontRailing: world.tstWaterfrontRailing,
+      tstWaterfrontPromenade: world.tstWaterfrontPromenade,
     hongKongPark: world.hongKongPark,
     kowloonPark: world.kowloonPark,
     victoriaPark: world.victoriaPark,

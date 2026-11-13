@@ -1328,3 +1328,34 @@ The previous isolated harbour view showed the roof as a low, flat-sided drum: it
 - **測試與驗證**：
   - `tests/chater-garden.test.cjs` 包含地塊邊界、全頂點道路淨空、樹位道路淨空、五大核心網格名稱（`Chater Garden terrain-following lawn and paved tree walk`、`Chater Garden blue spill pool`、`Chater Garden stone cascade and pool walls`、`Chater Garden cascading water`、`Chater Garden green garden railings and pool coping`）、新建築組件、夜光節點、碰撞體幾何以及 `simple-world.js` 全鏈路集成測試，全數 PASS。
 
+### 尖沙咀海旁建築、有蓋行人道、星光大道與 3D 海堤精修 / Tsim Sha Tsui Waterfront Promenade, Covered Colonnades, Avenue of Stars & 3D Seawall（2026-11-11）
+
+- **海岸線範圍與文獻背景**：
+  - **地理頂點**：`GEO.land[0]` 頂點 346 至 373（總長 **1,089 米**），西起天星碼頭海旁、天星碼頭巴士總站、九廣鐵路前鐘樓，經九龍公眾碼頭 1–4 號、香港文化中心（1989 李銘儀 / José Lei）、香港藝術館、梳士巴利花園，一直延伸至星光大道（Avenue of Stars, 2019 James Corner Field Operations / JCFO 景觀改造）及尖沙咀東部海濱。
+  - **海堤現狀改良**：消除原海岸線陸地與海面間的浮空斷層，建立連續 3D 花崗岩海堤（壓頂石厚 0.28m、外懸寬 0.55m，立體垂直石牆直墜至海平面下 -2.80m，低於 WATER_LEVEL -2.2m），徹底消除海岸空隙。
+- **核心建築結構與海濱設施**：
+  1. **天星碼頭前地及巴士總站有蓋柱廊通道**（Star Ferry Pier Forecourt & Bus Terminus Covered Arcade）：
+     - 雙排預製混凝土白色方柱柱廊，平頂懸臂遮陽棚架，深綠色防護封邊，連接天星碼頭與鐘樓，提供防雨遮陽步行空間，天花暗藏暖光夜間嵌燈。
+  2. **香港文化中心海旁斜柱柱廊與二層公共觀景台**（Cultural Centre Grand Harbour Colonnade & 2-Level Viewing Deck）：
+     - 跨度逾 160 米，21 跨巨型斜向瓷磚立柱柱廊，下層為 11.5 米寬寬敞有蓋海濱長廊（附夜間暖光天花嵌燈）；柱頂承托高 5.4 米的二層觀景平台，鋪設防腐柚木地板與外側玻璃金屬防護欄杆；東西兩端設有花崗石公共大台階連接地面。
+  3. **九龍公眾碼頭 1 至 4 號公眾登岸梯級**（Kowloon Public Pier No. 1–4 Landing Steps）：
+     - 符合香港土木工程拓展署（CEDD）公眾碼頭標準，內縮花崗石防滑石階探入水中，配置木質防撞條（timber rubbing fenders）、吸震橡膠塊、不銹鋼安全扶手、鋼結構頂棚與頂部航行導航信標燈（夜間藍綠翡翠光芒）。
+  4. **星光大道波浪型遮蔭涼亭與休閒設施**（Avenue of Stars Wave Shade Canopies & Bleachers）：
+     - 四組雕塑感流線型古銅金屬波浪遮陽涼亭，配木紋格柵遮陽百葉與一體化實木座椅，內建 WebGPU TSL 夜間嵌燈。
+     - 階梯式木質觀景看台與明星手印紀念飾板。
+     - 李小龍、梅艷芳、麥兜三組紀念銅像雕塑與花崗石基座。
+  5. **立體海堤、繫纜樁與安全設施**（3D Seawall, Mooring Bollards & Lifebuoys）：
+     - 全線花崗岩海堤面與壓頂石。
+     - 鑄鐵重型繫纜樁（每 24 米一處）。
+     - 紅白雙色救生圈立柱與應急繩箱（每 48 米一處）。
+     - 原版波浪欄杆（TST Promenade Wave Balustrade）下扶手夜間燈帶全面升級為 WebGPU TSL `nightAmount()` 動態光帶。
+  6. **實體碰撞體系統**（Colliders）：
+     - 全線海堤邊界防跌落防撞牆（segment walls）。
+     - 柱廊柱群、涼亭柱體、碼頭雨棚與雕像基座實體碰撞體（共 222 組），防止行人與載具落海或穿牆。
+- **測試驗證**：
+  - `tests/tst-waterfront-railing.test.cjs`（6/6 PASS）。
+  - `tests/tst-waterfront-promenade.test.cjs`（3/3 PASS）。
+  - `tests/cultural-centre.test.cjs` & `tests/clock-tower.test.cjs`（20/20 PASS）。
+  - `npm run build:runtime` 403 模組乾淨打包，零資產、零外部圖片依賴。
+
+

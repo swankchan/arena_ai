@@ -4,7 +4,8 @@ import { hongKongTerrainHeight } from './terrain.js';
 import { FULL_WORLD_HEIGHT } from './full-world.js';
 import { fullRoadSurfaceAt } from './full-meta.js';
 import { segmentWall } from './colliders.js';
-import { beam, merged } from './harbour-city-world-utils.js';
+import { beam, merged, nightAmount } from './harbour-city-world-utils.js';
+import { color } from 'three/tsl';
 
 export function buildTstWaterfrontRailing(scene, {
   groundHeightAt = (x, z) => hongKongTerrainHeight(x, z) + FULL_WORLD_HEIGHT.land,
@@ -56,7 +57,8 @@ export function buildTstWaterfrontRailing(scene, {
   const wood = new THREE.MeshStandardMaterial({ color: 0xb8a180, roughness: .76, metalness: .02 });
   const steel = new THREE.MeshStandardMaterial({ color: 0xa5b0b0, roughness: .32, metalness: .76 });
   const postSteel = new THREE.MeshStandardMaterial({ color: 0x718082, roughness: .37, metalness: .72 });
-  const light = new THREE.MeshStandardMaterial({ color: 0xd8c9a6, emissive: 0xffd59a, emissiveIntensity: .38, roughness: .42, metalness: .08 });
+  const light = new THREE.MeshStandardNodeMaterial({ color: 0xd8c9a6, roughness: .42, metalness: .08 });
+  light.emissiveNode = color(0xffd598).mul(nightAmount()).mul(1.5);
   merged(root, handrail, wood, 'TST promenade wide bio-based wood substitute handrail');
   merged(root, balusters, steel, 'TST promenade individual seaward-leaning wave balusters');
   merged(root, posts, postSteel, 'TST promenade stainless newel posts');
