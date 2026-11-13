@@ -1,0 +1,132 @@
+<!doctype html><meta charset="utf-8">
+<title>中國工商銀行大廈 ICBC Tower (Three Garden Road) Visual Test</title>
+<style>
+  body { margin: 0; overflow: hidden; background: #111; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+  #ui {
+    position: absolute; top: 12px; left: 12px; color: #f5f3ef;
+    background: rgba(22, 26, 30, 0.88); backdrop-filter: blur(8px);
+    padding: 14px 18px; border-radius: 8px; z-index: 10; line-height: 1.55;
+    border: 1px solid rgba(255,255,255,0.15); max-width: 480px; box-shadow: 0 4px 20px rgba(0,0,0,0.5);
+  }
+  #ui h1 { margin: 0 0 6px; font-size: 16px; color: #d03848; letter-spacing: 0.5px; }
+  #ui p { margin: 4px 0; font-size: 12.5px; color: #d0c8b8; }
+  #ui .tags { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 8px; }
+  #ui .tag { background: rgba(208, 56, 72, 0.2); color: #f29da6; border: 1px solid rgba(208, 56, 72, 0.4); border-radius: 4px; padding: 2px 7px; font-size: 11px; }
+  #controls {
+    position: absolute; bottom: 12px; left: 12px; color: #bbb;
+    background: rgba(0,0,0,0.7); padding: 8px 12px; border-radius: 6px; font-size: 11px; z-index: 10;
+  }
+</style>
+<div id="ui">
+  <h1>中國工商銀行大廈 ICBC Tower</h1>
+  <p><b>花園道3號 (Three Garden Road) 雙子門廊</b> | 1992 年落成</p>
+  <p>建築師：嚴迅奇 (Rocco Design Architects) | 1995 年香港建築師學會銀牌獎 | 高度 167 米</p>
+  <div class="tags">
+    <span class="tag">花園道入口對角幾何門廊</span>
+    <span class="tag">銀藍雙層反射玻璃幕牆</span>
+    <span class="tag">多層公共階梯與扶手電梯大堂</span>
+    <span class="tag">冠君大廈雙塔一體聯通</span>
+    <span class="tag">工銀紅金圓徽樓頂招牌</span>
+    <span class="tag">高空航空障礙警告燈</span>
+  </div>
+</div>
+<div id="controls">
+  滑鼠左鍵拖曳旋轉視角 | 滾輪縮放 | <a href="?night" style="color:#d03848">夜景模式</a> / <a href="?" style="color:#d03848">日景模式</a>
+</div>
+
+<script type="importmap">{"imports":{"three":"../../vendor/three/build/three.webgpu.js","three/webgpu":"../../vendor/three/build/three.webgpu.js","three/tsl":"../../vendor/three/build/three.tsl.js","three/addons/":"../../vendor/three/examples/jsm/"}}</script>
+<script type="module">
+import * as THREE from 'three/webgpu';
+import { cityUniforms } from '../../js/tsl-materials.js';
+import { buildIcbcTower } from '../../js/cities/hongkong/icbc-tower-world.js';
+import { buildChampionTower } from '../../js/cities/hongkong/champion-tower-world.js';
+import { ICBC_TOWER_SITE as S } from '../../js/cities/hongkong/icbc-tower-site.js';
+import { hongKongTerrainHeight as h } from '../../js/cities/hongkong/terrain.js';
+
+const night = new URLSearchParams(location.search).has('night');
+cityUniforms.uInteriorGlow.value = night ? 1.5 : 0;
+const scene = new THREE.Scene();
+scene.background = new THREE.Color(night ? 0x0f1520 : 0xc7d8e5);
+
+buildIcbcTower(scene);
+buildChampionTower(scene);
+
+// Surroundings terrain patch
+const verts = [];
+for (let x = S.x - 90; x < S.x + 90; x += 4) {
+  for (let z = S.z - 90; z < S.z + 90; z += 4) {
+    for (let [a, b] of [[x, z], [x, z + 4], [x + 4, z], [x + 4, z], [x, z + 4], [x + 4, z + 4]]) {
+      verts.push(a, h(a, b) - 0.05, b);
+    }
+  }
+}
+let g = new THREE.BufferGeometry();
+g.setAttribute('position', new THREE.Float32BufferAttribute(verts, 3));
+g.computeVertexNormals();
+scene.add(new THREE.Mesh(g, new THREE.MeshStandardMaterial({ color: 0x556058, side: THREE.DoubleSide })));
+
+scene.add(new THREE.HemisphereLight(0xfff7e6, 0x485850, night ? 0.35 : 1.15));
+let sun = new THREE.DirectionalLight(0xfff5dd, night ? 0.2 : 2.2);
+sun.position.set(S.x + 120, 240, S.z - 130);
+scene.add(sun);
+
+if (night) {
+  const crownLight = new THREE.PointLight(0xee2233, 4.0, 60, 1.2);
+  crownLight.position.set(S.x, 170, S.z);
+  scene.add(crownLight);
+}
+
+let camera = new THREE.PerspectiveCamera(44, window.innerWidth / window.innerHeight, 0.5, 1200);
+const target = new THREE.Vector3(S.x, 80, S.z);
+let radius = 180, phi = Math.PI / 3.4, theta = -Math.PI / 3.2;
+
+function updateCamera() {
+  camera.position.set(
+    target.x + radius * Math.sin(phi) * Math.sin(theta),
+    target.y + radius * Math.cos(phi),
+    target.z + radius * Math.sin(phi) * Math.cos(theta)
+  );
+  camera.lookAt(target);
+}
+updateCamera();
+
+let isDragging = false, prevMouseX = 0, prevMouseY = 0;
+window.addEventListener('mousedown', (e) => {
+  if (e.target.tagName === 'A') return;
+  isDragging = true;
+  prevMouseX = e.clientX;
+  prevMouseY = e.clientY;
+});
+window.addEventListener('mousemove', (e) => {
+  if (!isDragging) return;
+  const dx = e.clientX - prevMouseX;
+  const dy = e.clientY - prevMouseY;
+  prevMouseX = e.clientX;
+  prevMouseY = e.clientY;
+  theta -= dx * 0.007;
+  phi = Math.max(0.1, Math.min(Math.PI / 2.05, phi - dy * 0.007));
+  updateCamera();
+});
+window.addEventListener('mouseup', () => { isDragging = false; });
+window.addEventListener('wheel', (e) => {
+  radius = Math.max(30, Math.min(400, radius + e.deltaY * 0.1));
+  updateCamera();
+});
+window.addEventListener('resize', () => {
+  camera.aspect = window.innerWidth / window.innerHeight;
+  camera.updateProjectionMatrix();
+  renderer.setSize(window.innerWidth, window.innerHeight);
+});
+
+let renderer = new THREE.WebGPURenderer({ forceWebGL: true, antialias: true });
+await renderer.init();
+renderer.setSize(window.innerWidth, window.innerHeight);
+document.body.appendChild(renderer.domElement);
+
+function animate() {
+  requestAnimationFrame(animate);
+  renderer.render(scene, camera);
+}
+animate();
+window.ready = true;
+</script>
