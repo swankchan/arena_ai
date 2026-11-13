@@ -1,0 +1,59 @@
+<!doctype html><meta charset="utf-8">
+<title>中環街市 Central Market Visual Test</title>
+<style>body{margin:0;overflow:hidden;background:#111}#ui{position:absolute;top:10px;left:10px;color:#fff;font-family:sans-serif;background:rgba(0,0,0,0.75);padding:10px 16px;border-radius:6px;z-index:10;line-height:1.5}a{color:#8bd;text-decoration:none}</style>
+<div id="ui">
+  <b>中環街市 Central Market</b> (1939, 80 Des Voeux Road Central)<br>
+  Grade III Historic Building | Bauhaus / Streamline Moderne Style<br>
+  Fan Ho Terrazzo Grand Staircases | Central Lightwell Atrium | Preserved Heritage Stalls | Mid-Levels Footbridge
+</div>
+<script type="importmap">{"imports":{"three":"../../vendor/three/build/three.webgpu.js","three/webgpu":"../../vendor/three/build/three.webgpu.js","three/tsl":"../../vendor/three/build/three.tsl.js","three/addons/":"../../vendor/three/examples/jsm/"}}</script>
+<script type="module">
+import * as THREE from 'three/webgpu';
+import { cityUniforms } from '../../js/tsl-materials.js';
+import { buildCentralMarket } from '../../js/cities/hongkong/central-market-world.js';
+import { CENTRAL_MARKET_CENTER as C, CENTRAL_MARKET_HEIGHTS as H } from '../../js/cities/hongkong/central-market-site.js';
+import { hongKongTerrainHeight as h } from '../../js/cities/hongkong/terrain.js';
+
+const night = new URLSearchParams(location.search).has('night');
+cityUniforms.uInteriorGlow.value = night ? 1.4 : 0;
+const scene = new THREE.Scene();
+scene.background = new THREE.Color(night ? 0x0c131d : 0xcfe0ed);
+
+buildCentralMarket(scene);
+
+// Surroundings terrain patch around Central Market block
+const verts = [];
+for (let x = C.x - 65; x < C.x + 65; x += 3) {
+  for (let z = C.z - 65; z < C.z + 65; z += 3) {
+    for (let [a, b] of [[x, z], [x, z + 3], [x + 3, z], [x + 3, z], [x, z + 3], [x + 3, z + 3]]) {
+      verts.push(a, h(a, b) - 0.05, b);
+    }
+  }
+}
+let g = new THREE.BufferGeometry();
+g.setAttribute('position', new THREE.Float32BufferAttribute(verts, 3));
+g.computeVertexNormals();
+scene.add(new THREE.Mesh(g, new THREE.MeshStandardMaterial({ color: 0x5a6358, side: THREE.DoubleSide })));
+
+scene.add(new THREE.HemisphereLight(0xffffff, 0x556655, night ? 0.35 : 1.15));
+let sun = new THREE.DirectionalLight(0xffffff, night ? 0.15 : 2.2);
+sun.position.set(C.x + 90, 160, C.z - 90);
+scene.add(sun);
+
+let camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.5, 1000);
+// Elevated perspective viewing the North Des Voeux Road facade and rounded corner
+camera.position.set(C.x + 42, 28, C.z - 52);
+camera.lookAt(C.x, 14, C.z);
+
+let renderer = new THREE.WebGPURenderer({ forceWebGL: true, antialias: true });
+await renderer.init();
+renderer.setSize(window.innerWidth, window.innerHeight);
+document.body.appendChild(renderer.domElement);
+
+function animate() {
+  requestAnimationFrame(animate);
+  renderer.render(scene, camera);
+}
+animate();
+window.ready = true;
+</script>
