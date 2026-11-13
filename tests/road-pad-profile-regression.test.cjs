@@ -14,9 +14,13 @@ test('road pad intersection broad phase preserves pre-optimization local profile
       hash.update(JSON.stringify(roadRibbonProfileAtSegment(id, j))); count++;
     }
   }
-  // Recaptured after the crest rule stopped cutting the drawn chord through the hillside: 柏寧路 was 0.28 m under its own
-  // shoulders. Only interior stations move; the count is unchanged and every audited segment is still the same source
-  // geometry.
+  // Recaptured after 聖約翰座堂 gained its precinct terrace. The new terrain pad raises the ground inside the cathedral's
+  // OSM ring only, so exactly TWO audited segments move — both stations of one unnamed 5.5 m way that clips the terrace
+  // edge — and both move UP by 0.49 m, which can only reduce burial. That was verified by dumping every profile with the
+  // pad in place and with it removed and diffing them; the count is unchanged at 6154.
+  //
+  // Earlier recapture, kept for the audit trail: the crest rule stopped cutting the drawn chord through the hillside,
+  // because 柏寧路 was 0.28 m under its own shoulders. Only interior stations moved then too.
   assert.equal(count, 6154);
-  assert.equal(hash.digest('hex'), '324ae10097b5b179c2cfcfca3eac88e454de47174937bb49cf8403cfdc1fb534');
+  assert.equal(hash.digest('hex'), '3c271123465b113133defc82db92f0cc923ab161dcec6f591743987b444ef4ef');
 });

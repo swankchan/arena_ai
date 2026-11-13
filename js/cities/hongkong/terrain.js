@@ -64,7 +64,8 @@ import { AIRPORT_TERRAIN_SITES, airportTerrainHeightAt } from './airport-archite
 import { CITY_HALL_GROUND_SITES, cityHallTerrainHeightAt } from './city-hall-architecture.js';
 import { CENTRAL_LIBRARY_GROUND_SITES, centralLibraryTerrainHeightAt } from './central-library-architecture.js';
 import { HKAPA_GROUND_SITES, hkapaTerrainHeightAt } from './hkapa-architecture.js';
-import { authoredHighestRawDatum } from './authored-landmark-site.js';
+import { authoredHighestRawDatum, authoredTerrainHeightAt } from './authored-landmark-site.js';
+import { ST_JOHNS_CATHEDRAL_SITE } from './st-johns-cathedral-site.js';
 
 // These authored terrain rings are static. Reject distant queries by their exact
 // bounds before invoking the same polygon test; preserve boundary semantics.
@@ -302,6 +303,16 @@ const AIRPORT_PAD_HEIGHTS = Object.freeze(Object.fromEntries(AIRPORT_TERRAIN_SIT
   site.key, authoredHighestRawDatum([site], rawHongKongTerrainHeight),
 ])));
 export function sorrentoPadHeight() { return SORRENTO_PAD_HEIGHT; }
+// 聖約翰座堂 St John's Cathedral stands on one level precinct terrace cut into the Garden Road slope: the mapped ring
+// falls 4.11 m from 28.55 m at the north-west to 24.44 m at the south-east, which an 1849 building cannot straddle. The
+// terrace is held at the highest raw DTM sample of its own OSM ring, the same reproducible convention used by the other
+// authored sites. That raises the south-east threshold ~4 m above the raw DEM and leaves a retaining face towards
+// 長江公園; the retaining face is presentation, not a surveyed engineering elevation.
+const ST_JOHNS_CATHEDRAL_PAD_HEIGHT = authoredHighestRawDatum([ST_JOHNS_CATHEDRAL_SITE], rawHongKongTerrainHeight);
+export function stJohnsCathedralPadHeight() { return ST_JOHNS_CATHEDRAL_PAD_HEIGHT; }
+export function stJohnsCathedralTerrainHeightAt(x, z, rawHeight, padHeight) {
+  return authoredTerrainHeightAt([ST_JOHNS_CATHEDRAL_SITE], x, z, rawHeight, padHeight);
+}
 
 export function hongKongTerrainHeight(x, z) {
   if (pointInFlatRing(HSBC_SITE.ring, x, z)) return HSBC_PAD_HEIGHT;
@@ -356,7 +367,8 @@ export function hongKongTerrainHeight(x, z) {
   const heritage1881Height = heritage1881TerrainHeightAt(x, z, centralGovernmentHeight, HERITAGE_1881_PAD_HEIGHT);
   const theArchHeight = theArchTerrainHeightAt(x, z, heritage1881Height, THE_ARCH_PAD_HEIGHT);
   const sorrentoHeight = sorrentoTerrainHeightAt(x, z, theArchHeight, SORRENTO_PAD_HEIGHT);
-  const cityHallHeight = cityHallTerrainHeightAt(x, z, sorrentoHeight, CITY_HALL_PAD_HEIGHT);
+  const stJohnsCathedralHeight = stJohnsCathedralTerrainHeightAt(x, z, sorrentoHeight, ST_JOHNS_CATHEDRAL_PAD_HEIGHT);
+  const cityHallHeight = cityHallTerrainHeightAt(x, z, stJohnsCathedralHeight, CITY_HALL_PAD_HEIGHT);
   const centralLibraryHeight = centralLibraryTerrainHeightAt(x, z, cityHallHeight, CENTRAL_LIBRARY_PAD_HEIGHT);
   const hkapaHeight = hkapaTerrainHeightAt(x, z, centralLibraryHeight, HKAPA_PAD_HEIGHT);
   const stadiumHeight = mongKokStadiumTerrainHeightAt(x, z, hkapaHeight, MONG_KOK_STADIUM_PAD_HEIGHT);
@@ -435,6 +447,7 @@ export const HONG_KONG_TERRAIN_META = Object.freeze({
   heritage1881PadHeight: HERITAGE_1881_PAD_HEIGHT,
   theArchPadHeight: THE_ARCH_PAD_HEIGHT,
   sorrentoPadHeight: SORRENTO_PAD_HEIGHT,
+  stJohnsCathedralPadHeight: ST_JOHNS_CATHEDRAL_PAD_HEIGHT,
   cityHallPadHeight: CITY_HALL_PAD_HEIGHT,
   centralLibraryPadHeight: CENTRAL_LIBRARY_PAD_HEIGHT,
   hkapaPadHeight: HKAPA_PAD_HEIGHT,

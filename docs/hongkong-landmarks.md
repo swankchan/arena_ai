@@ -1226,3 +1226,15 @@
 ### HKCEC New Wing harbour elevation axis correction
 
 The previous isolated harbour view showed the roof as a low, flat-sided drum: its procedural cross-section ran along the local north–south axis, so the intended central arch faced the side rather than Victoria Harbour. The new wing's OSM local +X points roughly harbourward. The roof cross-section now spans local Z and retains an approximately 80 m central span as it meets the curved footprint, instead of shrinking the arch with each horizontal section. The fascia and eave follow that changing roof height rather than cutting across the glazing at a fixed elevation. A saved attributed 2008 harbour photo is listed in `references/hongkong/hkcec/README.md`. A local day/night WebGL view now shows the three arched bays and upper glazing from the harbour; it is not a surveyed roof, full-world WebGPU view, or certification of seam continuity. Central glass and roof edges, exact wing profiles, surroundings, night lighting and real road interfaces still need refinement and in-game validation.
+
+### 聖約翰座堂連長江公園（2026-11-11）
+
+- 來源：**聖約翰座堂 OSM way `107497695`**（16 頂點、`amenity=place_of_worship`、`denomination=anglican`、`building:levels=3`、`construction_date=1849`、`heritage=3`、`protecting_title=法定古蹟`、`wikidata=Q2942473`）；**長江公園 OSM way `295407287`**（4 頂點、`leisure=park`、`level=3`、`wikidata=Q5094250`）。兩個 ring 分開記錄，沒有互相借用。
+- 這是**座堂**，不是已有的 `st-johns-building-*`（那是 **聖約翰大廈 office tower，OSM way `179091496`**）。兩者相距約 40 m，同日都在花園道。**沒有改動或覆寫既有 `st-johns-building-*`。**
+- 牆體直接**擠出 OSM 座堂 ring**：西端窄臂是 7.9 × 7.5 m 的 1850 鐘塔所在，東端寬塊是十字交叉、南北翼與 1873 加建，南面凹口是門廊。因為 plan 用真實 ring，沒有一個體量是靠猜位置放上去的。**只有高度是估算** —— 來源公佈的只有「三層」，沒有測繪高度。
+- 已據照片／文獻加入：奶油色粉刷牆身、帶四角小尖塔的西塔、西面 **VR** 石匾、鐘塔百葉窗、尖拱（lancet）窗、扶壁、雙坡屋頂。**塔高 17.6 m ＋ 尖頂 3.4 m、中殿脊高 13.2 m、窗洞節奏全部是估算**，不是測量值。HMS Tamar 木門之說已按 SCMP 2016 否證，**沒有**建模為事實。
+- 地景：座堂 ring 的原始 DTM 由 **28.55 m 落到 24.44 m（4.11 m）**，1849 年建築不可能橫跨這個坡。因此新增 **`stJohnsCathedralTerrainHeightAt` ＋ `ST_JOHNS_CATHEDRAL_PAD_HEIGHT = 28.548`**（ring 內最高原始 DTM 樣本，沿用既有 `authoredHighestRawDatum` 慣例）。建築本身則**座落於 ring 上最低地面 24.44 m**，令牆腳在台地後方向下延伸，而不是浮在花園道上方。台地向長江公園一側形成擋土面 —— **那是展示效果，不是工程標高**。
+- 花園：草坪、由西門通往花園道的小徑、修剪綠籬、樹木、鐵欄。每一件都用**真實 OSM ring** 對鄰地做淨空檢查：`聖約翰座堂辦事處`（way `107497702`，十頂點、非軸對齊）與長江公園。初版把辦事處當成軸對齊方框，結果 45 個小徑頂點侵入其真實輪廓；改為對真實 ring 逐點測試後為 **0**。
+- 長江公園：**不套用整平基準**。`level=3` 記錄的是它鋪在長江集團中心三樓平台／梯級之上，但它本身是**依山而築的梯級花園**（地形跨 5 m）。地面用 ring 三角扇跟隨 DTM，再在其上畫池塘、疊水、石景瀑布、蜿蜒步道、石階、長椅與密植樹冠。**池／瀑布／石階／長椅的位置和尺寸都是估算**，來源只描述「有池塘疊水、石景瀑布、樹蔭步道、長椅、保留殖民時期石階欄杆」。
+- 淨空：兩座新地標**沒有任何幾何頂點落入公園 ring 或辦事處 ring**（測試以世界座標逐頂點檢查）。新台地只令 **2 段**已稽核路面剖面移動，且都是**向上 0.49 m**，不可能增加埋深；已用「有台地／無台地」兩次全量傾印比對確認，段數仍為 6154。
+- **未驗證**：未做瀏覽器 WebGPU 目視、日夜材質、駕駛實撞或內部建模。塔高、窗洞、池景位置均為估算。
