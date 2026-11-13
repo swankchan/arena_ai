@@ -1452,6 +1452,41 @@ The previous isolated harbour view showed the roof as a low, flat-sided drum: it
 - **測試驗證**：
   - `tests/statue-square.test.cjs`（2/2 PASS，嚴格檢驗歷史規格、台階收分、四面月桂花圈、六面儀仗旗、虞美人花圈、路網淨空與 WebGPU TSL 夜光）。
 
+### 摩天大樓隨機窗戶夜燈精修（2026-11-13）
+
+- **痛點排查與寫實化改造**：
+  - 原先多幢現代商廈在生成夜燈時，以單整層橫條方式判斷 `isLit`，導致夜間亮起時呈現不自然的整排實體光帶（「一排排夜燈」）。
+  - 全面將幕牆水平玻璃帶依據建築垂直豎框節奏細分為獨立窗戶開間（單元寬度約 1.85m～2.8m），並採用每間辦公室／住宅單元獨立的偽隨機哈希照明（`hash(f, bay, face, seed) < 0.28`）。
+  - 夜間僅約 25%～30% 的個別辦公室或住宅窗戶亮起溫暖暖黃光，其餘維持深色反光玻璃，形成真實香港夜景中星羅棋布、明暗交錯的自然都市天際線。
+- **已完成全量更正的建築名單（共 12 幢）**：
+  1. 海富中心 Admiralty Centre（雙塔各面依 2.6m 開間細分）
+  2. 遠東金融中心 Far East Finance Centre（依 1.85m 金色窗框開間細分）
+  3. 友邦金融中心 AIA Central（依 2.4m 不銹鋼細紋豎櫺開間細分）
+  4. 中國工商銀行大廈 ICBC Tower（依 2.8m 建築模數開間細分）
+  5. 美國銀行中心 Bank of America Tower（依 2.6m 古銅豎櫺開間細分）
+  6. 中信大廈 CITIC Tower（三角形三面各劃分 18 個獨立弧形窗格單元）
+  7. 中國建設銀行大廈 CCB Tower（依 2.4m 銀色豎框開間細分）
+  8. 交易廣場第三座 Three Exchange Square（依 2.5m 玫瑰紅花崗岩間窗格細分）
+  9. 統一中心 United Centre（依 2.4m 象牙白飾帶間隔細分）
+  10. 華潤大廈 China Resources Building（依 2.4m 圓角塔身窗格細分）
+  11. 會展廣場辦公大樓 Convention Plaza Office Tower（依 2.4m 香檳金窗框細分）
+  12. 會景閣 Convention Plaza Apartments（依住宅房間模數細分，呈現真實公寓夜燈）
+
+### 太古廣場三座 Three Pacific Place（2026-11-13）
+
+- **來源**：OSM Way `88391081`（27 頂點、`building=office`、`building:levels=40`、`height=182`）。
+- **建築特徵**：
+  - 香港金鐘皇后大道東1號，太古地產旗艦甲級寫字樓，王歐陽（香港）有限公司設計。
+  - 182 米、40 層菱柱平行四邊形流線塔身（w ~ 64.0m, d ~ 35.14m），緊貼皇后大道東弧度佈局（旋轉角 ry = 0.9529 rad）。
+  - 高性能銀青雙層 Low-E 反光玻璃幕牆，搭配連續金屬銀色氣動遮陽百葉與層間飾帶。
+  - 窗戶全面實作獨立開間隨機夜燈系統（共 2,960 扇個別玻璃單元，約 28% 夜間隨機亮起暖光）。
+  - 4 層葡萄牙米黃石灰石與淺灰花崗岩大堂基座，首層精確保留貫穿式行車通道（永豐西街 Wing Fung Street West 及落客車道），路面淨空高度達 6.2 米，完全不干涉地面車行。
+  - 天台兩級退台消音機房結構、銀色挑檐飾冠與兩座紅色航空障礙警示燈。
+- **測試驗證**：
+  - `tests/three-pacific-place.test.cjs`（3/3 PASS，驗證 182m 高度、OSM 地盤邊界、路網淨空與隨機窗燈）。
+  - 獨立視覺預覽頁面 `tests/visual/three-pacific-place.html`。
+
+
 
 
 

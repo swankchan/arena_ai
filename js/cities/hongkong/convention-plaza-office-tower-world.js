@@ -92,16 +92,28 @@ export function buildConventionPlazaOfficeTower(scene, options = {}) {
       box(champagneSpandrels, [-w * 0.5 + 1.8, spandrelY, 0], [0.2, spandrelH, d - 2.8]);
       box(champagneSpandrels, [w * 0.5 - 1.8, spandrelY, 0], [0.2, spandrelH, d - 2.8]);
 
-      // Champagne-gold reflective vision glass
-      const isLit0 = hash(f, 0, 51) > 0.65;
-      const isLit1 = hash(f, 1, 51) > 0.65;
-      const isLit2 = hash(f, 2, 51) > 0.65;
-      const isLit3 = hash(f, 3, 51) > 0.65;
+      // Champagne-gold reflective vision glass — subdivided into realistic window bays with scattered randomized night illumination
+      const spanX = w - 3.0;
+      const numBaysX = Math.max(1, Math.round(spanX / 2.4));
+      const actualBayX = spanX / numBaysX;
+      for (let bx = 0; bx < numBaysX; bx++) {
+        const lx = -spanX * 0.5 + (bx + 0.5) * actualBayX;
+        const isLit0 = hash(f, bx, 0, 51) < 0.28;
+        const isLit1 = hash(f, bx, 1, 51) < 0.28;
+        box(isLit0 ? litGlass : goldGlass, [lx, visionY, -d * 0.5 + 1.8], [actualBayX - 0.04, glassH, 0.14]);
+        box(isLit1 ? litGlass : goldGlass, [lx, visionY, d * 0.5 - 1.8], [actualBayX - 0.04, glassH, 0.14]);
+      }
 
-      box(isLit0 ? litGlass : goldGlass, [0, visionY, -d * 0.5 + 1.8], [w - 3.0, glassH, 0.14]);
-      box(isLit1 ? litGlass : goldGlass, [0, visionY, d * 0.5 - 1.8], [w - 3.0, glassH, 0.14]);
-      box(isLit2 ? litGlass : goldGlass, [-w * 0.5 + 1.8, visionY, 0], [0.14, glassH, d - 3.0]);
-      box(isLit3 ? litGlass : goldGlass, [w * 0.5 - 1.8, visionY, 0], [0.14, glassH, d - 3.0]);
+      const spanZ = d - 3.0;
+      const numBaysZ = Math.max(1, Math.round(spanZ / 2.4));
+      const actualBayZ = spanZ / numBaysZ;
+      for (let bz = 0; bz < numBaysZ; bz++) {
+        const lz = -spanZ * 0.5 + (bz + 0.5) * actualBayZ;
+        const isLit2 = hash(f, bz, 2, 51) < 0.28;
+        const isLit3 = hash(f, bz, 3, 51) < 0.28;
+        box(isLit2 ? litGlass : goldGlass, [-w * 0.5 + 1.8, visionY, lz], [0.14, glassH, actualBayZ - 0.04]);
+        box(isLit3 ? litGlass : goldGlass, [w * 0.5 - 1.8, visionY, lz], [0.14, glassH, actualBayZ - 0.04]);
+      }
     }
 
     // Chamfered corner columns

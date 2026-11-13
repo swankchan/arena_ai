@@ -89,19 +89,35 @@ export function buildCiticTower(scene, options = {}) {
       const visionY = baseY + spandrelH + glassH * 0.5;
 
       // Face 0: North Face (parallel to x-axis at z ~ -24.8m, width ~ 46m)
-      const isLit0 = hash(f, 0, 33) > 0.62;
       box(whiteSpandrels, [0, spandrelY, -24.8], [46.0, spandrelH, 0.2]);
-      box(isLit0 ? litGlass : emeraldGlass, [0, visionY, -24.8], [45.8, glassH, 0.15]);
+      const faceSpan = 45.8;
+      const numBaysTri = 18;
+      const bayTri = faceSpan / numBaysTri;
+      for (let b = 0; b < numBaysTri; b++) {
+        const offset = -faceSpan * 0.5 + (b + 0.5) * bayTri;
+        const isLit0 = hash(f, b, 0, 33) < 0.28;
+        box(isLit0 ? litGlass : emeraldGlass, [offset, visionY, -24.8], [bayTri - 0.04, glassH, 0.15]);
+      }
 
       // Face 1: Southeast Face (rotated ~ +33.4 deg, center at x ~ 13.0, z ~ 0.5, length ~ 46m)
-      const isLit1 = hash(f, 1, 33) > 0.62;
       box(whiteSpandrels, [12.8, spandrelY, -0.2], [0.2, spandrelH, 46.0], { rx: 0, ry: 0.583, rz: 0 });
-      box(isLit1 ? litGlass : emeraldGlass, [12.8, visionY, -0.2], [0.15, glassH, 45.8], { rx: 0, ry: 0.583, rz: 0 });
+      for (let b = 0; b < numBaysTri; b++) {
+        const offset = -faceSpan * 0.5 + (b + 0.5) * bayTri;
+        const cx1 = 12.8 + Math.sin(0.583) * offset;
+        const cz1 = -0.2 + Math.cos(0.583) * offset;
+        const isLit1 = hash(f, b, 1, 33) < 0.28;
+        box(isLit1 ? litGlass : emeraldGlass, [cx1, visionY, cz1], [0.15, glassH, bayTri - 0.04], { rx: 0, ry: 0.583, rz: 0 });
+      }
 
       // Face 2: Southwest Face (rotated ~ -33.4 deg, center at x ~ -13.0, z ~ 0.5, length ~ 46m)
-      const isLit2 = hash(f, 2, 33) > 0.62;
       box(whiteSpandrels, [-12.8, spandrelY, -0.2], [0.2, spandrelH, 46.0], { rx: 0, ry: -0.583, rz: 0 });
-      box(isLit2 ? litGlass : emeraldGlass, [-12.8, visionY, -0.2], [0.15, glassH, 45.8], { rx: 0, ry: -0.583, rz: 0 });
+      for (let b = 0; b < numBaysTri; b++) {
+        const offset = -faceSpan * 0.5 + (b + 0.5) * bayTri;
+        const cx2 = -12.8 - Math.sin(0.583) * offset;
+        const cz2 = -0.2 + Math.cos(0.583) * offset;
+        const isLit2 = hash(f, b, 2, 33) < 0.28;
+        box(isLit2 ? litGlass : emeraldGlass, [cx2, visionY, cz2], [0.15, glassH, bayTri - 0.04], { rx: 0, ry: -0.583, rz: 0 });
+      }
     }
 
     // Three Rounded Corner Column Shafts

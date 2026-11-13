@@ -253,6 +253,8 @@ export const LANDMARK_DISTRICT_MAP = Object.freeze({
   'cheung-kong-center': 'central-western',
   'twoPacificPlace': 'central-western',
   'two-pacific-place': 'central-western',
+  'threePacificPlace': 'central-western',
+  'three-pacific-place': 'central-western',
   'oneIfc': 'central-western',
   'one-ifc': 'central-western',
   'championTower': 'central-western',

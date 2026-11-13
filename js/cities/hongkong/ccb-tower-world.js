@@ -85,16 +85,28 @@ export function buildCcbTower(scene, options = {}) {
       box(darkSpandrels, [-w * 0.5 + 1.2, spandrelY, 0], [0.2, spandrelH, d - 2.2]);
       box(darkSpandrels, [w * 0.5 - 1.2, spandrelY, 0], [0.2, spandrelH, d - 2.2]);
 
-      // Vision glazing
-      const isLitNorth = hash(f, 1, 31) > 0.65;
-      const isLitSouth = hash(f, 2, 31) > 0.65;
-      const isLitEast = hash(f, 3, 31) > 0.65;
-      const isLitWest = hash(f, 4, 31) > 0.65;
+      // Vision glazing — subdivided into realistic window bays with scattered randomized night illumination
+      const spanX = w - 2.4;
+      const numBaysX = Math.max(1, Math.round(spanX / 2.4));
+      const actualBayX = spanX / numBaysX;
+      for (let bx = 0; bx < numBaysX; bx++) {
+        const lx = -spanX * 0.5 + (bx + 0.5) * actualBayX;
+        const isLitN = hash(f, bx, 1, 31) < 0.28;
+        const isLitS = hash(f, bx, 2, 31) < 0.28;
+        box(isLitN ? litGlass : blueGreyGlass, [lx, visionY, -d * 0.5 + 1.2], [actualBayX - 0.04, glassH, 0.14]);
+        box(isLitS ? litGlass : blueGreyGlass, [lx, visionY, d * 0.5 - 1.2], [actualBayX - 0.04, glassH, 0.14]);
+      }
 
-      box(isLitNorth ? litGlass : blueGreyGlass, [0, visionY, -d * 0.5 + 1.2], [w - 2.4, glassH, 0.14]);
-      box(isLitSouth ? litGlass : blueGreyGlass, [0, visionY, d * 0.5 - 1.2], [w - 2.4, glassH, 0.14]);
-      box(isLitEast ? litGlass : blueGreyGlass, [w * 0.5 - 1.2, visionY, 0], [0.14, glassH, d - 2.4]);
-      box(isLitWest ? litGlass : blueGreyGlass, [-w * 0.5 + 1.2, visionY, 0], [0.14, glassH, d - 2.4]);
+      const spanZ = d - 2.4;
+      const numBaysZ = Math.max(1, Math.round(spanZ / 2.4));
+      const actualBayZ = spanZ / numBaysZ;
+      for (let bz = 0; bz < numBaysZ; bz++) {
+        const lz = -spanZ * 0.5 + (bz + 0.5) * actualBayZ;
+        const isLitE = hash(f, bz, 3, 31) < 0.28;
+        const isLitW = hash(f, bz, 4, 31) < 0.28;
+        box(isLitE ? litGlass : blueGreyGlass, [w * 0.5 - 1.2, visionY, lz], [0.14, glassH, actualBayZ - 0.04]);
+        box(isLitW ? litGlass : blueGreyGlass, [-w * 0.5 + 1.2, visionY, lz], [0.14, glassH, actualBayZ - 0.04]);
+      }
     }
 
     // Vertical extruded mullion fins

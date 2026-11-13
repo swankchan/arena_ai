@@ -114,13 +114,25 @@ export function buildConventionPlazaApartments(scene, options = {}) {
       box(champagneSpandrels, [16.0, spandrelY, -2.2], [40.4, spandrelH, 0.2]);
       box(champagneSpandrels, [36.2, spandrelY, 9.0], [0.2, spandrelH, 22.4]);
 
-      // Vision glass & residential lit windows
-      const eLitN = hash(f, 0, 47) > 0.62;
-      const eLitS = hash(f, 1, 47) > 0.62;
-      const eLitE = hash(f, 2, 47) > 0.62;
-      box(eLitN ? litGlass : bronzeGlass, [16.0, visionY, 20.2], [40.0, glassH, 0.14]);
-      box(eLitS ? litGlass : bronzeGlass, [16.0, visionY, -2.2], [40.0, glassH, 0.14]);
-      box(eLitE ? litGlass : bronzeGlass, [36.2, visionY, 9.0], [0.14, glassH, 22.0]);
+      // Vision glass & residential lit windows — subdivided into realistic window bays with scattered randomized night illumination
+      // East Wing North & South (40m span, centered at x=16)
+      const numBaysE40 = 16;
+      const bayE40 = 40.0 / numBaysE40;
+      for (let b = 0; b < numBaysE40; b++) {
+        const lx = -4.0 + (b + 0.5) * bayE40;
+        const eLitN = hash(f, b, 0, 47) < 0.28;
+        const eLitS = hash(f, b, 1, 47) < 0.28;
+        box(eLitN ? litGlass : bronzeGlass, [lx, visionY, 20.2], [bayE40 - 0.04, glassH, 0.14]);
+        box(eLitS ? litGlass : bronzeGlass, [lx, visionY, -2.2], [bayE40 - 0.04, glassH, 0.14]);
+      }
+      // East Wing East (22m span, centered at z=9)
+      const numBaysE22 = 9;
+      const bayE22 = 22.0 / numBaysE22;
+      for (let b = 0; b < numBaysE22; b++) {
+        const lz = -2.0 + (b + 0.5) * bayE22;
+        const eLitE = hash(f, b, 2, 47) < 0.28;
+        box(eLitE ? litGlass : bronzeGlass, [36.2, visionY, lz], [0.14, glassH, bayE22 - 0.04]);
+      }
 
       // Balconies / loggias along East Wing Harbour view (North face)
       for (let bx = 0; bx <= 30; bx += 7.5) {
@@ -133,13 +145,21 @@ export function buildConventionPlazaApartments(scene, options = {}) {
       box(champagneSpandrels, [-21.0, spandrelY, -15.2], [32.4, spandrelH, 0.2]);
       box(champagneSpandrels, [-37.2, spandrelY, -4.0], [0.2, spandrelH, 22.4]);
 
-      // Vision glass
-      const wLitN = hash(f, 3, 47) > 0.62;
-      const wLitS = hash(f, 4, 47) > 0.62;
-      const wLitW = hash(f, 5, 47) > 0.62;
-      box(wLitN ? litGlass : bronzeGlass, [-21.0, visionY, 7.2], [32.0, glassH, 0.14]);
-      box(wLitS ? litGlass : bronzeGlass, [-21.0, visionY, -15.2], [32.0, glassH, 0.14]);
-      box(wLitW ? litGlass : bronzeGlass, [-37.2, visionY, -4.0], [0.14, glassH, 22.0]);
+      // Vision glass & residential lit windows (West Wing)
+      const numBaysW32 = 13;
+      const bayW32 = 32.0 / numBaysW32;
+      for (let b = 0; b < numBaysW32; b++) {
+        const lx = -37.0 + (b + 0.5) * bayW32;
+        const wLitN = hash(f, b, 3, 47) < 0.28;
+        const wLitS = hash(f, b, 4, 47) < 0.28;
+        box(wLitN ? litGlass : bronzeGlass, [lx, visionY, 7.2], [bayW32 - 0.04, glassH, 0.14]);
+        box(wLitS ? litGlass : bronzeGlass, [lx, visionY, -15.2], [bayW32 - 0.04, glassH, 0.14]);
+      }
+      for (let b = 0; b < numBaysE22; b++) {
+        const lz = -15.0 + (b + 0.5) * bayE22;
+        const wLitW = hash(f, b, 5, 47) < 0.28;
+        box(wLitW ? litGlass : bronzeGlass, [-37.2, visionY, lz], [0.14, glassH, bayE22 - 0.04]);
+      }
 
       // Balconies along West Wing
       for (let bx = -34; bx <= -10; bx += 7.5) {

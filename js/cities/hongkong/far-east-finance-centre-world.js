@@ -159,20 +159,26 @@ export function buildFarEastFinanceCentre(scene, options = {}) {
         );
       }
 
-      // 2) Vision glass bands (alternating lit and reflective gold glass)
-      // Hash determines warm illuminated night office lights
-      const isLitNorth = hash(f, 1, 41) > 0.68;
-      const isLitSouth = hash(f, 2, 41) > 0.68;
-      const isLitEast = hash(f, 3, 41) > 0.68;
-      const isLitWest = hash(f, 4, 41) > 0.68;
+      // 2) Vision glass bands — subdivided into realistic window bays with scattered randomized night illumination
+      const numBaysX = Math.max(1, Math.round(mainFaceW / 1.85));
+      const actualBayX = mainFaceW / numBaysX;
+      for (let bx = 0; bx < numBaysX; bx++) {
+        const lx = -mainFaceW * 0.5 + (bx + 0.5) * actualBayX;
+        const isLitS = hash(f, bx, 1, 41) < 0.28;
+        const isLitN = hash(f, bx, 2, 41) < 0.28;
+        box(isLitS ? litGoldGlass : goldGlass, [lx, visionY, halfD + 0.02], [actualBayX - 0.04, glassH, 0.14]);
+        box(isLitN ? litGoldGlass : goldGlass, [lx, visionY, -halfD - 0.02], [actualBayX - 0.04, glassH, 0.14]);
+      }
 
-      // North & South vision glass
-      box(isLitSouth ? litGoldGlass : goldGlass, [0, visionY, halfD + 0.02], [mainFaceW, glassH, 0.14]);
-      box(isLitNorth ? litGoldGlass : goldGlass, [0, visionY, -halfD - 0.02], [mainFaceW, glassH, 0.14]);
-
-      // East & West vision glass
-      box(isLitEast ? litGoldGlass : goldGlass, [halfW + 0.02, visionY, 0], [0.14, glassH, mainFaceD]);
-      box(isLitWest ? litGoldGlass : goldGlass, [-halfW - 0.02, visionY, 0], [0.14, glassH, mainFaceD]);
+      const numBaysZ = Math.max(1, Math.round(mainFaceD / 1.85));
+      const actualBayZ = mainFaceD / numBaysZ;
+      for (let bz = 0; bz < numBaysZ; bz++) {
+        const lz = -mainFaceD * 0.5 + (bz + 0.5) * actualBayZ;
+        const isLitE = hash(f, bz, 3, 41) < 0.28;
+        const isLitW = hash(f, bz, 4, 41) < 0.28;
+        box(isLitE ? litGoldGlass : goldGlass, [halfW + 0.02, visionY, lz], [0.14, glassH, actualBayZ - 0.04]);
+        box(isLitW ? litGoldGlass : goldGlass, [-halfW - 0.02, visionY, lz], [0.14, glassH, actualBayZ - 0.04]);
+      }
 
       // 4 Corner Chamfer vision glass
       for (const [sx, sz, ry, litIdx] of [
@@ -181,7 +187,7 @@ export function buildFarEastFinanceCentre(scene, options = {}) {
         [-1, 1, Math.PI * 0.75, 7],
         [-1, -1, -Math.PI * 0.75, 8]
       ]) {
-        const isLitCorner = hash(f, litIdx, 41) > 0.72;
+        const isLitCorner = hash(f, litIdx, 41) < 0.25;
         box(
           isLitCorner ? litGoldGlass : goldGlass,
           [sx * (halfW - chamfer * 0.5), visionY, sz * (halfD - chamfer * 0.5)],

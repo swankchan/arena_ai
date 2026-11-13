@@ -97,16 +97,28 @@ export function buildBankOfAmericaTower(scene, options = {}) {
       box(bronzeSpandrels, [-w * 0.5 + 2.5, spandrelY, 0], [0.2, spandrelH, d - 5.0]);
       box(bronzeSpandrels, [w * 0.5 - 2.5, spandrelY, 0], [0.2, spandrelH, d - 5.0]);
 
-      // Vision glass (alternating lit and bronze reflective glass)
-      const isLitNorth = hash(f, 1, 38) > 0.65;
-      const isLitSouth = hash(f, 2, 38) > 0.65;
-      const isLitEast = hash(f, 3, 38) > 0.65;
-      const isLitWest = hash(f, 4, 38) > 0.65;
+      // Vision glass — subdivided into realistic window bays with scattered randomized night illumination
+      const spanX = w - 5.2;
+      const numBaysX = Math.max(1, Math.round(spanX / 2.6));
+      const actualBayX = spanX / numBaysX;
+      for (let bx = 0; bx < numBaysX; bx++) {
+        const lx = -spanX * 0.5 + (bx + 0.5) * actualBayX;
+        const isLitN = hash(f, bx, 1, 38) < 0.28;
+        const isLitS = hash(f, bx, 2, 38) < 0.28;
+        box(isLitN ? litGlass : bronzeGlass, [lx, visionY, -d * 0.5 + 2.5], [actualBayX - 0.04, glassH, 0.14]);
+        box(isLitS ? litGlass : bronzeGlass, [lx, visionY, d * 0.5 - 2.5], [actualBayX - 0.04, glassH, 0.14]);
+      }
 
-      box(isLitNorth ? litGlass : bronzeGlass, [0, visionY, -d * 0.5 + 2.5], [w - 5.2, glassH, 0.14]);
-      box(isLitSouth ? litGlass : bronzeGlass, [0, visionY, d * 0.5 - 2.5], [w - 5.2, glassH, 0.14]);
-      box(isLitEast ? litGlass : bronzeGlass, [w * 0.5 - 2.5, visionY, 0], [0.14, glassH, d - 5.2]);
-      box(isLitWest ? litGlass : bronzeGlass, [-w * 0.5 + 2.5, visionY, 0], [0.14, glassH, d - 5.2]);
+      const spanZ = d - 5.2;
+      const numBaysZ = Math.max(1, Math.round(spanZ / 2.6));
+      const actualBayZ = spanZ / numBaysZ;
+      for (let bz = 0; bz < numBaysZ; bz++) {
+        const lz = -spanZ * 0.5 + (bz + 0.5) * actualBayZ;
+        const isLitE = hash(f, bz, 3, 38) < 0.28;
+        const isLitW = hash(f, bz, 4, 38) < 0.28;
+        box(isLitE ? litGlass : bronzeGlass, [w * 0.5 - 2.5, visionY, lz], [0.14, glassH, actualBayZ - 0.04]);
+        box(isLitW ? litGlass : bronzeGlass, [-w * 0.5 + 2.5, visionY, lz], [0.14, glassH, actualBayZ - 0.04]);
+      }
     }
 
     // Vertical extruded mullion fins

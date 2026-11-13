@@ -80,16 +80,28 @@ export function buildAdmiraltyCentre(scene, options = {}) {
       box(bronzeSpandrels, toWorld(-w * 0.5 + 1.8, spandrelY, 0), [0.2, spandrelH, d - 3.0], { rx: 0, ry: site.ry, rz: 0 });
       box(bronzeSpandrels, toWorld(w * 0.5 - 1.8, spandrelY, 0), [0.2, spandrelH, d - 3.0], { rx: 0, ry: site.ry, rz: 0 });
 
-      // Amber-bronze Vision Glass
-      const isLit0 = hash(f, 0, towerId) > 0.65;
-      const isLit1 = hash(f, 1, towerId) > 0.65;
-      const isLit2 = hash(f, 2, towerId) > 0.65;
-      const isLit3 = hash(f, 3, towerId) > 0.65;
+      // Amber-bronze Vision Glass — subdivided into realistic window bays with scattered randomized night illumination
+      const spanX = w - 3.2;
+      const numBaysX = Math.max(1, Math.round(spanX / 2.6));
+      const actualBayX = spanX / numBaysX;
+      for (let bx = 0; bx < numBaysX; bx++) {
+        const lx = -spanX * 0.5 + (bx + 0.5) * actualBayX;
+        const isLitN = hash(f, bx, 1, towerId) < 0.28;
+        const isLitS = hash(f, bx, 2, towerId) < 0.28;
+        box(isLitN ? litGlass : amberGlass, toWorld(lx, visionY, -d * 0.5 + 1.8), [actualBayX - 0.05, glassH, 0.14], site.ry);
+        box(isLitS ? litGlass : amberGlass, toWorld(lx, visionY, d * 0.5 - 1.8), [actualBayX - 0.05, glassH, 0.14], site.ry);
+      }
 
-      box(isLit0 ? litGlass : amberGlass, toWorld(0, visionY, -d * 0.5 + 1.8), [w - 3.2, glassH, 0.14], { rx: 0, ry: site.ry, rz: 0 });
-      box(isLit1 ? litGlass : amberGlass, toWorld(0, visionY, d * 0.5 - 1.8), [w - 3.2, glassH, 0.14], { rx: 0, ry: site.ry, rz: 0 });
-      box(isLit2 ? litGlass : amberGlass, toWorld(-w * 0.5 + 1.8, visionY, 0), [0.14, glassH, d - 3.2], { rx: 0, ry: site.ry, rz: 0 });
-      box(isLit3 ? litGlass : amberGlass, toWorld(w * 0.5 - 1.8, visionY, 0), [0.14, glassH, d - 3.2], { rx: 0, ry: site.ry, rz: 0 });
+      const spanZ = d - 3.2;
+      const numBaysZ = Math.max(1, Math.round(spanZ / 2.6));
+      const actualBayZ = spanZ / numBaysZ;
+      for (let bz = 0; bz < numBaysZ; bz++) {
+        const lz = -spanZ * 0.5 + (bz + 0.5) * actualBayZ;
+        const isLitW = hash(f, bz, 3, towerId) < 0.28;
+        const isLitE = hash(f, bz, 4, towerId) < 0.28;
+        box(isLitW ? litGlass : amberGlass, toWorld(-w * 0.5 + 1.8, visionY, lz), [0.14, glassH, actualBayZ - 0.05], site.ry);
+        box(isLitE ? litGlass : amberGlass, toWorld(w * 0.5 - 1.8, visionY, lz), [0.14, glassH, actualBayZ - 0.05], site.ry);
+      }
     }
 
     // Chamfered corner columns

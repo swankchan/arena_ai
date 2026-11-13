@@ -91,16 +91,28 @@ export function buildThreeExchangeSquare(scene, options = {}) {
       box(roseGranite, [-w * 0.5 + 2.0, spandrelY, 0], [0.3, spandrelH, d - 4.0]);
       box(roseGranite, [w * 0.5 - 2.0, spandrelY, 0], [0.3, spandrelH, d - 4.0]);
 
-      // Bronze ribbon vision glass (with randomized night office lighting)
-      const isLit0 = hash(f, 0, 32) > 0.65;
-      const isLit1 = hash(f, 1, 32) > 0.65;
-      const isLit2 = hash(f, 2, 32) > 0.65;
-      const isLit3 = hash(f, 3, 32) > 0.65;
+      // Bronze ribbon vision glass — subdivided into realistic window bays with scattered randomized night illumination
+      const spanX = w - 4.2;
+      const numBaysX = Math.max(1, Math.round(spanX / 2.5));
+      const actualBayX = spanX / numBaysX;
+      for (let bx = 0; bx < numBaysX; bx++) {
+        const lx = -spanX * 0.5 + (bx + 0.5) * actualBayX;
+        const isLit0 = hash(f, bx, 0, 32) < 0.28;
+        const isLit1 = hash(f, bx, 1, 32) < 0.28;
+        box(isLit0 ? litGlass : bronzeGlass, [lx, visionY, -d * 0.5 + 2.0], [actualBayX - 0.04, glassH, 0.14]);
+        box(isLit1 ? litGlass : bronzeGlass, [lx, visionY, d * 0.5 - 2.0], [actualBayX - 0.04, glassH, 0.14]);
+      }
 
-      box(isLit0 ? litGlass : bronzeGlass, [0, visionY, -d * 0.5 + 2.0], [w - 4.2, glassH, 0.14]);
-      box(isLit1 ? litGlass : bronzeGlass, [0, visionY, d * 0.5 - 2.0], [w - 4.2, glassH, 0.14]);
-      box(isLit2 ? litGlass : bronzeGlass, [-w * 0.5 + 2.0, visionY, 0], [0.14, glassH, d - 4.2]);
-      box(isLit3 ? litGlass : bronzeGlass, [w * 0.5 - 2.0, visionY, 0], [0.14, glassH, d - 4.2]);
+      const spanZ = d - 4.2;
+      const numBaysZ = Math.max(1, Math.round(spanZ / 2.5));
+      const actualBayZ = spanZ / numBaysZ;
+      for (let bz = 0; bz < numBaysZ; bz++) {
+        const lz = -spanZ * 0.5 + (bz + 0.5) * actualBayZ;
+        const isLit2 = hash(f, bz, 2, 32) < 0.28;
+        const isLit3 = hash(f, bz, 3, 32) < 0.28;
+        box(isLit2 ? litGlass : bronzeGlass, [-w * 0.5 + 2.0, visionY, lz], [0.14, glassH, actualBayZ - 0.04]);
+        box(isLit3 ? litGlass : bronzeGlass, [w * 0.5 - 2.0, visionY, lz], [0.14, glassH, actualBayZ - 0.04]);
+      }
     }
 
     // Corner granite cylindrical accent columns (P&T signature style)

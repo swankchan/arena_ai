@@ -112,16 +112,28 @@ export function buildAiaCentral(scene, options = {}) {
       box(stainlessSteel, [0, spandrelY + spandrelH * 0.5, d * 0.5 + 0.25], [curW + 0.4, 0.08, 0.5]);
       box(stainlessSteel, [-curW * 0.5 - 0.25, spandrelY + spandrelH * 0.5, 0], [0.5, 0.08, d + 0.4]);
 
-      // Vision glass (alternating lit and silver-blue reflective glass)
-      const isLitNorth = hash(f, 1, 32) > 0.65;
-      const isLitSouth = hash(f, 2, 32) > 0.65;
-      const isLitWest = hash(f, 3, 32) > 0.65;
-      const isLitEast = hash(f, 4, 32) > 0.65;
+      // Vision glass — subdivided into realistic window bays with scattered randomized night illumination
+      const spanX = curW - 0.2;
+      const numBaysX = Math.max(1, Math.round(spanX / 2.4));
+      const actualBayX = spanX / numBaysX;
+      for (let bx = 0; bx < numBaysX; bx++) {
+        const lx = -spanX * 0.5 + (bx + 0.5) * actualBayX;
+        const isLitN = hash(f, bx, 1, 32) < 0.28;
+        const isLitS = hash(f, bx, 2, 32) < 0.28;
+        box(isLitN ? litGlass : curtainGlass, [lx, visionY, -d * 0.5 - 0.02], [actualBayX - 0.04, glassH, 0.16]);
+        box(isLitS ? litGlass : curtainGlass, [lx, visionY, d * 0.5 + 0.02], [actualBayX - 0.04, glassH, 0.16]);
+      }
 
-      box(isLitNorth ? litGlass : curtainGlass, [0, visionY, -d * 0.5 - 0.02], [curW - 0.2, glassH, 0.16]);
-      box(isLitSouth ? litGlass : curtainGlass, [0, visionY, d * 0.5 + 0.02], [curW - 0.2, glassH, 0.16]);
-      box(isLitWest ? litGlass : curtainGlass, [-curW * 0.5 - 0.02, visionY, 0], [0.16, glassH, d - 0.2]);
-      box(isLitEast ? litGlass : curtainGlass, [curW * 0.5 + 0.02, visionY, 0], [0.16, glassH, d - 0.2]);
+      const spanZ = d - 0.2;
+      const numBaysZ = Math.max(1, Math.round(spanZ / 2.4));
+      const actualBayZ = spanZ / numBaysZ;
+      for (let bz = 0; bz < numBaysZ; bz++) {
+        const lz = -spanZ * 0.5 + (bz + 0.5) * actualBayZ;
+        const isLitW = hash(f, bz, 3, 32) < 0.28;
+        const isLitE = hash(f, bz, 4, 32) < 0.28;
+        box(isLitW ? litGlass : curtainGlass, [-curW * 0.5 - 0.02, visionY, lz], [0.16, glassH, actualBayZ - 0.04]);
+        box(isLitE ? litGlass : curtainGlass, [curW * 0.5 + 0.02, visionY, lz], [0.16, glassH, actualBayZ - 0.04]);
+      }
     }
 
     // Continuous vertical stainless steel pinstripe fins running up the facades
