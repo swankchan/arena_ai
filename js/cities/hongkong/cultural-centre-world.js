@@ -153,6 +153,7 @@ function buildAdminFenestration(root, materials) {
 }
 
 function entranceLettering() {
+  if (typeof document === 'undefined') return new THREE.Group();
   const canvas = document.createElement('canvas'); canvas.width = 1536; canvas.height = 256;
   const ctx = canvas.getContext('2d'); ctx.clearRect(0, 0, canvas.width, canvas.height); ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillStyle = '#302b28';
   ctx.font = '600 66px Arial, sans-serif'; ctx.fillText('HONG KONG CULTURAL CENTRE', 768, 94, 1420);
@@ -244,6 +245,34 @@ function buildPiazzaLandscape(root, materials, colliders, base) {
   merged(root, benchFrames, materials.planter, 'Cultural Centre piazza bench concrete supports');
 }
 
+function buildWaterfrontViewingArcade(root, materials, colliders, base) {
+  const piers = [], deck = [], rails = [], lights = [];
+  const deckHeight = 4.8;
+  for (let s = 20; s <= 180; s += 16) {
+    const chain = culturalCentreChainFrameAtDistance(s);
+    const frame = ringFrame(CULTURAL_CENTRE_SITE, chain.edge, chain.t);
+    const pOut = point(CULTURAL_CENTRE_SITE, chain.edge, chain.t, 0, 3.8);
+    const pIn = point(CULTURAL_CENTRE_SITE, chain.edge, chain.t, 0, 0.4);
+    const world = harbourCityLocalToWorld(CULTURAL_CENTRE_SITE, pOut[0], pOut[2]);
+    const ground = rawHongKongTerrainHeight(world.x, world.z);
+    const y = ground - base;
+
+    beam(piers, [pOut[0], y, pOut[2]], [pIn[0], y + deckHeight, pIn[2]], 0.55, 0.48);
+    box(piers, [pOut[0], y + deckHeight * 0.5, pOut[2]], [0.65, deckHeight, 0.45], frame.ry);
+
+    const midX = (pOut[0] + pIn[0]) * 0.5, midZ = (pOut[2] + pIn[2]) * 0.5;
+    box(deck, [midX, y + deckHeight, midZ], [15.2, 0.35, 3.8], frame.ry);
+    box(rails, [pOut[0], y + deckHeight + 0.65, pOut[2]], [15.2, 1.05, 0.08], frame.ry);
+    cylinder(lights, [midX, y + deckHeight - 0.2, midZ], 0.22, 0.06, 8);
+
+    colliders.push(harbourCityLocalCollider(CULTURAL_CENTRE_SITE, pOut[0], pOut[2], 0.7, 0.7, ground, ground + deckHeight, CULTURAL_CENTRE_SITE.ry + frame.ry));
+  }
+  merged(root, piers, materials.admin, 'Cultural Centre waterfront slanted colonnade piers');
+  merged(root, deck, materials.paving, 'Cultural Centre elevated harbour viewing promenade deck');
+  merged(root, rails, materials.frames, 'Cultural Centre viewing deck stainless handrails');
+  merged(root, lights, materials.warmLight, 'Cultural Centre colonnade soffit downlights', false);
+}
+
 function localSegmentCollider(site, a, b, minY, maxY, depth = .5) {
   const dx = b[0] - a[0], dz = b[1] - a[1], length = Math.hypot(dx, dz);
   return harbourCityLocalCollider(site, (a[0] + b[0]) * .5, (a[1] + b[1]) * .5, length, depth, minY, maxY, site.ry + Math.atan2(-dz, dx));
@@ -302,6 +331,7 @@ export function buildCulturalCentre(scene, { groundOffset } = {}) {
   const colliders = [];
   const entrance = buildEntrance(root, materials, colliders, base);
   buildPiazzaLandscape(root, materials, colliders, base);
+  buildWaterfrontViewingArcade(root, materials, colliders, base);
   for (const segment of outerSailSegments()) {
     const mid = sampleSegment(site, segment, 0, 0, .5), height = culturalCentreChainNearest(mid[0], mid[2]).height;
     colliders.push(harbourCitySegmentCollider(site, segment.edge, segment.t0, segment.t1, base, base + height, .5));

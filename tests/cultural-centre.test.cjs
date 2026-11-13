@@ -51,7 +51,7 @@ test('Cultural Centre has a local DTM pad, road-priority ground and unchanged ou
   const site = cc.CULTURAL_CENTRE_SITE, pad = terrain.culturalCentrePadHeight(); assert.ok(Math.abs(pad - 5.1691352355) < .0001);
   assert.equal(terrain.HONG_KONG_TERRAIN_META.culturalCentrePadHeight, pad); assert.equal(terrain.hongKongTerrainHeight(site.x, site.z), pad);
   assert.equal(cc.culturalCentreGroundHeightAt(site.x, site.z, 0, pad), pad);
-  const x = site.x + 220, z = site.z; assert.equal(terrain.hongKongTerrainHeight(x, z), terrain.rawHongKongTerrainHeight(x, z));
+  const x = site.x - 100, z = site.z; assert.equal(terrain.hongKongTerrainHeight(x, z), terrain.rawHongKongTerrainHeight(x, z));
 });
 test('photo-directed sails, tiled fins, slit, foyer and Piazza are authored geometry', () => {
   const world = fs.readFileSync(path.join(root, 'js/cities/hongkong/cultural-centre-world.js'), 'utf8');

@@ -66,6 +66,9 @@ import { CENTRAL_LIBRARY_GROUND_SITES, centralLibraryTerrainHeightAt } from './c
 import { HKAPA_GROUND_SITES, hkapaTerrainHeightAt } from './hkapa-architecture.js';
 import { authoredHighestRawDatum, authoredTerrainHeightAt } from './authored-landmark-site.js';
 import { ST_JOHNS_CATHEDRAL_SITE } from './st-johns-cathedral-site.js';
+import { ART_MUSEUM_SITE, artMuseumTerrainHeightAt } from './art-museum-site.js';
+import { SCIENCE_MUSEUM_SITE, scienceMuseumTerrainHeightAt } from './science-museum-site.js';
+import { HISTORY_MUSEUM_SITE, historyMuseumTerrainHeightAt } from './history-museum-site.js';
 
 // These authored terrain rings are static. Reject distant queries by their exact
 // bounds before invoking the same polygon test; preserve boundary semantics.
@@ -195,6 +198,27 @@ const SPACE_MUSEUM_PAD_HEIGHT = (() => {
   return height;
 })();
 export function spaceMuseumPadHeight() { return SPACE_MUSEUM_PAD_HEIGHT; }
+// The Hong Kong Museum of Art shares one DTM-derived datum across its 16-point outline ring.
+const ART_MUSEUM_PAD_HEIGHT = (() => {
+  const site = ART_MUSEUM_SITE; let height = rawHongKongTerrainHeight(site.x, site.z);
+  for (let i = 0; i < site.ring.length; i += 2) height = Math.max(height, rawHongKongTerrainHeight(site.ring[i], site.ring[i + 1]));
+  return height;
+})();
+export function artMuseumPadHeight() { return ART_MUSEUM_PAD_HEIGHT; }
+// The Hong Kong Science Museum shares one DTM-derived datum across its 7-point outline ring.
+const SCIENCE_MUSEUM_PAD_HEIGHT = (() => {
+  const site = SCIENCE_MUSEUM_SITE; let height = rawHongKongTerrainHeight(site.x, site.z);
+  for (let i = 0; i < site.ring.length; i += 2) height = Math.max(height, rawHongKongTerrainHeight(site.ring[i], site.ring[i + 1]));
+  return height;
+})();
+export function scienceMuseumPadHeight() { return SCIENCE_MUSEUM_PAD_HEIGHT; }
+// The Hong Kong Museum of History shares one DTM-derived datum across its 67-point stepped ring.
+const HISTORY_MUSEUM_PAD_HEIGHT = (() => {
+  const site = HISTORY_MUSEUM_SITE; let height = rawHongKongTerrainHeight(site.x, site.z);
+  for (let i = 0; i < site.ring.length; i += 2) height = Math.max(height, rawHongKongTerrainHeight(site.ring[i], site.ring[i + 1]));
+  return height;
+})();
+export function historyMuseumPadHeight() { return HISTORY_MUSEUM_PAD_HEIGHT; }
 // The Cultural Centre shares one DTM-derived construction datum across its exact civic-building ring.
 // The lower south-east site remains road-safe; this is not a surveyed architectural or engineering level.
 const CULTURAL_CENTRE_PAD_HEIGHT = (() => {
@@ -357,7 +381,8 @@ export function hongKongTerrainHeight(x, z) {
   const timesSquareHeight = timesSquareTerrainHeightAt(x, z, rawHeight, TIMES_SQUARE_PAD_HEIGHT);
   const harbourCityHeight = harbourCityTerrainHeightAt(x, z, timesSquareHeight, HARBOUR_CITY_PAD_HEIGHTS);
   const spaceMuseumHeight = spaceMuseumTerrainHeightAt(x, z, harbourCityHeight, SPACE_MUSEUM_PAD_HEIGHT);
-  const culturalCentreHeight = culturalCentreTerrainHeightAt(x, z, spaceMuseumHeight, CULTURAL_CENTRE_PAD_HEIGHT);
+  const artMuseumHeight = artMuseumTerrainHeightAt(x, z, spaceMuseumHeight, ART_MUSEUM_PAD_HEIGHT);
+  const culturalCentreHeight = culturalCentreTerrainHeightAt(x, z, artMuseumHeight, CULTURAL_CENTRE_PAD_HEIGHT);
   const clockTowerHeight = clockTowerTerrainHeightAt(x, z, culturalCentreHeight, CLOCK_TOWER_PAD_HEIGHT);
   const peninsulaHeight = peninsulaTerrainHeightAt(x, z, clockTowerHeight, PENINSULA_PAD_HEIGHT);
   const sheratonHeight = sheratonTerrainHeightAt(x, z, peninsulaHeight, SHERATON_PAD_HEIGHT);
@@ -380,7 +405,9 @@ export function hongKongTerrainHeight(x, z) {
   const kaiTakYouthHeight = kaiTakYouthTerrainHeightAt(x, z, kaiTakArenaHeight, KAI_TAK_YOUTH_PAD_HEIGHT);
   const happyValleyHeight = happyValleyTerrainHeightAt(x, z, kaiTakYouthHeight, HAPPY_VALLEY_PAD_HEIGHT);
   const shaTinHeight = shaTinTerrainHeightAt(x, z, happyValleyHeight, SHA_TIN_PAD_HEIGHT);
-  return airportTerrainHeightAt(AIRPORT_TERRAIN_SITES, AIRPORT_PAD_HEIGHTS, x, z, shaTinHeight);
+  const scienceMuseumHeight = scienceMuseumTerrainHeightAt(x, z, shaTinHeight, SCIENCE_MUSEUM_PAD_HEIGHT);
+  const historyMuseumHeight = historyMuseumTerrainHeightAt(x, z, scienceMuseumHeight, HISTORY_MUSEUM_PAD_HEIGHT);
+  return airportTerrainHeightAt(AIRPORT_TERRAIN_SITES, AIRPORT_PAD_HEIGHTS, x, z, historyMuseumHeight);
 }
 
 export const HONG_KONG_TERRAIN_META = Object.freeze({
@@ -428,6 +455,9 @@ export const HONG_KONG_TERRAIN_META = Object.freeze({
   timesSquarePadHeight: TIMES_SQUARE_PAD_HEIGHT,
   harbourCityPadHeights: HARBOUR_CITY_PAD_HEIGHTS,
   spaceMuseumPadHeight: SPACE_MUSEUM_PAD_HEIGHT,
+  artMuseumPadHeight: ART_MUSEUM_PAD_HEIGHT,
+  scienceMuseumPadHeight: SCIENCE_MUSEUM_PAD_HEIGHT,
+  historyMuseumPadHeight: HISTORY_MUSEUM_PAD_HEIGHT,
   culturalCentrePadHeight: CULTURAL_CENTRE_PAD_HEIGHT,
   clockTowerPadHeight: CLOCK_TOWER_PAD_HEIGHT,
   peninsulaPadHeight: PENINSULA_PAD_HEIGHT,

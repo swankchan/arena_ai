@@ -4,6 +4,9 @@ import { SCB_MAP_SITE } from './standard-chartered-architecture.js';
 import { TIMES_SQUARE_SITE, TIMES_SQUARE_HEIGHT } from './times-square-architecture.js';
 import { OCEAN_TERMINAL_SITE, STAR_HOUSE_SITE, MARCO_POLO_HONGKONG_SITE, OCEAN_CENTRE_SITE, PRINCE_HOTEL_SITE, GATEWAY_TOWER_ONE_SITE, GATEWAY_TOWER_TWO_SITE, GATEWAY_TOWER_THREE_SITE, GATEWAY_TOWER_FIVE_SITE, GATEWAY_TOWER_SIX_SITE, PACIFIC_CLUB_SITE, PACIFIC_CLUB_PIER_SITE } from './harbour-city-architecture.js';
 import { SPACE_MUSEUM_EAST_SITE, SPACE_MUSEUM_WEST_SITE } from './space-museum-architecture.js';
+import { ART_MUSEUM_SITE, ART_MUSEUM_TOP_BOX_HEIGHT } from './art-museum-site.js';
+import { SCIENCE_MUSEUM_SITE, SCIENCE_MUSEUM_ATRIUM_TOWER_HEIGHT } from './science-museum-site.js';
+import { HISTORY_MUSEUM_SITE, HISTORY_MUSEUM_VAULT_HEIGHT } from './history-museum-site.js';
 import { CULTURAL_CENTRE_SITE } from './cultural-centre-architecture.js';
 import { CITY_HALL_SITE, CITY_HALL_HIGH_HEIGHT } from './city-hall-architecture.js';
 import { CENTRAL_LIBRARY_SITE, CENTRAL_LIBRARY_BUILDING_SITE, CENTRAL_LIBRARY_HEIGHT } from './central-library-architecture.js';
@@ -180,6 +183,9 @@ function mapLayers() {
     .filter(([, landmark]) => !pointInFlatRing(PACIFIC_CLUB_PIER_SITE.ring, landmark.x, landmark.z))
     .filter(([, landmark]) => !pointInFlatRing(SPACE_MUSEUM_EAST_SITE.ring, landmark.x, landmark.z))
     .filter(([, landmark]) => !pointInFlatRing(SPACE_MUSEUM_WEST_SITE.ring, landmark.x, landmark.z))
+    .filter(([, landmark]) => !pointInFlatRing(ART_MUSEUM_SITE.ring, landmark.x, landmark.z))
+    .filter(([, landmark]) => !pointInFlatRing(SCIENCE_MUSEUM_SITE.ring, landmark.x, landmark.z))
+    .filter(([, landmark]) => !pointInFlatRing(HISTORY_MUSEUM_SITE.ring, landmark.x, landmark.z))
     .filter(([, landmark]) => !pointInFlatRing(CULTURAL_CENTRE_SITE.ring, landmark.x, landmark.z))
     .filter(([, landmark]) => !pointInFlatRing(CITY_HALL_SITE.ring, landmark.x, landmark.z))
     .filter(([, landmark]) => !pointInFlatRing(CENTRAL_LIBRARY_SITE.ring, landmark.x, landmark.z))
@@ -208,6 +214,9 @@ function mapLayers() {
   const gatewayTowerSixMapSite = { x: GATEWAY_TOWER_SIX_SITE.x, z: GATEWAY_TOWER_SIX_SITE.z, h: 129, authored: true };
   const pacificClubMapSite = { x: PACIFIC_CLUB_SITE.x, z: PACIFIC_CLUB_SITE.z, h: 15, authored: true };
   const spaceMuseumMapSite = { x: SPACE_MUSEUM_EAST_SITE.x, z: SPACE_MUSEUM_EAST_SITE.z, h: 25, authored: true };
+  const artMuseumMapSite = { x: ART_MUSEUM_SITE.x, z: ART_MUSEUM_SITE.z, h: ART_MUSEUM_TOP_BOX_HEIGHT, authored: true };
+  const scienceMuseumMapSite = { x: SCIENCE_MUSEUM_SITE.x, z: SCIENCE_MUSEUM_SITE.z, h: SCIENCE_MUSEUM_ATRIUM_TOWER_HEIGHT, authored: true };
+  const historyMuseumMapSite = { x: HISTORY_MUSEUM_SITE.x, z: HISTORY_MUSEUM_SITE.z, h: HISTORY_MUSEUM_VAULT_HEIGHT, authored: true };
   const culturalCentreMapSite = { x: CULTURAL_CENTRE_SITE.x, z: CULTURAL_CENTRE_SITE.z, h: 35, authored: true };
   const cityHallMapSite = { x: CITY_HALL_SITE.x, z: CITY_HALL_SITE.z, h: CITY_HALL_HIGH_HEIGHT, authored: true };
   const hkapaMapSite = { x: HKAPA_SITE.x, z: HKAPA_SITE.z, h: 31, authored: true };
@@ -226,7 +235,7 @@ function mapLayers() {
   const theArchTowerMapSites = THE_ARCH_TOWER_SITES.map((site) => ({ x: site.x, z: site.z, h: THE_ARCH_HEIGHT, authored: true }));
   const sorrentoMapSite = { x: SORRENTO_SITE.x, z: SORRENTO_SITE.z, h: SORRENTO_SITE.height, authored: true };
   const sorrentoTowerMapSites = SORRENTO_TOWER_SITES.map((site) => ({ x: site.x, z: site.z, h: site.height, authored: true }));
-  const landmarks = [...stockLandmarks, [SCB_MAP_SITE.name, SCB_MAP_SITE], [TIMES_SQUARE_SITE.name, timesSquareMapSite], ['海運大廈 Ocean Terminal · LCX', oceanTerminalMapSite], ['星光行 Star House · Star Annex', starHouseMapSite], [MARCO_POLO_HONGKONG_SITE.name, marcoPoloMapSite], [OCEAN_CENTRE_SITE.name, oceanCentreMapSite], [PRINCE_HOTEL_SITE.name, princeHotelMapSite], [GATEWAY_TOWER_ONE_SITE.name, gatewayTowerOneMapSite], [GATEWAY_TOWER_TWO_SITE.name, gatewayTowerTwoMapSite], [GATEWAY_TOWER_THREE_SITE.name, gatewayTowerThreeMapSite], [GATEWAY_TOWER_FIVE_SITE.name, gatewayTowerFiveMapSite], [GATEWAY_TOWER_SIX_SITE.name, gatewayTowerSixMapSite], [PACIFIC_CLUB_SITE.name, pacificClubMapSite], ['香港太空館 Hong Kong Space Museum', spaceMuseumMapSite], [CULTURAL_CENTRE_SITE.name, culturalCentreMapSite], [CITY_HALL_SITE.name, cityHallMapSite], [CENTRAL_LIBRARY_BUILDING_SITE.name, centralLibraryMapSite], [HKAPA_SITE.name, hkapaMapSite], [CLOCK_TOWER_SITE.name, clockTowerMapSite], ['香港半島酒店 The Peninsula Hong Kong', peninsulaHotelMapSite], [SHERATON_SITE.name, sheratonHotelMapSite], [SALISBURY_SITE.name, salisburyYMCAMapSite], [KOWLOON_SHANGRI_LA_SITE.name, kowloonShangriLaMapSite], [CGO_SITE.name, centralGovernmentMapSite], [CEO_SITE.name, chiefExecutiveOfficeMapSite], [LEGCO_SITE.name, legislativeCouncilMapSite], [HERITAGE_1881_COMPOUND.name, heritage1881MapSite], [ROUND_HOUSE_1881.name, roundHouse1881MapSite], [THE_ARCH_SITE.name, theArchMapSite], ...THE_ARCH_TOWER_SITES.map((site, index) => [site.name, theArchTowerMapSites[index]]), [SORRENTO_SITE.name, sorrentoMapSite], ...SORRENTO_TOWER_SITES.map((site, index) => [site.name, sorrentoTowerMapSites[index]]), ...AIRPORT_BUILDING_SITES.map((site) => [site.name, { x: site.x, z: site.z, h: site.height, authored: true }])]
+  const landmarks = [...stockLandmarks, [SCB_MAP_SITE.name, SCB_MAP_SITE], [TIMES_SQUARE_SITE.name, timesSquareMapSite], ['海運大廈 Ocean Terminal · LCX', oceanTerminalMapSite], ['星光行 Star House · Star Annex', starHouseMapSite], [MARCO_POLO_HONGKONG_SITE.name, marcoPoloMapSite], [OCEAN_CENTRE_SITE.name, oceanCentreMapSite], [PRINCE_HOTEL_SITE.name, princeHotelMapSite], [GATEWAY_TOWER_ONE_SITE.name, gatewayTowerOneMapSite], [GATEWAY_TOWER_TWO_SITE.name, gatewayTowerTwoMapSite], [GATEWAY_TOWER_THREE_SITE.name, gatewayTowerThreeMapSite], [GATEWAY_TOWER_FIVE_SITE.name, gatewayTowerFiveMapSite], [GATEWAY_TOWER_SIX_SITE.name, gatewayTowerSixMapSite], [PACIFIC_CLUB_SITE.name, pacificClubMapSite], ['香港太空館 Hong Kong Space Museum', spaceMuseumMapSite], [ART_MUSEUM_SITE.name, artMuseumMapSite], [SCIENCE_MUSEUM_SITE.name, scienceMuseumMapSite], [HISTORY_MUSEUM_SITE.name, historyMuseumMapSite], [CULTURAL_CENTRE_SITE.name, culturalCentreMapSite], [CITY_HALL_SITE.name, cityHallMapSite], [CENTRAL_LIBRARY_BUILDING_SITE.name, centralLibraryMapSite], [HKAPA_SITE.name, hkapaMapSite], [CLOCK_TOWER_SITE.name, clockTowerMapSite], ['香港半島酒店 The Peninsula Hong Kong', peninsulaHotelMapSite], [SHERATON_SITE.name, sheratonHotelMapSite], [SALISBURY_SITE.name, salisburyYMCAMapSite], [KOWLOON_SHANGRI_LA_SITE.name, kowloonShangriLaMapSite], [CGO_SITE.name, centralGovernmentMapSite], [CEO_SITE.name, chiefExecutiveOfficeMapSite], [LEGCO_SITE.name, legislativeCouncilMapSite], [HERITAGE_1881_COMPOUND.name, heritage1881MapSite], [ROUND_HOUSE_1881.name, roundHouse1881MapSite], [THE_ARCH_SITE.name, theArchMapSite], ...THE_ARCH_TOWER_SITES.map((site, index) => [site.name, theArchTowerMapSites[index]]), [SORRENTO_SITE.name, sorrentoMapSite], ...SORRENTO_TOWER_SITES.map((site, index) => [site.name, sorrentoTowerMapSites[index]]), ...AIRPORT_BUILDING_SITES.map((site) => [site.name, { x: site.x, z: site.z, h: site.height, authored: true }])]
     .filter(([, landmark]) => Number.isFinite(landmark.h) && (landmark.h > 45 || landmark.authored))
     .map(([name, landmark]) => ({ name, ...landmark }))
     .sort((a, b) => b.h - a.h);
