@@ -17,7 +17,7 @@
 
 inventory 已同步更新為「55 已加入／45 待製作」，並保留「50 個正式獨立 Landmark」口徑；這份 audit 將组件精修與獨立 Landmark 分開，避免把兩種完成混為一談。
 
-## A. 正式已加入、精修及 Landmark（66）
+## A. 正式已加入、精修及 Landmark（67）
 
 | ID | 建築物 | 地區 | 主要實作 |
 | --- | --- | --- | --- |
@@ -83,6 +83,7 @@ inventory 已同步更新為「55 已加入／45 待製作」，並保留「50 �
 | `HK-B0068` | 中國人民解放軍駐香港部隊大廈 Chinese People's Liberation Army Forces Hong Kong Building | 中環 | `hongkong-army-building-world.js` |
 | `HK-B0071` | 修頓中心 Southorn Centre | 灣仔 | `southorn-centre-world.js` |
 | `HK-B0072` | 海富中心二座 Admiralty Centre Tower 2 | 金鐘 | `admiralty-centre-tower-2-world.js` |
+| `HK-B0073` | 海港政府大樓 Harbour Building | 中環 | `harbour-building-world.js` |
 | `HK-B0031` | 力寶中心第二座 Lippo Centre Tower 2 | 金鐘 | `lippo-centre-tower-2-world.js` |
 | `HK-B0038` | 華潤大廈 China Resources Building | 灣仔 | `china-resources-building-world.js` |
 | `HK-B0040` | 力寶中心第一座 Lippo Centre Tower 1 | 金鐘 | `lippo-centre-tower-1-world.js` |
@@ -106,7 +107,7 @@ inventory 已同步更新為「55 已加入／45 待製作」，並保留「50 �
 - `HK-CENTRAL-CH` 同時生成大會堂 High Block、Low Block、附屬建築及 Memorial Garden；這裡只把原清單的 B0082／B0100 對應出來，不把附屬設施額外計數。
 - 茶具文物館仍屬香港公園組件，不新增一個獨立 Landmark；但現在由專用 Flagstaff House module 生成，已按 B0093 補上照片導向精修，不再呼叫通用 heritage builder。
 
-## C. 仍待製作／未見專用實作（29）
+## C. 仍待製作／未見專用實作（28）
 
 | ID | 建築物 | 地區 | 原表高度參考 | 位置／footprint 依據 |
 | --- | --- | --- | --- | --- |
@@ -121,7 +122,6 @@ inventory 已同步更新為「55 已加入／45 待製作」，並保留「50 �
 | `HK-B0067` | 港運大廈 Island Place Tower | 北角 | 116.2 m | OSM way 100652797 |
 | `HK-B0069` | 海濱廣場一座 One Harbourfront | 紅磡 | 110 m | OSM way 151401235 |
 | `HK-B0070` | 海濱廣場二座 Two Harbourfront | 紅磡 | 110 m | OSM way 151401236 |
-| `HK-B0073` | 海港政府大樓 Harbour Building | 中環 | 96 m | OSM way 26599387 |
 | `HK-B0074` | K11 ARTUS 寓館 K11 ARTUS | 尖沙咀 | 96 m | OSM way 693489169 |
 | `HK-B0075` | 庫務大樓 Treasury Building | 長沙灣 | 95.3 m | OSM way 1089354187 |
 | `HK-B0076` | 工業貿易大樓 Trade and Industry Tower | 啟德 | 93.5 m | OSM way 385568445 |
