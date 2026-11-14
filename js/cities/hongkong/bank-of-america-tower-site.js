@@ -81,17 +81,10 @@ for (let i = 0; i + 3 < BANK_OF_AMERICA_TOWER_RING.length; i += 2) {
 export const BANK_OF_AMERICA_TOWER_RING_AREA = Math.abs(signedArea * 0.5);
 
 export const BANK_OF_AMERICA_TOWER_SITE = Object.freeze({
-  name: '美國銀行中心 Bank of America Tower',
-  englishName: 'Bank of America Tower',
-  address: '金鐘夏慤道12號 12 Harcourt Road',
-  osmType: 'relation',
-  osmId: 17045256,
-  source: BANK_OF_AMERICA_TOWER_OSM_SOURCE,
-  ring: BANK_OF_AMERICA_TOWER_RING,
-  bounds: BANK_OF_AMERICA_TOWER_BOUNDS,
-  ...footprint,
-  height: 146.0,
-  storeys: 38,
+  ...makeAuthoredSite('bankOfAmericaTower', '美國銀行中心', 'Bank of America Tower', BANK_OF_AMERICA_TOWER_OSM_SOURCE, {
+    height: 146.0,
+    levels: 38
+  }),
   podiumHeight: 16.0,
   shaftHeight: 118.0,
   crownHeight: 12.0

@@ -228,6 +228,7 @@ export const LANDMARK_DISTRICT_MAP = Object.freeze({
   'icbcTower': 'central-western',
   'icbc-tower': 'central-western',
   'bankOfAmerica': 'central-western',
+  'bankOfAmericaTower': 'central-western',
   'bank-of-america-tower': 'central-western',
   'citicTower': 'central-western',
   'citic-tower': 'central-western',

@@ -1,10 +1,10 @@
-// 美國銀行中心 Bank of America Tower, 12 Harcourt Road, Admiralty (金鐘夏慤道12號, 1977).
+// Bank of America Tower 美國銀行中心, 12 Harcourt Road, Admiralty (1977).
 //
-// The 146-metre 38-storey commercial landmark features a parallelogram geometry,
-// bronze-tinted reflective glass curtain wall, bronze-anodized spandrels, 4-storey commercial
-// podium with pedestrian skybridges, and an iconic illuminated rooftop corporate sign.
+// 146-metre, 38-storey Grade-A office tower with a bronze-tinted reflective
+// curtain wall, dark bronze spandrels, vertical mullions, a 4-storey commercial
+// podium and a rooftop mechanical crown carrying the illuminated corporate logo.
 //
-// OSM Relation: 17045256 / Way 107328020 (height: 146m).
+// OSM Way: 107328020 (relation 17045256, 146m, 38 levels).
 import * as THREE from 'three/webgpu';
 import { color } from 'three/tsl';
 import {
@@ -12,284 +12,230 @@ import {
   bankOfAmericaTowerLocalToWorld
 } from './bank-of-america-tower-site.js';
 import { hongKongTerrainHeight } from './terrain.js';
-import { harbourCityLocalCollider } from './harbour-city-architecture.js';
 import { box, cylinder, merged, nightAmount, hash } from './harbour-city-world-utils.js';
 
 export function buildBankOfAmericaTower(scene, options = {}) {
-  const groundOffset = options.groundOffset ?? hongKongTerrainHeight(S.x, S.z);
+  const groundY = options.groundOffset ?? hongKongTerrainHeight(S.x, S.z);
 
   const root = new THREE.Group();
   root.name = 'Bank of America Tower — 美國銀行中心';
-  root.position.set(S.x, groundOffset, S.z);
-  root.rotation.y = S.ry;
   scene.add(root);
 
-  // Collections for merged geometries
   const bronzeGlass = [];
   const litGlass = [];
   const bronzeSpandrels = [];
   const bronzeMullions = [];
-  const granitePodium = [];
+  const podiumStone = [];
   const podiumGlass = [];
   const crownParts = [];
-  const signageParts = [];
-  const skybridgeParts = [];
+  const logoParts = [];
 
-  const w = S.w; // ~52.84m
-  const d = S.d; // ~66.65m
-  const podiumH = S.podiumHeight; // 16.0m
-  const totalH = S.height; // 146.0m
-  const crownH = S.crownHeight; // 12.0m
-  const shaftTop = totalH - crownH; // 134.0m
-  const shaftH = shaftTop - podiumH; // 118.0m
+  const w = S.w;
+  const d = S.d;
+  const podiumH = 16.0;
+  const totalH = S.height;
+  const crownH = 12.0;
+  const shaftH = totalH - podiumH - crownH;
+  const shaftTop = podiumH + shaftH;
 
-  // --- 1. Commercial Podium & Skybridges (0 to 16m) ------------------------------------------------------------
-  {
-    // Main podium mass
-    box(granitePodium, [0, podiumH * 0.5, 0], [w - 2.0, podiumH, d - 2.0]);
-
-    // Ground floor storefronts & bank lobby
-    for (let floor = 0; floor < 3; floor++) {
-      const fy = 1.0 + floor * 4.8;
-      box(podiumGlass, [0, fy + 2.0, -d * 0.5 + 1.2], [w - 4.0, 3.6, 0.1]);
-      box(podiumGlass, [0, fy + 2.0, d * 0.5 - 1.2], [w - 4.0, 3.6, 0.1]);
-      for (let x = -w * 0.5 + 4.0; x <= w * 0.5 - 4.0; x += 4.2) {
-        box(granitePodium, [x, fy + 2.0, -d * 0.5 + 1.1], [0.8, 4.0, 0.4]);
-        box(granitePodium, [x, fy + 2.0, d * 0.5 - 1.1], [0.8, 4.0, 0.4]);
-      }
-    }
-
-    // Harcourt Road Main Entrance Canopy
-    box(bronzeSpandrels, [0, 4.8, -d * 0.5 - 1.2], [14.0, 0.4, 3.2]);
-    box(podiumGlass, [0, 2.3, -d * 0.5 + 0.8], [6.0, 3.8, 0.2]);
-
-    // Elevated Skybridge Connections:
-    // 1) West Skybridge towards Cheung Kong Center II / Central (Level 2, y ~ 7.0m)
-    box(skybridgeParts, [-w * 0.5 - 4.5, 7.0, 0], [9.0, 4.2, 4.0]);
-    box(podiumGlass, [-w * 0.5 - 4.5, 7.2, 1.85], [8.6, 2.0, 0.1]);
-    box(podiumGlass, [-w * 0.5 - 4.5, 7.2, -1.85], [8.6, 2.0, 0.1]);
-
-    // 2) East Skybridge towards Far East Finance Centre (Level 2, y ~ 7.0m)
-    box(skybridgeParts, [w * 0.5 + 4.5, 7.0, 0], [9.0, 4.2, 4.0]);
-    box(podiumGlass, [w * 0.5 + 4.5, 7.2, 1.85], [8.6, 2.0, 0.1]);
-    box(podiumGlass, [w * 0.5 + 4.5, 7.2, -1.85], [8.6, 2.0, 0.1]);
-  }
-
-  // --- 2. Main Tower Shaft: Parallelogram Bronze Curtain Wall (16m to 134m) -----------------------------------
-  // 30 office storeys with bronze reflective glass and champagne anodized spandrels
-  {
-    const floors = 30;
-    const floorH = shaftH / floors; // ~3.93m per storey
-    const glassH = floorH * 0.60; // ~2.36m
-    const spandrelH = floorH - glassH; // ~1.57m
-
-    // Core structural mass inside the tower
-    box(granitePodium, [0, podiumH + shaftH * 0.5, 0], [w - 6.0, shaftH, d - 6.0]);
-
-    for (let f = 0; f < floors; f++) {
-      const baseY = podiumH + f * floorH;
-      const spandrelY = baseY + spandrelH * 0.5;
-      const visionY = baseY + spandrelH + glassH * 0.5;
-
-      // Spandrels
-      box(bronzeSpandrels, [0, spandrelY, -d * 0.5 + 2.5], [w - 5.0, spandrelH, 0.2]);
-      box(bronzeSpandrels, [0, spandrelY, d * 0.5 - 2.5], [w - 5.0, spandrelH, 0.2]);
-      box(bronzeSpandrels, [-w * 0.5 + 2.5, spandrelY, 0], [0.2, spandrelH, d - 5.0]);
-      box(bronzeSpandrels, [w * 0.5 - 2.5, spandrelY, 0], [0.2, spandrelH, d - 5.0]);
-
-      // Vision glass — subdivided into realistic window bays with scattered randomized night illumination
-      const spanX = w - 5.2;
-      const numBaysX = Math.max(1, Math.round(spanX / 2.6));
-      const actualBayX = spanX / numBaysX;
-      for (let bx = 0; bx < numBaysX; bx++) {
-        const lx = -spanX * 0.5 + (bx + 0.5) * actualBayX;
-        const isLitN = hash(f, bx, 1, 38) < 0.28;
-        const isLitS = hash(f, bx, 2, 38) < 0.28;
-        box(isLitN ? litGlass : bronzeGlass, [lx, visionY, -d * 0.5 + 2.5], [actualBayX - 0.04, glassH, 0.14]);
-        box(isLitS ? litGlass : bronzeGlass, [lx, visionY, d * 0.5 - 2.5], [actualBayX - 0.04, glassH, 0.14]);
-      }
-
-      const spanZ = d - 5.2;
-      const numBaysZ = Math.max(1, Math.round(spanZ / 2.6));
-      const actualBayZ = spanZ / numBaysZ;
-      for (let bz = 0; bz < numBaysZ; bz++) {
-        const lz = -spanZ * 0.5 + (bz + 0.5) * actualBayZ;
-        const isLitE = hash(f, bz, 3, 38) < 0.28;
-        const isLitW = hash(f, bz, 4, 38) < 0.28;
-        box(isLitE ? litGlass : bronzeGlass, [w * 0.5 - 2.5, visionY, lz], [0.14, glassH, actualBayZ - 0.04]);
-        box(isLitW ? litGlass : bronzeGlass, [-w * 0.5 + 2.5, visionY, lz], [0.14, glassH, actualBayZ - 0.04]);
-      }
-    }
-
-    // Vertical extruded mullion fins
-    const midShaftY = podiumH + shaftH * 0.5;
-    for (let x = -w * 0.5 + 4.0; x <= w * 0.5 - 4.0; x += 2.6) {
-      box(bronzeMullions, [x, midShaftY, -d * 0.5 + 2.35], [0.08, shaftH, 0.22]);
-      box(bronzeMullions, [x, midShaftY, d * 0.5 - 2.35], [0.08, shaftH, 0.22]);
-    }
-    for (let z = -d * 0.5 + 4.0; z <= d * 0.5 - 4.0; z += 2.6) {
-      box(bronzeMullions, [-w * 0.5 + 2.35, midShaftY, z], [0.22, shaftH, 0.08]);
-      box(bronzeMullions, [w * 0.5 - 2.35, midShaftY, z], [0.22, shaftH, 0.08]);
-    }
-  }
-
-  // --- 3. Crown & Mechanical Penthouse (134m to 146m) ---------------------------------------------------------
-  // Stepped crown with louvres and iconic Bank of America rooftop illuminated sign
-  {
-    const crownBaseY = shaftTop;
-    const cw = w - 10.0;
-    const cd = d - 10.0;
-
-    // Penthouse block
-    box(crownParts, [0, crownBaseY + crownH * 0.5, 0], [cw, crownH, cd]);
-
-    // Acoustic louvres on crown
-    for (let y = crownBaseY + 1.2; y <= crownBaseY + crownH - 1.2; y += 0.7) {
-      box(bronzeSpandrels, [0, y, cd * 0.5 + 0.1], [cw - 0.4, 0.22, 0.15]);
-      box(bronzeSpandrels, [0, y, -cd * 0.5 - 0.1], [cw - 0.4, 0.22, 0.15]);
-      box(bronzeSpandrels, [cw * 0.5 + 0.1, y, 0], [0.15, 0.22, cd - 0.4]);
-      box(bronzeSpandrels, [-cw * 0.5 - 0.1, y, 0], [0.15, 0.22, cd - 0.4]);
-    }
-
-    // Parapet
-    box(bronzeSpandrels, [0, totalH - 0.2, 0], [cw + 0.4, 0.4, cd + 0.4]);
-
-    // Rooftop Signage: "Bank of America" Corporate Logo Sign
-    const signY = crownBaseY + crownH * 0.55;
-    // North sign (facing Victoria Harbour)
-    box(crownParts, [0, signY, -cd * 0.5 - 0.2], [20.0, 3.6, 0.15]); // Backing plate
-    // Bank of America red and blue logo bars
-    box(signageParts, [-7.5, signY, -cd * 0.5 - 0.3], [2.8, 2.4, 0.12]);
-    // English lettering bars
-    for (let i = -4.5; i <= 8.5; i += 1.8) {
-      box(bronzeMullions, [i, signY, -cd * 0.5 - 0.3], [1.3, 1.8, 0.1]);
-    }
-
-    // South sign (facing Central)
-    box(crownParts, [0, signY, cd * 0.5 + 0.2], [20.0, 3.6, 0.15]);
-    box(signageParts, [7.5, signY, cd * 0.5 + 0.3], [2.8, 2.4, 0.12]);
-    for (let i = -8.5; i <= 4.5; i += 1.8) {
-      box(bronzeMullions, [i, signY, cd * 0.5 + 0.3], [1.3, 1.8, 0.1]);
-    }
-
-    // Aviation obstruction lights at crown corners
-    for (const sx of [-1, 1]) {
-      for (const sz of [-1, 1]) {
-        cylinder(bronzeMullions, [sx * (cw * 0.5 - 0.3), totalH + 0.4, sz * (cd * 0.5 - 0.3)], 0.08, 0.8, 6);
-        box(signageParts, [sx * (cw * 0.5 - 0.3), totalH + 0.85, sz * (cd * 0.5 - 0.3)], [0.22, 0.22, 0.22]);
-      }
-    }
-  }
-
-  // --- Materials Definition -----------------------------------------------------------------------------------
-  // 1) Bronze Reflective Curtain Wall Glass
-  const bronzeGlassMat = new THREE.MeshStandardNodeMaterial({
-    color: 0x4a3c2e,
-    roughness: 0.15,
-    metalness: 0.65,
-  });
-
-  // 2) Lit Office Glass
-  const litGlassMat = new THREE.MeshStandardNodeMaterial({
-    color: 0x6e5842,
-    roughness: 0.2,
-    metalness: 0.45,
-  });
-  litGlassMat.emissiveNode = color(0xffe5aa).mul(nightAmount().mul(0.85).add(0.15));
-
-  // 3) Bronze / Champagne Anodized Spandrels
-  const bronzeSpandrelMat = new THREE.MeshStandardMaterial({
-    color: 0x5c4a38,
-    roughness: 0.35,
-    metalness: 0.55,
-  });
-
-  // 4) Dark Bronze Vertical Mullions
-  const bronzeMullionMat = new THREE.MeshStandardMaterial({
-    color: 0x786450,
-    roughness: 0.28,
-    metalness: 0.82,
-  });
-
-  // 5) Polished Dark Granite (Podium)
-  const graniteMat = new THREE.MeshStandardMaterial({
-    color: 0x1c1e20,
-    roughness: 0.52,
-    metalness: 0.2,
-  });
-
-  // 6) Storefront Glass
-  const podiumGlassMat = new THREE.MeshStandardMaterial({
-    color: 0x253540,
-    roughness: 0.12,
-    metalness: 0.35,
-  });
-
-  // 7) Penthouse Crown Casing
-  const crownMat = new THREE.MeshStandardMaterial({
-    color: 0x363028,
-    roughness: 0.58,
-    metalness: 0.55,
-  });
-
-  // 8) Bank of America Red/Blue Corporate Signage & Beacons
-  const signageMat = new THREE.MeshStandardNodeMaterial({
-    color: 0xd61b2c, // BofA Red
-    roughness: 0.25,
-    metalness: 0.5,
-  });
-  signageMat.emissiveNode = color(0xee2233).mul(nightAmount().mul(0.9).add(0.3));
-
-  // 9) Skybridge Enclosure
-  const skybridgeMat = new THREE.MeshStandardMaterial({
-    color: 0x222628,
-    roughness: 0.35,
-    metalness: 0.5,
-  });
-
-  // Assemble meshes into root group
-  merged(root, bronzeGlass, bronzeGlassMat, 'Bank of America Tower bronze reflective curtain wall');
-  merged(root, litGlass, litGlassMat, 'Bank of America Tower lit office glazing');
-  merged(root, bronzeSpandrels, bronzeSpandrelMat, 'Bank of America Tower bronze spandrel panels');
-  merged(root, bronzeMullions, bronzeMullionMat, 'Bank of America Tower vertical mullion fins');
-  merged(root, granitePodium, graniteMat, 'Bank of America Tower granite podium');
-  merged(root, podiumGlass, podiumGlassMat, 'Bank of America Tower storefront glazing');
-  merged(root, crownParts, crownMat, 'Bank of America Tower mechanical penthouse crown');
-  merged(root, signageParts, signageMat, 'Bank of America Tower corporate signage and beacons');
-  merged(root, skybridgeParts, skybridgeMat, 'Bank of America Tower pedestrian skybridges');
-
-  // --- Colliders ---------------------------------------------------------------------------------------------
-  const colliders = [
-    // Main tower volume
-    { name: 'Bank of America Tower Shaft', ...harbourCityLocalCollider(S, 0, 0, w - 5.0, d - 5.0, groundOffset + podiumH, groundOffset + totalH) },
-    // Podium volume
-    { name: 'Bank of America Tower Podium', ...harbourCityLocalCollider(S, 0, 0, w - 2.0, d - 2.0, groundOffset, groundOffset + podiumH) },
-    // West Skybridge
-    { name: 'Bank of America Tower West Skybridge', ...harbourCityLocalCollider(S, -w * 0.5 - 4.5, 0, 9.0, 4.0, groundOffset + 5.0, groundOffset + 9.5) },
-    // East Skybridge
-    { name: 'Bank of America Tower East Skybridge', ...harbourCityLocalCollider(S, w * 0.5 + 4.5, 0, 9.0, 4.0, groundOffset + 5.0, groundOffset + 9.5) },
+  const cs = Math.cos(S.ry), sn = Math.sin(S.ry);
+  const toWorld = (lx, ly, lz) => [
+    S.x + cs * lx + sn * lz,
+    groundY + ly,
+    S.z - sn * lx + cs * lz
   ];
 
+  // --- 1. Podium Block & Entrance ---------------------------------------------------------
+  box(podiumStone, toWorld(0, podiumH * 0.5, 0), [w, podiumH, d], S.ry);
+
+  // Ground-floor banking hall glazing
+  for (let f = 0; f < 2; f++) {
+    const fy = 2.0 + f * 6.0;
+    box(podiumGlass, toWorld(0, fy + 2.8, -d * 0.5 + 0.5), [w - 3.0, 5.5, 0.14], S.ry);
+  }
+  box(podiumGlass, toWorld(w * 0.5 - 0.5, 9.0, 0), [0.14, 10.0, d - 6.0], S.ry);
+  box(podiumGlass, toWorld(-w * 0.5 + 0.5, 9.0, 0), [0.14, 10.0, d - 6.0], S.ry);
+  box(podiumGlass, toWorld(0, 9.0, d * 0.5 - 0.5), [w - 7.0, 10.0, 0.14], S.ry);
+
+  // Bronze entrance canopy
+  box(bronzeSpandrels, toWorld(0, 7.8, -d * 0.5 - 2.0), [w - 2.0, 0.3, 4.0], S.ry);
+  for (const cx of [-w * 0.25, 0, w * 0.25]) {
+    cylinder(bronzeMullions, toWorld(cx, 6.2, -d * 0.5 - 2.0), 0.2, 5.6, 10);
+  }
+
+  // Internal structural core
+  box(podiumStone, toWorld(0, podiumH + shaftH * 0.5, 0), [w - 6.0, shaftH, d - 6.0], S.ry);
+
+  // --- 2. Main Office Tower Shaft ----------------------------------------------------------
+  const floorsCount = 34;
+  const floorH = shaftH / floorsCount;
+  const spandrelH = 1.05;
+  const glassH = floorH - spandrelH;
+
+  const seed = 127; // Bank of America Tower unique night-light seed
+
+  for (let f = 0; f < floorsCount; f++) {
+    const baseY = podiumH + f * floorH;
+    const spandrelY = baseY + spandrelH * 0.5;
+    const visionY = baseY + spandrelH + glassH * 0.5;
+
+    box(bronzeSpandrels, toWorld(0, spandrelY, -d * 0.5 + 1.0), [w - 2.0, spandrelH, 0.20], S.ry);
+    box(bronzeSpandrels, toWorld(0, spandrelY, d * 0.5 - 1.0), [w - 2.0, spandrelH, 0.20], S.ry);
+    box(bronzeSpandrels, toWorld(-w * 0.5 + 1.0, spandrelY, 0), [0.20, spandrelH, d - 2.0], S.ry);
+    box(bronzeSpandrels, toWorld(w * 0.5 - 1.0, spandrelY, 0), [0.20, spandrelH, d - 2.0], S.ry);
+
+    box(bronzeMullions, toWorld(0, spandrelY + spandrelH * 0.45, -d * 0.5 + 0.8), [w - 1.6, 0.07, 0.40], S.ry);
+    box(bronzeMullions, toWorld(0, spandrelY + spandrelH * 0.45, d * 0.5 - 0.8), [w - 1.6, 0.07, 0.40], S.ry);
+
+    const spanX = w - 2.4;
+    const numBaysX = Math.max(1, Math.round(spanX / 2.4));
+    const actualBayX = spanX / numBaysX;
+    for (let bx = 0; bx < numBaysX; bx++) {
+      const lx = -spanX * 0.5 + (bx + 0.5) * actualBayX;
+      const isLitN = hash(f, bx, 1, seed) < 0.28;
+      const isLitS = hash(f, bx, 2, seed) < 0.28;
+      box(isLitN ? litGlass : bronzeGlass, toWorld(lx, visionY, -d * 0.5 + 1.0), [actualBayX - 0.04, glassH, 0.14], S.ry);
+      box(isLitS ? litGlass : bronzeGlass, toWorld(lx, visionY, d * 0.5 - 1.0), [actualBayX - 0.04, glassH, 0.14], S.ry);
+    }
+
+    const spanZ = d - 2.4;
+    const numBaysZ = Math.max(1, Math.round(spanZ / 2.4));
+    const actualBayZ = spanZ / numBaysZ;
+    for (let bz = 0; bz < numBaysZ; bz++) {
+      const lz = -spanZ * 0.5 + (bz + 0.5) * actualBayZ;
+      const isLitW = hash(f, bz, 3, seed) < 0.28;
+      const isLitE = hash(f, bz, 4, seed) < 0.28;
+      box(isLitW ? litGlass : bronzeGlass, toWorld(-w * 0.5 + 1.0, visionY, lz), [0.14, glassH, actualBayZ - 0.04], S.ry);
+      box(isLitE ? litGlass : bronzeGlass, toWorld(w * 0.5 - 1.0, visionY, lz), [0.14, glassH, actualBayZ - 0.04], S.ry);
+    }
+  }
+
+  const midShaftY = podiumH + shaftH * 0.5;
+  for (let x = -w * 0.5 + 2.4; x <= w * 0.5 - 2.4; x += 2.4) {
+    box(bronzeMullions, toWorld(x, midShaftY, -d * 0.5 + 1.0), [0.07, shaftH, 0.22], S.ry);
+    box(bronzeMullions, toWorld(x, midShaftY, d * 0.5 - 1.0), [0.07, shaftH, 0.22], S.ry);
+  }
+  for (let z = -d * 0.5 + 2.4; z <= d * 0.5 - 2.4; z += 2.4) {
+    box(bronzeMullions, toWorld(-w * 0.5 + 1.0, midShaftY, z), [0.22, shaftH, 0.07], S.ry);
+    box(bronzeMullions, toWorld(w * 0.5 - 1.0, midShaftY, z), [0.22, shaftH, 0.07], S.ry);
+  }
+
+  for (const sx of [-1, 1]) {
+    for (const sz of [-1, 1]) {
+      cylinder(bronzeSpandrels, toWorld(sx * (w * 0.5 - 1.0), midShaftY, sz * (d * 0.5 - 1.0)), 1.2, shaftH, 12);
+    }
+  }
+
+  // --- 3. Mechanical Crown (134m to 146m) --------------------------------------------------
+  const crownBaseY = shaftTop;
+  const cw = w - 4.0;
+  const cd = d - 4.0;
+
+  box(bronzeSpandrels, toWorld(0, crownBaseY + 3.0, 0), [cw, 5.5, cd], S.ry);
+  box(bronzeSpandrels, toWorld(0, crownBaseY + 7.5, 0), [cw - 5.0, 2.5, cd - 4.0], S.ry);
+
+  box(crownParts, toWorld(0, crownBaseY + 5.6, 0), [cw + 0.6, 0.3, cd + 0.6], S.ry);
+  box(crownParts, toWorld(0, crownBaseY + 9.1, 0), [cw - 4.2, 0.3, cd - 3.2], S.ry);
+  box(crownParts, toWorld(0, crownBaseY + 10.0, 0), [cw - 8.0, 1.0, 0.5], S.ry);
+
+  // Illuminated corporate logo on the crown facing the harbour
+  box(logoParts, toWorld(0, crownBaseY + 10.4, d * 0.5 - 0.4), [cw - 12.0, 1.6, 0.25], S.ry);
+
+  // --- 4. Materials Palette ---------------------------------------------------------------
+  const bronzeGlassMat = new THREE.MeshStandardNodeMaterial({
+    color: 0x3d2b1f, // Bronze-tinted reflective curtain wall
+    roughness: 0.12,
+    metalness: 0.88,
+    side: THREE.DoubleSide
+  });
+
+  const litGlassMat = new THREE.MeshStandardNodeMaterial({
+    color: 0x4a3c30,
+    roughness: 0.22,
+    metalness: 0.35,
+    side: THREE.DoubleSide
+  });
+  litGlassMat.emissiveNode = color(0xffe8ba).mul(nightAmount().mul(0.85).add(0.15));
+
+  const bronzeSpandrelMat = new THREE.MeshStandardMaterial({
+    color: 0x8b6b4f,
+    roughness: 0.28,
+    metalness: 0.72
+  });
+
+  const bronzeMullionMat = new THREE.MeshStandardMaterial({
+    color: 0xa68a74,
+    roughness: 0.22,
+    metalness: 0.82
+  });
+
+  const podiumStoneMat = new THREE.MeshStandardMaterial({
+    color: 0xd6cebe,
+    roughness: 0.82,
+    metalness: 0.05
+  });
+
+  const podiumGlassMat = new THREE.MeshStandardNodeMaterial({
+    color: 0x2a3a42,
+    roughness: 0.15,
+    metalness: 0.45,
+    side: THREE.DoubleSide
+  });
+  podiumGlassMat.emissiveNode = color(0xffefd0).mul(nightAmount().mul(0.55).add(0.1));
+
+  const crownMat = new THREE.MeshStandardMaterial({
+    color: 0x9a8a7a,
+    roughness: 0.3,
+    metalness: 0.75
+  });
+
+  const logoMat = new THREE.MeshStandardNodeMaterial({
+    color: 0xbfa055,
+    roughness: 0.18,
+    metalness: 0.6
+  });
+  logoMat.emissiveNode = color(0xd4b466).mul(nightAmount().mul(1.4).add(0.2));
+
+  // --- 5. Merge Meshes --------------------------------------------------------------------
+  merged(root, podiumStone, podiumStoneMat, 'Bank of America Tower stone podium and core');
+  merged(root, podiumGlass, podiumGlassMat, 'Bank of America Tower banking hall storefront glazing');
+  merged(root, bronzeSpandrels, bronzeSpandrelMat, 'Bank of America Tower bronze spandrel ribbons');
+  merged(root, bronzeMullions, bronzeMullionMat, 'Bank of America Tower vertical mullions and sunshade louvres');
+  merged(root, bronzeGlass, bronzeGlassMat, 'Bank of America Tower bronze-tinted reflective curtain wall');
+  merged(root, litGlass, litGlassMat, 'Bank of America Tower illuminated office glazing');
+  merged(root, crownParts, crownMat, 'Bank of America Tower mechanical parapet crown');
+  merged(root, logoParts, logoMat, 'Bank of America Tower illuminated rooftop corporate logo', false);
+
+  // --- 6. Colliders -----------------------------------------------------------------------
+  const colliders = [];
+
+  // --- 7. Landmark Metadata ---------------------------------------------------------------
   const landmark = {
-    id: 'bank-of-america-tower',
-    name: '美國銀行中心 Bank of America Tower',
+    id: 'bankOfAmericaTower',
+    name: '美國銀行中心',
     englishName: 'Bank of America Tower',
-    position: { x: S.x, y: groundOffset, z: S.z },
-    radius: Math.max(w, d) * 0.65,
-    height: totalH,
+    x: S.x,
+    z: S.z,
+    w: S.w,
+    d: S.d,
+    h: S.height,
+    ring: S.ring,
+    bounds: S.bounds,
+    osmId: S.osmId,
+    kind: 'landmark',
+    labelHeight: S.height + 4.0
   };
 
   return {
     group: root,
     colliders,
     landmarks: [landmark],
+    base: groundY,
     stats: {
-      boaHeight: totalH,
-      boaStoreys: S.storeys,
-      boaCurtainPanes: bronzeGlass.length + litGlass.length,
-      boaSpandrels: bronzeSpandrels.length,
-      bronzeMullions: bronzeMullions.length,
-    },
-    groundOffset,
+      bankOfAmericaTowerOsm: S.osmId,
+      bankOfAmericaTowerHeight: S.height,
+      bankOfAmericaTowerLevels: S.levels,
+      bankOfAmericaTowerPanes: bronzeGlass.length + litGlass.length
+    }
   };
 }
