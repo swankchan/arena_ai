@@ -1,14 +1,15 @@
-// 華潤大廈 China Resources Building, 26 Harbour Road, Wan Chai (灣仔港灣道26號, 1983/2012).
+// China Resources Building 華潤大廈, 26 Harbour Road, Wan Chai (1982).
 //
-// The 178-metre 49-storey skyscraper features a state-of-the-art sustainable double-glazed
-// silver-blue Low-E curtain wall with external sun-shading fins designed by Foster + Partners / Lead8,
-// 4-storey transparent lobby podium with elevated skybridges, and an illuminated rooftop China Resources crown.
+// 178-metre, 49-storey Grade-A office tower developed by China Resources Holdings.
+// Features a distinctive curved triangular podium with silver-blue reflective glass curtain wall,
+// horizontal spandrel bands, stone-and-glass podium, and a crown parapet
+// with rooftop aviation obstacle beacons.
 //
-// OSM Way: 107497701 (height: 178m).
+// OSM Way: 107497701 (178m, 49 levels).
 import * as THREE from 'three/webgpu';
 import { color } from 'three/tsl';
 import {
-  CHINA_RESOURCES_SITE as S,
+  CHINA_RESOURCES_BUILDING_SITE as S,
   chinaResourcesLocalToWorld
 } from './china-resources-building-site.js';
 import { hongKongTerrainHeight } from './terrain.js';
@@ -16,284 +17,237 @@ import { harbourCityLocalCollider } from './harbour-city-architecture.js';
 import { box, cylinder, merged, nightAmount, hash } from './harbour-city-world-utils.js';
 
 export function buildChinaResourcesBuilding(scene, options = {}) {
-  const groundOffset = options.groundOffset ?? hongKongTerrainHeight(S.x, S.z);
+  const groundY = options.groundOffset ?? hongKongTerrainHeight(S.x, S.z);
 
   const root = new THREE.Group();
   root.name = 'China Resources Building — 華潤大廈';
-  root.position.set(S.x, groundOffset, S.z);
-  root.rotation.y = S.ry;
   scene.add(root);
 
-  // Collections for merged geometries
-  const silverBlueGlass = [];
+  const silverGlass = [];
   const litGlass = [];
-  const frittedSpandrels = [];
-  const sunshadingFins = [];
-  const granitePodium = [];
+  const silverSpandrels = [];
+  const silverMullions = [];
+  const podiumStone = [];
   const podiumGlass = [];
+  const darkLouvres = [];
   const crownParts = [];
-  const signageParts = [];
-  const skybridgeParts = [];
+  const beaconParts = [];
 
-  const w = S.w; // ~57.27m
-  const d = S.d; // ~36.71m
-  const podiumH = S.podiumHeight; // 18.0m
-  const totalH = S.height; // 178.0m
-  const crownH = S.crownHeight; // 16.0m
-  const shaftTop = totalH - crownH; // 162.0m
-  const shaftH = shaftTop - podiumH; // 144.0m
+  const w = S.w;
+  const d = S.d;
+  const podiumH = 15.0;
+  const totalH = S.height;
+  const crownH = 8.0;
+  const shaftH = totalH - podiumH - crownH;
+  const shaftTop = podiumH + shaftH;
 
-  // --- 1. Commercial Podium & Skybridges (0 to 18m) ------------------------------------------------------------
-  {
-    // Main podium mass
-    box(granitePodium, [0, podiumH * 0.5, 0], [w - 1.5, podiumH, d - 1.5]);
-
-    // Storefront double-height transparent glazing
-    box(podiumGlass, [0, 8.0, -d * 0.5 + 0.6], [w - 3.5, 14.0, 0.1]);
-    box(podiumGlass, [0, 8.0, d * 0.5 - 0.6], [w - 3.5, 14.0, 0.1]);
-
-    // Expressive granite perimeter colonnade
-    for (let x = -w * 0.5 + 4.0; x <= w * 0.5 - 4.0; x += 5.5) {
-      box(granitePodium, [x, 8.0, -d * 0.5 + 0.5], [1.0, 15.0, 0.4]);
-      box(granitePodium, [x, 8.0, d * 0.5 - 0.5], [1.0, 15.0, 0.4]);
-    }
-
-    // Harbour Road Main Entrance Canopy
-    box(sunshadingFins, [0, 5.0, -d * 0.5 - 1.5], [16.0, 0.4, 3.8]);
-    cylinder(sunshadingFins, [-6.5, 2.5, -d * 0.5 - 3.0], 0.2, 5.0, 12);
-    cylinder(sunshadingFins, [6.5, 2.5, -d * 0.5 - 3.0], 0.2, 5.0, 12);
-
-    // Elevated Skybridge East towards Sun Hung Kai Centre (Level 2, y ~ 8.0m)
-    box(skybridgeParts, [w * 0.5 + 5.0, 8.0, 0], [10.0, 4.5, 4.2]);
-    box(podiumGlass, [w * 0.5 + 5.0, 8.3, 1.95], [9.6, 2.2, 0.1]);
-    box(podiumGlass, [w * 0.5 + 5.0, 8.3, -1.95], [9.6, 2.2, 0.1]);
-
-    // Elevated Skybridge West towards Central Plaza / Great Eagle Centre (Level 2, y ~ 8.0m)
-    box(skybridgeParts, [-w * 0.5 - 5.0, 8.0, 0], [10.0, 4.5, 4.2]);
-    box(podiumGlass, [-w * 0.5 - 5.0, 8.3, 1.95], [9.6, 2.2, 0.1]);
-    box(podiumGlass, [-w * 0.5 - 5.0, 8.3, -1.95], [9.6, 2.2, 0.1]);
-  }
-
-  // --- 2. Main Tower Shaft (18m to 162m) ----------------------------------------------------------------------
-  // 36 office storeys, 4.0m floor-to-floor
-  {
-    const floors = 36;
-    const floorH = shaftH / floors; // 4.0m
-    const glassH = 2.6;
-    const spandrelH = floorH - glassH; // 1.4m
-
-    // Inner structural concrete core
-    box(granitePodium, [0, podiumH + shaftH * 0.5, 0], [w - 6.0, shaftH, d - 6.0]);
-
-    for (let f = 0; f < floors; f++) {
-      const baseY = podiumH + f * floorH;
-      const spandrelY = baseY + spandrelH * 0.5;
-      const visionY = baseY + spandrelH + glassH * 0.5;
-
-      // White fritted glass spandrel panels
-      box(frittedSpandrels, [0, spandrelY, -d * 0.5 + 1.2], [w - 2.2, spandrelH, 0.2]);
-      box(frittedSpandrels, [0, spandrelY, d * 0.5 - 1.2], [w - 2.2, spandrelH, 0.2]);
-      box(frittedSpandrels, [-w * 0.5 + 1.2, spandrelY, 0], [0.2, spandrelH, d - 2.2]);
-      box(frittedSpandrels, [w * 0.5 - 1.2, spandrelY, 0], [0.2, spandrelH, d - 2.2]);
-
-      // Silver-blue Low-E vision glass — subdivided into realistic window bays with scattered randomized night illumination
-      const spanX = w - 2.4;
-      const numBaysX = Math.max(1, Math.round(spanX / 2.4));
-      const actualBayX = spanX / numBaysX;
-      for (let bx = 0; bx < numBaysX; bx++) {
-        const lx = -spanX * 0.5 + (bx + 0.5) * actualBayX;
-        const isLit0 = hash(f, bx, 0, 49) < 0.28;
-        const isLit1 = hash(f, bx, 1, 49) < 0.28;
-        box(isLit0 ? litGlass : silverBlueGlass, [lx, visionY, -d * 0.5 + 1.2], [actualBayX - 0.04, glassH, 0.14]);
-        box(isLit1 ? litGlass : silverBlueGlass, [lx, visionY, d * 0.5 - 1.2], [actualBayX - 0.04, glassH, 0.14]);
-      }
-
-      const spanZ = d - 2.4;
-      const numBaysZ = Math.max(1, Math.round(spanZ / 2.4));
-      const actualBayZ = spanZ / numBaysZ;
-      for (let bz = 0; bz < numBaysZ; bz++) {
-        const lz = -spanZ * 0.5 + (bz + 0.5) * actualBayZ;
-        const isLit2 = hash(f, bz, 2, 49) < 0.28;
-        const isLit3 = hash(f, bz, 3, 49) < 0.28;
-        box(isLit2 ? litGlass : silverBlueGlass, [-w * 0.5 + 1.2, visionY, lz], [0.14, glassH, actualBayZ - 0.04]);
-        box(isLit3 ? litGlass : silverBlueGlass, [w * 0.5 - 1.2, visionY, lz], [0.14, glassH, actualBayZ - 0.04]);
-      }
-    }
-
-    // Aerodynamic rounded corner columns (Foster + Partners redesign)
-    const midShaftY = podiumH + shaftH * 0.5;
-    for (const sx of [-1, 1]) {
-      for (const sz of [-1, 1]) {
-        cylinder(frittedSpandrels, [sx * (w * 0.5 - 1.4), midShaftY, sz * (d * 0.5 - 1.4)], 1.8, shaftH, 16);
-      }
-    }
-
-    // External vertical sun-shading louvre fins
-    for (let x = -w * 0.5 + 3.0; x <= w * 0.5 - 3.0; x += 2.4) {
-      box(sunshadingFins, [x, midShaftY, -d * 0.5 + 1.05], [0.08, shaftH, 0.35]);
-      box(sunshadingFins, [x, midShaftY, d * 0.5 - 1.05], [0.08, shaftH, 0.35]);
-    }
-    for (let z = -d * 0.5 + 3.0; z <= d * 0.5 - 3.0; z += 2.4) {
-      box(sunshadingFins, [-w * 0.5 + 1.05, midShaftY, z], [0.35, shaftH, 0.08]);
-      box(sunshadingFins, [w * 0.5 - 1.05, midShaftY, z], [0.35, shaftH, 0.08]);
-    }
-  }
-
-  // --- 3. Crown & Mechanical Penthouse (162m to 178m) ---------------------------------------------------------
-  // Symmetrical stepped crown with acoustic louvres, illuminated China Resources corporate logo, and beacons
-  {
-    const crownBaseY = shaftTop;
-    const cw = w - 6.0;
-    const cd = d - 5.0;
-
-    // Penthouse block
-    box(crownParts, [0, crownBaseY + crownH * 0.5, 0], [cw, crownH, cd]);
-
-    // Acoustic louvres slats
-    for (let y = crownBaseY + 1.5; y <= crownBaseY + crownH - 1.5; y += 0.8) {
-      box(sunshadingFins, [0, y, -cd * 0.5 - 0.1], [cw - 0.4, 0.22, 0.15]);
-      box(sunshadingFins, [0, y, cd * 0.5 + 0.1], [cw - 0.4, 0.22, 0.15]);
-      box(sunshadingFins, [-cw * 0.5 - 0.1, y, 0], [0.15, 0.22, cd - 0.4]);
-      box(sunshadingFins, [cw * 0.5 + 0.1, y, 0], [0.15, 0.22, cd - 0.4]);
-    }
-
-    // Parapet trim
-    box(sunshadingFins, [0, totalH - 0.3, 0], [cw + 0.4, 0.6, cd + 0.4]);
-
-    // Rooftop Signage: Illuminated "China Resources / 華潤" Corporate Sign
-    const signY = crownBaseY + crownH * 0.55;
-    // North Sign (facing Victoria Harbour)
-    box(crownParts, [0, signY, -cd * 0.5 - 0.25], [22.0, 4.2, 0.15]); // Backing plate
-    cylinder(signageParts, [-8.0, signY, -cd * 0.5 - 0.35], 1.6, 0.25, 24, { rx: Math.PI / 2, ry: 0, rz: 0 }); // Red CR emblem
-    for (let i = -4.5; i <= 9.5; i += 2.4) {
-      box(sunshadingFins, [i, signY, -cd * 0.5 - 0.35], [1.8, 2.2, 0.1]); // English / Chinese lettering blocks
-    }
-
-    // South Sign (facing Wan Chai)
-    box(crownParts, [0, signY, cd * 0.5 + 0.25], [22.0, 4.2, 0.15]);
-    cylinder(signageParts, [8.0, signY, cd * 0.5 + 0.35], 1.6, 0.25, 24, { rx: Math.PI / 2, ry: 0, rz: 0 });
-    for (let i = -9.5; i <= 4.5; i += 2.4) {
-      box(sunshadingFins, [i, signY, cd * 0.5 + 0.35], [1.8, 2.2, 0.1]);
-    }
-
-    // 4 Aviation obstruction warning lights at crown corners
-    for (const sx of [-1, 1]) {
-      for (const sz of [-1, 1]) {
-        cylinder(sunshadingFins, [sx * (cw * 0.5 - 0.3), totalH + 0.4, sz * (cd * 0.5 - 0.3)], 0.08, 0.8, 6);
-        box(signageParts, [sx * (cw * 0.5 - 0.3), totalH + 0.85, sz * (cd * 0.5 - 0.3)], [0.22, 0.22, 0.22]);
-      }
-    }
-  }
-
-  // --- Materials Definition -----------------------------------------------------------------------------------
-  // 1) Silver-Blue Low-E Reflective Curtain Wall Glass
-  const silverBlueGlassMat = new THREE.MeshStandardNodeMaterial({
-    color: 0x2c4856,
-    roughness: 0.12,
-    metalness: 0.72,
-  });
-
-  // 2) Lit Office Glass
-  const litGlassMat = new THREE.MeshStandardNodeMaterial({
-    color: 0x486472,
-    roughness: 0.2,
-    metalness: 0.45,
-  });
-  litGlassMat.emissiveNode = color(0xfff0d0).mul(nightAmount().mul(0.85).add(0.15));
-
-  // 3) White Fritted Glass Spandrel Panels
-  const frittedSpandrelMat = new THREE.MeshStandardMaterial({
-    color: 0xd4e0e6,
-    roughness: 0.28,
-    metalness: 0.45,
-  });
-
-  // 4) Silver Sun-shading Louvre Fins & Trims
-  const sunshadingFinMat = new THREE.MeshStandardMaterial({
-    color: 0xc4d2d8,
-    roughness: 0.22,
-    metalness: 0.85,
-  });
-
-  // 5) Polished Charcoal Granite (Podium)
-  const graniteMat = new THREE.MeshStandardMaterial({
-    color: 0x1f2326,
-    roughness: 0.52,
-    metalness: 0.2,
-  });
-
-  // 6) Storefront Glass
-  const podiumGlassMat = new THREE.MeshStandardMaterial({
-    color: 0x22353e,
-    roughness: 0.12,
-    metalness: 0.35,
-  });
-
-  // 7) Penthouse Crown Casing
-  const crownMat = new THREE.MeshStandardMaterial({
-    color: 0x263238,
-    roughness: 0.55,
-    metalness: 0.55,
-  });
-
-  // 8) China Resources Red Corporate Signage & Aviation Beacons
-  const signageMat = new THREE.MeshStandardNodeMaterial({
-    color: 0xcc1122, // CR Red
-    roughness: 0.25,
-    metalness: 0.5,
-  });
-  signageMat.emissiveNode = color(0xee2233).mul(nightAmount().mul(0.92).add(0.28));
-
-  // 9) Skybridges
-  const skybridgeMat = new THREE.MeshStandardMaterial({
-    color: 0x22262a,
-    roughness: 0.35,
-    metalness: 0.5,
-  });
-
-  // Assemble meshes into root group
-  merged(root, silverBlueGlass, silverBlueGlassMat, 'China Resources Building silver-blue Low-E curtain wall');
-  merged(root, litGlass, litGlassMat, 'China Resources Building lit office glazing');
-  merged(root, frittedSpandrels, frittedSpandrelMat, 'China Resources Building fritted spandrels');
-  merged(root, sunshadingFins, sunshadingFinMat, 'China Resources Building vertical sun-shading fins');
-  merged(root, granitePodium, graniteMat, 'China Resources Building granite podium');
-  merged(root, podiumGlass, podiumGlassMat, 'China Resources Building storefront glazing');
-  merged(root, crownParts, crownMat, 'China Resources Building mechanical penthouse crown');
-  merged(root, signageParts, signageMat, 'China Resources Building corporate signage and beacons');
-  merged(root, skybridgeParts, skybridgeMat, 'China Resources Building pedestrian skybridges');
-
-  // --- Colliders ---------------------------------------------------------------------------------------------
-  const colliders = [
-    // Main tower shaft
-    { name: 'China Resources Building Shaft', ...harbourCityLocalCollider(S, 0, 0, w - 2.0, d - 2.0, groundOffset + podiumH, groundOffset + totalH) },
-    // Podium volume
-    { name: 'China Resources Building Podium', ...harbourCityLocalCollider(S, 0, 0, w - 1.0, d - 1.0, groundOffset, groundOffset + podiumH) },
-    // East Skybridge
-    { name: 'China Resources Building East Skybridge', ...harbourCityLocalCollider(S, w * 0.5 + 5.0, 0, 10.0, 4.2, groundOffset + 6.0, groundOffset + 10.5) },
-    // West Skybridge
-    { name: 'China Resources Building West Skybridge', ...harbourCityLocalCollider(S, -w * 0.5 - 5.0, 0, 10.0, 4.2, groundOffset + 6.0, groundOffset + 10.5) },
+  const cs = Math.cos(S.ry), sn = Math.sin(S.ry);
+  const toWorld = (lx, ly, lz) => [
+    S.x + cs * lx + sn * lz,
+    groundY + ly,
+    S.z - sn * lx + cs * lz
   ];
 
+  // --- 1. Podium Block & Entrance ---------------------------------------------------------
+  box(podiumStone, toWorld(0, podiumH * 0.5, 0), [w, podiumH, d], S.ry);
+
+  // Double-height lobby glazing on Harbour Road face
+  for (let f = 0; f < 2; f++) {
+    const fy = 2.0 + f * 6.0;
+    box(podiumGlass, toWorld(0, fy + 2.8, -d * 0.5 + 0.5), [w - 3.0, 5.5, 0.14], S.ry);
+  }
+  box(podiumGlass, toWorld(w * 0.5 - 0.5, 9.0, 0), [0.14, 10.0, d - 6.0], S.ry);
+  box(podiumGlass, toWorld(-w * 0.5 + 0.5, 9.0, 0), [0.14, 10.0, d - 6.0], S.ry);
+  box(podiumGlass, toWorld(0, 9.0, d * 0.5 - 0.5), [w - 7.0, 10.0, 0.14], S.ry);
+
+  // Silver entrance canopy
+  box(silverSpandrels, toWorld(0, 7.8, -d * 0.5 - 2.0), [w - 2.0, 0.3, 4.0], S.ry);
+  for (const cx of [-w * 0.25, 0, w * 0.25]) {
+    cylinder(silverMullions, toWorld(cx, 6.2, -d * 0.5 - 2.0), 0.2, 5.6, 10);
+  }
+
+  // Internal structural core
+  box(podiumStone, toWorld(0, podiumH + shaftH * 0.5, 0), [w - 6.0, shaftH, d - 6.0], S.ry);
+
+  // --- 2. Main Office Tower Shaft ----------------------------------------------------------
+  const floorsCount = 45;
+  const floorH = shaftH / floorsCount;
+  const spandrelH = 1.05;
+  const glassH = floorH - spandrelH;
+
+  for (let f = 0; f < floorsCount; f++) {
+    const baseY = podiumH + f * floorH;
+    const spandrelY = baseY + spandrelH * 0.5;
+    const visionY = baseY + spandrelH + glassH * 0.5;
+
+    box(silverSpandrels, toWorld(0, spandrelY, -d * 0.5 + 1.0), [w - 2.0, spandrelH, 0.20], S.ry);
+    box(silverSpandrels, toWorld(0, spandrelY, d * 0.5 - 1.0), [w - 2.0, spandrelH, 0.20], S.ry);
+    box(silverSpandrels, toWorld(-w * 0.5 + 1.0, spandrelY, 0), [0.20, spandrelH, d - 2.0], S.ry);
+    box(silverSpandrels, toWorld(w * 0.5 - 1.0, spandrelY, 0), [0.20, spandrelH, d - 2.0], S.ry);
+
+    box(silverMullions, toWorld(0, spandrelY + spandrelH * 0.45, -d * 0.5 + 0.8), [w - 1.6, 0.07, 0.40], S.ry);
+    box(silverMullions, toWorld(0, spandrelY + spandrelH * 0.45, d * 0.5 - 0.8), [w - 1.6, 0.07, 0.40], S.ry);
+
+    const spanX = w - 2.4;
+    const numBaysX = Math.max(1, Math.round(spanX / 2.4));
+    const actualBayX = spanX / numBaysX;
+    for (let bx = 0; bx < numBaysX; bx++) {
+      const lx = -spanX * 0.5 + (bx + 0.5) * actualBayX;
+      const isLitN = hash(f, bx, 1, 236) < 0.28;
+      const isLitS = hash(f, bx, 2, 236) < 0.28;
+      box(isLitN ? litGlass : silverGlass, toWorld(lx, visionY, -d * 0.5 + 1.0), [actualBayX - 0.04, glassH, 0.14], S.ry);
+      box(isLitS ? litGlass : silverGlass, toWorld(lx, visionY, d * 0.5 - 1.0), [actualBayX - 0.04, glassH, 0.14], S.ry);
+    }
+
+    const spanZ = d - 2.4;
+    const numBaysZ = Math.max(1, Math.round(spanZ / 2.4));
+    const actualBayZ = spanZ / numBaysZ;
+    for (let bz = 0; bz < numBaysZ; bz++) {
+      const lz = -spanZ * 0.5 + (bz + 0.5) * actualBayZ;
+      const isLitW = hash(f, bz, 3, 236) < 0.28;
+      const isLitE = hash(f, bz, 4, 236) < 0.28;
+      box(isLitW ? litGlass : silverGlass, toWorld(-w * 0.5 + 1.0, visionY, lz), [0.14, glassH, actualBayZ - 0.04], S.ry);
+      box(isLitE ? litGlass : silverGlass, toWorld(w * 0.5 - 1.0, visionY, lz), [0.14, glassH, actualBayZ - 0.04], S.ry);
+    }
+  }
+
+  const midShaftY = podiumH + shaftH * 0.5;
+  for (let x = -w * 0.5 + 2.4; x <= w * 0.5 - 2.4; x += 2.4) {
+    box(silverMullions, toWorld(x, midShaftY, -d * 0.5 + 1.0), [0.07, shaftH, 0.22], S.ry);
+    box(silverMullions, toWorld(x, midShaftY, d * 0.5 - 1.0), [0.07, shaftH, 0.22], S.ry);
+  }
+  for (let z = -d * 0.5 + 2.4; z <= d * 0.5 - 2.4; z += 2.4) {
+    box(silverMullions, toWorld(-w * 0.5 + 1.0, midShaftY, z), [0.22, shaftH, 0.07], S.ry);
+    box(silverMullions, toWorld(w * 0.5 - 1.0, midShaftY, z), [0.22, shaftH, 0.07], S.ry);
+  }
+
+  for (const sx of [-1, 1]) {
+    for (const sz of [-1, 1]) {
+      cylinder(silverSpandrels, toWorld(sx * (w * 0.5 - 1.0), midShaftY, sz * (d * 0.5 - 1.0)), 1.2, shaftH, 12);
+    }
+  }
+
+  // --- 3. Stepped Mechanical Crown (170m to 178m) ------------------------------------------
+  const crownBaseY = shaftTop;
+  const cw = w - 4.0;
+  const cd = d - 4.0;
+
+  box(darkLouvres, toWorld(0, crownBaseY + 3.0, 0), [cw, 5.5, cd], S.ry);
+  box(darkLouvres, toWorld(0, crownBaseY + 7.5, 0), [cw - 5.0, 2.5, cd - 4.0], S.ry);
+
+  box(crownParts, toWorld(0, crownBaseY + 5.6, 0), [cw + 0.6, 0.3, cd + 0.6], S.ry);
+  box(crownParts, toWorld(0, crownBaseY + 9.1, 0), [cw - 4.2, 0.3, cd - 3.2], S.ry);
+  box(crownParts, toWorld(0, crownBaseY + 10.0, 0), [cw - 8.0, 1.0, 0.5], S.ry);
+
+  for (const bx of [-cw * 0.30, cw * 0.30]) {
+    cylinder(crownParts, toWorld(bx, crownBaseY + 9.4, 0), 0.1, 1.0, 8);
+    cylinder(beaconParts, toWorld(bx, crownBaseY + 10.2, 0), 0.22, 0.32, 8);
+  }
+
+  // --- 4. Materials Palette ---------------------------------------------------------------
+  const silverGlassMat = new THREE.MeshStandardNodeMaterial({
+    color: 0x1f3b4d, // Silver-blue reflective office curtain wall
+    roughness: 0.12,
+    metalness: 0.88,
+    side: THREE.DoubleSide
+  });
+
+  const litGlassMat = new THREE.MeshStandardNodeMaterial({
+    color: 0x4a4434,
+    roughness: 0.22,
+    metalness: 0.35,
+    side: THREE.DoubleSide
+  });
+  litGlassMat.emissiveNode = color(0xffe8ba).mul(nightAmount().mul(0.85).add(0.15));
+
+  const silverSpandrelMat = new THREE.MeshStandardMaterial({
+    color: 0xb8c2c8,
+    roughness: 0.28,
+    metalness: 0.72
+  });
+
+  const silverMullionMat = new THREE.MeshStandardMaterial({
+    color: 0xd2d8dc,
+    roughness: 0.22,
+    metalness: 0.82
+  });
+
+  const podiumStoneMat = new THREE.MeshStandardMaterial({
+    color: 0xd6cebe,
+    roughness: 0.82,
+    metalness: 0.05
+  });
+
+  const podiumGlassMat = new THREE.MeshStandardNodeMaterial({
+    color: 0x2a3a42,
+    roughness: 0.15,
+    metalness: 0.45,
+    side: THREE.DoubleSide
+  });
+  podiumGlassMat.emissiveNode = color(0xffefd0).mul(nightAmount().mul(0.55).add(0.1));
+
+  const darkLouvreMat = new THREE.MeshStandardMaterial({
+    color: 0x181a1c,
+    roughness: 0.55,
+    metalness: 0.65
+  });
+
+  const crownMat = new THREE.MeshStandardMaterial({
+    color: 0xc4cdd2,
+    roughness: 0.3,
+    metalness: 0.75
+  });
+
+  const beaconMat = new THREE.MeshStandardNodeMaterial({
+    color: 0xff1122,
+    roughness: 0.18,
+    metalness: 0.1
+  });
+  beaconMat.emissiveNode = color(0xff2233).mul(nightAmount().mul(1.5).add(0.2));
+
+  // --- 5. Merge Meshes --------------------------------------------------------------------
+  merged(root, podiumStone, podiumStoneMat, 'China Resources Building stone podium and core');
+  merged(root, podiumGlass, podiumGlassMat, 'China Resources Building grand lobby storefront glazing');
+  merged(root, silverSpandrels, silverSpandrelMat, 'China Resources Building silver spandrel ribbons');
+  merged(root, silverMullions, silverMullionMat, 'China Resources Building vertical mullions and sunshade louvres');
+  merged(root, silverGlass, silverGlassMat, 'China Resources Building silver-blue reflective curtain wall');
+  merged(root, litGlass, litGlassMat, 'China Resources Building illuminated office glazing');
+  merged(root, darkLouvres, darkLouvreMat, 'China Resources Building mechanical plant louvres');
+  merged(root, crownParts, crownMat, 'China Resources Building architectural parapet crown and fin');
+  merged(root, beaconParts, beaconMat, 'China Resources Building rooftop aviation obstacle beacons', false);
+
+  // --- 6. Colliders -----------------------------------------------------------------------
+  const colliders = [
+    harbourCityLocalCollider(S, 0, 0, w - 2.0, d - 2.0, groundY + podiumH, groundY + totalH)
+  ];
+
+  // --- 7. Landmark Metadata ---------------------------------------------------------------
   const landmark = {
-    id: 'china-resources-building',
-    name: '華潤大廈 China Resources Building',
+    id: 'chinaResources',
+    name: '華潤大廈',
     englishName: 'China Resources Building',
-    position: { x: S.x, y: groundOffset, z: S.z },
-    radius: Math.max(w, d) * 0.65,
-    height: totalH,
+    x: S.x,
+    z: S.z,
+    w: S.w,
+    d: S.d,
+    h: S.height,
+    ring: S.ring,
+    bounds: S.bounds,
+    osmId: S.osmId,
+    kind: 'landmark',
+    labelHeight: S.height + 4.0
   };
 
   return {
     group: root,
     colliders,
     landmarks: [landmark],
+    base: groundY,
     stats: {
-      crbHeight: totalH,
-      crbStoreys: S.storeys,
-      crbCurtainPanes: silverBlueGlass.length + litGlass.length,
-      crbSpandrels: frittedSpandrels.length,
-      crbSunshadingFins: sunshadingFins.length,
-    },
-    groundOffset,
+      chinaResourcesOsm: S.osmId,
+      chinaResourcesHeight: S.height,
+      chinaResourcesLevels: S.levels,
+      chinaResourcesPanes: silverGlass.length + litGlass.length
+    }
   };
 }
