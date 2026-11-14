@@ -418,6 +418,8 @@ export const LANDMARK_DISTRICT_MAP = Object.freeze({
   'ocean-centre': 'yau-tsim',
   'princeHotel': 'yau-tsim',
   'prince-hotel': 'yau-tsim',
+  'langhamHongkong': 'yau-tsim',
+  'langham-hongkong': 'yau-tsim',
   'gateway1': 'yau-tsim',
   'gateway-tower-one': 'yau-tsim',
   'gateway2': 'yau-tsim',
