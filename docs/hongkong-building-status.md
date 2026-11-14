@@ -8,16 +8,16 @@
 
 | 口徑 | 數量 | 說明 |
 | --- | ---: | --- |
-| 原 inventory 正式「已加入」 | **44** | 全部同時標示精修及 Landmark；有專用 world module 並接入 active `buildSimpleHongKongWorld`。 |
+| 原 inventory 正式「已加入」 | **47** | 全部同時標示精修及 Landmark；有專用 world module 並接入 active `buildSimpleHongKongWorld`。 |
 | 原表待製作、但實際已由其他組件生成，現已補精修 | **5** | 大會堂高／低座、HKCEC 新／舊翼、茶具文物館；各自有原 ID 精修驗證，仍不是新增獨立 Landmark。 |
-| 有對應場景模型且已精修的清單行（上述兩類合計） | **49** | 44 個正式獨立 Landmark 加 5 個已精修公共／綜合組件。 |
-| 未見專用實作、仍應視為待製作 | **51** | 沒有可核實的專用建模及 active 整合；不以舊 generic landmark 盒體充當完成。 |
+| 有對應場景模型且已精修的清單行（上述兩類合計） | **52** | 47 個正式獨立 Landmark 加 5 個已精修公共／綜合組件。 |
+| 未見專用實作、仍應視為待製作 | **48** | 沒有可核實的專用建模及 active 整合；不以舊 generic landmark 盒體充當完成。 |
 
-**一句講晒：正式獨立 Landmark 44 幢；連同已補精修的 5 個公共／綜合組件，100 行入面有 49 行有模型且完成精修；仍有 51 行未做。**
+**一句講晒：正式獨立 Landmark 47 幢；連同已補精修的 5 個公共／綜合組件，100 行入面有 52 行有模型且完成精修；仍有 48 行未做。**
 
-inventory 已同步更新為「49 已加入／51 待製作」，並保留「44 個正式獨立 Landmark」口徑；這份 audit 將组件精修與獨立 Landmark 分開，避免把兩種完成混為一談。
+inventory 已同步更新為「52 已加入／48 待製作」，並保留「47 個正式獨立 Landmark」口徑；這份 audit 將组件精修與獨立 Landmark 分開，避免把兩種完成混為一談。
 
-## A. 正式已加入、精修及 Landmark（44）
+## A. 正式已加入、精修及 Landmark（47）
 
 | ID | 建築物 | 地區 | 主要實作 |
 | --- | --- | --- | --- |
@@ -65,6 +65,9 @@ inventory 已同步更新為「49 已加入／51 待製作」，並保留「44 �
 | `HK-B0042` | 香港JW萬豪酒店 JW Marriott Hotel Hong Kong | 金鐘 | `jw-marriott-world.js` |
 | `HK-B0045` | 太古廣場一座 One Pacific Place | 金鐘 | `one-pacific-place-world.js` |
 | `HK-B0046` | 告羅士打大廈 Gloucester Tower | 中環 | `gloucester-tower-world.js` |
+| `HK-B0050` | 萬麗海景酒店 Renaissance Hong Kong Harbour View Hotel | 灣仔 | `renaissance-harbour-view-world.js` |
+| `HK-B0051` | 大新金融中心 Dah Sing Financial Centre | 灣仔 | `dah-sing-financial-centre-world.js` |
+| `HK-B0053` | 海港中心 Harbour Centre | 灣仔 | `harbour-centre-world.js` |
 
 ## B. 組件模型已補原 ID 精修（5）
 
@@ -84,7 +87,7 @@ inventory 已同步更新為「49 已加入／51 待製作」，並保留「44 �
 - `HK-CENTRAL-CH` 同時生成大會堂 High Block、Low Block、附屬建築及 Memorial Garden；這裡只把原清單的 B0082／B0100 對應出來，不把附屬設施額外計數。
 - 茶具文物館仍屬香港公園組件，不新增一個獨立 Landmark；但現在由專用 Flagstaff House module 生成，已按 B0093 補上照片導向精修，不再呼叫通用 heritage builder。
 
-## C. 仍待製作／未見專用實作（51）
+## C. 仍待製作／未見專用實作（48）
 
 | ID | 建築物 | 地區 | 原表高度參考 | 位置／footprint 依據 |
 | --- | --- | --- | --- | --- |
@@ -100,10 +103,7 @@ inventory 已同步更新為「49 已加入／51 待製作」，並保留「44 �
 | `HK-B0047` | 世貿中心 wwwtc | 銅鑼灣 | 152 m | OSM relation 19456337 |
 | `HK-B0048` | 新世界大廈 New World Tower | 中環 | 151 m | OSM way 1323550598 |
 | `HK-B0049` | 多盛大廈 Dorset House | 鰂魚涌 | 151 m | OSM way 100652800 |
-| `HK-B0050` | 萬麗海景酒店 Renaissance Hong Kong Harbour View Hotel | 灣仔 | 150 m | OSM way 107497707 |
-| `HK-B0051` | 大新金融中心 Dah Sing Financial Centre | 灣仔 | 150 m | OSM way 200283000 |
 | `HK-B0052` | 美國銀行中心 Bank of America Tower | 金鐘 | 146 m | OSM relation 17045256 |
-| `HK-B0053` | 海港中心 Harbour Centre | 灣仔 | 146 m | OSM relation 18183384 |
 | `HK-B0054` | 鷹君中心 Great Eagle Centre | 灣仔 | 146 m | OSM relation 18183385 |
 | `HK-B0055` | 交易廣場第三座 Three Exchange Square | 中環 | 144 m | OSM way 148554950 |
 | `HK-B0057` | 統一中心 United Centre | 金鐘 | 140 m | OSM way 107336258 |
