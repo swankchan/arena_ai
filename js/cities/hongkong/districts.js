@@ -377,6 +377,7 @@ export const LANDMARK_DISTRICT_MAP = Object.freeze({
   // 東區 Eastern
   'twoTaikoo': 'eastern',
   'two-taikoo-place': 'eastern',
+  'dorsetHouse': 'eastern',
 
   // 南區 Southern
   'oceanPark': 'southern',
