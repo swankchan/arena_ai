@@ -8,12 +8,12 @@
 
 | 口徑 | 數量 | 說明 |
 | --- | ---: | --- |
-| 原 inventory 正式「已加入」 | **52** | 全部同時標示精修及 Landmark；有專用 world module 並接入 active `buildSimpleHongKongWorld`。 |
+| 原 inventory 正式「已加入」 | **54** | 全部同時標示精修及 Landmark；有專用 world module 並接入 active `buildSimpleHongKongWorld`。 |
 | 原表待製作、但實際已由其他組件生成，現已補精修 | **5** | 大會堂高／低座、HKCEC 新／舊翼、茶具文物館；各自有原 ID 精修驗證，仍不是新增獨立 Landmark。 |
-| 有對應場景模型且已精修的清單行（上述兩類合計） | **57** | 52 個正式獨立 Landmark 加 5 個已精修公共／綜合組件。 |
-| 未見專用實作、仍應視為待製作 | **43** | 沒有可核實的專用建模及 active 整合；不以舊 generic landmark 盒體充當完成。 |
+| 有對應場景模型且已精修的清單行（上述兩類合計） | **59** | 54 個正式獨立 Landmark 加 5 個已精修公共／綜合組件。 |
+| 未見專用實作、仍應視為待製作 | **41** | 沒有可核實的專用建模及 active 整合；不以舊 generic landmark 盒體充當完成。 |
 
-**一句講晒：正式獨立 Landmark 52 幢；連同已補精修的 5 個公共／綜合組件，100 行入面有 57 行有模型且完成精修；仍有 43 行未做。**
+**一句講晒：正式獨立 Landmark 54 幢；連同已補精修的 5 個公共／綜合組件，100 行入面有 59 行有模型且完成精修；仍有 41 行未做。**
 
 inventory 已同步更新為「55 已加入／45 待製作」，並保留「50 個正式獨立 Landmark」口徑；這份 audit 將组件精修與獨立 Landmark 分開，避免把兩種完成混為一談。
 
@@ -62,6 +62,8 @@ inventory 已同步更新為「55 已加入／45 待製作」，並保留「50 �
 | `HK-B0090` | 時代廣場 Times Square | 銅鑼灣 | `times-square-world.js` |
 | `HK-B0092` | 終審法院 The Court of Final Appeal | 中環 | `court-of-final-appeal-world.js` |
 | `HK-B0033` | 太古廣場三座 Three Pacific Place | 金鐘 | `three-pacific-place-world.js` |
+| `HK-B0034` | 會展廣場辦公大樓 Convention Plaza Office Tower | 灣仔 | `convention-plaza-office-tower-world.js` |
+| `HK-B0039` | 遠東金融中心 Far East Finance Centre | 金鐘 | `far-east-finance-centre-world.js` |
 | `HK-B0042` | 香港JW萬豪酒店 JW Marriott Hotel Hong Kong | 金鐘 | `jw-marriott-world.js` |
 | `HK-B0045` | 太古廣場一座 One Pacific Place | 金鐘 | `one-pacific-place-world.js` |
 | `HK-B0046` | 告羅士打大廈 Gloucester Tower | 中環 | `gloucester-tower-world.js` |
@@ -97,10 +99,8 @@ inventory 已同步更新為「55 已加入／45 待製作」，並保留「50 �
 | ID | 建築物 | 地區 | 原表高度參考 | 位置／footprint 依據 |
 | --- | --- | --- | --- | --- |
 | `HK-B0032` | 友邦金融中心 AIA Central | 中環 | 185 m | OSM way 107324767 |
-| `HK-B0034` | 會展廣場辦公大樓 Convention Plaza Office Tower | 灣仔 | 181 m | OSM way 107497689 |
 | `HK-B0035` | 入境事務大樓 Immigration Tower（外觀已加入、地台／天橋等待完成） | 灣仔 | 180 m | OSM way 510722228；[現況](immigration-tower.md) |
 | `HK-B0038` | 華潤大廈 China Resources Building | 灣仔 | 178 m | OSM way 107497701 |
-| `HK-B0039` | 遠東金融中心 Far East Finance Centre | 金鐘 | 176 m | OSM way 107336261 |
 | `HK-B0040` | 力寶中心第一座 Lippo Centre Tower 1 | 金鐘 | 172 m | OSM way 107336260 |
 | `HK-B0044` | 香港康得思酒店 Cordis Hong Kong | 旺角 | 162 m | OSM way 185564131 |
 | `HK-B0047` | 世貿中心 wwwtc | 銅鑼灣 | 152 m | OSM relation 19456337 |

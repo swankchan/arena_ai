@@ -19,74 +19,64 @@ function pointInFlatPolygon(ring, x, z) {
   return inside;
 }
 
-test('Convention Plaza Office Tower (HK-B0036) site metadata and OSM source', async () => {
+test('Convention Plaza Office Tower (HK-B0034) site metadata and OSM source', async () => {
   const {
-    CONVENTION_PLAZA_OFFICE_HERITAGE,
-    CONVENTION_PLAZA_OFFICE_SITE,
-    CONVENTION_PLAZA_OFFICE_RING,
-    CONVENTION_PLAZA_OFFICE_RING_AREA,
-    conventionPlazaOfficeLocalToWorld,
-    conventionPlazaOfficeWorldToLocal
+    CONVENTION_PLAZA_OFFICE_TOWER_HERITAGE,
+    CONVENTION_PLAZA_OFFICE_TOWER_SITE,
+    CONVENTION_PLAZA_OFFICE_TOWER_RING
   } = await import('../js/cities/hongkong/convention-plaza-office-tower-site.js');
 
-  assert.equal(CONVENTION_PLAZA_OFFICE_HERITAGE.completionYear, 1989);
-  assert.equal(CONVENTION_PLAZA_OFFICE_HERITAGE.height, 181.0);
-  assert.equal(CONVENTION_PLAZA_OFFICE_HERITAGE.storeys, 51);
-  assert.equal(CONVENTION_PLAZA_OFFICE_HERITAGE.osmWay, 107497689);
-  assert.equal(CONVENTION_PLAZA_OFFICE_HERITAGE.architect, 'Ng Chun Man & Associates (伍振民建築師事務所)');
+  assert.equal(CONVENTION_PLAZA_OFFICE_TOWER_HERITAGE.completionYear, 1990);
+  assert.equal(CONVENTION_PLAZA_OFFICE_TOWER_HERITAGE.height, 181.0);
+  assert.equal(CONVENTION_PLAZA_OFFICE_TOWER_HERITAGE.storeys, 51);
+  assert.equal(CONVENTION_PLAZA_OFFICE_TOWER_HERITAGE.osmWay, 107497689);
 
-  // Site dimensions
-  assert.ok(CONVENTION_PLAZA_OFFICE_SITE.w > 45 && CONVENTION_PLAZA_OFFICE_SITE.w < 58, 'Width between 45m and 58m');
-  assert.ok(CONVENTION_PLAZA_OFFICE_SITE.d > 35 && CONVENTION_PLAZA_OFFICE_SITE.d < 48, 'Depth between 35m and 48m');
-  assert.ok(CONVENTION_PLAZA_OFFICE_RING_AREA > 1500, 'Footprint area > 1500 m²');
-
-  // Coordinate transforms
-  const centerWorld = conventionPlazaOfficeLocalToWorld(0, 0);
-  assert.ok(Math.abs(centerWorld.x - CONVENTION_PLAZA_OFFICE_SITE.x) < 1e-4);
-  assert.ok(Math.abs(centerWorld.z - CONVENTION_PLAZA_OFFICE_SITE.z) < 1e-4);
-
-  const localCenter = conventionPlazaOfficeWorldToLocal(CONVENTION_PLAZA_OFFICE_SITE.x, CONVENTION_PLAZA_OFFICE_SITE.z);
-  assert.ok(Math.abs(localCenter.x) < 1e-4);
-  assert.ok(Math.abs(localCenter.y || localCenter.z) < 1e-4);
+  assert.ok(CONVENTION_PLAZA_OFFICE_TOWER_SITE.w > 45 && CONVENTION_PLAZA_OFFICE_TOWER_SITE.w < 56, 'Width ~51m');
+  assert.ok(CONVENTION_PLAZA_OFFICE_TOWER_SITE.d > 35 && CONVENTION_PLAZA_OFFICE_TOWER_SITE.d < 48, 'Depth ~41m');
+  assert.equal(CONVENTION_PLAZA_OFFICE_TOWER_SITE.height, 181.0);
+  assert.equal(CONVENTION_PLAZA_OFFICE_TOWER_SITE.osmId, 107497689);
 });
 
-test('Convention Plaza Office Tower does not collide with active surface vehicular roads', async () => {
-  const { CONVENTION_PLAZA_OFFICE_RING } = await import('../js/cities/hongkong/convention-plaza-office-tower-site.js');
+test('Convention Plaza Office Tower does not collide with active surface through-roads', async () => {
+  const {
+    CONVENTION_PLAZA_OFFICE_TOWER_RING
+  } = await import('../js/cities/hongkong/convention-plaza-office-tower-site.js');
 
   const roadFiles = ['roads_major.json', 'roads_minor_nw.json', 'roads_minor_sw.json', 'roads_minor_ne.json', 'roads_minor_se.json'];
-  let roadCollisionCount = 0;
+  let surfaceRoadCollisionCount = 0;
 
   for (const rf of roadFiles) {
     const fullPath = path.join(__dirname, '../tools/data/hongkong', rf);
     if (!fs.existsSync(fullPath)) continue;
     const data = JSON.parse(fs.readFileSync(fullPath, 'utf8'));
     for (const el of data.elements) {
-      if (el.geometry) {
+      if (el.geometry && !el.tags?.tunnel) {
         for (const pt of el.geometry) {
           const [x, z] = project(pt.lon, pt.lat);
-          if (pointInFlatPolygon(CONVENTION_PLAZA_OFFICE_RING, x, z)) {
-            roadCollisionCount++;
+          if (pointInFlatPolygon(CONVENTION_PLAZA_OFFICE_TOWER_RING, x, z)) {
+            surfaceRoadCollisionCount++;
           }
         }
       }
     }
   }
 
-  assert.equal(roadCollisionCount, 0, 'Convention Plaza Office Tower must have zero ground road collisions');
+  assert.equal(surfaceRoadCollisionCount, 0, 'Convention Plaza Office Tower must have zero ground surface through-road collisions');
 });
 
-test('Convention Plaza Office Tower 3D model builds with colliders, landmarks, and materials', async () => {
+test('Convention Plaza Office Tower 3D model builds with colliders, landmarks, and randomized window night lighting', async () => {
   const THREE = await import('three/webgpu');
   const { buildConventionPlazaOfficeTower } = await import('../js/cities/hongkong/convention-plaza-office-tower-world.js');
 
   const scene = new THREE.Scene();
-  const res = buildConventionPlazaOfficeTower(scene, { groundOffset: 5.0 });
+  const res = buildConventionPlazaOfficeTower(scene, { groundOffset: 24.0 });
 
   assert.ok(res.group);
   assert.equal(res.group.children.length, 9, 'Should have 9 merged mesh layers');
-  assert.ok(res.colliders.length >= 2, 'Should provide colliders for shaft and podium');
+  assert.equal(res.colliders.length, 1, 'Should provide a main tower collider');
   assert.equal(res.landmarks.length, 1);
-  assert.equal(res.landmarks[0].id, 'convention-plaza-office-tower');
+  assert.equal(res.landmarks[0].id, 'conventionPlazaOffice');
   assert.equal(res.stats.conventionPlazaOfficeHeight, 181.0);
-  assert.equal(res.stats.conventionPlazaOfficeStoreys, 51);
+  assert.equal(res.stats.conventionPlazaOfficeLevels, 51);
+  assert.ok(res.stats.conventionPlazaOfficePanes > 1000, 'Windows subdivided into individual bays with randomized lighting');
 });

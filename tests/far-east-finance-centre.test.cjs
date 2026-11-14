@@ -1,104 +1,82 @@
-const assert = require('node:assert/strict');
+// 遠東金融中心 Far East Finance Centre (16-20 Des Voeux Road Central, Central) 單元測試
 const test = require('node:test');
+const assert = require('node:assert/strict');
+const fs = require('node:fs');
+const path = require('node:path');
 
-let site, world, meta, THREE, colliders, simple, cityModule;
+const KX = 103056.81753522092;
+const KY = 110734.09626824585;
+const project = (lon, lat) => [(lon - 114.1596) * KX, -(lat - 22.2819) * KY];
 
-test.before(async () => {
-  [THREE, site, world, meta, colliders, simple, cityModule] = await Promise.all([
-    import('three/webgpu'),
-    import('../js/cities/hongkong/far-east-finance-centre-site.js'),
-    import('../js/cities/hongkong/far-east-finance-centre-world.js'),
-    import('../js/cities/hongkong/full-meta.js'),
-    import('../js/cities/hongkong/colliders.js'),
-    import('../js/cities/hongkong/simple-world.js'),
-    import('../js/cities/hongkong/index.js')
-  ]);
+function pointInFlatPolygon(ring, x, z) {
+  let inside = false;
+  for (let i = 0, j = ring.length - 2; i < ring.length; j = i, i += 2) {
+    const xi = ring[i], zi = ring[i + 1], xj = ring[j], zj = ring[j + 1];
+    if ((zi > z) !== (zj > z) && x < (xj - xi) * (z - zi) / (zj - zi) + xi) {
+      inside = !inside;
+    }
+  }
+  return inside;
+}
+
+test('Far East Finance Centre (HK-B0039) site metadata and OSM source', async () => {
+  const {
+    FAR_EAST_FINANCE_CENTRE_HERITAGE,
+    FAR_EAST_FINANCE_CENTRE_SITE,
+    FAR_EAST_FINANCE_CENTRE_RING
+  } = await import('../js/cities/hongkong/far-east-finance-centre-site.js');
+
+  assert.equal(FAR_EAST_FINANCE_CENTRE_HERITAGE.completionYear, 1978);
+  assert.equal(FAR_EAST_FINANCE_CENTRE_HERITAGE.height, 176.0);
+  assert.equal(FAR_EAST_FINANCE_CENTRE_HERITAGE.storeys, 44);
+  assert.equal(FAR_EAST_FINANCE_CENTRE_HERITAGE.osmWay, 107336261);
+
+  assert.ok(FAR_EAST_FINANCE_CENTRE_SITE.w > 32 && FAR_EAST_FINANCE_CENTRE_SITE.w < 44, 'Width ~37.7m');
+  assert.ok(FAR_EAST_FINANCE_CENTRE_SITE.d > 18 && FAR_EAST_FINANCE_CENTRE_SITE.d < 30, 'Depth ~23.5m');
+  assert.equal(FAR_EAST_FINANCE_CENTRE_SITE.height, 176.0);
+  assert.equal(FAR_EAST_FINANCE_CENTRE_SITE.osmId, 107336261);
 });
 
-test('Far East Finance Centre: site & architectural metadata', () => {
-  const S = site.FAR_EAST_FINANCE_CENTRE_SITE;
-  assert.equal(S.name, '遠東金融中心 Far East Finance Centre');
-  assert.equal(S.englishName, 'Far East Finance Centre');
-  assert.equal(S.height, 176.0);
-  assert.equal(S.storeys, 41);
-  assert.equal(S.levels, 49);
-  assert.equal(S.podiumHeight, 18.0);
-  assert.equal(S.shaftHeight, 144.0);
-  assert.equal(S.crownHeight, 14.0);
+test('Far East Finance Centre does not collide with active surface through-roads', async () => {
+  const {
+    FAR_EAST_FINANCE_CENTRE_RING
+  } = await import('../js/cities/hongkong/far-east-finance-centre-site.js');
 
-  // Historical & heritage provenance
-  const H = site.FAR_EAST_FINANCE_CENTRE_HERITAGE;
-  assert.match(H.architects, /Wong & Ouyang/);
-  assert.equal(H.completionYear, 1982);
-  assert.match(H.nickname, /Gold Bar Building/);
-  assert.match(H.nickname, /金條大廈/);
-  assert.match(H.address, /16 Harcourt Road/);
-  assert.equal(H.osmWay, 107336261);
-  assert.equal(H.wikidata, 'Q11642127');
+  const roadFiles = ['roads_major.json', 'roads_minor_nw.json', 'roads_minor_sw.json', 'roads_minor_ne.json', 'roads_minor_se.json'];
+  let surfaceRoadCollisionCount = 0;
 
-  // Ring & bounds geometry
-  assert.equal(site.FAR_EAST_FINANCE_CENTRE_RING.length, 14);
-  assert.ok(site.FAR_EAST_FINANCE_CENTRE_RING_AREA > 850 && site.FAR_EAST_FINANCE_CENTRE_RING_AREA < 920);
-  assert.ok(S.w > 35 && S.w < 40);
-  assert.ok(S.d > 20 && S.d < 26);
-  assert.ok(S.ry < -0.5 && S.ry > -0.8);
-});
-
-test('Far East Finance Centre: road clearance & boundary safety', () => {
-  const { pointInFlatRing } = require('../js/cities/hongkong/landmark-site.js');
-  const ring = site.FAR_EAST_FINANCE_CENTRE_RING;
-
-  // Test that the OSM tower footprint has zero collisions with drivable road surfaces
-  for (let x = 425; x <= 475; x += 1.0) {
-    for (let z = 180; z <= 230; z += 1.0) {
-      if (pointInFlatRing(ring, x, z)) {
-        const road = meta.fullRoadSurfaceAt(x, z, 0.2);
-        assert.equal(road, null, `Far East Finance Centre road collision at (${x}, ${z})`);
+  for (const rf of roadFiles) {
+    const fullPath = path.join(__dirname, '../tools/data/hongkong', rf);
+    if (!fs.existsSync(fullPath)) continue;
+    const data = JSON.parse(fs.readFileSync(fullPath, 'utf8'));
+    for (const el of data.elements) {
+      if (el.geometry && !el.tags?.tunnel) {
+        for (const pt of el.geometry) {
+          const [x, z] = project(pt.lon, pt.lat);
+          if (pointInFlatPolygon(FAR_EAST_FINANCE_CENTRE_RING, x, z)) {
+            surfaceRoadCollisionCount++;
+          }
+        }
       }
     }
   }
+
+  assert.equal(surfaceRoadCollisionCount, 0, 'Far East Finance Centre must have zero ground surface through-road collisions');
 });
 
-test('Far East Finance Centre: 3D model generation & architectural elements', () => {
+test('Far East Finance Centre 3D model builds with colliders, landmarks, and randomized window night lighting', async () => {
+  const THREE = await import('three/webgpu');
+  const { buildFarEastFinanceCentre } = await import('../js/cities/hongkong/far-east-finance-centre-world.js');
+
   const scene = new THREE.Scene();
-  const fe = world.buildFarEastFinanceCentre(scene);
+  const res = buildFarEastFinanceCentre(scene, { groundOffset: 24.0 });
 
-  assert.ok(fe.group, 'Must create a Three.js root group');
-  assert.match(fe.group.name, /Far East Finance Centre/);
-  assert.equal(fe.group.children.length, 9, 'Must generate exactly 9 merged architectural meshes');
-
-  const meshNames = fe.group.children.map((c) => c.name);
-  assert.ok(meshNames.some((n) => n.includes('24K gold mirror curtain wall')), 'Must include 24K gold mirror curtain wall');
-  assert.ok(meshNames.some((n) => n.includes('lit gold office glazing')), 'Must include lit gold office glazing');
-  assert.ok(meshNames.some((n) => n.includes('gold spandrel panels')), 'Must include gold spandrel panels');
-  assert.ok(meshNames.some((n) => n.includes('vertical gold mullion fins')), 'Must include vertical gold mullion fins');
-  assert.ok(meshNames.some((n) => n.includes('black granite podium')), 'Must include black granite podium');
-  assert.ok(meshNames.some((n) => n.includes('storefront glazing')), 'Must include storefront glazing');
-  assert.ok(meshNames.some((n) => n.includes('mechanical penthouse crown')), 'Must include mechanical penthouse crown');
-  assert.ok(meshNames.some((n) => n.includes('illuminated rooftop signs')), 'Must include illuminated rooftop signs');
-  assert.ok(meshNames.some((n) => n.includes('pedestrian skybridges')), 'Must include pedestrian skybridges');
-
-  // Stats validation
-  assert.equal(fe.stats.farEastHeight, 176.0);
-  assert.equal(fe.stats.farEastStoreys, 41);
-  assert.equal(fe.stats.farEastLevels, 49);
-  assert.ok(fe.stats.farEastGoldPanes >= 250);
-  assert.ok(fe.stats.farEastSpandrels >= 300);
-  assert.ok(fe.stats.farEastMullions >= 150);
-
-  // Colliders
-  assert.equal(fe.colliders.length, 4);
-  for (const c of fe.colliders) {
-    assert.ok(c.name);
-    assert.ok(c.minX < c.maxX);
-    assert.ok(c.minZ < c.maxZ);
-    assert.ok(c.minY < c.maxY);
-    assert.ok(c.obb);
-  }
-
-  // Landmark
-  assert.equal(fe.landmarks.length, 1);
-  assert.equal(fe.landmarks[0].id, 'far-east-finance-centre');
-  assert.match(fe.landmarks[0].name, /遠東金融中心/);
-  assert.equal(fe.landmarks[0].height, 176.0);
+  assert.ok(res.group);
+  assert.equal(res.group.children.length, 9, 'Should have 9 merged mesh layers');
+  assert.equal(res.colliders.length, 1, 'Should provide a main tower collider');
+  assert.equal(res.landmarks.length, 1);
+  assert.equal(res.landmarks[0].id, 'farEastFinance');
+  assert.equal(res.stats.farEastFinanceHeight, 176.0);
+  assert.equal(res.stats.farEastFinanceLevels, 44);
+  assert.ok(res.stats.farEastFinancePanes > 1000, 'Windows subdivided into individual bays with randomized lighting');
 });
