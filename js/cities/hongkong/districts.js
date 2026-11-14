@@ -464,6 +464,7 @@ export const LANDMARK_DISTRICT_MAP = Object.freeze({
 
   // 九龍城區 Kowloon City
   'airside': 'kowloon-city',
+  'harboursideHq': 'kowloon-city',
   'kaiTakStadium': 'kowloon-city',
   'kai-tak-stadium': 'kowloon-city',
   'kaiTakArena': 'kowloon-city',
