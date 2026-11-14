@@ -86,17 +86,10 @@ for (let i = 0; i + 3 < THREE_EXCHANGE_RING.length; i += 2) {
 export const THREE_EXCHANGE_RING_AREA = Math.abs(signedArea * 0.5);
 
 export const THREE_EXCHANGE_SITE = Object.freeze({
-  name: '交易廣場第三座 Three Exchange Square',
-  englishName: 'Three Exchange Square',
-  address: '中環康樂廣場8號 8 Connaught Place',
-  osmType: 'way',
-  osmId: 148554950,
-  source: THREE_EXCHANGE_OSM_SOURCE,
-  ring: THREE_EXCHANGE_RING,
-  bounds: THREE_EXCHANGE_BOUNDS,
-  ...footprint,
-  height: 144.0,
-  storeys: 32,
+  ...makeAuthoredSite('threeExchange', '交易廣場第三座', 'Three Exchange Square', THREE_EXCHANGE_OSM_SOURCE, {
+    height: 144.0,
+    levels: 32
+  }),
   podiumHeight: 16.0,
   shaftHeight: 116.0,
   crownHeight: 12.0

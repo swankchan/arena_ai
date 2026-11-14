@@ -1,10 +1,11 @@
-// 交易廣場第三座 Three Exchange Square, 8 Connaught Place, Central (中環康樂廣場8號, 1988).
+// Three Exchange Square 交易廣場第三座, 8 Connaught Place, Central (1988).
 //
-// The 144-metre 32-storey commercial highrise completes the Exchange Square civic plaza complex
-// designed by Palmer & Turner. Features curved quadrant geometry, polished Spanish rose-beige granite
-// cladding, dark bronze-tinted ribbon glazing, and elevated skybridge connections.
+// 144-metre, 32-storey Grade-A office tower developed by Hongkong Land, architect
+// Palmer & Turner. Rose-beige polished Spanish granite cladding with dark bronze
+// reflective ribbon glazing, a 4-storey commercial podium integrated with the
+// Exchange Square bus terminus, and a rooftop mechanical crown with acoustic louvres.
 //
-// OSM Way: 148554950 (height: 144m).
+// OSM Way: 148554950 (144m, 32 levels).
 import * as THREE from 'three/webgpu';
 import { color } from 'three/tsl';
 import {
@@ -12,259 +13,232 @@ import {
   threeExchangeLocalToWorld
 } from './three-exchange-square-site.js';
 import { hongKongTerrainHeight } from './terrain.js';
-import { harbourCityLocalCollider } from './harbour-city-architecture.js';
 import { box, cylinder, merged, nightAmount, hash } from './harbour-city-world-utils.js';
 
 export function buildThreeExchangeSquare(scene, options = {}) {
-  const groundOffset = options.groundOffset ?? hongKongTerrainHeight(S.x, S.z);
+  const groundY = options.groundOffset ?? hongKongTerrainHeight(S.x, S.z);
 
   const root = new THREE.Group();
   root.name = 'Three Exchange Square — 交易廣場第三座';
-  root.position.set(S.x, groundOffset, S.z);
-  root.rotation.y = S.ry;
   scene.add(root);
 
-  // Collections for merged geometries
   const bronzeGlass = [];
   const litGlass = [];
-  const roseGranite = [];
-  const bronzeMullions = [];
+  const bronzeSpandrels = [];
+  const silverMullions = [];
+  const podiumStone = [];
   const podiumGlass = [];
   const crownParts = [];
-  const skybridgeParts = [];
   const beaconParts = [];
 
-  const w = S.w; // ~39.26m
-  const d = S.d; // ~38.81m
-  const podiumH = S.podiumHeight; // 16.0m
-  const totalH = S.height; // 144.0m
-  const crownH = S.crownHeight; // 12.0m
-  const shaftTop = totalH - crownH; // 132.0m
-  const shaftH = shaftTop - podiumH; // 116.0m
+  const w = S.w;
+  const d = S.d;
+  const podiumH = 16.0;
+  const totalH = S.height;
+  const crownH = 12.0;
+  const shaftH = totalH - podiumH - crownH;
+  const shaftTop = podiumH + shaftH;
 
-  // --- 1. Commercial Podium & Skybridge Network (0 to 16m) ----------------------------------------------------
-  {
-    // Main granite podium block
-    box(roseGranite, [0, podiumH * 0.5, 0], [w - 1.5, podiumH, d - 1.5]);
-
-    // Elevated pedestrian walkway level (Level 2/3, y ~ 8.0m)
-    for (let floor = 0; floor < 2; floor++) {
-      const fy = 2.0 + floor * 5.5;
-      box(podiumGlass, [0, fy + 2.2, -d * 0.5 + 0.6], [w - 4.0, 4.4, 0.1]);
-      box(podiumGlass, [0, fy + 2.2, d * 0.5 - 0.6], [w - 4.0, 4.4, 0.1]);
-      for (let x = -w * 0.5 + 4.0; x <= w * 0.5 - 4.0; x += 4.5) {
-        box(roseGranite, [x, fy + 2.2, -d * 0.5 + 0.5], [1.1, 4.8, 0.4]);
-        box(roseGranite, [x, fy + 2.2, d * 0.5 - 0.5], [1.1, 4.8, 0.4]);
-      }
-    }
-
-    // Skybridge to One/Two Exchange Square Plaza (Northwest, Level 2, y ~ 7.5m)
-    box(skybridgeParts, [-w * 0.5 - 5.0, 7.5, 2.0], [10.0, 4.5, 4.2]);
-    box(podiumGlass, [-w * 0.5 - 5.0, 7.8, 4.15], [9.6, 2.2, 0.1]);
-    box(podiumGlass, [-w * 0.5 - 5.0, 7.8, -0.15], [9.6, 2.2, 0.1]);
-
-    // Skybridge to Connaught Place / Central elevated walkways (East, Level 2, y ~ 7.5m)
-    box(skybridgeParts, [w * 0.5 + 5.0, 7.5, -2.0], [10.0, 4.5, 4.2]);
-    box(podiumGlass, [w * 0.5 + 5.0, 7.8, 0.15], [9.6, 2.2, 0.1]);
-    box(podiumGlass, [w * 0.5 + 5.0, 7.8, -4.15], [9.6, 2.2, 0.1]);
-  }
-
-  // --- 2. Curved Quadrant Tower Shaft (16m to 132m) -----------------------------------------------------------
-  // 28 office storeys with polished Spanish rose-beige granite spandrels and bronze ribbon windows
-  {
-    const floors = 28;
-    const floorH = shaftH / floors; // ~4.14m
-    const glassH = floorH * 0.52; // ~2.15m
-    const spandrelH = floorH - glassH; // ~1.99m
-
-    // Concrete core
-    box(roseGranite, [0, podiumH + shaftH * 0.5, 0], [w - 5.5, shaftH, d - 5.5]);
-
-    for (let f = 0; f < floors; f++) {
-      const baseY = podiumH + f * floorH;
-      const spandrelY = baseY + spandrelH * 0.5;
-      const visionY = baseY + spandrelH + glassH * 0.5;
-
-      // Rose-beige granite spandrels
-      box(roseGranite, [0, spandrelY, -d * 0.5 + 2.0], [w - 4.0, spandrelH, 0.3]);
-      box(roseGranite, [0, spandrelY, d * 0.5 - 2.0], [w - 4.0, spandrelH, 0.3]);
-      box(roseGranite, [-w * 0.5 + 2.0, spandrelY, 0], [0.3, spandrelH, d - 4.0]);
-      box(roseGranite, [w * 0.5 - 2.0, spandrelY, 0], [0.3, spandrelH, d - 4.0]);
-
-      // Bronze ribbon vision glass — subdivided into realistic window bays with scattered randomized night illumination
-      const spanX = w - 4.2;
-      const numBaysX = Math.max(1, Math.round(spanX / 2.5));
-      const actualBayX = spanX / numBaysX;
-      for (let bx = 0; bx < numBaysX; bx++) {
-        const lx = -spanX * 0.5 + (bx + 0.5) * actualBayX;
-        const isLit0 = hash(f, bx, 0, 32) < 0.28;
-        const isLit1 = hash(f, bx, 1, 32) < 0.28;
-        box(isLit0 ? litGlass : bronzeGlass, [lx, visionY, -d * 0.5 + 2.0], [actualBayX - 0.04, glassH, 0.14]);
-        box(isLit1 ? litGlass : bronzeGlass, [lx, visionY, d * 0.5 - 2.0], [actualBayX - 0.04, glassH, 0.14]);
-      }
-
-      const spanZ = d - 4.2;
-      const numBaysZ = Math.max(1, Math.round(spanZ / 2.5));
-      const actualBayZ = spanZ / numBaysZ;
-      for (let bz = 0; bz < numBaysZ; bz++) {
-        const lz = -spanZ * 0.5 + (bz + 0.5) * actualBayZ;
-        const isLit2 = hash(f, bz, 2, 32) < 0.28;
-        const isLit3 = hash(f, bz, 3, 32) < 0.28;
-        box(isLit2 ? litGlass : bronzeGlass, [-w * 0.5 + 2.0, visionY, lz], [0.14, glassH, actualBayZ - 0.04]);
-        box(isLit3 ? litGlass : bronzeGlass, [w * 0.5 - 2.0, visionY, lz], [0.14, glassH, actualBayZ - 0.04]);
-      }
-    }
-
-    // Corner granite cylindrical accent columns (P&T signature style)
-    const midShaftY = podiumH + shaftH * 0.5;
-    for (const sx of [-1, 1]) {
-      for (const sz of [-1, 1]) {
-        cylinder(roseGranite, [sx * (w * 0.5 - 2.0), midShaftY, sz * (d * 0.5 - 2.0)], 1.8, shaftH, 16);
-      }
-    }
-
-    // Vertical bronze mullion mullion fins
-    for (let x = -w * 0.5 + 4.5; x <= w * 0.5 - 4.5; x += 3.2) {
-      box(bronzeMullions, [x, midShaftY, -d * 0.5 + 1.85], [0.08, shaftH, 0.22]);
-      box(bronzeMullions, [x, midShaftY, d * 0.5 - 1.85], [0.08, shaftH, 0.22]);
-    }
-    for (let z = -d * 0.5 + 4.5; z <= d * 0.5 - 4.5; z += 3.2) {
-      box(bronzeMullions, [-w * 0.5 + 1.85, midShaftY, z], [0.22, shaftH, 0.08]);
-      box(bronzeMullions, [w * 0.5 - 1.85, midShaftY, z], [0.22, shaftH, 0.08]);
-    }
-  }
-
-  // --- 3. Crown & Mechanical Penthouse (132m to 144m) ---------------------------------------------------------
-  // Stepped mechanical crown matching One & Two Exchange Square
-  {
-    const crownBaseY = shaftTop;
-    const cw = w - 8.0;
-    const cd = d - 8.0;
-
-    // Penthouse granite core
-    box(crownParts, [0, crownBaseY + crownH * 0.5, 0], [cw, crownH, cd]);
-
-    // Acoustic louvres on crown
-    for (let y = crownBaseY + 1.2; y <= crownBaseY + crownH - 1.2; y += 0.75) {
-      box(bronzeMullions, [0, y, -cd * 0.5 - 0.1], [cw - 0.4, 0.22, 0.15]);
-      box(bronzeMullions, [0, y, cd * 0.5 + 0.1], [cw - 0.4, 0.22, 0.15]);
-      box(bronzeMullions, [-cw * 0.5 - 0.1, y, 0], [0.15, 0.22, cd - 0.4]);
-      box(bronzeMullions, [cw * 0.5 + 0.1, y, 0], [0.15, 0.22, cd - 0.4]);
-    }
-
-    // Parapet trim
-    box(roseGranite, [0, totalH - 0.3, 0], [cw + 0.4, 0.6, cd + 0.4]);
-
-    // Aviation obstruction warning lights
-    for (const sx of [-1, 1]) {
-      for (const sz of [-1, 1]) {
-        cylinder(bronzeMullions, [sx * (cw * 0.5 - 0.3), totalH + 0.4, sz * (cd * 0.5 - 0.3)], 0.08, 0.8, 6);
-        box(beaconParts, [sx * (cw * 0.5 - 0.3), totalH + 0.85, sz * (cd * 0.5 - 0.3)], [0.22, 0.22, 0.22]);
-      }
-    }
-  }
-
-  // --- Materials Definition -----------------------------------------------------------------------------------
-  // 1) Dark Bronze Reflective Ribbon Window Glass
-  const bronzeGlassMat = new THREE.MeshStandardNodeMaterial({
-    color: 0x483c32,
-    roughness: 0.15,
-    metalness: 0.65,
-  });
-
-  // 2) Lit Office Glass
-  const litGlassMat = new THREE.MeshStandardNodeMaterial({
-    color: 0x6e5a48,
-    roughness: 0.2,
-    metalness: 0.45,
-  });
-  litGlassMat.emissiveNode = color(0xffe2a8).mul(nightAmount().mul(0.85).add(0.15));
-
-  // 3) Polished Spanish Rose-Beige Granite (Exchange Square matching signature color)
-  const roseGraniteMat = new THREE.MeshStandardMaterial({
-    color: 0xc3ae99,
-    roughness: 0.52,
-    metalness: 0.22,
-  });
-
-  // 4) Dark Bronze Window Frames & Mullions
-  const bronzeMullionMat = new THREE.MeshStandardMaterial({
-    color: 0x645042,
-    roughness: 0.32,
-    metalness: 0.75,
-  });
-
-  // 5) Podium Storefront Glass
-  const podiumGlassMat = new THREE.MeshStandardMaterial({
-    color: 0x223038,
-    roughness: 0.12,
-    metalness: 0.35,
-  });
-
-  // 6) Penthouse Crown Casing
-  const crownMat = new THREE.MeshStandardMaterial({
-    color: 0x8a7868,
-    roughness: 0.58,
-    metalness: 0.35,
-  });
-
-  // 7) Pedestrian Skybridges
-  const skybridgeMat = new THREE.MeshStandardMaterial({
-    color: 0x3a322c,
-    roughness: 0.35,
-    metalness: 0.55,
-  });
-
-  // 8) Aviation Warning Beacons
-  const beaconMat = new THREE.MeshStandardNodeMaterial({
-    color: 0xcc1122,
-    roughness: 0.25,
-    metalness: 0.5,
-  });
-  beaconMat.emissiveNode = color(0xee2233).mul(nightAmount().mul(0.9).add(0.3));
-
-  // Assemble meshes into root group
-  merged(root, bronzeGlass, bronzeGlassMat, 'Three Exchange Square bronze reflective ribbon glazing');
-  merged(root, litGlass, litGlassMat, 'Three Exchange Square lit office glazing');
-  merged(root, roseGranite, roseGraniteMat, 'Three Exchange Square rose-beige granite facade');
-  merged(root, bronzeMullions, bronzeMullionMat, 'Three Exchange Square bronze mullion fins');
-  merged(root, podiumGlass, podiumGlassMat, 'Three Exchange Square podium storefront glazing');
-  merged(root, crownParts, crownMat, 'Three Exchange Square mechanical penthouse crown');
-  merged(root, skybridgeParts, skybridgeMat, 'Three Exchange Square pedestrian skybridges');
-  merged(root, beaconParts, beaconMat, 'Three Exchange Square aviation beacons');
-
-  // --- Colliders ---------------------------------------------------------------------------------------------
-  const colliders = [
-    // Main tower shaft
-    { name: 'Three Exchange Square Shaft', ...harbourCityLocalCollider(S, 0, 0, w - 4.0, d - 4.0, groundOffset + podiumH, groundOffset + totalH) },
-    // Podium volume
-    { name: 'Three Exchange Square Podium', ...harbourCityLocalCollider(S, 0, 0, w - 1.0, d - 1.0, groundOffset, groundOffset + podiumH) },
-    // Northwest Skybridge to Exchange Square Plaza
-    { name: 'Three Exchange Square NW Skybridge', ...harbourCityLocalCollider(S, -w * 0.5 - 5.0, 2.0, 10.0, 4.2, groundOffset + 5.5, groundOffset + 10.0) },
-    // East Skybridge to Connaught Place
-    { name: 'Three Exchange Square East Skybridge', ...harbourCityLocalCollider(S, w * 0.5 + 5.0, -2.0, 10.0, 4.2, groundOffset + 5.5, groundOffset + 10.0) },
+  const cs = Math.cos(S.ry), sn = Math.sin(S.ry);
+  const toWorld = (lx, ly, lz) => [
+    S.x + cs * lx + sn * lz,
+    groundY + ly,
+    S.z - sn * lx + cs * lz
   ];
 
+  // --- 1. Podium Block & Entrance ---------------------------------------------------------
+  box(podiumStone, toWorld(0, podiumH * 0.5, 0), [w, podiumH, d], S.ry);
+
+  // Commercial podium glazing
+  for (let f = 0; f < 2; f++) {
+    const fy = 2.0 + f * 6.0;
+    box(podiumGlass, toWorld(0, fy + 2.8, -d * 0.5 + 0.5), [w - 3.0, 5.5, 0.14], S.ry);
+  }
+  box(podiumGlass, toWorld(w * 0.5 - 0.5, 9.0, 0), [0.14, 10.0, d - 6.0], S.ry);
+  box(podiumGlass, toWorld(-w * 0.5 + 0.5, 9.0, 0), [0.14, 10.0, d - 6.0], S.ry);
+  box(podiumGlass, toWorld(0, 9.0, d * 0.5 - 0.5), [w - 7.0, 10.0, 0.14], S.ry);
+
+  // Silver entrance canopy
+  box(bronzeSpandrels, toWorld(0, 7.8, -d * 0.5 - 2.0), [w - 2.0, 0.3, 4.0], S.ry);
+  for (const cx of [-w * 0.25, 0, w * 0.25]) {
+    cylinder(silverMullions, toWorld(cx, 6.2, -d * 0.5 - 2.0), 0.2, 5.6, 10);
+  }
+
+  // Internal structural core
+  box(podiumStone, toWorld(0, podiumH + shaftH * 0.5, 0), [w - 6.0, shaftH, d - 6.0], S.ry);
+
+  // --- 2. Main Office Tower Shaft ----------------------------------------------------------
+  const floorsCount = 28;
+  const floorH = shaftH / floorsCount;
+  const spandrelH = 1.05;
+  const glassH = floorH - spandrelH;
+
+  const seed = 130; // Three Exchange Square unique night-light seed
+
+  for (let f = 0; f < floorsCount; f++) {
+    const baseY = podiumH + f * floorH;
+    const spandrelY = baseY + spandrelH * 0.5;
+    const visionY = baseY + spandrelH + glassH * 0.5;
+
+    box(bronzeSpandrels, toWorld(0, spandrelY, -d * 0.5 + 1.0), [w - 2.0, spandrelH, 0.20], S.ry);
+    box(bronzeSpandrels, toWorld(0, spandrelY, d * 0.5 - 1.0), [w - 2.0, spandrelH, 0.20], S.ry);
+    box(bronzeSpandrels, toWorld(-w * 0.5 + 1.0, spandrelY, 0), [0.20, spandrelH, d - 2.0], S.ry);
+    box(bronzeSpandrels, toWorld(w * 0.5 - 1.0, spandrelY, 0), [0.20, spandrelH, d - 2.0], S.ry);
+
+    box(silverMullions, toWorld(0, spandrelY + spandrelH * 0.45, -d * 0.5 + 0.8), [w - 1.6, 0.07, 0.40], S.ry);
+    box(silverMullions, toWorld(0, spandrelY + spandrelH * 0.45, d * 0.5 - 0.8), [w - 1.6, 0.07, 0.40], S.ry);
+
+    const spanX = w - 2.4;
+    const numBaysX = Math.max(1, Math.round(spanX / 2.4));
+    const actualBayX = spanX / numBaysX;
+    for (let bx = 0; bx < numBaysX; bx++) {
+      const lx = -spanX * 0.5 + (bx + 0.5) * actualBayX;
+      const isLitN = hash(f, bx, 1, seed) < 0.28;
+      const isLitS = hash(f, bx, 2, seed) < 0.28;
+      box(isLitN ? litGlass : bronzeGlass, toWorld(lx, visionY, -d * 0.5 + 1.0), [actualBayX - 0.04, glassH, 0.14], S.ry);
+      box(isLitS ? litGlass : bronzeGlass, toWorld(lx, visionY, d * 0.5 - 1.0), [actualBayX - 0.04, glassH, 0.14], S.ry);
+    }
+
+    const spanZ = d - 2.4;
+    const numBaysZ = Math.max(1, Math.round(spanZ / 2.4));
+    const actualBayZ = spanZ / numBaysZ;
+    for (let bz = 0; bz < numBaysZ; bz++) {
+      const lz = -spanZ * 0.5 + (bz + 0.5) * actualBayZ;
+      const isLitW = hash(f, bz, 3, seed) < 0.28;
+      const isLitE = hash(f, bz, 4, seed) < 0.28;
+      box(isLitW ? litGlass : bronzeGlass, toWorld(-w * 0.5 + 1.0, visionY, lz), [0.14, glassH, actualBayZ - 0.04], S.ry);
+      box(isLitE ? litGlass : bronzeGlass, toWorld(w * 0.5 - 1.0, visionY, lz), [0.14, glassH, actualBayZ - 0.04], S.ry);
+    }
+  }
+
+  const midShaftY = podiumH + shaftH * 0.5;
+  for (let x = -w * 0.5 + 2.4; x <= w * 0.5 - 2.4; x += 2.4) {
+    box(silverMullions, toWorld(x, midShaftY, -d * 0.5 + 1.0), [0.07, shaftH, 0.22], S.ry);
+    box(silverMullions, toWorld(x, midShaftY, d * 0.5 - 1.0), [0.07, shaftH, 0.22], S.ry);
+  }
+  for (let z = -d * 0.5 + 2.4; z <= d * 0.5 - 2.4; z += 2.4) {
+    box(silverMullions, toWorld(-w * 0.5 + 1.0, midShaftY, z), [0.22, shaftH, 0.07], S.ry);
+    box(silverMullions, toWorld(w * 0.5 - 1.0, midShaftY, z), [0.22, shaftH, 0.07], S.ry);
+  }
+
+  for (const sx of [-1, 1]) {
+    for (const sz of [-1, 1]) {
+      cylinder(bronzeSpandrels, toWorld(sx * (w * 0.5 - 1.0), midShaftY, sz * (d * 0.5 - 1.0)), 1.2, shaftH, 12);
+    }
+  }
+
+  // --- 3. Rooftop Mechanical Crown (132m to 144m) -----------------------------------------
+  const crownBaseY = shaftTop;
+  const cw = w - 4.0;
+  const cd = d - 4.0;
+
+  box(bronzeSpandrels, toWorld(0, crownBaseY + 3.0, 0), [cw, 5.5, cd], S.ry);
+  box(bronzeSpandrels, toWorld(0, crownBaseY + 7.5, 0), [cw - 5.0, 2.5, cd - 4.0], S.ry);
+
+  box(crownParts, toWorld(0, crownBaseY + 5.6, 0), [cw + 0.6, 0.3, cd + 0.6], S.ry);
+  box(crownParts, toWorld(0, crownBaseY + 9.1, 0), [cw - 4.2, 0.3, cd - 3.2], S.ry);
+  box(crownParts, toWorld(0, crownBaseY + 10.0, 0), [cw - 8.0, 1.0, 0.5], S.ry);
+
+  for (const bx of [-cw * 0.30, cw * 0.30]) {
+    cylinder(crownParts, toWorld(bx, crownBaseY + 9.4, 0), 0.1, 1.0, 8);
+    cylinder(beaconParts, toWorld(bx, crownBaseY + 10.2, 0), 0.22, 0.32, 8);
+  }
+
+  // --- 4. Materials Palette ---------------------------------------------------------------
+  const bronzeGlassMat = new THREE.MeshStandardNodeMaterial({
+    color: 0x3d2b1f, // Dark bronze reflective ribbon glazing
+    roughness: 0.12,
+    metalness: 0.88,
+    side: THREE.DoubleSide
+  });
+
+  const litGlassMat = new THREE.MeshStandardNodeMaterial({
+    color: 0x4a3c30,
+    roughness: 0.22,
+    metalness: 0.35,
+    side: THREE.DoubleSide
+  });
+  litGlassMat.emissiveNode = color(0xffe8ba).mul(nightAmount().mul(0.85).add(0.15));
+
+  const bronzeSpandrelMat = new THREE.MeshStandardMaterial({
+    color: 0x8b6b4f,
+    roughness: 0.28,
+    metalness: 0.72
+  });
+
+  const silverMullionMat = new THREE.MeshStandardMaterial({
+    color: 0xa68a74,
+    roughness: 0.22,
+    metalness: 0.82
+  });
+
+  const podiumStoneMat = new THREE.MeshStandardMaterial({
+    color: 0xc3ae99, // Rose-beige polished Spanish granite
+    roughness: 0.82,
+    metalness: 0.05
+  });
+
+  const podiumGlassMat = new THREE.MeshStandardNodeMaterial({
+    color: 0x2a3a42,
+    roughness: 0.15,
+    metalness: 0.45,
+    side: THREE.DoubleSide
+  });
+  podiumGlassMat.emissiveNode = color(0xffefd0).mul(nightAmount().mul(0.55).add(0.1));
+
+  const crownMat = new THREE.MeshStandardMaterial({
+    color: 0xc4cdd2,
+    roughness: 0.3,
+    metalness: 0.75
+  });
+
+  const beaconMat = new THREE.MeshStandardNodeMaterial({
+    color: 0xff1122,
+    roughness: 0.18,
+    metalness: 0.1
+  });
+  beaconMat.emissiveNode = color(0xff2233).mul(nightAmount().mul(1.5).add(0.2));
+
+  // --- 5. Merge Meshes --------------------------------------------------------------------
+  merged(root, podiumStone, podiumStoneMat, 'Three Exchange Square rose-beige granite podium and core');
+  merged(root, podiumGlass, podiumGlassMat, 'Three Exchange Square podium storefront glazing');
+  merged(root, bronzeSpandrels, bronzeSpandrelMat, 'Three Exchange Square bronze spandrel ribbons');
+  merged(root, silverMullions, silverMullionMat, 'Three Exchange Square vertical mullions and sunshade louvres');
+  merged(root, bronzeGlass, bronzeGlassMat, 'Three Exchange Square dark bronze reflective curtain wall');
+  merged(root, litGlass, litGlassMat, 'Three Exchange Square illuminated office glazing');
+  merged(root, crownParts, crownMat, 'Three Exchange Square mechanical parapet crown');
+  merged(root, beaconParts, beaconMat, 'Three Exchange Square rooftop aviation obstacle beacons', false);
+
+  // --- 6. Colliders -----------------------------------------------------------------------
+  const colliders = [];
+
+  // --- 7. Landmark Metadata ---------------------------------------------------------------
   const landmark = {
-    id: 'three-exchange-square',
-    name: '交易廣場第三座 Three Exchange Square',
+    id: 'threeExchange',
+    name: '交易廣場第三座',
     englishName: 'Three Exchange Square',
-    position: { x: S.x, y: groundOffset, z: S.z },
-    radius: Math.max(w, d) * 0.65,
-    height: totalH,
+    x: S.x,
+    z: S.z,
+    w: S.w,
+    d: S.d,
+    h: S.height,
+    ring: S.ring,
+    bounds: S.bounds,
+    osmId: S.osmId,
+    kind: 'landmark',
+    labelHeight: S.height + 4.0
   };
 
   return {
     group: root,
     colliders,
     landmarks: [landmark],
+    base: groundY,
     stats: {
-      threeExchangeHeight: totalH,
-      threeExchangeStoreys: S.storeys,
-      threeExchangeCurtainPanes: bronzeGlass.length + litGlass.length,
-      threeExchangeGraniteParts: roseGranite.length,
-      threeExchangeMullions: bronzeMullions.length,
-    },
-    groundOffset,
+      threeExchangeOsm: S.osmId,
+      threeExchangeHeight: S.height,
+      threeExchangeLevels: S.levels,
+      threeExchangePanes: bronzeGlass.length + litGlass.length
+    }
   };
 }
