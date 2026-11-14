@@ -1,10 +1,11 @@
-// 中國建設銀行大廈 CCB Tower, 3 Connaught Road Central, Central (中環干諾道中3號, 2012).
+// CCB Tower 中國建設銀行大廈, 3 Connaught Road Central, Central (2012).
 //
-// The 135-metre 31-storey contemporary landmark designed by Aedas features a faceted
-// dark blue-grey Low-E reflective curtain wall, silver-anodized mullion fins, grand banking hall
-// podium, and an illuminated rooftop China Construction Bank corporate logo crown.
+// 135-metre, 31-storey Grade-A office tower developed by China Construction Bank &
+// Lai Sun Development. Dark blue-grey Low-E reflective curtain wall with crisp
+// silver-anodized vertical mullions, a 3-storey grand banking hall podium, and an
+// angled geometric crown carrying illuminated CCB corporate signage and aviation beacons.
 //
-// OSM Way: 242113651 (height: 135m).
+// OSM Way: 242113651 (135m, 31 levels).
 import * as THREE from 'three/webgpu';
 import { color } from 'three/tsl';
 import {
@@ -12,259 +13,232 @@ import {
   ccbTowerLocalToWorld
 } from './ccb-tower-site.js';
 import { hongKongTerrainHeight } from './terrain.js';
-import { harbourCityLocalCollider } from './harbour-city-architecture.js';
 import { box, cylinder, merged, nightAmount, hash } from './harbour-city-world-utils.js';
 
 export function buildCcbTower(scene, options = {}) {
-  const groundOffset = options.groundOffset ?? hongKongTerrainHeight(S.x, S.z);
+  const groundY = options.groundOffset ?? hongKongTerrainHeight(S.x, S.z);
 
   const root = new THREE.Group();
   root.name = 'CCB Tower — 中國建設銀行大廈';
-  root.position.set(S.x, groundOffset, S.z);
-  root.rotation.y = S.ry;
   scene.add(root);
 
-  // Collections for merged geometries
-  const blueGreyGlass = [];
+  const darkGlass = [];
   const litGlass = [];
-  const darkSpandrels = [];
+  const silverSpandrels = [];
   const silverMullions = [];
-  const granitePodium = [];
+  const podiumStone = [];
   const podiumGlass = [];
   const crownParts = [];
-  const signageParts = [];
+  const beaconParts = [];
 
-  const w = S.w; // ~44.91m
-  const d = S.d; // ~25.69m
-  const podiumH = S.podiumHeight; // 14.0m
-  const totalH = S.height; // 135.0m
-  const crownH = S.crownHeight; // 13.0m
-  const shaftTop = totalH - crownH; // 122.0m
-  const shaftH = shaftTop - podiumH; // 108.0m
+  const w = S.w;
+  const d = S.d;
+  const podiumH = 14.0;
+  const totalH = S.height;
+  const crownH = 13.0;
+  const shaftH = totalH - podiumH - crownH;
+  const shaftTop = podiumH + shaftH;
 
-  // --- 1. Grand Banking Hall Podium (0 to 14m) -----------------------------------------------------------------
-  {
-    // Granite podium perimeter pillars and core
-    box(granitePodium, [0, podiumH * 0.5, 0], [w - 1.5, podiumH, d - 1.5]);
+  const cs = Math.cos(S.ry), sn = Math.sin(S.ry);
+  const toWorld = (lx, ly, lz) => [
+    S.x + cs * lx + sn * lz,
+    groundY + ly,
+    S.z - sn * lx + cs * lz
+  ];
 
-    // Storefront double-height banking hall glazing
-    box(podiumGlass, [0, 6.0, -d * 0.5 + 0.6], [w - 3.2, 10.5, 0.1]);
-    box(podiumGlass, [0, 6.0, d * 0.5 - 0.6], [w - 3.2, 10.5, 0.1]);
+  // --- 1. Podium Block & Entrance ---------------------------------------------------------
+  box(podiumStone, toWorld(0, podiumH * 0.5, 0), [w, podiumH, d], S.ry);
 
-    // Expressive granite framing portals
-    for (let x = -w * 0.5 + 3.5; x <= w * 0.5 - 3.5; x += 5.2) {
-      box(granitePodium, [x, 6.0, -d * 0.5 + 0.5], [0.9, 12.0, 0.4]);
-      box(granitePodium, [x, 6.0, d * 0.5 - 0.5], [0.9, 12.0, 0.4]);
-    }
+  // Grand banking hall glazing (double-height)
+  for (let f = 0; f < 2; f++) {
+    const fy = 2.0 + f * 6.0;
+    box(podiumGlass, toWorld(0, fy + 2.8, -d * 0.5 + 0.5), [w - 3.0, 5.5, 0.14], S.ry);
+  }
+  box(podiumGlass, toWorld(w * 0.5 - 0.5, 9.0, 0), [0.14, 10.0, d - 6.0], S.ry);
+  box(podiumGlass, toWorld(-w * 0.5 + 0.5, 9.0, 0), [0.14, 10.0, d - 6.0], S.ry);
+  box(podiumGlass, toWorld(0, 9.0, d * 0.5 - 0.5), [w - 7.0, 10.0, 0.14], S.ry);
 
-    // Connaught Road Central Main Entrance Canopy
-    box(silverMullions, [0, 4.2, -d * 0.5 - 1.4], [12.0, 0.35, 3.2]);
-    cylinder(silverMullions, [-5.0, 2.1, -d * 0.5 - 2.6], 0.15, 4.2, 8);
-    cylinder(silverMullions, [5.0, 2.1, -d * 0.5 - 2.6], 0.15, 4.2, 8);
+  // Silver entrance canopy
+  box(silverSpandrels, toWorld(0, 7.8, -d * 0.5 - 2.0), [w - 2.0, 0.3, 4.0], S.ry);
+  for (const cx of [-w * 0.25, 0, w * 0.25]) {
+    cylinder(silverMullions, toWorld(cx, 6.2, -d * 0.5 - 2.0), 0.2, 5.6, 10);
   }
 
-  // --- 2. Main Tower Shaft (14m to 122m) ----------------------------------------------------------------------
-  // 27 office storeys, 4.0m floor-to-floor
-  {
-    const floors = 27;
-    const floorH = shaftH / floors; // 4.0m
-    const glassH = 2.6;
-    const spandrelH = floorH - glassH; // 1.4m
+  // Internal structural core
+  box(podiumStone, toWorld(0, podiumH + shaftH * 0.5, 0), [w - 6.0, shaftH, d - 6.0], S.ry);
 
-    // Inner concrete core
-    box(granitePodium, [0, podiumH + shaftH * 0.5, 0], [w - 6.0, shaftH, d - 6.0]);
+  // --- 2. Main Office Tower Shaft ----------------------------------------------------------
+  const floorsCount = 27;
+  const floorH = shaftH / floorsCount;
+  const spandrelH = 1.05;
+  const glassH = floorH - spandrelH;
 
-    for (let f = 0; f < floors; f++) {
-      const baseY = podiumH + f * floorH;
-      const spandrelY = baseY + spandrelH * 0.5;
-      const visionY = baseY + spandrelH + glassH * 0.5;
+  const seed = 128; // CCB Tower unique night-light seed
 
-      // Dark horizontal spandrel bands
-      box(darkSpandrels, [0, spandrelY, -d * 0.5 + 1.2], [w - 2.2, spandrelH, 0.2]);
-      box(darkSpandrels, [0, spandrelY, d * 0.5 - 1.2], [w - 2.2, spandrelH, 0.2]);
-      box(darkSpandrels, [-w * 0.5 + 1.2, spandrelY, 0], [0.2, spandrelH, d - 2.2]);
-      box(darkSpandrels, [w * 0.5 - 1.2, spandrelY, 0], [0.2, spandrelH, d - 2.2]);
+  for (let f = 0; f < floorsCount; f++) {
+    const baseY = podiumH + f * floorH;
+    const spandrelY = baseY + spandrelH * 0.5;
+    const visionY = baseY + spandrelH + glassH * 0.5;
 
-      // Vision glazing — subdivided into realistic window bays with scattered randomized night illumination
-      const spanX = w - 2.4;
-      const numBaysX = Math.max(1, Math.round(spanX / 2.4));
-      const actualBayX = spanX / numBaysX;
-      for (let bx = 0; bx < numBaysX; bx++) {
-        const lx = -spanX * 0.5 + (bx + 0.5) * actualBayX;
-        const isLitN = hash(f, bx, 1, 31) < 0.28;
-        const isLitS = hash(f, bx, 2, 31) < 0.28;
-        box(isLitN ? litGlass : blueGreyGlass, [lx, visionY, -d * 0.5 + 1.2], [actualBayX - 0.04, glassH, 0.14]);
-        box(isLitS ? litGlass : blueGreyGlass, [lx, visionY, d * 0.5 - 1.2], [actualBayX - 0.04, glassH, 0.14]);
-      }
+    box(silverSpandrels, toWorld(0, spandrelY, -d * 0.5 + 1.0), [w - 2.0, spandrelH, 0.20], S.ry);
+    box(silverSpandrels, toWorld(0, spandrelY, d * 0.5 - 1.0), [w - 2.0, spandrelH, 0.20], S.ry);
+    box(silverSpandrels, toWorld(-w * 0.5 + 1.0, spandrelY, 0), [0.20, spandrelH, d - 2.0], S.ry);
+    box(silverSpandrels, toWorld(w * 0.5 - 1.0, spandrelY, 0), [0.20, spandrelH, d - 2.0], S.ry);
 
-      const spanZ = d - 2.4;
-      const numBaysZ = Math.max(1, Math.round(spanZ / 2.4));
-      const actualBayZ = spanZ / numBaysZ;
-      for (let bz = 0; bz < numBaysZ; bz++) {
-        const lz = -spanZ * 0.5 + (bz + 0.5) * actualBayZ;
-        const isLitE = hash(f, bz, 3, 31) < 0.28;
-        const isLitW = hash(f, bz, 4, 31) < 0.28;
-        box(isLitE ? litGlass : blueGreyGlass, [w * 0.5 - 1.2, visionY, lz], [0.14, glassH, actualBayZ - 0.04]);
-        box(isLitW ? litGlass : blueGreyGlass, [-w * 0.5 + 1.2, visionY, lz], [0.14, glassH, actualBayZ - 0.04]);
-      }
+    box(silverMullions, toWorld(0, spandrelY + spandrelH * 0.45, -d * 0.5 + 0.8), [w - 1.6, 0.07, 0.40], S.ry);
+    box(silverMullions, toWorld(0, spandrelY + spandrelH * 0.45, d * 0.5 - 0.8), [w - 1.6, 0.07, 0.40], S.ry);
+
+    const spanX = w - 2.4;
+    const numBaysX = Math.max(1, Math.round(spanX / 2.4));
+    const actualBayX = spanX / numBaysX;
+    for (let bx = 0; bx < numBaysX; bx++) {
+      const lx = -spanX * 0.5 + (bx + 0.5) * actualBayX;
+      const isLitN = hash(f, bx, 1, seed) < 0.28;
+      const isLitS = hash(f, bx, 2, seed) < 0.28;
+      box(isLitN ? litGlass : darkGlass, toWorld(lx, visionY, -d * 0.5 + 1.0), [actualBayX - 0.04, glassH, 0.14], S.ry);
+      box(isLitS ? litGlass : darkGlass, toWorld(lx, visionY, d * 0.5 - 1.0), [actualBayX - 0.04, glassH, 0.14], S.ry);
     }
 
-    // Vertical extruded mullion fins
-    const midShaftY = podiumH + shaftH * 0.5;
-    for (let x = -w * 0.5 + 2.5; x <= w * 0.5 - 2.5; x += 2.4) {
-      box(silverMullions, [x, midShaftY, -d * 0.5 + 1.05], [0.08, shaftH, 0.25]);
-      box(silverMullions, [x, midShaftY, d * 0.5 - 1.05], [0.08, shaftH, 0.25]);
-    }
-    for (let z = -d * 0.5 + 2.5; z <= d * 0.5 - 2.5; z += 2.4) {
-      box(silverMullions, [-w * 0.5 + 1.05, midShaftY, z], [0.25, shaftH, 0.08]);
-      box(silverMullions, [w * 0.5 - 1.05, midShaftY, z], [0.25, shaftH, 0.08]);
+    const spanZ = d - 2.4;
+    const numBaysZ = Math.max(1, Math.round(spanZ / 2.4));
+    const actualBayZ = spanZ / numBaysZ;
+    for (let bz = 0; bz < numBaysZ; bz++) {
+      const lz = -spanZ * 0.5 + (bz + 0.5) * actualBayZ;
+      const isLitW = hash(f, bz, 3, seed) < 0.28;
+      const isLitE = hash(f, bz, 4, seed) < 0.28;
+      box(isLitW ? litGlass : darkGlass, toWorld(-w * 0.5 + 1.0, visionY, lz), [0.14, glassH, actualBayZ - 0.04], S.ry);
+      box(isLitE ? litGlass : darkGlass, toWorld(w * 0.5 - 1.0, visionY, lz), [0.14, glassH, actualBayZ - 0.04], S.ry);
     }
   }
 
-  // --- 3. Crown & Mechanical Penthouse (122m to 135m) ---------------------------------------------------------
-  // Symmetrical stepped crown with acoustic louvres, CCB corporate logo signage, and beacons
-  {
-    const crownBaseY = shaftTop;
-    const cw = w - 6.0;
-    const cd = d - 5.0;
+  const midShaftY = podiumH + shaftH * 0.5;
+  for (let x = -w * 0.5 + 2.4; x <= w * 0.5 - 2.4; x += 2.4) {
+    box(silverMullions, toWorld(x, midShaftY, -d * 0.5 + 1.0), [0.07, shaftH, 0.22], S.ry);
+    box(silverMullions, toWorld(x, midShaftY, d * 0.5 - 1.0), [0.07, shaftH, 0.22], S.ry);
+  }
+  for (let z = -d * 0.5 + 2.4; z <= d * 0.5 - 2.4; z += 2.4) {
+    box(silverMullions, toWorld(-w * 0.5 + 1.0, midShaftY, z), [0.22, shaftH, 0.07], S.ry);
+    box(silverMullions, toWorld(w * 0.5 - 1.0, midShaftY, z), [0.22, shaftH, 0.07], S.ry);
+  }
 
-    // Penthouse block
-    box(crownParts, [0, crownBaseY + crownH * 0.5, 0], [cw, crownH, cd]);
-
-    // Acoustic louvre slats
-    for (let y = crownBaseY + 1.2; y <= crownBaseY + crownH - 1.2; y += 0.75) {
-      box(silverMullions, [0, y, -cd * 0.5 - 0.1], [cw - 0.4, 0.22, 0.15]);
-      box(silverMullions, [0, y, cd * 0.5 + 0.1], [cw - 0.4, 0.22, 0.15]);
-      box(silverMullions, [-cw * 0.5 - 0.1, y, 0], [0.15, 0.22, cd - 0.4]);
-      box(silverMullions, [cw * 0.5 + 0.1, y, 0], [0.15, 0.22, cd - 0.4]);
-    }
-
-    // Parapet trim
-    box(silverMullions, [0, totalH - 0.25, 0], [cw + 0.4, 0.5, cd + 0.4]);
-
-    // Rooftop Signage: Illuminated "CCB" Corporate Sign
-    const signY = crownBaseY + crownH * 0.55;
-    // North Sign (facing Victoria Harbour)
-    box(crownParts, [0, signY, -cd * 0.5 - 0.25], [18.0, 3.4, 0.15]); // Backplate
-    cylinder(signageParts, [-6.0, signY, -cd * 0.5 - 0.35], 1.2, 0.2, 24, { rx: Math.PI / 2, ry: 0, rz: 0 }); // CCB roundel emblem
-    // "CCB" lettering blocks
-    for (let i = -2.5; i <= 6.5; i += 2.2) {
-      box(silverMullions, [i, signY, -cd * 0.5 - 0.35], [1.5, 1.8, 0.1]);
-    }
-
-    // South Sign (facing Chater Garden / Central)
-    box(crownParts, [0, signY, cd * 0.5 + 0.25], [18.0, 3.4, 0.15]);
-    cylinder(signageParts, [6.0, signY, cd * 0.5 + 0.35], 1.2, 0.2, 24, { rx: Math.PI / 2, ry: 0, rz: 0 });
-    for (let i = -6.5; i <= 2.5; i += 2.2) {
-      box(silverMullions, [i, signY, cd * 0.5 + 0.35], [1.5, 1.8, 0.1]);
-    }
-
-    // 4 Aviation obstruction warning lights at crown corners
-    for (const sx of [-1, 1]) {
-      for (const sz of [-1, 1]) {
-        cylinder(silverMullions, [sx * (cw * 0.5 - 0.3), totalH + 0.4, sz * (cd * 0.5 - 0.3)], 0.08, 0.8, 6);
-        box(signageParts, [sx * (cw * 0.5 - 0.3), totalH + 0.85, sz * (cd * 0.5 - 0.3)], [0.22, 0.22, 0.22]);
-      }
+  for (const sx of [-1, 1]) {
+    for (const sz of [-1, 1]) {
+      cylinder(silverSpandrels, toWorld(sx * (w * 0.5 - 1.0), midShaftY, sz * (d * 0.5 - 1.0)), 1.2, shaftH, 12);
     }
   }
 
-  // --- Materials Definition -----------------------------------------------------------------------------------
-  // 1) Dark Blue-Grey Low-E Reflective Curtain Wall Glass
-  const blueGreyGlassMat = new THREE.MeshStandardNodeMaterial({
-    color: 0x22323a,
+  // --- 3. Angled Geometric Crown (122m to 135m) -------------------------------------------
+  const crownBaseY = shaftTop;
+  const cw = w - 4.0;
+  const cd = d - 4.0;
+
+  box(silverSpandrels, toWorld(0, crownBaseY + 3.0, 0), [cw, 5.5, cd], S.ry);
+  box(silverSpandrels, toWorld(0, crownBaseY + 7.5, 0), [cw - 5.0, 2.5, cd - 4.0], S.ry);
+
+  box(crownParts, toWorld(0, crownBaseY + 5.6, 0), [cw + 0.6, 0.3, cd + 0.6], S.ry);
+  box(crownParts, toWorld(0, crownBaseY + 9.1, 0), [cw - 4.2, 0.3, cd - 3.2], S.ry);
+  box(crownParts, toWorld(0, crownBaseY + 10.0, 0), [cw - 8.0, 1.0, 0.5], S.ry);
+
+  for (const bx of [-cw * 0.30, cw * 0.30]) {
+    cylinder(crownParts, toWorld(bx, crownBaseY + 9.4, 0), 0.1, 1.0, 8);
+    cylinder(beaconParts, toWorld(bx, crownBaseY + 10.2, 0), 0.22, 0.32, 8);
+  }
+
+  // --- 4. Materials Palette ---------------------------------------------------------------
+  const darkGlassMat = new THREE.MeshStandardNodeMaterial({
+    color: 0x2a3a4a, // Dark blue-grey Low-E reflective curtain wall
     roughness: 0.12,
-    metalness: 0.70,
+    metalness: 0.88,
+    side: THREE.DoubleSide
   });
 
-  // 2) Lit Office Glass
   const litGlassMat = new THREE.MeshStandardNodeMaterial({
-    color: 0x425862,
-    roughness: 0.2,
-    metalness: 0.45,
+    color: 0x3c3a30,
+    roughness: 0.22,
+    metalness: 0.35,
+    side: THREE.DoubleSide
   });
   litGlassMat.emissiveNode = color(0xffe8ba).mul(nightAmount().mul(0.85).add(0.15));
 
-  // 3) Dark Spandrel Panels
-  const darkSpandrelMat = new THREE.MeshStandardMaterial({
-    color: 0x181e22,
-    roughness: 0.42,
-    metalness: 0.5,
-  });
-
-  // 4) Silver Anodized Vertical Mullion Fins
-  const silverMullionMat = new THREE.MeshStandardMaterial({
-    color: 0xc8d2d6,
+  const silverSpandrelMat = new THREE.MeshStandardMaterial({
+    color: 0xb8c2c8,
     roughness: 0.28,
-    metalness: 0.85,
+    metalness: 0.72
   });
 
-  // 5) Polished Charcoal Granite (Podium)
-  const graniteMat = new THREE.MeshStandardMaterial({
-    color: 0x1f2326,
-    roughness: 0.52,
-    metalness: 0.2,
+  const silverMullionMat = new THREE.MeshStandardMaterial({
+    color: 0xd2d8dc,
+    roughness: 0.22,
+    metalness: 0.82
   });
 
-  // 6) Storefront Glass
-  const podiumGlassMat = new THREE.MeshStandardMaterial({
-    color: 0x1c2a32,
-    roughness: 0.12,
-    metalness: 0.35,
+  const podiumStoneMat = new THREE.MeshStandardMaterial({
+    color: 0xd6cebe,
+    roughness: 0.82,
+    metalness: 0.05
   });
 
-  // 7) Penthouse Crown Casing
+  const podiumGlassMat = new THREE.MeshStandardNodeMaterial({
+    color: 0x2a3a42,
+    roughness: 0.15,
+    metalness: 0.45,
+    side: THREE.DoubleSide
+  });
+  podiumGlassMat.emissiveNode = color(0xffefd0).mul(nightAmount().mul(0.55).add(0.1));
+
   const crownMat = new THREE.MeshStandardMaterial({
-    color: 0x242a2e,
-    roughness: 0.55,
-    metalness: 0.55,
+    color: 0xc4cdd2,
+    roughness: 0.3,
+    metalness: 0.75
   });
 
-  // 8) CCB Corporate Blue/Red Signage & Aviation Beacons
-  const signageMat = new THREE.MeshStandardNodeMaterial({
-    color: 0x0055a5, // CCB Blue
-    roughness: 0.25,
-    metalness: 0.5,
+  const beaconMat = new THREE.MeshStandardNodeMaterial({
+    color: 0xff1122,
+    roughness: 0.18,
+    metalness: 0.1
   });
-  signageMat.emissiveNode = color(0x1177ee).mul(nightAmount().mul(0.9).add(0.28));
+  beaconMat.emissiveNode = color(0xff2233).mul(nightAmount().mul(1.5).add(0.2));
 
-  // Assemble meshes into root group
-  merged(root, blueGreyGlass, blueGreyGlassMat, 'CCB Tower dark blue-grey Low-E curtain wall');
-  merged(root, litGlass, litGlassMat, 'CCB Tower lit office glazing');
-  merged(root, darkSpandrels, darkSpandrelMat, 'CCB Tower dark spandrel panels');
-  merged(root, silverMullions, silverMullionMat, 'CCB Tower vertical mullion fins');
-  merged(root, granitePodium, graniteMat, 'CCB Tower granite podium');
-  merged(root, podiumGlass, podiumGlassMat, 'CCB Tower storefront glazing');
-  merged(root, crownParts, crownMat, 'CCB Tower mechanical penthouse crown');
-  merged(root, signageParts, signageMat, 'CCB Tower corporate signage and beacons');
+  // --- 5. Merge Meshes --------------------------------------------------------------------
+  merged(root, podiumStone, podiumStoneMat, 'CCB Tower stone podium and core');
+  merged(root, podiumGlass, podiumGlassMat, 'CCB Tower banking hall storefront glazing');
+  merged(root, silverSpandrels, silverSpandrelMat, 'CCB Tower silver spandrel ribbons');
+  merged(root, silverMullions, silverMullionMat, 'CCB Tower vertical mullions and sunshade louvres');
+  merged(root, darkGlass, darkGlassMat, 'CCB Tower dark blue-grey reflective curtain wall');
+  merged(root, litGlass, litGlassMat, 'CCB Tower illuminated office glazing');
+  merged(root, crownParts, crownMat, 'CCB Tower angled geometric crown');
+  merged(root, beaconParts, beaconMat, 'CCB Tower rooftop aviation obstacle beacons', false);
 
-  // --- Colliders ---------------------------------------------------------------------------------------------
-  const colliders = [
-    // Main tower shaft
-    { name: 'CCB Tower Shaft', ...harbourCityLocalCollider(S, 0, 0, w - 2.0, d - 2.0, groundOffset + podiumH, groundOffset + totalH) },
-    // Podium volume
-    { name: 'CCB Tower Podium', ...harbourCityLocalCollider(S, 0, 0, w - 1.0, d - 1.0, groundOffset, groundOffset + podiumH) },
-  ];
+  // --- 6. Colliders -----------------------------------------------------------------------
+  const colliders = [];
 
+  // --- 7. Landmark Metadata ---------------------------------------------------------------
   const landmark = {
-    id: 'ccb-tower',
-    name: '中國建設銀行大廈 CCB Tower',
+    id: 'ccbTower',
+    name: '中國建設銀行大廈',
     englishName: 'CCB Tower',
-    position: { x: S.x, y: groundOffset, z: S.z },
-    radius: Math.max(w, d) * 0.65,
-    height: totalH,
+    x: S.x,
+    z: S.z,
+    w: S.w,
+    d: S.d,
+    h: S.height,
+    ring: S.ring,
+    bounds: S.bounds,
+    osmId: S.osmId,
+    kind: 'landmark',
+    labelHeight: S.height + 4.0
   };
 
   return {
     group: root,
     colliders,
     landmarks: [landmark],
+    base: groundY,
     stats: {
-      ccbHeight: totalH,
-      ccbStoreys: S.storeys,
-      ccbCurtainPanes: blueGreyGlass.length + litGlass.length,
-      ccbSpandrels: darkSpandrels.length,
-      ccbMullions: silverMullions.length,
-    },
-    groundOffset,
+      ccbTowerOsm: S.osmId,
+      ccbTowerHeight: S.height,
+      ccbTowerLevels: S.levels,
+      ccbTowerPanes: darkGlass.length + litGlass.length
+    }
   };
 }

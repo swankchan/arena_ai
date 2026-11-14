@@ -99,17 +99,10 @@ for (let i = 0; i + 3 < CITIC_TOWER_RING.length; i += 2) {
 export const CITIC_TOWER_RING_AREA = Math.abs(signedArea * 0.5);
 
 export const CITIC_TOWER_SITE = Object.freeze({
-  name: '中信大廈 CITIC Tower',
-  englishName: 'CITIC Tower',
-  address: '金鐘添美道1號 1 Tim Mei Avenue',
-  osmType: 'way',
-  osmId: 107353963,
-  source: CITIC_TOWER_OSM_SOURCE,
-  ring: CITIC_TOWER_RING,
-  bounds: CITIC_TOWER_BOUNDS,
-  ...footprint,
-  height: 126.0,
-  storeys: 33,
+  ...makeAuthoredSite('citicTower', '中信大廈', 'CITIC Tower', CITIC_TOWER_OSM_SOURCE, {
+    height: 126.0,
+    levels: 33
+  }),
   podiumHeight: 18.0,
   shaftHeight: 96.0,
   crownHeight: 12.0

@@ -86,17 +86,10 @@ for (let i = 0; i + 3 < CCB_TOWER_RING.length; i += 2) {
 export const CCB_TOWER_RING_AREA = Math.abs(signedArea * 0.5);
 
 export const CCB_TOWER_SITE = Object.freeze({
-  name: '中國建設銀行大廈 CCB Tower',
-  englishName: 'CCB Tower',
-  address: '中環干諾道中3號 3 Connaught Road Central',
-  osmType: 'way',
-  osmId: 242113651,
-  source: CCB_TOWER_OSM_SOURCE,
-  ring: CCB_TOWER_RING,
-  bounds: CCB_TOWER_BOUNDS,
-  ...footprint,
-  height: 135.0,
-  storeys: 31,
+  ...makeAuthoredSite('ccbTower', '中國建設銀行大廈', 'CCB Tower', CCB_TOWER_OSM_SOURCE, {
+    height: 135.0,
+    levels: 31
+  }),
   podiumHeight: 14.0,
   shaftHeight: 108.0,
   crownHeight: 13.0

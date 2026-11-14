@@ -17,7 +17,7 @@
 
 inventory 已同步更新為「55 已加入／45 待製作」，並保留「50 個正式獨立 Landmark」口徑；這份 audit 將组件精修與獨立 Landmark 分開，避免把兩種完成混為一談。
 
-## A. 正式已加入、精修及 Landmark（57）
+## A. 正式已加入、精修及 Landmark（59）
 
 | ID | 建築物 | 地區 | 主要實作 |
 | --- | --- | --- | --- |
@@ -72,7 +72,9 @@ inventory 已同步更新為「55 已加入／45 待製作」，並保留「50 �
 | `HK-B0052` | 美國銀行中心 Bank of America Tower | 金鐘 | `bank-of-america-tower-world.js` |
 | `HK-B0053` | 海港中心 Harbour Centre | 灣仔 | `harbour-centre-world.js` |
 | `HK-B0054` | 鷹君中心 Great Eagle Centre | 灣仔 | `great-eagle-centre-world.js` |
+| `HK-B0060` | 中國建設銀行大廈 CCB Tower | 中環 | `ccb-tower-world.js` |
 | `HK-B0062` | 香港君悅酒店 Grand Hyatt Hong Kong | 灣仔 | `grand-hyatt-hong-kong-world.js` |
+| `HK-B0064` | 中信大廈 CITIC Tower | 金鐘 | `citic-tower-world.js` |
 | `HK-B0071` | 修頓中心 Southorn Centre | 灣仔 | `southorn-centre-world.js` |
 | `HK-B0031` | 力寶中心第二座 Lippo Centre Tower 2 | 金鐘 | `lippo-centre-tower-2-world.js` |
 | `HK-B0038` | 華潤大廈 China Resources Building | 灣仔 | `china-resources-building-world.js` |
@@ -97,7 +99,7 @@ inventory 已同步更新為「55 已加入／45 待製作」，並保留「50 �
 - `HK-CENTRAL-CH` 同時生成大會堂 High Block、Low Block、附屬建築及 Memorial Garden；這裡只把原清單的 B0082／B0100 對應出來，不把附屬設施額外計數。
 - 茶具文物館仍屬香港公園組件，不新增一個獨立 Landmark；但現在由專用 Flagstaff House module 生成，已按 B0093 補上照片導向精修，不再呼叫通用 heritage builder。
 
-## C. 仍待製作／未見專用實作（38）
+## C. 仍待製作／未見專用實作（36）
 
 | ID | 建築物 | 地區 | 原表高度參考 | 位置／footprint 依據 |
 | --- | --- | --- | --- | --- |
@@ -110,10 +112,8 @@ inventory 已同步更新為「55 已加入／45 待製作」，並保留「50 �
 | `HK-B0055` | 交易廣場第三座 Three Exchange Square | 中環 | 144 m | OSM way 148554950 |
 | `HK-B0057` | 統一中心 United Centre | 金鐘 | 140 m | OSM way 107336258 |
 | `HK-B0058` | 灣仔政府大樓 Wanchai Tower | 灣仔 | 137 m | OSM way 27087041 |
-| `HK-B0060` | 中國建設銀行大廈 CCB Tower | 中環 | 135 m | OSM way 242113651 |
 | `HK-B0061` | iSQUARE | 尖沙咀 | 130 m | OSM relation 15829461 |
 | `HK-B0063` | 海富中心一座 Admiralty Centre Tower 1 | 金鐘 | 126 m | OSM way 107336262 |
-| `HK-B0064` | 中信大廈 CITIC Tower | 金鐘 | 126 m | OSM way 107353963 |
 | `HK-B0065` | 協成行中心 Hip Shing Hong Centre | 中環 | 125 m | OSM way 148554937 |
 | `HK-B0066` | 瑞安中心 Shui On Centre | 灣仔 | 118 m | OSM way 241998997 |
 | `HK-B0067` | 港運大廈 Island Place Tower | 北角 | 116.2 m | OSM way 100652797 |
