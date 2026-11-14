@@ -211,6 +211,8 @@ export const LANDMARK_DISTRICT_MAP = Object.freeze({
   'princes-building': 'central-western',
   'hongKongClub': 'central-western',
   'hong-kong-club': 'central-western',
+  'theMurray': 'central-western',
+  'the-murray': 'central-western',
   'hangSeng': 'central-western',
   'hang-seng-bank-headquarters': 'central-western',
   'centralMarket': 'central-western',
