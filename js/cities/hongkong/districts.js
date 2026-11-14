@@ -213,6 +213,8 @@ export const LANDMARK_DISTRICT_MAP = Object.freeze({
   'hong-kong-club': 'central-western',
   'theMurray': 'central-western',
   'the-murray': 'central-western',
+  'frenchMissionBuilding': 'central-western',
+  'french-mission-building': 'central-western',
   'hangSeng': 'central-western',
   'hang-seng-bank-headquarters': 'central-western',
   'centralMarket': 'central-western',

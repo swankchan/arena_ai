@@ -684,6 +684,7 @@ test('building inventory independently tracks scene status, refinement and landm
     { id: '`HK-B0091`', status: '已加入', refined: '**是**', landmark: '**是**' },
     { id: '`HK-B0092`', status: '已加入', refined: '**是**', landmark: '**是**' },
     { id: '`HK-B0093`', status: '已加入', refined: '**是**', landmark: '否' },
+    { id: '`HK-B0094`', status: '已加入', refined: '**是**', landmark: '**是**' },
     { id: '`HK-B0100`', status: '已加入', refined: '**是**', landmark: '否' }
   ]);
   const countSummary = inventory.match(/目前已實際加入 \*\*(\d+) 幢\*\*；其餘 \*\*(\d+) 幢\*\*/); assert.ok(countSummary);

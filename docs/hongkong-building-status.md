@@ -17,7 +17,7 @@
 
 inventory 已同步更新為「55 已加入／45 待製作」，並保留「50 個正式獨立 Landmark」口徑；這份 audit 將组件精修與獨立 Landmark 分開，避免把兩種完成混為一談。
 
-## A. 正式已加入、精修及 Landmark（70）
+## A. 正式已加入、精修及 Landmark（71）
 
 | ID | 建築物 | 地區 | 主要實作 |
 | --- | --- | --- | --- |
@@ -61,6 +61,7 @@ inventory 已同步更新為「55 已加入／45 待製作」，並保留「50 �
 | `HK-B0086` | 海洋中心 Ocean Centre | 尖沙咀 | `ocean-centre-world.js` |
 | `HK-B0087` | 香港朗廷酒店 The Langham Hong Kong | 尖沙咀 | `langham-hongkong-world.js` |
 | `HK-B0091` | 美利尼依格羅酒店 The Murray, Hong Kong, A Niccolo Hotel | 中環 | `the-murray-world.js` |
+| `HK-B0094` | 法國外方傳道會大樓 French Mission Building | 中環 | `french-mission-building-world.js` |
 | `HK-B0090` | 時代廣場 Times Square | 銅鑼灣 | `times-square-world.js` |
 | `HK-B0092` | 終審法院 The Court of Final Appeal | 中環 | `court-of-final-appeal-world.js` |
 | `HK-B0033` | 太古廣場三座 Three Pacific Place | 金鐘 | `three-pacific-place-world.js` |
@@ -110,7 +111,7 @@ inventory 已同步更新為「55 已加入／45 待製作」，並保留「50 �
 - `HK-CENTRAL-CH` 同時生成大會堂 High Block、Low Block、附屬建築及 Memorial Garden；這裡只把原清單的 B0082／B0100 對應出來，不把附屬設施額外計數。
 - 茶具文物館仍屬香港公園組件，不新增一個獨立 Landmark；但現在由專用 Flagstaff House module 生成，已按 B0093 補上照片導向精修，不再呼叫通用 heritage builder。
 
-## C. 仍待製作／未見專用實作（25）
+## C. 仍待製作／未見專用實作（24）
 
 | ID | 建築物 | 地區 | 原表高度參考 | 位置／footprint 依據 |
 | --- | --- | --- | --- | --- |
@@ -133,7 +134,6 @@ inventory 已同步更新為「55 已加入／45 待製作」，並保留「50 �
 | `HK-B0080` | 雙子匯一期 The Twins Tower 1 | 啟德 | 80 m | OSM relation 20599094 |
 | `HK-B0081` | 雙子匯二期 The Twins Tower 2 | 啟德 | 120 m | OSM relation 20599095 |
 | `HK-B0083` | 中電總部 CLP Headquarters | 九龍塘 | 57 m | OSM way 1138054767 |
-| `HK-B0094` | 法國外方傳道會大樓 French Mission Building | 中環 | — | OSM way 85320697 |
 | `HK-B0095` | 利園二期 Lee Garden Two | 銅鑼灣 | — | OSM way 199305182 |
 | `HK-B0096` | 東角中心 East Point Centre | 銅鑼灣 | — | OSM way 294141091 |
 | `HK-B0097` | 圓方 Elements | 西九龍 | 30 m | OSM way 1415166820 |
