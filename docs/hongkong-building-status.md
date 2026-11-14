@@ -17,7 +17,7 @@
 
 inventory 已同步更新為「55 已加入／45 待製作」，並保留「50 個正式獨立 Landmark」口徑；這份 audit 將组件精修與獨立 Landmark 分開，避免把兩種完成混為一談。
 
-## A. 正式已加入、精修及 Landmark（62）
+## A. 正式已加入、精修及 Landmark（63）
 
 | ID | 建築物 | 地區 | 主要實作 |
 | --- | --- | --- | --- |
@@ -67,6 +67,7 @@ inventory 已同步更新為「55 已加入／45 待製作」，並保留「50 �
 | `HK-B0042` | 香港JW萬豪酒店 JW Marriott Hotel Hong Kong | 金鐘 | `jw-marriott-world.js` |
 | `HK-B0045` | 太古廣場一座 One Pacific Place | 金鐘 | `one-pacific-place-world.js` |
 | `HK-B0046` | 告羅士打大廈 Gloucester Tower | 中環 | `gloucester-tower-world.js` |
+| `HK-B0048` | 新世界大廈 New World Tower | 中環 | `new-world-tower-world.js` |
 | `HK-B0050` | 萬麗海景酒店 Renaissance Hong Kong Harbour View Hotel | 灣仔 | `renaissance-harbour-view-world.js` |
 | `HK-B0051` | 大新金融中心 Dah Sing Financial Centre | 灣仔 | `dah-sing-financial-centre-world.js` |
 | `HK-B0052` | 美國銀行中心 Bank of America Tower | 金鐘 | `bank-of-america-tower-world.js` |
@@ -102,7 +103,7 @@ inventory 已同步更新為「55 已加入／45 待製作」，並保留「50 �
 - `HK-CENTRAL-CH` 同時生成大會堂 High Block、Low Block、附屬建築及 Memorial Garden；這裡只把原清單的 B0082／B0100 對應出來，不把附屬設施額外計數。
 - 茶具文物館仍屬香港公園組件，不新增一個獨立 Landmark；但現在由專用 Flagstaff House module 生成，已按 B0093 補上照片導向精修，不再呼叫通用 heritage builder。
 
-## C. 仍待製作／未見專用實作（33）
+## C. 仍待製作／未見專用實作（32）
 
 | ID | 建築物 | 地區 | 原表高度參考 | 位置／footprint 依據 |
 | --- | --- | --- | --- | --- |
@@ -110,7 +111,6 @@ inventory 已同步更新為「55 已加入／45 待製作」，並保留「50 �
 | `HK-B0035` | 入境事務大樓 Immigration Tower（外觀已加入、地台／天橋等待完成） | 灣仔 | 180 m | OSM way 510722228；[現況](immigration-tower.md) |
 | `HK-B0044` | 香港康得思酒店 Cordis Hong Kong | 旺角 | 162 m | OSM way 185564131 |
 | `HK-B0047` | 世貿中心 wwwtc | 銅鑼灣 | 152 m | OSM relation 19456337 |
-| `HK-B0048` | 新世界大廈 New World Tower | 中環 | 151 m | OSM way 1323550598 |
 | `HK-B0049` | 多盛大廈 Dorset House | 鰂魚涌 | 151 m | OSM way 100652800 |
 | `HK-B0057` | 統一中心 United Centre | 金鐘 | 140 m | OSM way 107336258 |
 | `HK-B0058` | 灣仔政府大樓 Wanchai Tower | 灣仔 | 137 m | OSM way 27087041 |
