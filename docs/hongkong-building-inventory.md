@@ -2,7 +2,7 @@
 
 這份文件是香港場景**實際建築物進度總表及 100 幢主要大廈施工清單**，記錄建築物是否已加入、是否精修，以及是否作為 Landmark 整合。`tools/data/hongkong/landmarks.json` 及下表的待製作項目只是來源／候選資料；資料出現在該 JSON 或本清單 **不代表已經加入場景**。
 
-最後整理：**2026-11-07**。100幢施工清單中，目前已實際加入 **45 幢**；其餘 **55 幢**仍是待製作項目，沒有基本體量或精修完成的意思。其中 **40 幢**是正式獨立 Landmark，另外 **5 幢**（大會堂高／低座、HKCEC 新／舊翼、茶具文物館）已在公共／綜合組件生成並完成本輪精修；組件不取代或重用其他清單ID。海運大廈／LCX 及中央圖書館仍另作公共組件整合，不把公共設施額外計數。
+最後整理：**2026-11-13**。100幢施工清單中，目前已實際加入 **49 幢**；其餘 **51 幢**仍是待製作項目，沒有基本體量或精修完成的意思。其中 **44 幢**是正式獨立 Landmark，另外 **5 幢**（大會堂高／低座、HKCEC 新／舊翼、茶具文物館）已在公共／綜合組件生成並完成本輪精修；組件不取代或重用其他清單ID。海運大廈／LCX 及中央圖書館仍另作公共組件整合，不把公共設施額外計數。
 
 **往後施工規則**：任何新樓必須在同一輪完成基本建模、照片／可靠資料研究、材質與辨識特徵、精修、地面／道路淨空／碰撞及測試；不再留下「已起樓但未精修」的半成品。
 
@@ -23,12 +23,12 @@
 | 項目 | 數量 |
 | --- | ---: |
 | 施工清單總數 | 100 |
-| 已加入場景的建築物 | 45 |
-| 已加入而且精修 | 45 |
+| 已加入場景的建築物 | 49 |
+| 已加入而且精修 | 49 |
 | 已加入但只有基本體量 | 0 |
-| 已加入並作為 Landmark 整合 | 40 |
+| 已加入並作為 Landmark 整合 | 44 |
 | 製作中 | 0 |
-| 待製作 | 55 |
+| 待製作 | 51 |
 
 目前普通建築群仍為 **0**；上表只計實際加入的建築物，不把橋樑、道路構築物或純 OSM 候選資料計算在內。
 
@@ -101,7 +101,7 @@
 | `HK-B0030` | 交易廣場第二座 Two Exchange Square | 中環 | 已加入 | **是** | **是** | OSM／CTBUH **188 m**；Emporis 摘要 **188.01 m** | OSM way **148554953**（version 7；49 個獨立節點、語義重建 full JSON、幾何及 tags 已保存） | `js/cities/hongkong/two-exchange-square-world.js` |
 | `HK-B0031` | 力寶中心第二座 Lippo Centre Tower 2 | 金鐘 | 待製作 | 否 | 否 | 186 m | OSM way **107336263** | — |
 | `HK-B0032` | 友邦金融中心 AIA Central | 中環 | 待製作 | 否 | 否 | 185 m | OSM way **107324767** | — |
-| `HK-B0033` | 太古廣場三座 Three Pacific Place | 金鐘 | 待製作 | 否 | 否 | 182 m | OSM way **88391081** | — |
+| `HK-B0033` | 太古廣場三座 Three Pacific Place | 金鐘 | 已加入 | **是** | **是** | 182 m | OSM way **88391081** | `three-pacific-place-world.js` |
 | `HK-B0034` | 會展廣場辦公大樓 Convention Plaza Office Tower | 灣仔 | 待製作 | 否 | 否 | 181 m | OSM way **107497689** | — |
 | `HK-B0035` | 入境事務大樓 Immigration Tower | 灣仔 | 部分加入，未驗收 | 是 | 未驗證 | 180.8 m／49 層 | OSM way **510722228** v8 | `immigration-tower-world.js`；[未完成事項](immigration-tower.md) |
 | `HK-B0036` | 稅務大樓 Revenue Tower | 灣仔 | 已加入 | **是** | **是** | 180 m | OSM way **27087037** | `revenue-tower-world.js`；`3e768c0` |
@@ -110,11 +110,11 @@
 | `HK-B0039` | 遠東金融中心 Far East Finance Centre | 金鐘 | 待製作 | 否 | 否 | 176 m | OSM way **107336261** | — |
 | `HK-B0040` | 力寶中心第一座 Lippo Centre Tower 1 | 金鐘 | 待製作 | 否 | 否 | 172 m | OSM way **107336260** | — |
 | `HK-B0041` | 中國工商銀行大廈 ICBC Tower | 金鐘 | 待製作 | 否 | 否 | 167 m | OSM way **107497693** | — |
-| `HK-B0042` | 香港JW萬豪酒店 JW Marriott Hotel Hong Kong | 金鐘 | 待製作 | 否 | 否 | 164 m | OSM way **41499014** | — |
+| `HK-B0042` | 香港JW萬豪酒店 JW Marriott Hotel Hong Kong | 金鐘 | 已加入 | **是** | **是** | 164 m | OSM way **41499014** | `jw-marriott-world.js` |
 | `HK-B0043` | 會景閣 Convention Plaza Apartments | 灣仔 | 已加入 | **是** | **是** | OSM 164 m | OSM way **107497692**（version 8）；連 HKCEC ways **26490011／26490161／79444510** | `js/cities/hongkong/hkcec-world.js` |
 | `HK-B0044` | 香港康得思酒店 Cordis Hong Kong | 旺角 | 待製作 | 否 | 否 | 162 m | OSM way **185564131** | — |
-| `HK-B0045` | 太古廣場一座 One Pacific Place | 金鐘 | 待製作 | 否 | 否 | 161 m | OSM way **41498860** | — |
-| `HK-B0046` | 告羅士打大廈 Gloucester Tower | 中環 | 待製作 | 否 | 否 | 159 m | OSM way **107302745** | — |
+| `HK-B0045` | 太古廣場一座 One Pacific Place | 金鐘 | 已加入 | **是** | **是** | 161 m | OSM way **41498860** | `one-pacific-place-world.js` |
+| `HK-B0046` | 告羅士打大廈 Gloucester Tower | 中環 | 已加入 | **是** | **是** | 159 m | OSM way **107302745** | `gloucester-tower-world.js` |
 | `HK-B0047` | 世貿中心 wwwtc | 銅鑼灣 | 待製作 | 否 | 否 | 152 m | OSM relation **19456337** | — |
 | `HK-B0048` | 新世界大廈 New World Tower | 中環 | 待製作 | 否 | 否 | 151 m | OSM way **1323550598** | — |
 | `HK-B0049` | 多盛大廈 Dorset House | 鰂魚涌 | 待製作 | 否 | 否 | 151 m | OSM way **100652800** | — |
