@@ -1,68 +1,63 @@
-// 中國工商銀行大廈（ICBC Tower, Three Garden Road, 3 Garden Road, Central, 1992）地盤與建築規範
+// 中國工商銀行大廈（ICBC Tower, 33-35 Des Voeux Road Central, Central, 1993）地盤與建築規範
 // Renderer-independent geometry, georeferencing and historical architectural data.
+// Source: OSM Way 107497693.
 import {
   authoredOsmSource, makeAuthoredSite, projectHongKongLonLat,
   HK_METRES_PER_LON, HK_METRES_PER_LAT
 } from './authored-landmark-site.js';
-import { pointInFlatRing, minimumAreaObb, flatRingBounds } from './landmark-site.js';
+import { minimumAreaObb, pointInFlatRing, flatRingBounds } from './landmark-site.js';
 
 // Historical and architectural provenance:
-// Address: 3 Garden Road, Central, Hong Kong (香港中環花園道3號).
-// Completed: 1992.
-// Complex: Three Garden Road (花園道3號, formerly Citibank Plaza 花旗銀行廣場).
-// Architects: Rocco Design Architects (嚴迅奇 / 許李嚴建築師事務所).
-// Award: HKIA Silver Medal 1995 (香港建築師學會銀牌獎).
-// Height: 167.0m (37 office storeys, 40 structural levels), roof crown 167m.
-// OSM way: 107497693.
+// Address: 33-35 Des Voeux Road Central, Central, Hong Kong (香港中環德輔道中33-35號).
+// Completed: 1993.
+// Height: 167.0m (40 storeys).
+// Developer: ICBC Asia (中國工商銀行亞洲).
+// Architect: P&T Group (巴馬丹拿集團).
+// OSM Way: 107497693.
 // Key Architectural Highlights:
-// - Forms an iconic architectural gateway on Garden Road together with Champion Tower (冠君大廈 / 原花旗銀行大廈).
-// - Angled faceted prism geometry maximizing views toward Victoria Harbour, The Peak, and Chater Garden.
-// - High-performance silver-blue reflective curtain wall with crisp horizontal spandrel bands and vertical mullions.
-// - Multi-level pedestrian circulation connecting Garden Road and Cotton Tree Drive via cascading escalators and public atrium.
-// - Mechanical penthouse crown with illuminated ICBC (中國工商銀行) corporate red-and-gold emblem.
+// - 167-metre, 40-storey office tower in Central, slender rectangular form.
+// - Reflective glass curtain wall with horizontal silver spandrel bands and vertical mullions.
+// - Stone-clad podium with grand entrance lobby fronting Des Voeux Road Central.
+// - Crown parapet with mechanical plant tier and rooftop aviation obstacle beacons.
 
 export const ICBC_TOWER_HERITAGE = Object.freeze({
-  address: '香港中環花園道3號 (3 Garden Road, Central, Hong Kong)',
+  address: '香港中環德輔道中33-35號 33-35 Des Voeux Road Central, Central, Hong Kong',
   district: '中西區中環 (Central, Central and Western District)',
-  complex: 'Three Garden Road (花園道3號)',
-  architects: 'Rocco Design Architects (嚴迅奇 / 許李嚴建築師事務所)',
-  completionYear: 1992,
-  award: 'HKIA Silver Medal 1995 (香港建築師學會銀牌獎)',
+  completionYear: 1993,
   currentName: 'ICBC Tower (中國工商銀行大廈)',
-  style: 'Late Modernist Commercial Landmark (晚期現代主義商業地標)',
+  developer: 'ICBC Asia (中國工商銀行亞洲)',
+  architect: 'P&T Group (巴馬丹拿集團)',
+  style: 'Late-Modernist Glass Office Tower (晚期現代主義玻璃辦公摩天大樓)',
   osmWay: 107497693,
   height: 167.0,
-  storeys: 37,
-  levels: 40
+  storeys: 40
 });
 
 export const ICBC_TOWER_OSM_SOURCE = authoredOsmSource({
   id: 107497693,
   type: 'way',
-  version: 8,
+  version: 4,
   tags: {
-    building: 'yes',
+    building: 'office',
     'building:levels': '40',
-    'building:use': 'office',
     height: '167',
     name: '中國工商銀行大廈 ICBC Tower',
     'name:en': 'ICBC Tower',
     'name:zh': '中國工商銀行大廈',
-    'name:zh-Hans': '中国工商银行大厦',
-    'name:zh-Hant': '中國工商銀行大廈'
+    office: 'yes'
   },
   geometry: [
-    { lon: 114.1608057, lat: 22.27842 },
-    { lon: 114.1607454, lat: 22.2781332 },
-    { lon: 114.1608611, lat: 22.2781367 },
-    { lon: 114.1608752, lat: 22.2780917 },
-    { lon: 114.1609261, lat: 22.2780963 },
-    { lon: 114.1609816, lat: 22.2781198 },
-    { lon: 114.1611204, lat: 22.2782501 },
-    { lon: 114.1611952, lat: 22.2783944 },
-    { lon: 114.1611465, lat: 22.278553 },
-    { lon: 114.1611062, lat: 22.278701 },
-    { lon: 114.1608057, lat: 22.27842 }
+    { lat: 22.27842, lon: 114.1608057 },
+    { lat: 22.2781332, lon: 114.1607454 },
+    { lat: 22.2781367, lon: 114.1608611 },
+    { lat: 22.2780917, lon: 114.1608752 },
+    { lat: 22.2780963, lon: 114.1609261 },
+    { lat: 22.2781198, lon: 114.1609816 },
+    { lat: 22.2782501, lon: 114.1611204 },
+    { lat: 22.2783944, lon: 114.1611952 },
+    { lat: 22.278553, lon: 114.1611465 },
+    { lat: 22.278701, lon: 114.1611062 },
+    { lat: 22.27842, lon: 114.1608057 }
   ]
 });
 
@@ -83,22 +78,9 @@ for (let i = 0; i + 3 < ICBC_TOWER_RING.length; i += 2) {
 }
 export const ICBC_TOWER_RING_AREA = Math.abs(signedArea * 0.5);
 
-export const ICBC_TOWER_SITE = Object.freeze({
-  name: '中國工商銀行大廈 ICBC Tower',
-  englishName: 'ICBC Tower',
-  address: '花園道3號 3 Garden Road',
-  osmType: 'way',
-  osmId: ICBC_TOWER_OSM_SOURCE.id,
-  source: ICBC_TOWER_OSM_SOURCE,
-  ring: ICBC_TOWER_RING,
-  bounds: ICBC_TOWER_BOUNDS,
-  ...footprint,
+export const ICBC_TOWER_SITE = makeAuthoredSite('icbc-tower', '中國工商銀行大廈', 'ICBC Tower', ICBC_TOWER_OSM_SOURCE, {
   height: 167.0,
-  storeys: 37,
-  levels: 40,
-  podiumHeight: 18.0,
-  shaftHeight: 133.0,
-  crownHeight: 16.0
+  levels: 40
 });
 
 export function icbcTowerLocalToWorld(lx, lz) {

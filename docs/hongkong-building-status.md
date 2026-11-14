@@ -8,12 +8,12 @@
 
 | 口徑 | 數量 | 說明 |
 | --- | ---: | --- |
-| 原 inventory 正式「已加入」 | **50** | 全部同時標示精修及 Landmark；有專用 world module 並接入 active `buildSimpleHongKongWorld`。 |
+| 原 inventory 正式「已加入」 | **52** | 全部同時標示精修及 Landmark；有專用 world module 並接入 active `buildSimpleHongKongWorld`。 |
 | 原表待製作、但實際已由其他組件生成，現已補精修 | **5** | 大會堂高／低座、HKCEC 新／舊翼、茶具文物館；各自有原 ID 精修驗證，仍不是新增獨立 Landmark。 |
-| 有對應場景模型且已精修的清單行（上述兩類合計） | **55** | 50 個正式獨立 Landmark 加 5 個已精修公共／綜合組件。 |
-| 未見專用實作、仍應視為待製作 | **45** | 沒有可核實的專用建模及 active 整合；不以舊 generic landmark 盒體充當完成。 |
+| 有對應場景模型且已精修的清單行（上述兩類合計） | **57** | 52 個正式獨立 Landmark 加 5 個已精修公共／綜合組件。 |
+| 未見專用實作、仍應視為待製作 | **43** | 沒有可核實的專用建模及 active 整合；不以舊 generic landmark 盒體充當完成。 |
 
-**一句講晒：正式獨立 Landmark 50 幢；連同已補精修的 5 個公共／綜合組件，100 行入面有 55 行有模型且完成精修；仍有 45 行未做。**
+**一句講晒：正式獨立 Landmark 52 幢；連同已補精修的 5 個公共／綜合組件，100 行入面有 57 行有模型且完成精修；仍有 43 行未做。**
 
 inventory 已同步更新為「55 已加入／45 待製作」，並保留「50 個正式獨立 Landmark」口徑；這份 audit 將组件精修與獨立 Landmark 分開，避免把兩種完成混為一談。
 
@@ -71,6 +71,8 @@ inventory 已同步更新為「55 已加入／45 待製作」，並保留「50 �
 | `HK-B0054` | 鷹君中心 Great Eagle Centre | 灣仔 | `great-eagle-centre-world.js` |
 | `HK-B0062` | 香港君悅酒店 Grand Hyatt Hong Kong | 灣仔 | `grand-hyatt-hong-kong-world.js` |
 | `HK-B0071` | 修頓中心 Southorn Centre | 灣仔 | `southorn-centre-world.js` |
+| `HK-B0031` | 力寶中心第二座 Lippo Centre Tower 2 | 金鐘 | `lippo-centre-tower-2-world.js` |
+| `HK-B0041` | 中國工商銀行大廈 ICBC Tower | 金鐘 | `icbc-tower-world.js` |
 
 ## B. 組件模型已補原 ID 精修（5）
 
@@ -94,14 +96,12 @@ inventory 已同步更新為「55 已加入／45 待製作」，並保留「50 �
 
 | ID | 建築物 | 地區 | 原表高度參考 | 位置／footprint 依據 |
 | --- | --- | --- | --- | --- |
-| `HK-B0031` | 力寶中心第二座 Lippo Centre Tower 2 | 金鐘 | 186 m | OSM way 107336263 |
 | `HK-B0032` | 友邦金融中心 AIA Central | 中環 | 185 m | OSM way 107324767 |
 | `HK-B0034` | 會展廣場辦公大樓 Convention Plaza Office Tower | 灣仔 | 181 m | OSM way 107497689 |
 | `HK-B0035` | 入境事務大樓 Immigration Tower（外觀已加入、地台／天橋等待完成） | 灣仔 | 180 m | OSM way 510722228；[現況](immigration-tower.md) |
 | `HK-B0038` | 華潤大廈 China Resources Building | 灣仔 | 178 m | OSM way 107497701 |
 | `HK-B0039` | 遠東金融中心 Far East Finance Centre | 金鐘 | 176 m | OSM way 107336261 |
 | `HK-B0040` | 力寶中心第一座 Lippo Centre Tower 1 | 金鐘 | 172 m | OSM way 107336260 |
-| `HK-B0041` | 中國工商銀行大廈 ICBC Tower | 金鐘 | 167 m | OSM way 107497693 |
 | `HK-B0044` | 香港康得思酒店 Cordis Hong Kong | 旺角 | 162 m | OSM way 185564131 |
 | `HK-B0047` | 世貿中心 wwwtc | 銅鑼灣 | 152 m | OSM relation 19456337 |
 | `HK-B0048` | 新世界大廈 New World Tower | 中環 | 151 m | OSM way 1323550598 |
