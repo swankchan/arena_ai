@@ -74,6 +74,7 @@ inventory 已同步更新為「55 已加入／45 待製作」，並保留「50 �
 | `HK-B0062` | 香港君悅酒店 Grand Hyatt Hong Kong | 灣仔 | `grand-hyatt-hong-kong-world.js` |
 | `HK-B0071` | 修頓中心 Southorn Centre | 灣仔 | `southorn-centre-world.js` |
 | `HK-B0031` | 力寶中心第二座 Lippo Centre Tower 2 | 金鐘 | `lippo-centre-tower-2-world.js` |
+| `HK-B0038` | 華潤大廈 China Resources Building | 灣仔 | `china-resources-building-world.js` |
 | `HK-B0041` | 中國工商銀行大廈 ICBC Tower | 金鐘 | `icbc-tower-world.js` |
 
 ## B. 組件模型已補原 ID 精修（5）
@@ -100,7 +101,6 @@ inventory 已同步更新為「55 已加入／45 待製作」，並保留「50 �
 | --- | --- | --- | --- | --- |
 | `HK-B0032` | 友邦金融中心 AIA Central | 中環 | 185 m | OSM way 107324767 |
 | `HK-B0035` | 入境事務大樓 Immigration Tower（外觀已加入、地台／天橋等待完成） | 灣仔 | 180 m | OSM way 510722228；[現況](immigration-tower.md) |
-| `HK-B0038` | 華潤大廈 China Resources Building | 灣仔 | 178 m | OSM way 107497701 |
 | `HK-B0040` | 力寶中心第一座 Lippo Centre Tower 1 | 金鐘 | 172 m | OSM way 107336260 |
 | `HK-B0044` | 香港康得思酒店 Cordis Hong Kong | 旺角 | 162 m | OSM way 185564131 |
 | `HK-B0047` | 世貿中心 wwwtc | 銅鑼灣 | 152 m | OSM relation 19456337 |
