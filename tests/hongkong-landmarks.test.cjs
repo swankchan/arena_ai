@@ -647,6 +647,7 @@ test('building inventory independently tracks scene status, refinement and landm
     { id: '`HK-B0037`', status: '已加入', refined: '**是**', landmark: '**是**' },
     { id: '`HK-B0038`', status: '已加入', refined: '**是**', landmark: '**是**' },
     { id: '`HK-B0039`', status: '已加入', refined: '**是**', landmark: '**是**' },
+    { id: '`HK-B0040`', status: '已加入', refined: '**是**', landmark: '**是**' },
     { id: '`HK-B0041`', status: '已加入', refined: '**是**', landmark: '**是**' },
     { id: '`HK-B0042`', status: '已加入', refined: '**是**', landmark: '**是**' },
     { id: '`HK-B0043`', status: '已加入', refined: '**是**', landmark: '**是**' },
