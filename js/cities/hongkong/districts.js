@@ -239,6 +239,7 @@ export const LANDMARK_DISTRICT_MAP = Object.freeze({
   'admiraltyCentreTower1': 'central-western',
   'admiraltyCentreTower2': 'central-western',
   'newWorldTower': 'central-western',
+  'hongkongArmyBuilding': 'central-western',
   'admiralty-centre': 'central-western',
   'unitedCentre': 'central-western',
   'united-centre': 'central-western',
