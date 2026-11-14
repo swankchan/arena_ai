@@ -1,5 +1,7 @@
 // 海富中心（Admiralty Centre Tower 1 & Tower 2, 18 Harcourt Road, 1980）地盤與建築規範
 // Renderer-independent geometry, georeferencing and historical architectural data.
+// Tower 1 (HK-B0063): 126.0m, 32 levels, OSM way 107336262.
+// Tower 2 (HK-B0072): 104.0m, 28 levels, OSM way 107336259.
 import {
   authoredOsmSource, makeAuthoredSite, projectHongKongLonLat,
   HK_METRES_PER_LON, HK_METRES_PER_LAT
@@ -97,33 +99,94 @@ export const ADMIRALTY_CENTRE_T2_RING = Object.freeze(
   ADMIRALTY_CENTRE_T2_OSM_SOURCE.geometry.flatMap(({ lon, lat }) => project(lon, lat))
 );
 
+// --- Tower 1 (HK-B0063) ---------------------------------------------------------------
 const fpT1 = minimumAreaObb(ADMIRALTY_CENTRE_T1_RING);
-const fpT2 = minimumAreaObb(ADMIRALTY_CENTRE_T2_RING);
+export const ADMIRALTY_CENTRE_T1_BOUNDS = Object.freeze(flatRingBounds(ADMIRALTY_CENTRE_T1_RING));
 
-export const ADMIRALTY_CENTRE_SITE = Object.freeze({
+export const ADMIRALTY_CENTRE_T1_SITE = Object.freeze({
+  ...makeAuthoredSite('admiraltyCentreTower1', '海富中心一座', 'Admiralty Centre Tower 1', ADMIRALTY_CENTRE_T1_OSM_SOURCE, {
+    height: 126.0,
+    levels: 32
+  }),
+  podiumHeight: 14.0,
+  shaftHeight: 100.0,
+  crownHeight: 12.0
+});
+
+export function admiraltyCentreTower1LocalToWorld(lx, lz) {
+  const site = ADMIRALTY_CENTRE_T1_SITE;
+  const cs = Math.cos(site.ry), sn = Math.sin(site.ry);
+  return {
+    x: site.x + cs * lx + sn * lz,
+    z: site.z - sn * lx + cs * lz
+  };
+}
+
+export function admiraltyCentreTower1WorldToLocal(wx, wz) {
+  const site = ADMIRALTY_CENTRE_T1_SITE;
+  const cs = Math.cos(site.ry), sn = Math.sin(site.ry);
+  const dx = wx - site.x, dz = wz - site.z;
+  return {
+    x: dx * cs - dz * sn,
+    z: dx * sn + dz * cs
+  };
+}
+
+export const ADMIRALTY_CENTRE_T1_LOCAL_RING = Object.freeze(
+  ADMIRALTY_CENTRE_T1_RING.flatMap((val, idx, arr) => {
+    if (idx % 2) return [];
+    const pt = admiraltyCentreTower1WorldToLocal(val, arr[idx + 1]);
+    return [pt.x, pt.z];
+  })
+);
+
+// --- Tower 2 (HK-B0072) ---------------------------------------------------------------
+const fpT2 = minimumAreaObb(ADMIRALTY_CENTRE_T2_RING);
+export const ADMIRALTY_CENTRE_T2_BOUNDS = Object.freeze(flatRingBounds(ADMIRALTY_CENTRE_T2_RING));
+
+export const ADMIRALTY_CENTRE_T2_SITE = Object.freeze({
+  ...makeAuthoredSite('admiraltyCentreTower2', '海富中心二座', 'Admiralty Centre Tower 2', ADMIRALTY_CENTRE_T2_OSM_SOURCE, {
+    height: 104.0,
+    levels: 28
+  }),
+  podiumHeight: 14.0,
+  shaftHeight: 80.0,
+  crownHeight: 10.0
+});
+
+export function admiraltyCentreTower2LocalToWorld(lx, lz) {
+  const site = ADMIRALTY_CENTRE_T2_SITE;
+  const cs = Math.cos(site.ry), sn = Math.sin(site.ry);
+  return {
+    x: site.x + cs * lx + sn * lz,
+    z: site.z - sn * lx + cs * lz
+  };
+}
+
+export function admiraltyCentreTower2WorldToLocal(wx, wz) {
+  const site = ADMIRALTY_CENTRE_T2_SITE;
+  const cs = Math.cos(site.ry), sn = Math.sin(site.ry);
+  const dx = wx - site.x, dz = wz - site.z;
+  return {
+    x: dx * cs - dz * sn,
+    z: dx * sn + dz * cs
+  };
+}
+
+export const ADMIRALTY_CENTRE_T2_LOCAL_RING = Object.freeze(
+  ADMIRALTY_CENTRE_T2_RING.flatMap((val, idx, arr) => {
+    if (idx % 2) return [];
+    const pt = admiraltyCentreTower2WorldToLocal(val, arr[idx + 1]);
+    return [pt.x, pt.z];
+  })
+);
+
+// --- Complex center (for landmark marker / reference) ----------------------------------
+export const ADMIRALTY_CENTRE_COMPLEX = Object.freeze({
   name: '海富中心 Admiralty Centre',
   englishName: 'Admiralty Centre',
   address: '金鐘夏慤道18號 18 Harcourt Road',
-  // Tower 1 (West High Block)
-  t1: {
-    ...fpT1,
-    height: 126.0,
-    storeys: 32,
-    podiumHeight: 14.0,
-    shaftHeight: 100.0,
-    crownHeight: 12.0
-  },
-  // Tower 2 (East Low Block)
-  t2: {
-    ...fpT2,
-    height: 104.0,
-    storeys: 28,
-    podiumHeight: 14.0,
-    shaftHeight: 80.0,
-    crownHeight: 10.0
-  },
-  // Complex Center (for landmark marker)
-  x: (fpT1.x + fpT2.x) * 0.5,
-  z: (fpT1.z + fpT2.z) * 0.5,
+  x: (ADMIRALTY_CENTRE_T1_SITE.x + ADMIRALTY_CENTRE_T2_SITE.x) * 0.5,
+  z: (ADMIRALTY_CENTRE_T1_SITE.z + ADMIRALTY_CENTRE_T2_SITE.z) * 0.5,
   height: 126.0
 });
