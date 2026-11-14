@@ -8,14 +8,14 @@
 
 | 口徑 | 數量 | 說明 |
 | --- | ---: | --- |
-| 原 inventory 正式「已加入」 | **47** | 全部同時標示精修及 Landmark；有專用 world module 並接入 active `buildSimpleHongKongWorld`。 |
+| 原 inventory 正式「已加入」 | **50** | 全部同時標示精修及 Landmark；有專用 world module 並接入 active `buildSimpleHongKongWorld`。 |
 | 原表待製作、但實際已由其他組件生成，現已補精修 | **5** | 大會堂高／低座、HKCEC 新／舊翼、茶具文物館；各自有原 ID 精修驗證，仍不是新增獨立 Landmark。 |
-| 有對應場景模型且已精修的清單行（上述兩類合計） | **52** | 47 個正式獨立 Landmark 加 5 個已精修公共／綜合組件。 |
-| 未見專用實作、仍應視為待製作 | **48** | 沒有可核實的專用建模及 active 整合；不以舊 generic landmark 盒體充當完成。 |
+| 有對應場景模型且已精修的清單行（上述兩類合計） | **55** | 50 個正式獨立 Landmark 加 5 個已精修公共／綜合組件。 |
+| 未見專用實作、仍應視為待製作 | **45** | 沒有可核實的專用建模及 active 整合；不以舊 generic landmark 盒體充當完成。 |
 
-**一句講晒：正式獨立 Landmark 47 幢；連同已補精修的 5 個公共／綜合組件，100 行入面有 52 行有模型且完成精修；仍有 48 行未做。**
+**一句講晒：正式獨立 Landmark 50 幢；連同已補精修的 5 個公共／綜合組件，100 行入面有 55 行有模型且完成精修；仍有 45 行未做。**
 
-inventory 已同步更新為「52 已加入／48 待製作」，並保留「47 個正式獨立 Landmark」口徑；這份 audit 將组件精修與獨立 Landmark 分開，避免把兩種完成混為一談。
+inventory 已同步更新為「55 已加入／45 待製作」，並保留「50 個正式獨立 Landmark」口徑；這份 audit 將组件精修與獨立 Landmark 分開，避免把兩種完成混為一談。
 
 ## A. 正式已加入、精修及 Landmark（47）
 
@@ -68,6 +68,9 @@ inventory 已同步更新為「52 已加入／48 待製作」，並保留「47 �
 | `HK-B0050` | 萬麗海景酒店 Renaissance Hong Kong Harbour View Hotel | 灣仔 | `renaissance-harbour-view-world.js` |
 | `HK-B0051` | 大新金融中心 Dah Sing Financial Centre | 灣仔 | `dah-sing-financial-centre-world.js` |
 | `HK-B0053` | 海港中心 Harbour Centre | 灣仔 | `harbour-centre-world.js` |
+| `HK-B0054` | 鷹君中心 Great Eagle Centre | 灣仔 | `great-eagle-centre-world.js` |
+| `HK-B0062` | 香港君悅酒店 Grand Hyatt Hong Kong | 灣仔 | `grand-hyatt-hong-kong-world.js` |
+| `HK-B0071` | 修頓中心 Southorn Centre | 灣仔 | `southorn-centre-world.js` |
 
 ## B. 組件模型已補原 ID 精修（5）
 
@@ -104,13 +107,11 @@ inventory 已同步更新為「52 已加入／48 待製作」，並保留「47 �
 | `HK-B0048` | 新世界大廈 New World Tower | 中環 | 151 m | OSM way 1323550598 |
 | `HK-B0049` | 多盛大廈 Dorset House | 鰂魚涌 | 151 m | OSM way 100652800 |
 | `HK-B0052` | 美國銀行中心 Bank of America Tower | 金鐘 | 146 m | OSM relation 17045256 |
-| `HK-B0054` | 鷹君中心 Great Eagle Centre | 灣仔 | 146 m | OSM relation 18183385 |
 | `HK-B0055` | 交易廣場第三座 Three Exchange Square | 中環 | 144 m | OSM way 148554950 |
 | `HK-B0057` | 統一中心 United Centre | 金鐘 | 140 m | OSM way 107336258 |
 | `HK-B0058` | 灣仔政府大樓 Wanchai Tower | 灣仔 | 137 m | OSM way 27087041 |
 | `HK-B0060` | 中國建設銀行大廈 CCB Tower | 中環 | 135 m | OSM way 242113651 |
 | `HK-B0061` | iSQUARE | 尖沙咀 | 130 m | OSM relation 15829461 |
-| `HK-B0062` | 香港君悅酒店 Grand Hyatt Hong Kong | 灣仔 | 129 m | OSM way 107497699 |
 | `HK-B0063` | 海富中心一座 Admiralty Centre Tower 1 | 金鐘 | 126 m | OSM way 107336262 |
 | `HK-B0064` | 中信大廈 CITIC Tower | 金鐘 | 126 m | OSM way 107353963 |
 | `HK-B0065` | 協成行中心 Hip Shing Hong Centre | 中環 | 125 m | OSM way 148554937 |
@@ -119,7 +120,6 @@ inventory 已同步更新為「52 已加入／48 待製作」，並保留「47 �
 | `HK-B0068` | 中國人民解放軍駐香港部隊大廈 Chinese People's Liberation Army Forces Hong Kong Building | 中環 | 113 m | OSM way 101959095 |
 | `HK-B0069` | 海濱廣場一座 One Harbourfront | 紅磡 | 110 m | OSM way 151401235 |
 | `HK-B0070` | 海濱廣場二座 Two Harbourfront | 紅磡 | 110 m | OSM way 151401236 |
-| `HK-B0071` | 修頓中心 Southorn Centre | 灣仔 | 107 m | OSM way 148858987 |
 | `HK-B0072` | 海富中心二座 Admiralty Centre Tower 2 | 金鐘 | 104 m | OSM way 107336259 |
 | `HK-B0073` | 海港政府大樓 Harbour Building | 中環 | 96 m | OSM way 26599387 |
 | `HK-B0074` | K11 ARTUS 寓館 K11 ARTUS | 尖沙咀 | 96 m | OSM way 693489169 |

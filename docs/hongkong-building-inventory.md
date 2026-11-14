@@ -2,7 +2,7 @@
 
 這份文件是香港場景**實際建築物進度總表及 100 幢主要大廈施工清單**，記錄建築物是否已加入、是否精修，以及是否作為 Landmark 整合。`tools/data/hongkong/landmarks.json` 及下表的待製作項目只是來源／候選資料；資料出現在該 JSON 或本清單 **不代表已經加入場景**。
 
-最後整理：**2026-11-13**。100幢施工清單中，目前已實際加入 **52 幢**；其餘 **48 幢**仍是待製作項目，沒有基本體量或精修完成的意思。其中 **47 幢**是正式獨立 Landmark，另外 **5 幢**（大會堂高／低座、HKCEC 新／舊翼、茶具文物館）已在公共／綜合組件生成並完成本輪精修；組件不取代或重用其他清單ID。海運大廈／LCX 及中央圖書館仍另作公共組件整合，不把公共設施額外計數。
+最後整理：**2026-11-13**。100幢施工清單中，目前已實際加入 **55 幢**；其餘 **45 幢**仍是待製作項目，沒有基本體量或精修完成的意思。其中 **50 幢**是正式獨立 Landmark，另外 **5 幢**（大會堂高／低座、HKCEC 新／舊翼、茶具文物館）已在公共／綜合組件生成並完成本輪精修；組件不取代或重用其他清單ID。海運大廈／LCX 及中央圖書館仍另作公共組件整合，不把公共設施額外計數。
 
 **往後施工規則**：任何新樓必須在同一輪完成基本建模、照片／可靠資料研究、材質與辨識特徵、精修、地面／道路淨空／碰撞及測試；不再留下「已起樓但未精修」的半成品。
 
@@ -23,12 +23,12 @@
 | 項目 | 數量 |
 | --- | ---: |
 | 施工清單總數 | 100 |
-| 已加入場景的建築物 | 52 |
-| 已加入而且精修 | 52 |
+| 已加入場景的建築物 | 55 |
+| 已加入而且精修 | 55 |
 | 已加入但只有基本體量 | 0 |
-| 已加入並作為 Landmark 整合 | 47 |
+| 已加入並作為 Landmark 整合 | 50 |
 | 製作中 | 0 |
-| 待製作 | 48 |
+| 待製作 | 45 |
 
 目前普通建築群仍為 **0**；上表只計實際加入的建築物，不把橋樑、道路構築物或純 OSM 候選資料計算在內。
 
@@ -122,7 +122,7 @@
 | `HK-B0051` | 大新金融中心 Dah Sing Financial Centre | 灣仔 | 已加入 | **是** | **是** | 150 m | OSM way **200283000** | `dah-sing-financial-centre-world.js` |
 | `HK-B0052` | 美國銀行中心 Bank of America Tower | 金鐘 | 待製作 | 否 | 否 | 146 m | OSM relation **17045256** | — |
 | `HK-B0053` | 海港中心 Harbour Centre | 灣仔 | 已加入 | **是** | **是** | 146 m | OSM relation **18183384** | `harbour-centre-world.js` |
-| `HK-B0054` | 鷹君中心 Great Eagle Centre | 灣仔 | 待製作 | 否 | 否 | 146 m | OSM relation **18183385** | — |
+| `HK-B0054` | 鷹君中心 Great Eagle Centre | 灣仔 | 已加入 | **是** | **是** | 146 m | OSM relation **18183385** | `great-eagle-centre-world.js` |
 | `HK-B0055` | 交易廣場第三座 Three Exchange Square | 中環 | 待製作 | 否 | 否 | 144 m | OSM way **148554950** | — |
 | `HK-B0056` | 皇室大廈安達人壽大樓 Chubb Tower, Windsor House | 銅鑼灣 | 已加入 | **是** | **是** | 140 m | OSM way **149401356** | `windsor-house-world.js`；`8f02fe9` |
 | `HK-B0057` | 統一中心 United Centre | 金鐘 | 待製作 | 否 | 否 | 140 m | OSM way **107336258** | — |
@@ -130,7 +130,7 @@
 | `HK-B0059` | 恒生銀行總行大廈 Hang Seng Bank Headquarters | 中環 | 已加入 | **是** | **是** | 137 m | OSM way **28825127** | `hang-seng-world.js`；`3312ab8` |
 | `HK-B0060` | 中國建設銀行大廈 CCB Tower | 中環 | 待製作 | 否 | 否 | 135 m | OSM way **242113651** | — |
 | `HK-B0061` | iSQUARE | 尖沙咀 | 待製作 | 否 | 否 | 130 m | OSM relation **15829461** | — |
-| `HK-B0062` | 香港君悅酒店 Grand Hyatt Hong Kong | 灣仔 | 待製作 | 否 | 否 | 129 m | OSM way **107497699** | — |
+| `HK-B0062` | 香港君悅酒店 Grand Hyatt Hong Kong | 灣仔 | 已加入 | **是** | **是** | 129 m | OSM way **107497699** | `grand-hyatt-hong-kong-world.js` |
 | `HK-B0063` | 海富中心一座 Admiralty Centre Tower 1 | 金鐘 | 待製作 | 否 | 否 | 126 m | OSM way **107336262** | — |
 | `HK-B0064` | 中信大廈 CITIC Tower | 金鐘 | 待製作 | 否 | 否 | 126 m | OSM way **107353963** | — |
 | `HK-B0065` | 協成行中心 Hip Shing Hong Centre | 中環 | 待製作 | 否 | 否 | 125 m | OSM way **148554937** | — |
@@ -139,7 +139,7 @@
 | `HK-B0068` | 中國人民解放軍駐香港部隊大廈 Chinese People's Liberation Army Forces Hong Kong Building | 中環 | 待製作 | 否 | 否 | 113 m | OSM way **101959095** | — |
 | `HK-B0069` | 海濱廣場一座 One Harbourfront | 紅磡 | 待製作 | 否 | 否 | 110 m | OSM way **151401235** | — |
 | `HK-B0070` | 海濱廣場二座 Two Harbourfront | 紅磡 | 待製作 | 否 | 否 | 110 m | OSM way **151401236** | — |
-| `HK-B0071` | 修頓中心 Southorn Centre | 灣仔 | 待製作 | 否 | 否 | 107 m | OSM way **148858987** | — |
+| `HK-B0071` | 修頓中心 Southorn Centre | 灣仔 | 已加入 | **是** | **是** | 107 m | OSM way **148858987** | `southorn-centre-world.js` |
 | `HK-B0072` | 海富中心二座 Admiralty Centre Tower 2 | 金鐘 | 待製作 | 否 | 否 | 104 m | OSM way **107336259** | — |
 | `HK-B0073` | 海港政府大樓 Harbour Building | 中環 | 待製作 | 否 | 否 | 96 m | OSM way **26599387** | — |
 | `HK-B0074` | K11 ARTUS 寓館 K11 ARTUS | 尖沙咀 | 待製作 | 否 | 否 | 96 m | OSM way **693489169** | — |
